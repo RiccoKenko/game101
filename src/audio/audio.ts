@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { saveStore } from '../core/save';
 
+/** Builds without sound files (e.g. the preview page) set VITE_AUDIO=off. */
+export const AUDIO_ENABLED = import.meta.env.VITE_AUDIO !== 'off';
+
 export const SFX_KEYS = [
   'shoot', 'hit', 'enemy_die', 'xp', 'coin', 'levelup', 'hurt', 'explosion', 'zap',
   'heal', 'chest', 'boss_warning', 'click', 'gameover', 'victory',
@@ -72,7 +75,7 @@ class AudioManager {
     if (this.musicKey === key && this.music?.isPlaying) return;
     this.stopMusic();
     this.wantedMusic = key;
-    if (!this.musicOn) return;
+    if (!this.musicOn || !AUDIO_ENABLED) return;
     if (scene.cache.audio.exists(key)) {
       this.startMusic(key);
       return;

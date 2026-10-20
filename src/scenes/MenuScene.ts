@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { audio, MUSIC_KEYS } from '../audio/audio';
+import { audio, AUDIO_ENABLED, MUSIC_KEYS } from '../audio/audio';
 import { BOSSES } from '../config/enemies';
 import { MAPS } from '../config/maps';
 import { DEBUG } from '../core/debug';
@@ -110,8 +110,10 @@ export class MenuScene extends Phaser.Scene {
 
     audio.playMusic(this, 'music_menu');
     // Warm up map music in the background so a run starts with its track.
-    for (const key of MUSIC_KEYS) if (key !== 'music_menu' && !this.cache.audio.exists(key)) this.load.audio(key, `audio/${key}.mp3`);
-    this.load.start();
+    if (AUDIO_ENABLED) {
+      for (const key of MUSIC_KEYS) if (key !== 'music_menu' && !this.cache.audio.exists(key)) this.load.audio(key, `audio/${key}.mp3`);
+      this.load.start();
+    }
   }
 
   private mapCard(index: number, x: number, y: number, w: number, h: number): void {

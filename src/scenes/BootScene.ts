@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { createTextures } from '../art/textures';
-import { audio, SFX_KEYS } from '../audio/audio';
+import { audio, AUDIO_ENABLED, SFX_KEYS } from '../audio/audio';
 import { MAPS } from '../config/maps';
 import { DEBUG } from '../core/debug';
 import { COLORS } from '../ui/theme';
@@ -20,8 +20,10 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.bar = this.add.graphics();
     this.drawBar();
-    for (const key of SFX_KEYS) this.load.audio(key, `audio/${key}.mp3`);
-    this.load.audio('music_menu', 'audio/music_menu.mp3');
+    if (AUDIO_ENABLED) {
+      for (const key of SFX_KEYS) this.load.audio(key, `audio/${key}.mp3`);
+      this.load.audio('music_menu', 'audio/music_menu.mp3');
+    }
     this.load.on('progress', (p: number) => {
       this.progress.files = p;
       this.drawBar();
