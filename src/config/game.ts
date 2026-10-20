@@ -7,7 +7,7 @@ export const DEFAULT_GAME_HEIGHT = 1920;
 export const PLAYER_BASE = {
   maxHp: 100,
   speed: 340,
-  magnet: 175,
+  magnet: 200,
   armor: 0,
   radius: 32,
   /** Seconds of invulnerability after taking a hit. */

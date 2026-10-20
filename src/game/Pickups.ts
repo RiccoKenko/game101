@@ -138,6 +138,13 @@ export class PickupManager {
       const dy = player.y - p.y;
       const d2 = dx * dx + dy * dy;
       if (!p.pulled && p.kind !== 'chest' && d2 < mr2) p.pulled = true;
+      if (!p.pulled && p.kind === 'xp' && p.age > 6) {
+        // Old gems slowly drift toward the hero so XP isn't lost far behind.
+        const d = Math.sqrt(d2) || 1;
+        const drift = Math.min(160, (p.age - 6) * 30) * dt;
+        p.x += (dx / d) * drift;
+        p.y += (dy / d) * drift;
+      }
       if (p.pulled) {
         const d = Math.sqrt(d2) || 1;
         p.speed = Math.min(1700, p.speed + 2600 * dt);

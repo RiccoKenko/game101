@@ -35,9 +35,9 @@ export type Choice =
 
 /** XP needed to go from `level` to `level + 1`. */
 export function xpToNext(level: number): number {
-  if (level < 20) return 6 + (level - 1) * 11;
-  if (level < 40) return 215 + (level - 20) * 16;
-  return 535 + (level - 40) * 20;
+  if (level < 20) return 8 + (level - 1) * 14;
+  if (level < 40) return 280 + (level - 20) * 22;
+  return 720 + (level - 40) * 30;
 }
 
 export function newInventory(): Inventory {

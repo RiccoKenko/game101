@@ -252,7 +252,7 @@ export class GameScene extends Phaser.Scene {
       }
       this.events.emit('toast', 'They surround you!');
     }
-    this.spawnAcc += spawnRate(t) * (run.boss ? 0.45 : 1) * dt;
+    this.spawnAcc += spawnRate(t) * (run.boss ? 0.25 : 1) * dt;
     const weights = enemyWeights(t);
     while (this.spawnAcc >= 1) {
       this.spawnAcc -= 1;
@@ -388,6 +388,7 @@ export class GameScene extends Phaser.Scene {
     this.modalOpen = true;
     resetStick();
     audio.duck(true);
+    this.scene.setVisible(false, 'Hud');
     this.scene.pause();
     this.scene.launch(key, data);
   }
@@ -395,6 +396,7 @@ export class GameScene extends Phaser.Scene {
   /** Called by modal scenes when they close. */
   closeModal(key: string): void {
     this.scene.stop(key);
+    this.scene.setVisible(true, 'Hud');
     this.modalOpen = false;
     resetStick();
     audio.duck(false);

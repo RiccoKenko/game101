@@ -153,6 +153,12 @@ export class WeaponSystem {
     this.updateProjectiles(dt);
   }
 
+  /** The active boss if it's within range of the hero (weapons focus it so crowds can't shield it). */
+  private bossInRange(range: number): Enemy | undefined {
+    const { player, enemies } = this.ctx;
+    return enemies.alive.find((e) => e.isBoss && e.active && Math.hypot(e.x - player.x, e.y - player.y) < range);
+  }
+
   private fire(rt: WeaponRuntime): void {
     const { player, enemies } = this.ctx;
     const s = rt.stats;
@@ -160,8 +166,7 @@ export class WeaponSystem {
     switch (rt.owned.id) {
       case 'bow': {
         // Arrows go for the boss when it's in range, otherwise the closest enemy.
-        const boss = enemies.alive.find((e) => e.isBoss && e.active && Math.hypot(e.x - player.x, e.y - player.y) < 950);
-        const target = boss ?? enemies.nearest(player.x, player.y, 950);
+        const target = this.bossInRange(950) ?? enemies.nearest(player.x, player.y, 950);
         const base = target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.atan2(player.faceY, player.faceX);
         const spread = evolved ? 0.22 : 0.16;
         for (let i = 0; i < s.amount; i++) {
@@ -173,6 +178,8 @@ export class WeaponSystem {
       }
       case 'daggers': {
         const targets = enemies.nearestN(player.x, player.y, evolved ? 3 : s.amount, 900);
+        const boss = this.bossInRange(900);
+        if (boss) targets.unshift(boss);
         for (let i = 0; i < s.amount; i++) {
           let a: number;
           if (targets.length === 0) a = Math.atan2(player.faceY, player.faceX) + (i - (s.amount - 1) / 2) * 0.15;
@@ -200,8 +207,9 @@ export class WeaponSystem {
       case 'bomb': {
         const view = this.ctx.view();
         const inView = enemies.inRect(view);
+        const boss = inView.find((e) => e.isBoss);
         for (let i = 0; i < s.amount; i++) {
-          const target: Enemy | undefined = inView.length ? inView[Math.floor(this.ctx.rng() * inView.length)] : undefined;
+          const target: Enemy | undefined = i === 0 && boss ? boss : inView.length ? inView[Math.floor(this.ctx.rng() * inView.length)] : undefined;
           const a = this.ctx.rng() * Math.PI * 2;
           const tx = target ? target.x : player.x + Math.cos(a) * 300;
           const ty = target ? target.y : player.y + Math.sin(a) * 300;
@@ -220,6 +228,8 @@ export class WeaponSystem {
         const view = this.ctx.view();
         const inView = enemies.inRect(view);
         Phaser.Utils.Array.Shuffle(inView);
+        const bossIdx = inView.findIndex((e) => e.isBoss);
+        if (bossIdx > 0) inView.unshift(...inView.splice(bossIdx, 1));
         const targets = inView.slice(0, s.amount);
         for (const t of targets) {
           const x = t.x;

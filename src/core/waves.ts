@@ -9,18 +9,18 @@ const overtime = (m: number) => Math.max(0, m - ENRAGE_START);
 /** Enemy HP multiplier at time t (seconds). */
 export function hpMultiplier(t: number): number {
   const m = minutes(t);
-  return (1 + 0.3 * m + 0.06 * m * m) * 1.25 ** overtime(m);
+  return (1 + 0.35 * m + 0.07 * m * m) * 1.3 ** overtime(m);
 }
 
 export function damageMultiplier(t: number): number {
   const m = minutes(t);
-  return (1 + 0.1 * m) * 1.12 ** overtime(m);
+  return (1 + 0.1 * m) * 1.15 ** overtime(m);
 }
 
 /** Regular enemies spawned per second at time t. */
 export function spawnRate(t: number): number {
   const m = minutes(t);
-  return 1 + 1.0 * m + 0.1 * m * m;
+  return 1.3 + 1.1 * m + 0.1 * m * m;
 }
 
 /** Relative weights of the map's [early, mid, late] enemy types at time t. */

@@ -24,6 +24,10 @@ for (const c of clicks) {
   await page.touchscreen.tap(x, y);
   await page.waitForTimeout(600);
 }
+if (process.env.PRE_EVAL) {
+  await page.evaluate(process.env.PRE_EVAL);
+  await page.waitForTimeout(Number(process.env.PRE_WAIT ?? 1500));
+}
 await page.screenshot({ path: out });
 const info = await page.evaluate(() => {
   const g = window.__game;
