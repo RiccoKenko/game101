@@ -1,8 +1,10 @@
 # Little Archer: Sky Pirates — Character Art Brief
 
 > **สำหรับเจ้านาย:** ไฟล์นี้เขียนเป็นภาษาอังกฤษเพื่อให้ Codex / ChatGPT อ่าน
-> - Codex ที่ต่อกับ GitHub repo นี้: สั่งให้มันอ่านไฟล์นี้ได้เลย
-> - ใช้ ChatGPT: ก๊อป prompt จากหัวข้อ 8 ไปวางทีละอัน
+> - **แนะนำ:** ใช้ prompt เดียวจบในหัวข้อ 8.10 ได้ทั้ง ChatGPT และ Codex
+>   - วางหนึ่งครั้งต่อหนึ่งตัวละคร แล้วพิมพ์ "ต่อ" / "ผ่าน" / "วาดใหม่"
+>   - ในหน้า Art Brief ที่ Claude ส่งให้ มีแบบเติมช่องครบแล้วพร้อมปุ่ม Copy
+> - ถ้าอยากคุมเองทีละภาพ: ใช้ prompt แยกในหัวข้อ 8.0-8.9
 >
 > ผลลัพธ์ที่ได้กลับมา Claude จะนำไปตัดชิ้น ใส่กระดูก และทำท่าทางในเกมเอง
 
@@ -203,6 +205,7 @@ Write a card in the same format for each one. Non-humanoid characters split into
 ## 8. Prompts: one image per prompt
 
 Fill each `{…}` slot from the character's table in section 7.
+- **Easiest:** use the all-in-one prompt in **8.10**, one chat per character. The prompts in 8.0–8.9 are the same content split into separate messages.
 - **ChatGPT:** paste 8.0 first, in a new chat, then each prompt in order **in the same chat** so it remembers the character. If you have to start a new chat, paste 8.0 again and attach `<id>_master.png`.
 - **Codex:** use 8.0 as the shared instructions for every image call.
 
@@ -331,3 +334,97 @@ If you cannot generate images in this environment, stop and tell me. Do not draw
 ```
 
 For Step 2, send the same message with "Step 2 (images 3–6)" and "use art/incoming/hero/hero_master.png as the reference image".
+
+### 8.10 All-in-one prompt (one character per chat)
+
+- **How to use it.** Paste this once in a new chat, then steer with short replies:
+  - `NEXT` / `ต่อ`: draw the next image.
+  - `APPROVED` / `ผ่าน`: required after Image 2.
+  - `REDO` / `วาดใหม่`: redraw the last image.
+  - Any other comment: a change request for the last image.
+- **Codex.** The same prompt works for Codex: its last section tells Codex how to save and commit the files.
+- **Filling the slots.** Fill `{NAME}` and `{id}` from the card in section 7, and `{STYLE + TECHNICAL}` with the STYLE and TECHNICAL blocks of 8.0. Fill every other slot from the character's table.
+
+```
+You are the lead character artist for "Little Archer: Sky Pirates", a mobile tower-defense game. In this chat you will draw ONE character, {NAME}, as 8 images that the game team will slice into parts and animate with 2D bones.
+
+HOW WE WORK
+- Make ONE image per reply, in the order of the IMAGE LIST below. Start with Image 1 right away.
+- Under each image write only one line: "Save as: <file name>". Then wait.
+- When I write NEXT (or ต่อ), make the next image.
+- When I write REDO (or วาดใหม่), redraw the last image and follow the rules more strictly.
+- Any other comment from me is a change request for the last image: redraw it with that change.
+- After Image 2, STOP. Do not start Image 3 until I write APPROVED (or ผ่าน). Until then, only revise Images 1 and 2 as I ask.
+- Images 3 to 8 must match the approved Image 2 (the master) exactly, and from Image 4 on also Image 3 (the rig pose). Use them as reference images if you can.
+
+{STYLE + TECHNICAL}
+
+{CHARACTER CARD}
+
+PART RULES (Images 4, 5 and 6: these sheets become the animated sprite)
+- Draw every part COMPLETE, as if the parts in front of it were removed, including the areas normally hidden underneath (for example the shoulders under the cape, the top of the thigh under the shorts).
+- Joint ends are rounded like ball joints and extend about 15% past the joint, so bending never shows a gap.
+- Keep each part in the orientation it has in the rig pose (Image 3) and at the same scale; do not rotate parts or enlarge small parts to fill space.
+- No shadows cast by other parts; each part is lit on its own from the upper left.
+- At least 60 px of empty background around every part; nothing touching or overlapping; nothing touching the image edge; each part exactly once; no labels.
+- Neat grid, left to right, top to bottom, in the numbered order given.
+- Anything that should swing on its own (hood tip, bandana tails, sash ends) is its own part. The torso includes a short neck stub; the head does not include the neck.
+
+IMAGE LIST
+
+Image 1 (save as {id}_concept.png): CONCEPT TURNAROUND, landscape.
+Draw this character three times side by side, at the same scale, evenly spaced, feet on the same baseline, in a relaxed standing pose:
+1) 3/4 front view facing right (on the left),
+2) pure side profile facing right,
+3) back view.
+Show the whole outfit clearly.
+
+Image 2 (save as {id}_master.png): MASTER ILLUSTRATION, portrait orientation.
+The same character, full body, 3/4 front view facing right, in this signature pose: {SIGNATURE POSE}.
+This is the character's key art: make it the most appealing, polished version, with lively hair and cloth.
+
+Image 3 (save as {id}_rigpose.png): RIG POSE, portrait orientation.
+The exact same character as the master illustration, full body, 3/4 front view facing right, in a neutral rig pose for 2D skeletal animation:
+- standing straight, weight even, feet about shoulder-width apart, both feet flat;
+- both arms hanging down, held slightly away from the body (about 20 degrees) so the arms do NOT overlap the torso; hands open and relaxed;
+- {RIG-POSE EXTRAS};
+- eyes open and calm, small closed smile.
+Keep clear empty space between the arms, the legs and the body. This image is the assembly reference: every later part must match it exactly in scale, colours and line weight.
+
+Image 4 (save as {id}_head_faces.png): HEAD & FACES PARTS SHEET, landscape.
+Cut-out parts of the same character at the SAME SCALE as the rig pose, for 2D animation. Every item is separate and complete, at least 60 px apart, nothing touching or overlapping, nothing touching the image edge, no labels.
+LEFT THIRD:
+{HEAD PIECES}
+The head is in the same 3/4 view facing right as the rig pose. The face is BLANK: no eyes, no eyebrows, no mouth. Do not include the neck.
+RIGHT TWO THIRDS, in a neat grid, left to right, top to bottom:
+- Rows 1-2, EYE pieces. Each piece is BOTH eyes together with their eyebrows, spaced and angled exactly as they sit on the blank head (3/4 view, so the far eye is slightly narrower): {EYE PIECES}
+- Row 3, MOUTH pieces, sized to fit the blank head: {MOUTH PIECES}
+Follow the PART RULES.
+
+Image 5 (save as {id}_parts_body.png): BODY PARTS SHEET, landscape.
+Cut-out body parts of the same character for 2D skeletal animation. Same scale, colours and line weight as the rig pose; each part keeps the orientation it has in the rig pose (do not rotate parts). Arrange them in a neat grid, left to right, top to bottom, in this order:
+{BODY PARTS}
+Follow the PART RULES.
+
+Image 6 (save as {id}_hands_props.png): HANDS & PROPS SHEET, landscape.
+More cut-out parts of the same character, with the same rules as the body parts sheet (same scale as the rig pose, complete, separated by at least 60 px, no labels, no shadows from other parts), in a neat grid, left to right, top to bottom:
+{HANDS AND PROPS}
+Follow the PART RULES.
+
+Image 7 (save as {id}_poses.png): ACTION KEY POSES, landscape.
+The same character in 8 action poses, 4 per row, same scale, full body, all facing right, clearly separated, no labels, no effects:
+{ACTION POSES}
+These are animation key poses: make them dynamic and expressive, with strong lines of action, squash and stretch, and follow-through on hair and cloth.
+
+Image 8 (save as {id}_portraits.png): DIALOG PORTRAITS, landscape.
+Three waist-up portraits of the same character for story dialog boxes, 3/4 view facing right, larger and more detailed than the sprite, same style and colours, side by side and clearly separated:
+{PORTRAITS}
+
+IF YOU ARE CODEX (an agent working in the GitHub repository riccokenko/game101)
+- Make every image with your image generation tool. Never draw the character with code (SVG, canvas, Pillow). If you cannot generate images, stop and tell me.
+- Save each image with its exact file name in art/incoming/{id}/, plus NOTES.md listing the files and any rule you could not meet.
+- Commit only those files on a new branch art/{id}-v1 and open a pull request titled "Art: {NAME} v1". Do not change any other file.
+- After Image 2, push and stop; wait for APPROVED, then continue with Images 3 to 8 on the same branch.
+
+Start now with Image 1.
+```
