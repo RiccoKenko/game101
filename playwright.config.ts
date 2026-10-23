@@ -1,14 +1,21 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: 'tests/e2e',
-  timeout: 120_000,
+  timeout: 150_000,
   use: {
-    ...devices['iPhone 13'],
+    // iPhone 15 held sideways.
+    viewport: { width: 852, height: 393 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
     baseURL: 'http://localhost:5179',
-    launchOptions: process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {},
+    launchOptions: {
+      ...(process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {}),
+      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    },
   },
-  projects: [{ name: 'iphone', use: { browserName: 'chromium' } }],
+  projects: [{ name: 'iphone-landscape', use: { browserName: 'chromium' } }],
   webServer: {
     command: 'npx vite --port 5179 --strictPort',
     url: 'http://localhost:5179',

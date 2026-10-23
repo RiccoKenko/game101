@@ -1,15 +1,28 @@
 {
-  "name": "Little Archer: Monster Rush",
-  "short_name": "Little Archer",
-  "description": "A cute survivor game for your phone.",
+  "name": "Little Archer: Sky Pirates",
+  "short_name": "Sky Pirates",
+  "description": "Defend a floating island from cute sky pirates.",
   "start_url": "/",
   "display": "fullscreen",
-  "orientation": "portrait",
-  "background_color": "#1d1630",
-  "theme_color": "#1d1630",
+  "orientation": "any",
+  "background_color": "#bfe7ff",
+  "theme_color": "#bfe7ff",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

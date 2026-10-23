@@ -1,22 +1,31 @@
 {
-  "name": "little-archer-monster-rush",
+  "name": "little-archer-sky-pirates",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview --host --port 4173",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p sculpt/tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "models": "tsx sculpt/build.ts",
+    "showcase:artifact": "node scripts/build-showcase.mjs"
   },
   "dependencies": {
     "@fontsource/fredoka": "5.3.0",
-    "phaser": "3.90.0"
+    "three": "0.185.1"
   },
   "devDependencies": {
+    "@gltf-transform/core": "4.1.1",
+    "@gltf-transform/extensions": "4.1.1",
+    "@gltf-transform/functions": "4.1.1",
     "@playwright/test": "1.56.1",
+    "@types/node": "22.20.5",
+    "@types/three": "0.185.4",
+    "meshoptimizer": "0.22.0",
+    "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vite": "7.3.7",
     "vitest": "3.2.7"

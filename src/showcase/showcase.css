@@ -1,0 +1,354 @@
+/* One visual world: a bright sky stage with cream "parchment" panels and wooden/gold game buttons. */
+:root {
+  --ink: #22304d;
+  --ink-soft: #52617f;
+  --panel: #fffaf0;
+  --panel-edge: #e6d6b8;
+  --wood: #8c5a33;
+  --wood-deep: #5d3a1f;
+  --leaf: #3e9a4f;
+  --gold: #f4c34f;
+  --gold-deep: #c98a17;
+  --sky: #bfe7ff;
+  --crit: #ff7a2f;
+  --font-display: 'Fredoka', 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--sky);
+  color: var(--ink);
+  font-family: var(--font-display);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+}
+
+.stage,
+.stage canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 0;
+  right: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.7);
+}
+
+.brand-kicker {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--leaf);
+}
+
+.brand-name {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.purse {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 6px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 3px 0 rgba(93, 58, 31, 0.18);
+}
+
+.purse.bump {
+  animation: bump 0.25s ease-out;
+}
+
+@keyframes bump {
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+.coin {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3b0 0 18%, var(--gold) 19% 62%, var(--gold-deep) 63%);
+  box-shadow: inset 0 0 0 2px var(--gold-deep);
+}
+
+.card {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 58px);
+  left: max(16px, env(safe-area-inset-left, 0px));
+  width: min(260px, calc(100% - 32px));
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 2px solid var(--panel-edge);
+  box-shadow: 0 4px 0 rgba(93, 58, 31, 0.15);
+  pointer-events: none;
+}
+
+.card h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+.card p {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.specs {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+}
+
+.specs div {
+  display: flex;
+  flex-direction: column;
+}
+
+.specs dt {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--wood);
+}
+
+.specs dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tray {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 calc(env(safe-area-inset-bottom, 0px) + 10px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--wood-deep);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18);
+}
+
+.tabs button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font: 600 14px var(--font-display);
+  color: #f7e9d2;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tabs button[aria-selected='true'] {
+  background: var(--gold);
+  color: var(--wood-deep);
+}
+
+.moves {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: 760px;
+}
+
+.moves button {
+  min-height: 34px;
+  padding: 4px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--wood);
+  background: var(--panel);
+  color: var(--wood-deep);
+  font: 600 14px var(--font-display);
+  box-shadow: 0 3px 0 var(--wood);
+  cursor: pointer;
+  transition: transform 0.06s;
+}
+
+.moves button:active,
+.moves button.on {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--wood);
+  background: var(--gold);
+}
+
+.moves button.primary {
+  background: var(--leaf);
+  border-color: #2b6e38;
+  color: #fff;
+  box-shadow: 0 3px 0 #2b6e38;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--crit);
+  outline-offset: 2px;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--sky);
+  font-size: 16px;
+  font-weight: 600;
+  transition: opacity 0.4s;
+}
+
+.loading.done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bar {
+  width: min(260px, 70%);
+  height: 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 2px solid var(--wood);
+  overflow: hidden;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--leaf);
+  transition: width 0.2s;
+}
+
+/* Damage numbers */
+.dmg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 700;
+  font-size: 22px;
+  color: #fff;
+  -webkit-text-stroke: 4px #3a2414;
+  paint-order: stroke fill;
+  white-space: nowrap;
+  animation: pop 0.22s ease-out;
+  will-change: transform, opacity;
+}
+
+.dmg-crit {
+  font-size: 32px;
+  color: #ffd23f;
+  -webkit-text-stroke: 5px #a32a10;
+  animation: popcrit 0.28s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.dmg-gold {
+  font-size: 18px;
+  color: #ffe27a;
+}
+
+@keyframes pop {
+  from {
+    scale: 0.4;
+  }
+  60% {
+    scale: 1.25;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+@keyframes popcrit {
+  from {
+    scale: 0.2;
+    rotate: -12deg;
+  }
+  to {
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
+@media (max-height: 460px) {
+  .card {
+    top: calc(env(safe-area-inset-top, 0px) + 50px);
+    width: 220px;
+  }
+  .card p {
+    display: none;
+  }
+  .brand-name {
+    font-size: 21px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dmg,
+  .dmg-crit,
+  .purse.bump {
+    animation: none;
+  }
+}
