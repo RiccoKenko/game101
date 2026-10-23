@@ -2,6 +2,7 @@
 // (JS, CSS, fonts, sprites, maps, sounds inlined) for a claude.ai artifact.
 // Usage: node scripts/build-showcase.mjs <out.html> [index|play]
 import { build } from 'vite';
+import sharp from 'sharp';
 import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -29,14 +30,27 @@ const files = readdirSync(assets);
 const js = readFileSync(join(assets, files.find((f) => f.endsWith('.js'))), 'utf8').replace(/<\/script/gi, '<\\/script');
 const css = readFileSync(join(assets, files.find((f) => f.endsWith('.css'))), 'utf8');
 const b64 = (path) => readFileSync(path).toString('base64');
-// Sprites keyed by the paths the game loads them from; PNGs as data URLs, JSON as objects.
+// Sprites keyed by the paths the game loads them from; JSON as objects, pictures as WebP data URLs (a fraction of
+// the PNGs' size, so every character fits the artifact limit). The battle draws characters small, so its copy also
+// halves them; the game sizes sprites from sprites.json, not from the picture, so a smaller picture just looks softer.
 const SKIP = new Set(['master.png']);
+const spriteScale = pageName === 'play' ? 0.5 : 1;
 const spriteAssets = {};
 for (const id of readdirSync('public/sprites'))
   for (const f of readdirSync(`public/sprites/${id}`)) {
     if (SKIP.has(f)) continue;
     const path = `public/sprites/${id}/${f}`;
-    spriteAssets[`sprites/${id}/${f}`] = f.endsWith('.json') ? JSON.parse(readFileSync(path, 'utf8')) : `data:image/png;base64,${b64(path)}`;
+    if (f.endsWith('.json')) {
+      spriteAssets[`sprites/${id}/${f}`] = JSON.parse(readFileSync(path, 'utf8'));
+      continue;
+    }
+    let img = sharp(path);
+    if (spriteScale < 1) {
+      const { width, height } = await img.metadata();
+      img = img.resize(Math.max(1, Math.round(width * spriteScale)), Math.max(1, Math.round(height * spriteScale)));
+    }
+    const webp = await img.webp({ quality: 88, alphaQuality: 95, effort: 5 }).toBuffer();
+    spriteAssets[`sprites/${id}/${f}`] = `data:image/webp;base64,${webp.toString('base64')}`;
   }
 if (pageName === 'play')
   for (const f of readdirSync('public/maps')) spriteAssets[`maps/${f}`] = `data:image/${f.endsWith('.webp') ? 'webp' : 'png'};base64,${b64(`public/maps/${f}`)}`;

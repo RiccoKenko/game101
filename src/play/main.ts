@@ -19,10 +19,11 @@ import { Shake } from '../fx/shake';
 import { GameTime } from '../fx/time';
 import { Trail } from '../fx/trail';
 import { Animator2D } from '../puppet/animator';
-import { deckhandClips } from '../puppet/clips/deckhand';
+import { CLIPS } from '../puppet/clips';
 import { heroClips } from '../puppet/clips/hero';
 import { loadPuppet, loadTexture } from '../puppet/loader';
-import { Puppet, spriteGeometry, spriteMaterial } from '../puppet/puppet';
+import type { Clip2D } from '../puppet/pose';
+import { Puppet, spriteGeometry, spriteMaterial, type PuppetAssets } from '../puppet/puppet';
 import type { Painted } from '../showcase/art';
 import { Shadow } from '../stage/shadow';
 import { createStage2D } from '../stage/stage2d';
@@ -125,11 +126,54 @@ function sprite(p: Painted, scale: number, anchor: 'feet' | 'centre', flash = fl
   return mesh;
 }
 
-const [mapTexture, heroAssets, deckhandAssets] = await Promise.all([
+/** Which character draws each pirate, and how tall it stands on the map (px). */
+const PIRATE_PUPPETS: Record<EnemyKind, { id: string; height: number }> = {
+  deckhand: { id: 'deckhand', height: 90 },
+  powderMonkey: { id: 'powder_monkey', height: 65 },
+  ironclad: { id: 'ironclad', height: 105 },
+  parrot: { id: 'parrot_raider', height: 70 },
+  firstMate: { id: 'first_mate', height: 150 },
+};
+
+/** A drawn character with its moves, sized for the map. */
+interface PuppetLook {
+  assets: PuppetAssets;
+  clips: Clip2D[];
+  size: number;
+  /** Head top above the feet (map px). */
+  height: number;
+  /** The rest pose's bounds in character space (rig px, facing right, y up from the feet). */
+  box: THREE.Box3;
+}
+
+/**
+ * Loads a character's puppet and sizes it so its head top stands `height` px tall, or so its rest pose is
+ * `width` px across; null if it isn't drawn yet.
+ */
+async function puppetLook(id: string, fit: { height: number } | { width: number }): Promise<PuppetLook | null> {
+  const clips = CLIPS[id];
+  if (!clips?.length) return null;
+  const assets = await loadPuppet(id, renderer).catch(() => null);
+  if (!assets) return null;
+  const probe = new Puppet(assets);
+  probe.update(0);
+  probe.root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(probe.root);
+  const top = assets.rig.points?.['head.top'] ? probe.point('head.top')[1] : box.max.y;
+  probe.dispose();
+  const size = 'height' in fit ? fit.height / top : fit.width / (box.max.x - box.min.x);
+  return { assets, clips, size, height: top * size, box };
+}
+
+const [mapTexture, heroAssets, pirateLooks, talonLook, mochiLook] = await Promise.all([
   loadTexture(level.map.art ?? level.map.sketch, renderer),
   loadPuppet('hero', renderer),
-  loadPuppet('deckhand', renderer),
+  Promise.all((Object.keys(PIRATE_PUPPETS) as EnemyKind[]).map(async (k) => [k, await puppetLook(PIRATE_PUPPETS[k].id, { height: PIRATE_PUPPETS[k].height })] as const)),
+  puppetLook('talon', { width: 150 }),
+  puppetLook('mochi', { width: 480 }),
 ]);
+/** Pirates without a drawn puppet yet use a painted stand-in. */
+const PIRATE_LOOK = Object.fromEntries(pirateLooks.filter(([, look]) => look)) as Partial<Record<EnemyKind, PuppetLook>>;
 bar.style.width = '90%';
 const map = new THREE.Mesh(spriteGeometry(level.map.w, level.map.h), spriteMaterial(mapTexture, flash0));
 map.renderOrder = 0;
@@ -172,9 +216,6 @@ const FROZEN_TINT = new THREE.Color(0.62, 0.9, 1.2);
 // ---------- hero
 
 const HERO_SIZE = 0.08;
-/** The Deckhand puppet: about 90 px tall (its rig is ~1285 px from boots to bandana). */
-const DECKHAND_SIZE = 0.07;
-const DECKHAND_HEIGHT = 1285 * DECKHAND_SIZE;
 const hero = new Puppet(heroAssets);
 hero.size = HERO_SIZE;
 scene.add(hero.root);
@@ -193,10 +234,12 @@ const ARROW_SCALE = (430 * HERO_SIZE) / arrowSprite.w;
 interface PirateView {
   enemy: Enemy;
   group: THREE.Group;
-  /** A painted stand-in, or a drawn puppet with its moves (the Deckhand). */
+  /** A painted stand-in, or a drawn puppet with its moves. */
   body?: THREE.Mesh;
   puppet?: Puppet;
   anim?: Animator2D;
+  /** Head height above its feet (px), for the stars of a stun. */
+  height: number;
   /** How it leaves: falling over (shot down) or a parting taunt at the dock. */
   exit: 'ko' | 'taunt';
   flash: { value: number };
@@ -235,9 +278,87 @@ const towers = new Map<number, TowerView>();
 const arrows = new Map<number, ShotView>();
 const bolts: Bolt[] = [];
 
+/**
+ * Talon or Mochi on screen: the drawn puppet hung from a pivot at its body centre or nose (the flight path places
+ * that point and tilts the companion around it), or the painted stand-in while the puppet isn't drawn.
+ */
+class Companion {
+  readonly node = new THREE.Group();
+  /** Across on the map (px): wing tip to wing tip, or nose to tail. */
+  readonly width: number;
+  facing: 1 | -1 = 1;
+  private puppet?: Puppet;
+  private anim?: Animator2D;
+  private mesh?: THREE.Mesh;
+  /** The pivot in character space (rig px, facing right). */
+  private at: [number, number] = [0, 0];
+
+  constructor(
+    look: PuppetLook | null,
+    private art: { painted: Painted; scale: number },
+    private pivot: 'centre' | 'nose',
+    order: number,
+    clip: string,
+  ) {
+    if (look) {
+      const b = look.box;
+      this.at = [pivot === 'nose' ? b.max.x : (b.min.x + b.max.x) / 2, (b.min.y + b.max.y) / 2];
+      this.puppet = new Puppet(look.assets);
+      this.puppet.size = look.size;
+      this.puppet.setOrder(order);
+      this.anim = new Animator2D(look.clips);
+      this.anim.play(clip, { fade: 0 });
+      this.node.add(this.puppet.root);
+      this.width = (b.max.x - b.min.x) * look.size;
+    } else {
+      this.mesh = sprite(art.painted, art.scale, 'centre');
+      this.mesh.renderOrder = order;
+      this.node.add(this.mesh);
+      this.width = art.painted.w * art.scale;
+    }
+    scene.add(this.node);
+  }
+
+  /** Loops a move, or plays one through and then loops `then`. */
+  play(name: string, then?: string): void {
+    if (then) this.anim?.oneShot(name, then, { fade: 0.06 });
+    else this.anim?.play(name, { fade: 0.12 });
+  }
+
+  /** Points its forward along a direction on screen (world x, y), tilting at most `max` radians. */
+  tiltAlong(dx: number, dy: number, max: number): void {
+    const a = this.facing > 0 ? Math.atan2(dy, dx) : Math.atan2(-dy, -dx);
+    this.node.rotation.z = Math.max(-max, Math.min(max, a));
+  }
+
+  opacity(value: number): void {
+    this.puppet?.opacity(value);
+    if (this.mesh) (this.mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = value;
+  }
+
+  /** `flap` squashes the painted stand-in, which has no wings to beat. */
+  update(dt: number, flap = 0): void {
+    if (this.puppet && this.anim) {
+      this.puppet.facing = this.facing;
+      this.puppet.setPose(this.anim.update(dt));
+      this.puppet.update(dt);
+      const s = this.puppet.size;
+      this.puppet.root.position.set(-this.facing * this.at[0] * s, -this.at[1] * s, 0);
+    } else if (this.mesh) {
+      this.mesh.scale.set(this.art.scale * this.facing, this.art.scale * (1 + flap), 1);
+      if (this.pivot === 'nose') this.mesh.position.x = -this.facing * this.width * 0.45;
+    }
+  }
+
+  dispose(): void {
+    scene.remove(this.node);
+    this.puppet?.dispose();
+  }
+}
+
 /** Talon: dives from high above the hero onto its target, then flies home to the vault with what it snatched. */
 interface TalonView {
-  mesh: THREE.Mesh;
+  bird: Companion;
   trail: Trail;
   from: Pt;
   target: Enemy;
@@ -246,9 +367,21 @@ interface TalonView {
 }
 let talonView: TalonView | null = null;
 /** Mochi: crosses the island with the sweep, then swims on off the map. */
-let whale: { mesh: THREE.Mesh; t: number; puff: number } | null = null;
-const EAGLE_SCALE = 0.55;
-const WHALE_SCALE = 1.2;
+let whale: { whale: Companion; t: number; puff: number } | null = null;
+const EAGLE = { painted: EAGLE_ART, scale: 0.55 };
+const WHALE = { painted: WHALE_ART, scale: 1.2 };
+
+function endTalon(): void {
+  if (!talonView) return;
+  talonView.bird.dispose();
+  scene.remove(talonView.trail.mesh);
+  talonView = null;
+}
+
+function endWhale(): void {
+  whale?.whale.dispose();
+  whale = null;
+}
 /** Frost waves spreading out to a tower's range. */
 const frostWaves: { mesh: THREE.Mesh; range: number; age: number }[] = [];
 const FROST_WAVE_LIFE = 0.55;
@@ -263,12 +396,15 @@ function addPirate(e: Enemy): void {
   let puppet: Puppet | undefined;
   let anim: Animator2D | undefined;
   let height = e.def.radius * 2.6;
-  if (e.kind === 'deckhand') {
-    puppet = new Puppet(deckhandAssets);
-    puppet.size = DECKHAND_SIZE;
-    anim = new Animator2D(deckhandClips);
+  const look = PIRATE_LOOK[e.kind];
+  if (look) {
+    puppet = new Puppet(look.assets);
+    puppet.size = look.size;
+    // Flyers hang in the air above their shadow on the road.
+    puppet.root.position.y = e.def.altitude;
+    anim = new Animator2D(look.clips);
     anim.play('walk', { fade: 0 });
-    height = DECKHAND_HEIGHT;
+    height = look.height;
     group.add(puppet.root);
   } else {
     const art = PIRATE_ART[e.kind];
@@ -295,7 +431,7 @@ function addPirate(e: Enemy): void {
   const shadow = new Shadow(e.def.radius * 2.4);
   shadow.mesh.renderOrder = ORDER_SHADOW;
   scene.add(group, shadow.mesh);
-  pirates.set(e.id, { enemy: e, group, body, puppet, anim, exit: 'ko', flash, shadow, hpBack, hpFill, crystals, phase: Math.random() * 6, leaving: -1, frost: 0, dust: 0 });
+  pirates.set(e.id, { enemy: e, group, body, puppet, anim, height, exit: 'ko', flash, shadow, hpBack, hpFill, crystals, phase: Math.random() * 6, leaving: -1, frost: 0, dust: 0 });
 }
 
 function removePirate(v: PirateView): void {
@@ -304,8 +440,10 @@ function removePirate(v: PirateView): void {
   pirates.delete(v.enemy.id);
 }
 
-/** The Deckhand's moving clip: carrying a crystal or not. */
+/** A puppet pirate's moving clip: carrying a crystal or not. */
 const loopFor = (e: Enemy) => (e.carrying ? 'carry' : 'walk');
+/** Moves that play out in full at their own pace before the walk takes over again. */
+const OWN_PACE = new Set(['hit', 'shout', 'cheer']);
 
 /** Puppet pirates: play their move, mirror to face the way they walk, frost tint and draw order. */
 function drivePuppet(v: PirateView, dt: number, order: number): void {
@@ -315,9 +453,10 @@ function drivePuppet(v: PirateView, dt: number, order: number): void {
   if (Math.abs(e.vel[0]) > 2) puppet.facing = e.vel[0] > 0 ? 1 : -1;
   // Steps keep pace with the pirate: slower when chilled, still when frozen, quicker when rallied.
   const pace = e.stun > 0 || (e.frozen > 0 && !e.def.steady) ? 0 : e.slow * e.haste;
-  // A hit reaction finishes by itself; after a lost battle they keep cheering.
-  if (anim.playing !== 'hit' && anim.playing !== 'cheer') anim.play(loopFor(e), { speed: pace, fade: 0.15 });
-  puppet.setPose(anim.update(dt * (anim.playing === 'hit' ? 1 : pace) || 0));
+  // A hit reaction or a shout finishes by itself; after a lost battle they keep cheering.
+  const own = OWN_PACE.has(anim.playing);
+  if (!own) anim.play(loopFor(e), { speed: pace, fade: 0.15 });
+  puppet.setPose(anim.update(dt * (own ? 1 : pace) || 0));
   puppet.setOrder(order);
   puppet.update(dt);
   const chilled = e.slowFor > 0;
@@ -386,10 +525,8 @@ function newBattle(): void {
     b.dispose();
   }
   for (const w of frostWaves.splice(0)) scene.remove(w.mesh);
-  if (talonView) scene.remove(talonView.mesh, talonView.trail.mesh);
-  talonView = null;
-  if (whale) scene.remove(whale.mesh);
-  whale = null;
+  endTalon();
+  endWhale();
   mochiUsed = false;
   battle = new Battle(level, SEED + Math.floor(Math.random() * 1000));
   anim.play('idle', { fade: 0.2 });
@@ -681,13 +818,12 @@ function onEvent(ev: BattleEvent): void {
       anim.oneShot('cast', 'idle', { fade: 0.08 });
       hero.facing = ev.target.pos[0] >= battle.hero.pos[0] ? 1 : -1;
       const from: Pt = [battle.hero.pos[0] - 260 * hero.facing, battle.hero.pos[1] - 520];
-      const mesh = sprite(EAGLE_ART, EAGLE_SCALE, 'centre');
-      mesh.renderOrder = ORDER_ARROW + 2;
+      endTalon();
+      const bird = new Companion(talonLook, EAGLE, 'centre', ORDER_ARROW + 2, 'dive');
       const trail = new Trail(FEATHER, 6, 16, 160);
       trail.mesh.renderOrder = ORDER_ARROW + 1;
-      scene.add(mesh, trail.mesh);
-      if (talonView) scene.remove(talonView.mesh, talonView.trail.mesh);
-      talonView = { mesh, trail, from, target: ev.target, away: null };
+      scene.add(trail.mesh);
+      talonView = { bird, trail, from, target: ev.target, away: null };
       sfx.play('levelup', 0.3, 0.1);
       break;
     }
@@ -703,7 +839,10 @@ function onEvent(ev: BattleEvent): void {
         fx.glitter(at, CYAN, 12);
         sfx.play('xp', 0.4);
       }
-      if (talonView) talonView.away = { t: 0, from: [...ev.at], crystals: ev.rescued };
+      if (talonView) {
+        talonView.away = { t: 0, from: [...ev.at], crystals: ev.rescued };
+        talonView.bird.play('strike', ev.rescued ? 'carry' : 'fly');
+      }
       break;
     }
     case 'mochi': {
@@ -714,12 +853,11 @@ function onEvent(ev: BattleEvent): void {
       shake.add(0.4);
       sfx.play('zap', 0.6);
       sfx.play('levelup', 0.4, 0);
-      if (whale) scene.remove(whale.mesh);
-      const mesh = sprite(WHALE_ART, WHALE_SCALE, 'centre');
-      mesh.scale.x = -WHALE_SCALE;
-      mesh.renderOrder = ORDER_FX - 10;
-      scene.add(mesh);
-      whale = { mesh, t: 0, puff: 0 };
+      endWhale();
+      // Below the effects layer, whose draw orders start at ORDER_FX (puppet parts add up to ~60).
+      const w = new Companion(mochiLook, WHALE, 'nose', ORDER_FX - 100, 'sweep');
+      w.facing = -1;
+      whale = { whale: w, t: 0, puff: 0 };
       break;
     }
     case 'shout': {
@@ -728,6 +866,8 @@ function onEvent(ev: BattleEvent): void {
       numbers.spawn('Hurry, ye dogs!', at.clone().add(tmp.set(0, 30, 0)), 'crit');
       for (const e of ev.rallied) if (e !== ev.enemy) fx.glitter(world(e.pos, e.def.radius * 2), RALLY, 3);
       shake.add(0.15);
+      const v = pirates.get(ev.enemy.id);
+      if (v?.anim?.has('shout')) v.anim.oneShot('shout', loopFor(ev.enemy), { fade: 0.08 });
       break;
     }
     case 'draw':
@@ -1003,7 +1143,7 @@ function syncPirates(dt: number, t: number): void {
     // Stunned by a companion: stars circle its head.
     if (e.stun > 0 && Math.random() < dt * 8) {
       const a = t * 9 + v.phase;
-      fx.glitter(world([e.pos[0] + Math.cos(a) * 18, e.pos[1]], e.def.altitude + (v.puppet ? DECKHAND_HEIGHT : e.def.radius * 2.6) + 4 + Math.sin(a) * 5), DIZZY, 1);
+      fx.glitter(world([e.pos[0] + Math.cos(a) * 18, e.pos[1]], e.def.altitude + v.height + 4 + Math.sin(a) * 5), DIZZY, 1);
     }
     // Rallied by a shout: they kick up dust as they hurry.
     v.dust -= dt;
@@ -1110,12 +1250,16 @@ function syncCompanions(dt: number, t: number): void {
       const to: Pt = [e.pos[0], e.pos[1] - e.def.altitude - e.def.radius];
       const kk = k * k;
       const p: Pt = [tv.from[0] + (to[0] - tv.from[0]) * kk, tv.from[1] + (to[1] - tv.from[1]) * kk];
-      world(p, 0, tv.mesh.position);
-      const dir = Math.sign(to[0] - tv.from[0]) || 1;
-      tv.mesh.scale.x = EAGLE_SCALE * dir;
-      tv.mesh.rotation.z = -dir * 0.6;
+      world(p, 0, tv.bird.node.position);
+      tv.bird.facing = to[0] >= tv.from[0] ? 1 : -1;
+      // Head first down the dive line.
+      tv.bird.tiltAlong(to[0] - tv.from[0], tv.from[1] - to[1], 1.1);
+      tv.bird.update(dt);
       // The target was gone before the strike: Talon pulls up and leaves.
-      if (!dive) tv.away = { t: 0, from: p, crystals: 0 };
+      if (!dive) {
+        tv.away = { t: 0, from: p, crystals: 0 };
+        tv.bird.play('fly');
+      }
     } else {
       // Flying home to the vault (or just up and away), flapping, fading at the end.
       const a = tv.away;
@@ -1123,23 +1267,23 @@ function syncCompanions(dt: number, t: number): void {
       const k = Math.min(1, a.t / 0.9);
       const home: Pt = a.crystals ? [level.vault[0], level.vault[1] - 60] : [a.from[0] + 300, a.from[1] - 500];
       const p: Pt = [a.from[0] + (home[0] - a.from[0]) * k, a.from[1] + (home[1] - a.from[1]) * k - Math.sin(k * Math.PI) * 120];
-      world(p, 0, tv.mesh.position);
-      const dir = Math.sign(home[0] - a.from[0]) || 1;
-      tv.mesh.scale.set(EAGLE_SCALE * dir, EAGLE_SCALE * (1 + Math.sin(t * 28) * 0.12), 1);
-      tv.mesh.rotation.z = dir * 0.15;
-      (tv.mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = 1 - Math.max(0, (k - 0.8) / 0.2);
-      if (a.crystals && Math.random() < dt * 30) fx.glitter(tv.mesh.position.clone(), CYAN, 1);
+      const before = tv.bird.node.position.clone();
+      world(p, 0, tv.bird.node.position);
+      tv.bird.facing = home[0] >= a.from[0] ? 1 : -1;
+      tv.bird.tiltAlong(tv.bird.node.position.x - before.x, tv.bird.node.position.y - before.y, 0.35);
+      tv.bird.update(dt, Math.sin(t * 28) * 0.12);
+      tv.bird.opacity(1 - Math.max(0, (k - 0.8) / 0.2));
+      if (a.crystals && Math.random() < dt * 30) fx.glitter(tv.bird.node.position.clone(), CYAN, 1);
       if (k >= 1) {
         if (a.crystals) {
           fx.glitter(world(level.vault, 30), CYAN, 18);
           sfx.play('coin', 0.35);
         }
-        scene.remove(tv.mesh, tv.trail.mesh);
-        talonView = null;
+        endTalon();
       }
     }
     if (talonView) {
-      tv.trail.push(tv.mesh.position);
+      tv.trail.push(tv.bird.node.position);
       tv.trail.update(camera);
     }
   }
@@ -1149,19 +1293,19 @@ function syncCompanions(dt: number, t: number): void {
     const sweep = battle.mochi.sweep;
     const k = sweep ? sweep.t / SKILLS.mochi.sweep : 1 + (whale.t - SKILLS.mochi.sweep) / SKILLS.mochi.sweep;
     const nose = level.map.w + 150 - k * (level.map.w + 300);
-    const half = (WHALE_ART.w * WHALE_SCALE) / 2;
-    world([nose + half * 0.9, 470 + Math.sin(whale.t * 3) * 25], 0, whale.mesh.position);
-    whale.mesh.rotation.z = Math.sin(whale.t * 3 + 1) * 0.06;
+    const w = whale.whale;
+    const len = w.width;
+    world([nose, 470 + Math.sin(whale.t * 3) * 25], 0, w.node.position);
+    w.node.rotation.z = Math.sin(whale.t * 3 + 1) * 0.06;
+    w.update(dt);
+    // A wake of cloud puffs and glitter behind it.
     whale.puff -= dt;
     if (whale.puff <= 0) {
       whale.puff = 0.04;
-      fx.poof(whale.mesh.position.clone().add(tmp.set(half * 0.8, (Math.random() - 0.5) * 120, 0)), 1.1, 3);
-      fx.glitter(whale.mesh.position.clone().add(tmp.set((Math.random() - 0.5) * half, (Math.random() - 0.5) * 140, 0)), CYAN, 1);
+      fx.poof(w.node.position.clone().add(tmp.set(len * 0.85, (Math.random() - 0.5) * 120, 0)), 1.1, 3);
+      fx.glitter(w.node.position.clone().add(tmp.set(Math.random() * len, (Math.random() - 0.5) * 140, 0)), CYAN, 1);
     }
-    if (nose < -half * 2.2) {
-      scene.remove(whale.mesh);
-      whale = null;
-    }
+    if (nose < -len * 1.2) endWhale();
   }
 }
 
