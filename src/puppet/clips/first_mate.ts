@@ -35,10 +35,13 @@ const FACE = {
 
 /** The near forearm comes towards us when folded, so it is drawn shorter; the hand undoes the squash. */
 const FORESHORTEN = 0.72;
-/** World angle of the anchor over his shoulder: shank up and back over the shoulder, crown behind his head. */
-const ON_SHOULDER = 130;
-/** Draw order with the near arm folded: forearm over the upper arm, anchor over the coat but behind the head. */
-const Z_HOLD = { 'forearm-r': 42, anchor: 47 };
+/**
+ * World angle of the anchor over his shoulder: the shank goes up and back over the shoulder, behind the body,
+ * so its crown and flukes stand out behind his near shoulder and the chain hangs down his back.
+ */
+const ON_SHOULDER = 205;
+/** Draw order with the near arm folded: forearm over the upper arm, anchor behind the body. */
+const Z_HOLD = { 'forearm-r': 42, anchor: 25 };
 
 /**
  * The near arm folded with its fist up by the collar, holding the anchor's shank (or the sack's strap) over the
