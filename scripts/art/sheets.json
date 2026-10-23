@@ -138,6 +138,7 @@
     "parts_body": {
       "names": ["body", "tail", "wing-near-in", "wing-near-out", "wing-far-in", "wing-far-out", "leg-near", "leg-far", "neckerchief"],
       "erase": {
+        "body": [[413, 72, 62, 26, 14]],
         "leg-near": [[380, 1000, 400, 148, 0]],
         "leg-far": [[820, 1006, 400, 148, 0]]
       }
@@ -146,8 +147,27 @@
     "poses": { "names": ["hover", "fly", "dive", "carry", "hit", "ko", "taunt", "cheer"] }
   },
   "first_mate": {
-    "head_faces": { "regions": [[0, 0.34], [0.34, 1]], "names": ["head", "beard-braid", "hat-feather", "eye-fierce", "eye-furious", "eye-greedy", "eye-closed", "eye-hurt", "eye-ko", "eye-surprised", "eye-smug", "mouth-sneer", "mouth-roar", "mouth-laugh", "mouth-ouch", "mouth-o", "mouth-gritted"] },
-    "parts_body": { "names": ["torso", "hips", "coat-tail-l", "coat-tail-r", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"] },
+    "head_faces": {
+      "regions": [[0, 0.34], [0.34, 1]],
+      "names": ["head", "beard-braid", "hat-feather", "eye-fierce", "eye-furious", "eye-greedy", "eye-closed", "eye-hurt", "eye-ko", "eye-surprised", "eye-smug", "mouth-sneer", "mouth-roar", "mouth-laugh", "mouth-ouch", "mouth-o", "mouth-gritted"],
+      "erase": {
+        "eye-fierce": [[587, 303, 32, 60, 0]],
+        "eye-furious": [[833, 307, 32, 60, 0]],
+        "eye-greedy": [[1091, 303, 32, 60, 0]],
+        "eye-closed": [[1314, 315, 32, 60, 0]],
+        "eye-hurt": [[568, 544, 32, 60, 0]],
+        "eye-ko": [[830, 540, 32, 60, 0]],
+        "eye-surprised": [[1087, 548, 32, 60, 0]],
+        "eye-smug": [[1326, 544, 32, 60, 0]]
+      }
+    },
+    "parts_body": {
+      "names": ["torso", "hips", "coat-tail-l", "coat-tail-r", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"],
+      "erase": {
+        "torso": [[432, 262, 38, 88, 0], [62, 280, 20, 58, 0]],
+        "hips": [[527, 455, 82, 40, 12], [722, 455, 78, 38, -8]]
+      }
+    },
     "hands_props": { "names": ["anchor", "sack", "hand-l-open", "hand-l-fist", "hand-r-open", "hand-r-grip"] },
     "poses": { "names": ["idle", "march", "swing", "carry", "hit", "ko", "shout", "cheer"] },
     "portraits": { "names": ["sneer", "roar", "defeated"] }
@@ -172,7 +192,10 @@
         "beak-chirp": [1395, 690, 175, 145]
       }
     },
-    "parts_body": { "names": ["body", "tail", "wing-near-in", "wing-near-out", "wing-far-in", "wing-far-out", "leg-near", "leg-far"] },
+    "parts_body": {
+      "names": ["body", "tail", "wing-near-in", "wing-near-out", "wing-far-in", "wing-far-out", "leg-near", "leg-far"],
+      "erase": { "leg-near": [[1075, 820, 150, 130, 0]], "leg-far": [[1530, 840, 150, 135, 0]] }
+    },
     "hands_props": { "names": ["crystal", "foot-near-open", "foot-near-grip", "foot-far-open", "foot-far-grip"] },
     "poses": { "names": ["perch", "hover", "dive", "swoop", "carry", "glide", "chirp", "land"] },
     "portraits": { "names": ["proud", "cry", "happy"] }
@@ -196,7 +219,7 @@
         "mouth-w": [1288, 790, 126, 52]
       }
     },
-    "parts_body": { "names": ["body", "tail", "fin-near", "fin-far", "spout"], "erase": { "body": [[350, 205, 38, 80, 57]] } },
+    "parts_body": { "names": ["body", "tail", "fin-near", "fin-far", "spout"], "erase": { "body": [[350, 205, 38, 80, 57]], "tail": [[351, 923, 160, 80, -27.6]] } },
     "poses": { "names": ["float", "swim", "leap", "sweep", "spin", "sleep", "wave", "cheer"] }
   }
 }

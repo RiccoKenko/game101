@@ -46,7 +46,7 @@ def similar(name, img, bone, z, anchor, at, s, deg=0.0, **extra):
 body = fits['body']
 # Joints on the rig pose (trimmed pixels).
 CENTRE = tf(body, [860, 380])            # middle of the body: it pitches and squashes about here
-TAIL_BASE = [342, 452]                   # inside the tail stock, just behind where the fluke's stalk meets the body
+TAIL_BASE = [315, 436]                   # in the tail stock, just inside where the body was cut open over the fluke's stalk
 FIN_NEAR = tf(fits['fin-near'], [790, 738])   # inside the near fin's rounded root
 FIN_FAR = [1110, 640]                    # where the far fin tucks behind the belly
 BLOWHOLE = tf(fits['spout'], [1355, 940])     # foot of the spout's stem
@@ -76,22 +76,22 @@ parts = [
 # Face pieces. Each eye piece is both eyes + brows + both blush ovals; they all land by the midpoint of their two
 # blushes (so the blush stays put when the expression changes), at the scale that puts the gentle eyes on the
 # rig pose's eyes.
-EYE_S, EYE_DEG = 1.06, -1.0
+EYE_S, EYE_DEG = 1.0, -1.0
 blush_mid = {
     'eyes-gentle': [225.2, 301.1], 'eyes-happy': [591.9, 299.2], 'eyes-sparkle': [959.5, 302.2],
     'eyes-closed': [1337.4, 300.3], 'eyes-sleepy': [223.4, 606.5], 'eyes-surprised': [603.9, 609.0],
     'eyes-determined': [975.5, 606.3], 'eyes-hurt': [1346.8, 599.3],
 }
-# Gentle near-eye highlight (sheet 193,240) onto the rig pose's (trimmed 993,454).
+# Gentle near-eye highlight (sheet 193,240) a little inside the rig pose's (trimmed 990,454).
 g = blush_mid['eyes-gentle']
 th = math.radians(EYE_DEG)
 dx, dy = (193 - g[0]) * EYE_S, (240 - g[1]) * EYE_S
-EYE_AT = [993 - (dx * math.cos(th) - dy * math.sin(th)), 454 - (dx * math.sin(th) + dy * math.cos(th))]
+EYE_AT = [995 - (dx * math.cos(th) - dy * math.sin(th)), 446 - (dx * math.sin(th) + dy * math.cos(th))]
 for n in ['eyes-gentle', 'eyes-happy', 'eyes-sparkle', 'eyes-closed', 'eyes-sleepy', 'eyes-surprised', 'eyes-determined', 'eyes-hurt']:
     parts.append(similar(n, n, 'body', 30, blush_mid[n], EYE_AT, EYE_S, EYE_DEG, slot='eyes'))
 
 # Mouths: the middle of the upper lip on the rig pose's mouth line.
-MOUTH_S, MOUTH_AT = 0.86, [1066, 508]
+MOUTH_S, MOUTH_AT = 0.8, [1062, 507]
 lip = {'mouth-smile': [202, 794], 'mouth-o': [487, 786], 'mouth-laugh': [775, 784], 'mouth-worried': [1064, 810], 'mouth-w': [1351, 806]}
 for n, p in lip.items():
     parts.append(similar(n, n, 'body', 31, p, MOUTH_AT, MOUTH_S, 0.0, slot='mouth'))
@@ -103,7 +103,7 @@ rig = {
     'parts': parts,
     'springs': [
         # The cloud lags behind every move (and leans back while swimming fast).
-        {'bone': 'spout', 'tip': tf(fits['spout'], [1330, 700]), 'gain': 0.012, 'freq': 2.2, 'damping': 0.28, 'max': 22},
+        {'bone': 'spout', 'tip': tf(fits['spout'], [1330, 700]), 'gain': 0.012, 'freq': 2.2, 'damping': 0.28, 'max': 18},
         # Fins trail a little behind the body's pitch.
         {'bone': 'fin.near', 'tip': tf(fits['fin-near'], [515, 840]), 'gain': 0.006, 'freq': 3.0, 'damping': 0.35, 'max': 14},
         {'bone': 'fin.far', 'tip': [1208, 743], 'gain': 0.006, 'freq': 3.0, 'damping': 0.35, 'max': 14},
