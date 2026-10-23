@@ -25,6 +25,8 @@ export interface LevelDef {
   /** Sky Crystals in the vault at the start. */
   crystals: number;
   waves: WaveDef[];
+  /** Waves (counting from 1) after whose last pirate arrives the captain offers orders (a card to pick). */
+  ordersAfter?: number[];
 }
 
 export const LEVEL1: LevelDef = {
@@ -50,6 +52,7 @@ export const LEVEL1: LevelDef = {
   ],
   startGold: 220,
   crystals: 20,
+  ordersAfter: [2, 4, 6],
   // New pirates arrive one kind at a time: flyers in wave 4 (cannons can't reach them), armour in wave 6
   // (arrows bounce off, lightning doesn't), and the First Mate at the end of the last wave.
   waves: [

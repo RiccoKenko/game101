@@ -4,11 +4,12 @@
  * always give the same battle, which the tests rely on.
  */
 import { mulberry32, type Rng } from '../core/rng';
-import { branchCost, nextCost, Purse, sellValue } from './economy';
+import { dealHand, neutralModifiers, type CardDef, type Modifiers } from './cards';
+import { branchCost, nextCost, Purse, SELL_REFUND } from './economy';
 import type { LevelDef } from './levels';
 import { closedCurve, insidePolygon, Path, type Pt } from './path';
 import { intercept, pickTarget, pickTargets, type TargetMode } from './targeting';
-import { afterArmor, ENEMIES, HERO, MAX_LEVEL, SKILLS, TOWERS, towerSpec, type Branch, type DamageType, type EnemyDef, type EnemyKind, type SkillName, type TowerKind } from './units';
+import { afterArmor, ENEMIES, HERO, MAX_LEVEL, SKILLS, TOWERS, towerSpec, type Branch, type DamageType, type EnemyDef, type EnemyKind, type SkillName, type TowerKind, type TowerLevel } from './units';
 import { stars, Vault } from './vault';
 import { WaveRunner } from './waves';
 
@@ -60,6 +61,8 @@ export interface Tower {
   /** 1-3, then 4 with a specialisation. */
   level: number;
   branch: Branch | null;
+  /** Gold paid for it so far (selling returns part of it). */
+  spent: number;
   mode: TargetMode;
   /** Beam towers: the pirate held and how many hits in a row it has taken. */
   focus: number;
@@ -131,6 +134,9 @@ export type BattleEvent =
   | { type: 'escape'; enemy: Enemy; lost: number }
   | { type: 'build' | 'upgrade'; tower: Tower }
   | { type: 'sell'; slot: number; refund: number }
+  /** The captain offers orders: the battle waits until one card is picked. */
+  | { type: 'orders'; cards: CardDef[] }
+  | { type: 'order'; card: CardDef }
   | { type: 'win'; stars: 1 | 2 | 3 }
   | { type: 'lose' };
 
@@ -165,12 +171,21 @@ export class Battle {
   readonly mochi: MochiState = { cooldown: SKILLS.mochi.firstWait, sweep: null };
   state: BattleState = 'ready';
   time = 0;
+  /** What the captain's orders picked so far have changed. */
+  readonly mods: Modifiers = neutralModifiers();
+  /** Orders on offer: the battle is paused until one is picked. */
+  choice: CardDef[] | null = null;
+  readonly orders: CardDef[] = [];
+  private offered = new Set<number>();
   private events: BattleEvent[] = [];
   private nextId = 1;
   private rng: Rng;
+  /** Card hands have their own random stream, so picking cards never changes how the fighting plays out. */
+  private cardRng: Rng;
 
   constructor(readonly level: LevelDef, seed = 1) {
     this.rng = mulberry32(seed);
+    this.cardRng = mulberry32(seed * 7919 + 13);
     this.path = new Path(level.route);
     this.island = closedCurve(level.island);
     this.vault = new Vault(level.crystals);
@@ -203,10 +218,35 @@ export class Battle {
     return true;
   }
 
+  /** Gold to build `kind` (level 0) or upgrade it from `level` to the next, after any discount; null at the top. */
+  costOf(kind: TowerKind, level: number, branch?: Branch): number | null {
+    const def = TOWERS[kind];
+    const base = level === def.levels.length && branch !== undefined ? branchCost(def, branch) : nextCost(def, level);
+    return base === null ? null : Math.round(base * this.mods.cost);
+  }
+
+  /** Gold selling the tower on `slot` would return. */
+  refundFor(slot: number): number {
+    const t = this.towers[slot];
+    return t ? Math.floor(t.spent * SELL_REFUND) : 0;
+  }
+
+  /** Picks one of the captain's orders on offer; the battle carries on. */
+  choose(index: number): CardDef | null {
+    const card = this.choice?.[index];
+    if (!card) return null;
+    this.choice = null;
+    this.orders.push(card);
+    card.apply(this);
+    this.events.push({ type: 'order', card });
+    return card;
+  }
+
   build(slot: number, kind: TowerKind = 'archer'): Tower | null {
     if (this.over || slot < 0 || slot >= this.towers.length || this.towers[slot]) return null;
-    if (!this.purse.spend(nextCost(TOWERS[kind], 0)!)) return null;
-    const tower: Tower = { id: this.nextId++, slot, kind, level: 1, branch: null, mode: 'first', focus: -1, stacks: 0, cooldown: 0, aim: -Math.PI / 2 };
+    const cost = this.costOf(kind, 0)!;
+    if (!this.purse.spend(cost)) return null;
+    const tower: Tower = { id: this.nextId++, slot, kind, level: 1, branch: null, spent: cost, mode: 'first', focus: -1, stacks: 0, cooldown: 0, aim: -Math.PI / 2 };
     this.towers[slot] = tower;
     this.events.push({ type: 'build', tower });
     return tower;
@@ -219,8 +259,9 @@ export class Battle {
     const def = TOWERS[tower.kind];
     const toBranch = tower.level === def.levels.length;
     if (toBranch && branch === undefined) return null;
-    const cost = toBranch ? branchCost(def, branch!) : nextCost(def, tower.level)!;
+    const cost = this.costOf(tower.kind, tower.level, branch)!;
     if (!this.purse.spend(cost)) return null;
+    tower.spent += cost;
     tower.level++;
     if (toBranch) tower.branch = branch!;
     tower.cooldown = 0;
@@ -239,7 +280,7 @@ export class Battle {
   sell(slot: number): number {
     const tower = this.towers[slot];
     if (this.over || !tower) return 0;
-    const refund = sellValue(TOWERS[tower.kind], tower.level, tower.branch);
+    const refund = this.refundFor(slot);
     this.purse.earn(refund);
     this.towers[slot] = null;
     this.events.push({ type: 'sell', slot, refund });
@@ -258,7 +299,7 @@ export class Battle {
     if (!this.canUse('talon')) return false;
     const target = this.enemies.reduce((a, b) => (b.load > a.load || (b.load === a.load && b.progress > a.progress) ? b : a));
     this.talon.dive = { target: target.id, t: SKILLS.talon.dive };
-    this.talon.cooldown = SKILLS.talon.cooldown;
+    this.talon.cooldown = SKILLS.talon.cooldown * this.mods.talon;
     this.events.push({ type: 'talon', target });
     return true;
   }
@@ -267,7 +308,7 @@ export class Battle {
   useMochi(): boolean {
     if (!this.canUse('mochi')) return false;
     this.mochi.sweep = { t: 0, hit: new Set() };
-    this.mochi.cooldown = SKILLS.mochi.cooldown;
+    this.mochi.cooldown = SKILLS.mochi.cooldown * this.mods.mochi;
     this.events.push({ type: 'mochi', duration: SKILLS.mochi.sweep });
     return true;
   }
@@ -282,8 +323,13 @@ export class Battle {
 
   // ---------------------------------------------------------------- simulation
 
+  /** Waiting for the player to pick one of the captain's orders. */
+  get paused(): boolean {
+    return this.choice !== null;
+  }
+
   step(dt: number): void {
-    while (dt > 1e-9 && !this.over) {
+    while (dt > 1e-9 && !this.over && !this.paused) {
       const h = Math.min(dt, MAX_STEP);
       this.tick(h);
       dt -= h;
@@ -297,6 +343,13 @@ export class Battle {
     if (this.waves.wave !== before) {
       this.state = 'playing';
       this.events.push({ type: 'wave', index: this.waves.wave, bonus: 0 });
+    }
+    // Orders once the last pirate of a wave has arrived.
+    const w = this.waves.wave;
+    if (w >= 0 && this.waves.pending === 0 && !this.offered.has(w) && this.level.ordersAfter?.includes(w + 1)) {
+      this.offered.add(w);
+      this.choice = dealHand(this.cardRng);
+      this.events.push({ type: 'orders', cards: this.choice });
     }
     this.moveEnemies(dt);
     for (let n = this.vault.update(dt, this.path.length).length; n > 0; n--) this.events.push({ type: 'recover' });
@@ -476,7 +529,7 @@ export class Battle {
     if (h.drawing) {
       const target = this.enemy(h.drawing.target);
       h.drawing.t += dt;
-      if (!target || Math.hypot(target.pos[0] - h.pos[0], target.pos[1] - h.pos[1]) > HERO.range * 1.15) {
+      if (!target || Math.hypot(target.pos[0] - h.pos[0], target.pos[1] - h.pos[1]) > HERO.range * this.mods.heroRange * 1.15) {
         h.drawing = null;
         return;
       }
@@ -484,13 +537,13 @@ export class Battle {
       if (h.drawing.t >= HERO.windup) {
         h.drawing = null;
         const crit = this.rng() < HERO.critChance;
-        const damage = this.roll(HERO.damage) * (crit ? HERO.critMultiplier : 1);
+        const damage = Math.round(this.roll(HERO.damage) * this.mods.damage.hero) * (crit ? HERO.critMultiplier : 1);
         this.fire('hero', [h.pos[0] + h.facing * 20, h.pos[1] - HERO_BOW], target, HERO.projectileSpeed, damage, crit, null);
       }
       return;
     }
     if (h.cooldown > 0) return;
-    const target = pickTarget(h.pos, HERO.range, this.enemies, 'nearest');
+    const target = pickTarget(h.pos, HERO.range * this.mods.heroRange, this.enemies, 'nearest');
     if (!target) return;
     h.drawing = { target: target.id, t: 0 };
     h.cooldown = HERO.rate;
@@ -503,7 +556,8 @@ export class Battle {
       if (!t) continue;
       t.cooldown = Math.max(0, t.cooldown - dt);
       if (t.cooldown > 0) continue;
-      const { attack: a, stats } = towerSpec(t.kind, t.level, t.branch);
+      const { attack: a, stats: base } = towerSpec(t.kind, t.level, t.branch);
+      const stats = this.boosted(t.kind, base);
       const spot = this.level.slots[t.slot];
       const target = pickTarget(spot, stats.range, this.enemies, t.mode, a.hitsFlying);
       if (!target) {
@@ -555,6 +609,21 @@ export class Battle {
         }
       }
     }
+  }
+
+  /** A tower's numbers with the captain's orders applied. */
+  private boosted(kind: TowerKind, s: TowerLevel): TowerLevel {
+    const m = this.mods;
+    const k = m.damage[kind];
+    return {
+      ...s,
+      damage: [Math.round(s.damage[0] * k), Math.round(s.damage[1] * k)],
+      range: s.range * m.range,
+      rate: s.rate * m.rate,
+      splash: s.splash && s.splash * m.splash,
+      slow: s.slow === undefined ? undefined : Math.max(0.1, 1 - (1 - s.slow) * m.slowPower),
+      slowFor: s.slowFor === undefined ? undefined : s.slowFor + m.slowFor,
+    };
   }
 
   /** A bolt to `target`, then jumping on to the nearest pirates not yet struck, weaker each jump. */
@@ -633,8 +702,9 @@ export class Battle {
     e.hp -= dealt;
     this.events.push({ type: 'hit', enemy: e, damage: dealt, blocked: raw - dealt, crit, at });
     if (e.hp > 0) return;
-    this.purse.earn(e.def.bounty);
-    this.events.push({ type: 'kill', enemy: e, bounty: e.def.bounty });
+    const bounty = Math.round(e.def.bounty * this.mods.bounty);
+    this.purse.earn(bounty);
+    this.events.push({ type: 'kill', enemy: e, bounty });
     if (e.load > 0) {
       const count = this.vault.drop(e.id, e.d).length;
       e.load = 0;

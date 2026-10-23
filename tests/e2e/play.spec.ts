@@ -8,6 +8,7 @@ interface PlayHandle {
     purse: { gold: number };
     waves: { wave: number };
     talon: { cooldown: number };
+    orders: unknown[];
   };
   toScreen(p: [number, number]): [number, number];
   setSpeed(s: number): void;
@@ -54,5 +55,11 @@ test('test battle: build towers, start the waves, pirates walk the road and get 
   await expect(page.locator('#skill-talon')).toBeDisabled();
   // Kills pay gold.
   await expect.poll(async () => Number(await page.locator('#gold').textContent()), { timeout: 90_000, intervals: [1000] }).toBeGreaterThan(60);
+  // After wave 2 the captain offers three orders; the battle waits for a pick.
+  await expect(page.locator('#orders')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('.order')).toHaveCount(3);
+  await page.locator('.order').first().click({ force: true });
+  await expect(page.locator('#orders')).toBeHidden();
+  expect(await play(page)(() => (window as unknown as { __play: PlayHandle }).__play.battle.orders.length)).toBe(1);
   expect(errors).toEqual([]);
 });

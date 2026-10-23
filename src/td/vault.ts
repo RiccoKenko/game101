@@ -19,7 +19,7 @@ export class Vault {
   readonly crystals: Crystal[];
 
   /** `floatSpeed`: how fast a dropped crystal drifts back along the road. */
-  constructor(readonly total: number, readonly floatSpeed = 60) {
+  constructor(readonly total: number, public floatSpeed = 60) {
     this.crystals = Array.from({ length: total }, (_, id) => ({ id, state: 'vault' as CrystalState, carrier: null, d: 0 }));
   }
 

@@ -417,6 +417,123 @@ body {
   opacity: 0;
 }
 
+/* Captain's orders in force, as small icons in the HUD */
+.picked {
+  display: flex;
+  gap: 2px;
+  font-size: 18px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 0 rgba(93, 58, 31, 0.3));
+}
+
+.picked:empty {
+  display: none;
+}
+
+.picked.bump {
+  animation: bump 0.35s ease-out;
+}
+
+/* Captain's orders: three cards over the paused battle */
+.orders {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(34, 48, 77, 0.45);
+}
+
+.orders[hidden] {
+  display: none;
+}
+
+.orders-card {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  max-width: 100%;
+  animation: bump 0.3s ease-out;
+}
+
+.orders-card h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  -webkit-text-stroke: 6px var(--wood-deep);
+  paint-order: stroke fill;
+}
+
+.orders-card p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.order-row {
+  display: flex;
+  gap: 12px;
+  max-width: 100%;
+}
+
+.order {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 4px;
+  justify-items: center;
+  width: min(176px, calc((100vw - 60px) / 3));
+  min-height: 186px;
+  padding: 12px 10px;
+  border-radius: 16px;
+  border: 3px solid var(--wood);
+  background: linear-gradient(#fffaf0, #f3e3c2);
+  box-shadow: 0 5px 0 var(--wood);
+  color: var(--ink);
+  font-family: var(--font-display);
+  text-align: center;
+  cursor: pointer;
+  animation: deal 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  animation-delay: calc(var(--i) * 0.08s);
+}
+
+.order i {
+  font-style: normal;
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+.order b {
+  font-size: 16px;
+  color: var(--wood-deep);
+}
+
+.order span {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.order:hover,
+.order:focus-visible {
+  border-color: var(--gold-deep);
+  box-shadow: 0 5px 0 var(--gold-deep), 0 0 16px 4px rgba(255, 220, 110, 0.8);
+}
+
+.order:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--wood);
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateY(40px) rotate(-6deg) scale(0.8);
+  }
+}
+
 /* End of battle */
 .end {
   position: absolute;
@@ -552,6 +669,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .order,
   .skill.ready,
   .call.first,
   .stat.bump,

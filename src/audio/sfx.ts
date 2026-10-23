@@ -1,5 +1,5 @@
 /** Tiny Web Audio sound player. Sounds start after the first tap (browsers block audio before that). */
-export const SFX = ['shoot', 'hit', 'enemy_die', 'coin', 'explosion', 'click', 'zap', 'levelup', 'xp', 'boss_warning'] as const;
+export const SFX = ['shoot', 'hit', 'enemy_die', 'coin', 'explosion', 'click', 'zap', 'levelup', 'xp', 'boss_warning', 'chest'] as const;
 export type SfxName = (typeof SFX)[number];
 
 declare global {

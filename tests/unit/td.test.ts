@@ -5,13 +5,15 @@ import { checkLevel, LEVEL1, type LevelDef } from '../../src/td/levels';
 import { closedCurve, insidePolygon, Path } from '../../src/td/path';
 import { intercept, pickTarget, type Targetable } from '../../src/td/targeting';
 import { afterArmor, ENEMIES, SKILLS, TOWERS, type Branch, type EnemyKind, type TowerKind } from '../../src/td/units';
+import { CARDS, type CardId } from '../../src/td/cards';
 import { stars, Vault } from '../../src/td/vault';
 import { WaveRunner } from '../../src/td/waves';
 
-/** Steps the battle in frames until `done` or `seconds` pass; returns every event seen. */
+/** Steps the battle in frames until `done` or `seconds` pass; returns every event seen. Takes the first order offered. */
 function run(b: Battle, seconds: number, done: (e: BattleEvent[]) => boolean = () => false, each?: () => void): BattleEvent[] {
   const all: BattleEvent[] = [];
   for (let t = 0; t < seconds && !b.over; t += 1 / 30) {
+    if (b.choice) b.choose(0);
     each?.();
     b.step(1 / 30);
     all.push(...b.drain());
@@ -387,6 +389,65 @@ describe('companions', () => {
     expect(boss.hp).toBe(ENEMIES.firstMate.hp - Math.round(SKILLS.mochi.damage));
     expect(b.mochi.sweep).toBeNull();
     expect(b.canUse('mochi')).toBe(false);
+  });
+});
+
+describe("captain's orders", () => {
+  /** A battle with the given card already picked. */
+  const withCard = (id: CardId, level: LevelDef = LEVEL1) => {
+    const b = new Battle(level);
+    b.choice = [CARDS.find((c) => c.id === id)!];
+    b.choose(0);
+    return b;
+  };
+
+  it('level 1 pauses after waves 2, 4 and 6 for a pick of three different cards', () => {
+    // Undefended, but with crystals to spare so it lasts all eight waves.
+    const b = new Battle({ ...FAR_AWAY, crystals: 500 });
+    b.callWave();
+    const offers: number[] = [];
+    for (let t = 0; t < 400 && !b.over; t += 1 / 30) {
+      b.step(1 / 30);
+      for (const e of b.drain()) if (e.type === 'orders') offers.push(b.waves.wave + 1);
+      if (b.choice) {
+        expect(new Set(b.choice.map((c) => c.id)).size).toBe(3);
+        const time = b.time;
+        b.step(5);
+        expect(b.time).toBe(time); // paused while choosing
+        b.choose(1);
+      }
+    }
+    expect(offers).toEqual([2, 4, 6]);
+    expect(b.orders).toHaveLength(3);
+  });
+
+  it('War Chest pays at once; Shipwrights makes towers cheaper and selling returns 60% of what was paid', () => {
+    expect(withCard('chest').purse.gold).toBe(LEVEL1.startGold + 150);
+    const b = withCard('shipwrights');
+    expect(b.costOf('archer', 0)).toBe(Math.round(70 * 0.85));
+    b.build(0);
+    expect(b.purse.gold).toBe(LEVEL1.startGold - 60);
+    expect(b.sell(0)).toBe(Math.floor(60 * 0.6));
+  });
+
+  it('Sharpened Arrows makes archer towers hit harder', () => {
+    const plain = new Battle(only('ironclad'));
+    const sharp = withCard('arrows', only('ironclad'));
+    const firstHit = (b: Battle) => {
+      b.build(NEAR_DOCK, 'archer');
+      b.callWave();
+      const h = run(b, 60, (e) => e.some((x) => x.type === 'hit')).find((e) => e.type === 'hit');
+      return h?.type === 'hit' ? h.damage + h.blocked : 0;
+    };
+    expect(firstHit(sharp)).toBeGreaterThan(firstHit(plain));
+  });
+
+  it("Talon's Training readies Talon and shortens his cooldown", () => {
+    const b = withCard('talon', only('deckhand'));
+    b.callWave();
+    run(b, 3);
+    expect(b.useTalon()).toBe(true);
+    expect(b.talon.cooldown).toBeCloseTo(SKILLS.talon.cooldown * 0.65);
   });
 });
 

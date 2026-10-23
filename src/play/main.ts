@@ -27,7 +27,7 @@ import type { Painted } from '../showcase/art';
 import { Shadow } from '../stage/shadow';
 import { createStage2D } from '../stage/stage2d';
 import { Battle, TOWER_TOP, type BattleEvent, type Enemy, type Shot } from '../td/battle';
-import { branchCost, nextCost, sellValue } from '../td/economy';
+import type { CardDef } from '../td/cards';
 import { LEVEL1 } from '../td/levels';
 import type { Pt } from '../td/path';
 import type { TargetMode } from '../td/targeting';
@@ -50,6 +50,7 @@ const MARKUP = `
     <div class="stat" id="crystal-stat" aria-label="Crystals left"><i class="gem"></i><b id="crystals">20</b></div>
     <div class="stat" id="gold-stat" aria-label="Gold"><i class="coin"></i><b id="gold">0</b></div>
     <div class="stat wave" aria-label="Wave"><span>Wave</span><b id="wave">0/6</b></div>
+    <div class="picked" id="picked" aria-label="Captain's orders in force"></div>
     <span class="spacer"></span>
     <button type="button" class="pill" id="speed" aria-label="Game speed">×1</button>
   </header>
@@ -62,6 +63,13 @@ const MARKUP = `
   <div class="menu" id="menu" hidden></div>
   <p class="banner" id="banner" aria-live="polite"></p>
   <p class="hint" id="hint">Tap a stone spot to build a tower · tap the grass to move</p>
+  <div class="orders" id="orders" hidden>
+    <div class="orders-card">
+      <h2>Captain's Orders</h2>
+      <p>Pick one. It lasts for the rest of the battle.</p>
+      <div class="order-row" id="order-row"></div>
+    </div>
+  </div>
   <div class="end" id="end" hidden>
     <div class="end-card">
       <h1 id="end-title"></h1>
@@ -387,6 +395,8 @@ function newBattle(): void {
   anim.play('idle', { fade: 0.2 });
   closeMenu();
   ($('end') as HTMLElement).hidden = true;
+  ($('orders') as HTMLElement).hidden = true;
+  $('picked').replaceChildren();
   $('hint').classList.remove('gone');
   hudDirty = true;
 }
@@ -537,7 +547,7 @@ function renderMenu(): void {
   if (!t) {
     for (const kind of TOWER_KINDS) {
       const def = TOWERS[kind];
-      const cost = nextCost(def, 0)!;
+      const cost = battle.costOf(kind, 0)!;
       const b = menuButton(def.name, `◉ ${cost}`, battle.purse.canAfford(cost), () => {
         if (battle.build(slot, kind)) closeMenu();
       }, def.blurb);
@@ -547,7 +557,7 @@ function renderMenu(): void {
     const def = TOWERS[t.kind];
     const spec = towerSpec(t.kind, t.level, t.branch);
     range = spec.stats.range;
-    const cost = nextCost(def, t.level);
+    const cost = t.level < def.levels.length ? battle.costOf(t.kind, t.level) : null;
     if (t.level >= MAX_LEVEL) menu.append(menuButton(spec.name, 'MAX', false, () => {}));
     else if (cost !== null) {
       const next = def.levels[t.level];
@@ -557,7 +567,7 @@ function renderMenu(): void {
     } else
       // Level 3: choose one of two specialisations.
       def.branches.forEach((b, i) => {
-        const price = branchCost(def, i as Branch);
+        const price = battle.costOf(t.kind, t.level, i as Branch)!;
         menu.append(withRange(menuButton(b.name, `◉ ${price}`, battle.purse.canAfford(price), () => {
           if (battle.upgrade(slot, i as Branch)) renderMenu();
         }, b.blurb), b.level.range));
@@ -569,7 +579,7 @@ function renderMenu(): void {
         sfx.play('click', 0.3, 0);
         renderMenu();
       }));
-    menu.append(menuButton('Sell', `+${sellValue(def, t.level, t.branch)}`, true, () => {
+    menu.append(menuButton('Sell', `+${battle.refundFor(slot)}`, true, () => {
       battle.sell(slot);
       closeMenu();
     }));
@@ -861,6 +871,22 @@ function onEvent(ev: BattleEvent): void {
       sfx.play('coin', 0.3);
       hudDirty = true;
       break;
+    case 'orders':
+      showOrders(ev.cards);
+      break;
+    case 'order': {
+      const chip = document.createElement('span');
+      chip.textContent = ev.card.icon;
+      chip.title = `${ev.card.name}: ${ev.card.text}`;
+      $('picked').append(chip);
+      bump('picked');
+      showBanner(ev.card.name);
+      fx.glitter(world(battle.hero.pos, 60), GOLD, 16);
+      anim.oneShot('cheer', 'idle', { fade: 0.1 });
+      sfx.play('levelup', 0.4, 0);
+      hudDirty = true;
+      break;
+    }
     case 'win':
       endScreen(true, ev.stars);
       break;
@@ -870,6 +896,29 @@ function onEvent(ev: BattleEvent): void {
       endScreen(false, 0);
       break;
   }
+}
+
+/** The captain's orders: three cards over the paused battle; tapping one picks it. */
+function showOrders(cards: CardDef[]): void {
+  closeMenu();
+  const row = $('order-row');
+  row.replaceChildren();
+  cards.forEach((card, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'order';
+    b.style.setProperty('--i', String(i));
+    b.innerHTML = `<i>${card.icon}</i><b>${card.name}</b><span>${card.text}</span>`;
+    b.addEventListener('click', () => {
+      void sfx.unlock();
+      if (!battle.choose(i)) return;
+      ($('orders') as HTMLElement).hidden = true;
+    });
+    row.append(b);
+  });
+  ($('orders') as HTMLElement).hidden = false;
+  sfx.play('chest', 0.5, 0);
+  sfx.play('levelup', 0.3, 0);
 }
 
 function recoil(slot: number): void {
@@ -1143,11 +1192,13 @@ function frame(now: number): void {
   clock += dt;
   battle.step(dt * speed);
   for (const ev of battle.drain()) onEvent(ev);
-  syncPirates(dt * speed, clock);
-  syncShots(realDt);
+  // Everything on the field holds still while the captain's orders are up.
+  const play = battle.paused ? 0 : dt * speed;
+  syncPirates(play, clock);
+  syncShots(battle.paused ? 0 : realDt);
   syncCrystals(clock);
-  syncCompanions(dt * speed, clock);
-  syncHero(dt * speed);
+  syncCompanions(play, clock);
+  syncHero(play);
   for (const tv of towers.values()) {
     tv.recoil = Math.max(0, tv.recoil - dt * 6);
     tv.mesh.scale.y = tv.mesh.scale.x * (1 - 0.06 * Math.sin(tv.recoil * Math.PI));

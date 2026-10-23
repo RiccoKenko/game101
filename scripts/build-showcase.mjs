@@ -40,7 +40,7 @@ for (const id of readdirSync('public/sprites'))
   }
 if (pageName === 'play')
   for (const f of readdirSync('public/maps')) spriteAssets[`maps/${f}`] = `data:image/${f.endsWith('.webp') ? 'webp' : 'png'};base64,${b64(`public/maps/${f}`)}`;
-const sounds = Object.fromEntries(['shoot', 'hit', 'enemy_die', 'coin', 'explosion', 'click', 'zap', 'levelup', 'xp', 'boss_warning'].map((n) => [n, b64(`public/audio/${n}.mp3`)]));
+const sounds = Object.fromEntries(['shoot', 'hit', 'enemy_die', 'coin', 'explosion', 'click', 'zap', 'levelup', 'xp', 'boss_warning', 'chest'].map((n) => [n, b64(`public/audio/${n}.mp3`)]));
 
 const page = `<title>${TITLES[pageName]}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
