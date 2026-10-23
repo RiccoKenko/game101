@@ -131,6 +131,16 @@ export class Puppet {
     this.setOrder(0);
   }
 
+  /** How many pictures it is made of. */
+  get partCount(): number {
+    return this.parts.size;
+  }
+
+  /** How many pictures a slot switches between (e.g. its eye pieces). */
+  slotSize(slot: string): number {
+    return this.slots.get(slot)?.length ?? 0;
+  }
+
   private sprite(img: string): SpriteInfo {
     const s = this.assets.sprites[img];
     if (!s) throw new Error(`Rig ${this.assets.rig.id}: no sprite "${img}"`);

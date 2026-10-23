@@ -468,3 +468,12 @@ button:focus-visible {
     animation: none;
   }
 }
+
+.moves .note {
+  width: 100%;
+  margin: 2px 0 0;
+  text-align: center;
+  font: 600 13px var(--font-display);
+  color: var(--wood-deep);
+  opacity: 0.75;
+}

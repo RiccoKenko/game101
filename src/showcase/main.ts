@@ -1,7 +1,8 @@
 /**
  * Character showcase in 2D: Little Archer as a cut-out puppet on a floating island. Every move and face on a
- * button, a story-dialog preview with portraits, and a battle demo against a Deckhand pirate with
- * Archero-style juice (arrow trails, hit flash, damage numbers, hit-stop, shake, slow-mo, coin bursts).
+ * button, a story-dialog preview with portraits, a battle demo against a Deckhand pirate with
+ * Archero-style juice (arrow trails, hit flash, damage numbers, hit-stop, shake, slow-mo, coin bursts), and the
+ * rest of the cast (pirates, Talon and Mochi) one at a time with all their moves.
  */
 import '@fontsource/fredoka/500.css';
 import '@fontsource/fredoka/600.css';
@@ -15,11 +16,12 @@ import { Shake } from '../fx/shake';
 import { GameTime } from '../fx/time';
 import { Trail } from '../fx/trail';
 import { Animator2D } from '../puppet/animator';
+import { CLIPS } from '../puppet/clips';
 import { deckhandClips } from '../puppet/clips/deckhand';
 import { heroClips } from '../puppet/clips/hero';
 import { assetUrl, loadPuppet } from '../puppet/loader';
-import { layer, type Pose2D } from '../puppet/pose';
-import { Puppet, spriteGeometry, spriteMaterial } from '../puppet/puppet';
+import { layer, type Clip2D, type Pose2D } from '../puppet/pose';
+import { Puppet, spriteGeometry, spriteMaterial, type PuppetAssets } from '../puppet/puppet';
 import { Shadow } from '../stage/shadow';
 import { createStage2D } from '../stage/stage2d';
 import { paintCloud, paintCoin, paintIsland, type Painted } from './art';
@@ -43,9 +45,9 @@ const MARKUP = `
     <h1 id="who">Little Archer</h1>
     <p id="blurb"></p>
     <dl class="specs">
-      <div><dt>Moves</dt><dd>10</dd></div>
-      <div><dt>Faces</dt><dd>8</dd></div>
-      <div><dt>Parts</dt><dd>34</dd></div>
+      <div><dt>Moves</dt><dd id="spec-moves">10</dd></div>
+      <div><dt>Faces</dt><dd id="spec-faces">8</dd></div>
+      <div><dt>Parts</dt><dd id="spec-parts">34</dd></div>
     </dl>
   </section>
   <div class="dialog" id="dialog" hidden>
@@ -57,6 +59,7 @@ const MARKUP = `
       <button role="tab" data-tab="hero" aria-selected="true">Hero</button>
       <button role="tab" data-tab="story" aria-selected="false">Story</button>
       <button role="tab" data-tab="battle" aria-selected="false">Battle</button>
+      <button role="tab" data-tab="crew" aria-selected="false">Crew</button>
     </div>
     <div class="moves" id="moves"></div>
   </nav>
@@ -65,7 +68,7 @@ const MARKUP = `
 document.body.insertAdjacentHTML('afterbegin', MARKUP);
 const $ = (id: string) => document.getElementById(id)!;
 
-type Tab = 'hero' | 'story' | 'battle';
+type Tab = 'hero' | 'story' | 'battle' | 'crew';
 const MOVES: [label: string, clip: string, loop: boolean][] = [
   ['Idle', 'idle', true], ['Walk', 'walk', true], ['Run', 'run', true], ['Shoot', 'shoot', false],
   ['Rapid fire', 'rapid', true], ['Dash', 'dodge', false], ['Hit', 'hit', false], ['Knocked out', 'ko', false],
@@ -91,7 +94,23 @@ const INFO: Record<Tab, { who: string; blurb: string }> = {
     who: 'Battle demo',
     blurb: 'A Deckhand to practise on. Arrows leave glowing trails; hits flash, sparks fly and numbers pop. Crits freeze time for a beat. Sky Burst slows everything down.',
   },
+  crew: { who: 'The crew', blurb: '' },
 };
+/** Button names for clip names that don't read well on their own. */
+const CLIP_LABELS: Record<string, string> = { ko: 'Knocked out', carry: 'Carry crystal', walk: 'Move' };
+/**
+ * The rest of the cast, shown one at a time in the middle of the island: `height` is the head top in island units
+ * (the hero is ~380), or `width` across for the long ones; flyers hover `fly` units up.
+ */
+const CREW: { id: string; name: string; blurb: string; height?: number; width?: number; fly?: number }[] = [
+  { id: 'deckhand', name: 'Deckhand', height: 300, blurb: 'The everyday sky pirate: waddles in, grabs a crystal and runs for the airship.' },
+  { id: 'powder_monkey', name: 'Powder Monkey', height: 230, blurb: 'Small, fast and cheeky. They come in swarms, lit bombs in hand.' },
+  { id: 'ironclad', name: 'Ironclad', height: 330, blurb: 'A walking boiler in riveted plates. Arrows clink off the armour; magic gets through.' },
+  { id: 'parrot_raider', name: 'Parrot Raider', height: 250, fly: 110, blurb: 'Flies over the road, out of the cannons’ reach, and snatches crystals with its feet.' },
+  { id: 'first_mate', name: 'First Mate', height: 420, blurb: 'The chapter 1 boss. Stuffs three crystals in his sack and roars his crew into a run.' },
+  { id: 'talon', name: 'Talon', width: 560, fly: 120, blurb: 'Little Archer’s eagle. Dives on the thief who is getting away and brings the crystal home.' },
+  { id: 'mochi', name: 'Mochi', width: 700, fly: 130, blurb: 'The baby sky whale. Once a battle, Mochi sweeps across the whole island.' },
+];
 const STORY: { portrait: string; text: string; move?: string; face?: [string, string] }[] = [
   { portrait: 'smile', text: 'Morning, Sky Haven! The crystals are humming today.' },
   { portrait: 'surprised', text: 'Wait… is that an airship on the horizon?', face: ['eyes-surprised', 'mouth-o'] },
@@ -168,6 +187,49 @@ island.add(targetShadow.mesh);
 /** Where arrows hit: the middle of his striped shirt (rig-pose y 600, ground at 1295). */
 const BULLSEYE = new THREE.Vector3(TARGET_X, 14 + (1295 - 600) * PIRATE_SIZE, 0);
 
+// The crew member on show in the Crew tab, centred on the island (loaded when first picked).
+const crewGroup = new THREE.Group();
+crewGroup.visible = false;
+island.add(crewGroup);
+let crewShadow = new Shadow(300);
+const crewAssets = new Map<string, Promise<PuppetAssets | null>>();
+let crewAt = 0;
+let crew: { puppet: Puppet; anim: Animator2D; clips: Clip2D[]; loop: string; fly: number } | null = null;
+
+async function showCrew(i: number): Promise<void> {
+  crewAt = i;
+  const c = CREW[i];
+  if (!crewAssets.has(c.id)) crewAssets.set(c.id, loadPuppet(c.id, renderer).catch(() => null));
+  const assets = await crewAssets.get(c.id)!;
+  if (crewAt !== i) return;
+  if (crew) {
+    crewGroup.remove(crew.puppet.root);
+    crew.puppet.dispose();
+    crew = null;
+  }
+  const clips = CLIPS[c.id] ?? [];
+  if (assets && clips.length) {
+    const puppet = new Puppet(assets);
+    puppet.update(0);
+    puppet.root.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(puppet.root);
+    const top = assets.rig.points?.['head.top'] ? puppet.point('head.top')[1] : box.max.y;
+    puppet.size = c.width ? c.width / (box.max.x - box.min.x) : (c.height ?? 300) / top;
+    // Centred on the island whatever the rig's origin.
+    puppet.root.position.x = (-(box.min.x + box.max.x) / 2) * puppet.size;
+    puppet.setOrder(200);
+    crewGroup.add(puppet.root);
+    const loop = clips.find((k) => k.loop)?.name ?? clips[0].name;
+    const anim = new Animator2D(clips);
+    anim.play(loop);
+    crew = { puppet, anim, clips, loop, fly: c.fly ?? 0 };
+    crewGroup.remove(crewShadow.mesh);
+    crewShadow = new Shadow(Math.min(300, (box.max.x - box.min.x) * puppet.size * 0.55));
+    crewGroup.add(crewShadow.mesh);
+  }
+  renderMoves();
+}
+
 const fx = new Fx2D(420);
 fx.glow.points.renderOrder = 500;
 fx.soft.points.renderOrder = 450;
@@ -197,7 +259,10 @@ function layout(): void {
 }
 window.addEventListener('resize', layout);
 $('loading').classList.add('done');
-const autoBattle = new URLSearchParams(location.search).has('battle');
+const query = new URLSearchParams(location.search);
+const autoBattle = query.has('battle');
+/** `?crew=ironclad` opens the Crew tab on that character. */
+const autoCrew = CREW.findIndex((c) => c.id === query.get('crew'));
 
 // ---------- UI
 
@@ -217,8 +282,13 @@ function play(clip: string, loop: boolean): void {
 function renderMoves(): void {
   const box = $('moves');
   box.innerHTML = '';
-  $('who').textContent = INFO[tab].who;
-  $('blurb').textContent = INFO[tab].blurb;
+  const member = tab === 'crew' ? CREW[crewAt] : null;
+  $('who').textContent = member?.name ?? INFO[tab].who;
+  $('blurb').textContent = member?.blurb ?? INFO[tab].blurb;
+  const parts = member ? (crew ? crew.puppet.partCount : 0) : 34;
+  $('spec-moves').textContent = String(member ? (crew?.clips.length ?? 0) : MOVES.length);
+  $('spec-faces').textContent = String(member ? (crew?.puppet.slotSize('eyes') || crew?.puppet.slotSize('eye') || 0) : 8);
+  $('spec-parts').textContent = String(parts);
   ($('dialog') as HTMLElement).hidden = tab !== 'story';
   requestAnimationFrame(layout);
   if (tab === 'battle') {
@@ -235,6 +305,32 @@ function renderMoves(): void {
         renderMoves();
       }),
     );
+    return;
+  }
+  if (tab === 'crew') {
+    CREW.forEach((c, i) => {
+      const b = button(c.name, () => void showCrew(i));
+      b.classList.add('face');
+      if (i === crewAt) b.classList.add('on');
+      box.append(b);
+    });
+    if (!crew) {
+      box.append(Object.assign(document.createElement('p'), { className: 'note', textContent: 'Still being drawn…' }));
+      return;
+    }
+    const c = crew;
+    for (const clip of c.clips) {
+      const label = CLIP_LABELS[clip.name] ?? clip.name[0].toUpperCase() + clip.name.slice(1).replace(/-/g, ' ');
+      const b = button(label, () => {
+        if (clip.loop) {
+          c.anim.play(clip.name, { fade: 0.2 });
+          c.loop = clip.name;
+        } else c.anim.oneShot(clip.name, c.loop, { fade: 0.1 });
+        renderMoves();
+      });
+      if (clip.loop && c.loop === clip.name) b.classList.add('on');
+      box.append(b);
+    }
     return;
   }
   if (tab === 'story') {
@@ -283,6 +379,11 @@ function selectTab(next: Tab): void {
   tab = next;
   for (const o of document.querySelectorAll<HTMLButtonElement>('.tabs button')) o.setAttribute('aria-selected', String(o.dataset.tab === tab));
   if (tab === 'story') showLine(0);
+  // The crew takes the island to itself.
+  const crewTab = tab === 'crew';
+  crewGroup.visible = crewTab;
+  hero.root.visible = heroShadow.mesh.visible = target.visible = targetShadow.mesh.visible = !crewTab;
+  if (crewTab) void showCrew(crewAt);
   renderMoves();
 }
 
@@ -303,7 +404,7 @@ function showLine(i: number): void {
 
 // Tapping the hero gets a cheer.
 renderer.domElement.addEventListener('pointerup', (e) => {
-  if (battle.on) return;
+  if (battle.on || tab === 'crew') return;
   const r = renderer.domElement.getBoundingClientRect();
   const x = (e.clientX - r.left - stage.width / 2 - set.position.x) / fit;
   const y = (stage.height / 2 - (e.clientY - r.top) - set.position.y) / fit;
@@ -553,6 +654,14 @@ function frame(now: number): void {
     fx.dust(new THREE.Vector3(HERO_X - 20 + Math.random() * 60, -6, 0));
   }
 
+  // Crew member: flyers bob in the air over their shadow.
+  if (crew && tab === 'crew') {
+    crew.puppet.setPose(crew.anim.update(dt));
+    crew.puppet.update(dt);
+    crew.puppet.root.position.y = crew.fly + (crew.fly ? Math.sin((now / 1000) * 2.2) * 8 : 0);
+    crewShadow.place(0, 0, crew.fly);
+  }
+
   // Target: spring sway, flash fade, pop-in after a respawn.
   battle.swayV += (-60 * battle.sway - 5 * battle.swayV) * dt;
   battle.sway += battle.swayV * dt;
@@ -625,6 +734,9 @@ if (autoBattle) {
   selectTab('battle');
   startBattle();
   renderMoves();
+} else if (autoCrew >= 0) {
+  crewAt = autoCrew;
+  selectTab('crew');
 }
 requestAnimationFrame(frame);
 window.__ready = true;
