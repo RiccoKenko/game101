@@ -862,8 +862,9 @@ function syncPirates(dt: number, t: number): void {
     for (const m of v.crystals) m.renderOrder = order + 70;
     v.hpBack.renderOrder = order + 80;
     v.hpFill.renderOrder = order + 81;
+    // Puppets hug their crystal in their hands; stand-ins show it floating over their heads.
     v.crystals.forEach((m, i) => {
-      m.visible = i < e.load;
+      m.visible = i < e.load && !v.puppet;
       m.position.x = (i - (v.crystals.length - 1) / 2) * 24 + Math.sin(t * 3 + v.phase + i) * 1.5;
     });
     const share = Math.max(0, e.hp / e.def.hp);
