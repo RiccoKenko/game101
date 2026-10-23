@@ -7,6 +7,7 @@ interface PlayHandle {
     enemies: { progress: number }[];
     purse: { gold: number };
     waves: { wave: number };
+    talon: { cooldown: number };
   };
   toScreen(p: [number, number]): [number, number];
   setSpeed(s: number): void;
@@ -46,6 +47,11 @@ test('test battle: build towers, start the waves, pirates walk the road and get 
     const b = (window as unknown as { __play: PlayHandle }).__play.battle;
     return Math.max(0, ...b.enemies.map((e) => e.progress));
   }), { timeout: 60_000 }).toBeGreaterThan(200);
+  // Talon is ready once pirates are on the island; calling him starts his cooldown.
+  await expect(page.locator('#skill-talon')).toBeEnabled({ timeout: 30_000 });
+  await page.locator('#skill-talon').click({ force: true });
+  await expect.poll(() => play(page)(() => (window as unknown as { __play: PlayHandle }).__play.battle.talon.cooldown)).toBeGreaterThan(0);
+  await expect(page.locator('#skill-talon')).toBeDisabled();
   // Kills pay gold.
   await expect.poll(async () => Number(await page.locator('#gold').textContent()), { timeout: 90_000, intervals: [1000] }).toBeGreaterThan(60);
   expect(errors).toEqual([]);

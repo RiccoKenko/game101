@@ -624,6 +624,132 @@ export function paintBall(): Painted {
   return painted(c);
 }
 
+/** Talon the eagle diving, facing right, wings swept up and back; centred. */
+export function paintEagle(): Painted {
+  const [c, g] = canvas(220, 160);
+  // Back wing (darker), then tail.
+  const wing = (dx: number, dy: number, fill: string, tip: string) => {
+    g.beginPath();
+    g.moveTo(96 + dx, 86 + dy);
+    g.quadraticCurveTo(40 + dx, 30 + dy, 6 + dx, 8 + dy);
+    g.quadraticCurveTo(30 + dx, 52 + dy, 34 + dx, 62 + dy);
+    g.quadraticCurveTo(52 + dx, 70 + dy, 60 + dx, 92 + dy);
+    g.closePath();
+    g.fillStyle = fill;
+    g.fill();
+    stroke(g, 5);
+    g.beginPath();
+    g.moveTo(6 + dx, 8 + dy);
+    g.quadraticCurveTo(22 + dx, 30 + dy, 34 + dx, 62 + dy);
+    g.lineWidth = 3;
+    g.strokeStyle = tip;
+    g.stroke();
+  };
+  wing(26, -4, '#6e4527', '#3b2a2a');
+  g.beginPath();
+  g.moveTo(52, 104);
+  g.lineTo(12, 126);
+  g.lineTo(24, 104);
+  g.lineTo(8, 100);
+  g.lineTo(54, 92);
+  g.closePath();
+  g.fillStyle = '#f6efe2';
+  g.fill();
+  stroke(g, 4);
+  // Body, talons out.
+  ellipse(g, 100, 100, 50, 30, '#8a5a33', 5);
+  for (const x of [104, 122]) {
+    g.beginPath();
+    g.moveTo(x, 122);
+    g.lineTo(x + 6, 140);
+    g.lineTo(x + 14, 136);
+    g.lineWidth = 6;
+    g.strokeStyle = '#f4c34f';
+    g.stroke();
+  }
+  // Front wing.
+  wing(0, 4, '#9a6a44', '#3b2a2a');
+  // White head, golden beak, fierce eye.
+  ellipse(g, 156, 78, 30, 26, '#fbf7ee', 5);
+  g.beginPath();
+  g.moveTo(178, 70);
+  g.quadraticCurveTo(212, 70, 204, 96);
+  g.quadraticCurveTo(196, 86, 180, 88);
+  g.closePath();
+  g.fillStyle = '#f4b62c';
+  g.fill();
+  stroke(g, 4);
+  ellipse(g, 166, 72, 6, 6, INK);
+  g.beginPath();
+  g.moveTo(154, 62);
+  g.lineTo(176, 66);
+  stroke(g, 4);
+  return painted(c);
+}
+
+/** Mochi the baby sky whale, facing right: round and soft, with a little spout of cloud; centred. */
+export function paintWhale(): Painted {
+  const [c, g] = canvas(420, 260);
+  // Tail fluke.
+  g.beginPath();
+  g.moveTo(80, 140);
+  g.quadraticCurveTo(30, 120, 10, 70);
+  g.quadraticCurveTo(40, 96, 56, 100);
+  g.quadraticCurveTo(40, 150, 14, 200);
+  g.quadraticCurveTo(60, 180, 96, 160);
+  g.closePath();
+  g.fillStyle = '#5fb6e8';
+  g.fill();
+  stroke(g, 6);
+  // Body: a big soft bean, lighter belly.
+  g.beginPath();
+  g.ellipse(230, 140, 160, 92, 0, 0, Math.PI * 2);
+  g.fillStyle = '#7cc9f2';
+  g.fill();
+  g.save();
+  g.clip();
+  g.beginPath();
+  g.ellipse(250, 210, 170, 70, 0, 0, Math.PI * 2);
+  g.fillStyle = '#e9f7ff';
+  g.fill();
+  g.fillStyle = 'rgba(255, 255, 255, 0.35)';
+  g.beginPath();
+  g.ellipse(250, 88, 90, 26, -0.1, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
+  g.beginPath();
+  g.ellipse(230, 140, 160, 92, 0, 0, Math.PI * 2);
+  stroke(g, 6);
+  // Belly grooves, a flipper, a happy eye and a blush.
+  g.lineWidth = 3;
+  g.strokeStyle = 'rgba(59, 42, 42, 0.45)';
+  for (const y of [196, 210, 222]) {
+    g.beginPath();
+    g.moveTo(190, y);
+    g.quadraticCurveTo(290, y + 8, 360, y - 16);
+    g.stroke();
+  }
+  g.beginPath();
+  g.moveTo(230, 170);
+  g.quadraticCurveTo(250, 230, 200, 238);
+  g.quadraticCurveTo(206, 200, 196, 176);
+  g.closePath();
+  g.fillStyle = '#5fb6e8';
+  g.fill();
+  stroke(g, 5);
+  g.beginPath();
+  g.arc(318, 116, 13, Math.PI * 1.05, Math.PI * 1.95);
+  stroke(g, 6);
+  ellipse(g, 336, 150, 16, 9, 'rgba(255, 140, 160, 0.55)');
+  g.beginPath();
+  g.moveTo(352, 168);
+  g.quadraticCurveTo(366, 178, 378, 164);
+  stroke(g, 4);
+  // A puff of cloud from the blowhole.
+  for (const [x, y, r] of [[236, 40, 18], [262, 28, 22], [290, 40, 17], [262, 50, 14]] as const) ellipse(g, x, y, r, r * 0.8, '#ffffff', 4);
+  return painted(c);
+}
+
 /** A glowing Sky Crystal, centred. */
 export function paintCrystal(): Painted {
   const [c, g] = canvas(64, 80);

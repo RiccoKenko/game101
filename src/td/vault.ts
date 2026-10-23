@@ -72,6 +72,16 @@ export class Vault {
     return out;
   }
 
+  /** Something snatched the carrier's crystals back: they go straight home to the vault. */
+  rescue(carrier: number): Crystal[] {
+    const out = this.carriedBy(carrier);
+    for (const c of out) {
+      c.state = 'vault';
+      c.carrier = null;
+    }
+    return out;
+  }
+
   /** The carrier reached the dock: everything it carried is lost. */
   escape(carrier: number): Crystal[] {
     const out = this.carriedBy(carrier);

@@ -31,8 +31,8 @@ import { branchCost, nextCost, sellValue } from '../td/economy';
 import { LEVEL1 } from '../td/levels';
 import type { Pt } from '../td/path';
 import type { TargetMode } from '../td/targeting';
-import { ENEMIES, MAX_LEVEL, TOWER_KINDS, TOWERS, towerSpec, type Branch, type EnemyKind, type TowerKind } from '../td/units';
-import { paintBall, paintCrystal, paintFrostWave, paintPirate, paintRing, paintShard, paintTower } from './art';
+import { ENEMIES, MAX_LEVEL, SKILLS, TOWER_KINDS, TOWERS, towerSpec, type Branch, type EnemyKind, type SkillName, type TowerKind } from '../td/units';
+import { paintBall, paintCrystal, paintEagle, paintFrostWave, paintPirate, paintRing, paintShard, paintTower, paintWhale } from './art';
 import { clampView, pan, toMap, toScreen, zoomAt, type Bounds, type View } from './view';
 
 declare global {
@@ -54,6 +54,10 @@ const MARKUP = `
     <button type="button" class="pill" id="speed" aria-label="Game speed">×1</button>
   </header>
   <div class="boss" id="boss" hidden><span id="boss-name">First Mate</span><div class="boss-bar"><i id="boss-hp"></i></div></div>
+  <div class="skills">
+    <button type="button" class="skill" id="skill-talon" aria-label="Talon the eagle: snatch a crystal back"><img alt="" /><span class="cd"></span></button>
+    <button type="button" class="skill big" id="skill-mochi" aria-label="Mochi the sky whale: sweep the island"><img alt="" /><span class="cd"></span></button>
+  </div>
   <button type="button" class="call" id="call">Start battle</button>
   <div class="menu" id="menu" hidden></div>
   <p class="banner" id="banner" aria-live="polite"></p>
@@ -137,6 +141,8 @@ const TOWER_ART = Object.fromEntries(TOWER_KINDS.map((k) => [k, [1, 2, 3].map((l
 const BRANCH_ART = Object.fromEntries(TOWER_KINDS.map((k) => [k, [0, 1].map((b) => paintTower(k, MAX_LEVEL, b as Branch))])) as Record<TowerKind, Painted[]>;
 const BALL_ART = paintBall();
 const SHARD_ART = paintShard();
+const EAGLE_ART = paintEagle();
+const WHALE_ART = paintWhale();
 const CRYSTAL_ART = paintCrystal();
 const RING_ART = paintRing();
 const FROST_ART = paintFrostWave();
@@ -148,6 +154,8 @@ const STORM = new THREE.Color(0.72, 0.55, 1);
 const ARCANE = new THREE.Color(1, 0.45, 0.85);
 const ICE = new THREE.Color(0.6, 0.9, 1);
 const RALLY = new THREE.Color(1, 0.45, 0.2);
+const FEATHER = new THREE.Color(1, 0.97, 0.88);
+const DIZZY = new THREE.Color(1, 0.9, 0.35);
 const STEEL = new THREE.Color(0.85, 0.9, 1);
 const NO_TINT = new THREE.Color(1, 1, 1);
 const CHILL_TINT = new THREE.Color(0.78, 0.92, 1.1);
@@ -218,6 +226,21 @@ const pirates = new Map<number, PirateView>();
 const towers = new Map<number, TowerView>();
 const arrows = new Map<number, ShotView>();
 const bolts: Bolt[] = [];
+
+/** Talon: dives from high above the hero onto its target, then flies home to the vault with what it snatched. */
+interface TalonView {
+  mesh: THREE.Mesh;
+  trail: Trail;
+  from: Pt;
+  target: Enemy;
+  /** After the strike: seconds into the flight home, from where, and carrying crystals or not. */
+  away: { t: number; from: Pt; crystals: number } | null;
+}
+let talonView: TalonView | null = null;
+/** Mochi: crosses the island with the sweep, then swims on off the map. */
+let whale: { mesh: THREE.Mesh; t: number; puff: number } | null = null;
+const EAGLE_SCALE = 0.55;
+const WHALE_SCALE = 1.2;
 /** Frost waves spreading out to a tower's range. */
 const frostWaves: { mesh: THREE.Mesh; range: number; age: number }[] = [];
 const FROST_WAVE_LIFE = 0.55;
@@ -283,7 +306,7 @@ function drivePuppet(v: PirateView, dt: number, order: number): void {
   if (!puppet || !anim) return;
   if (Math.abs(e.vel[0]) > 2) puppet.facing = e.vel[0] > 0 ? 1 : -1;
   // Steps keep pace with the pirate: slower when chilled, still when frozen, quicker when rallied.
-  const pace = e.frozen > 0 && !e.def.steady ? 0 : e.slow * e.haste;
+  const pace = e.stun > 0 || (e.frozen > 0 && !e.def.steady) ? 0 : e.slow * e.haste;
   // A hit reaction finishes by itself; after a lost battle they keep cheering.
   if (anim.playing !== 'hit' && anim.playing !== 'cheer') anim.play(loopFor(e), { speed: pace, fade: 0.15 });
   puppet.setPose(anim.update(dt * (anim.playing === 'hit' ? 1 : pace) || 0));
@@ -355,6 +378,11 @@ function newBattle(): void {
     b.dispose();
   }
   for (const w of frostWaves.splice(0)) scene.remove(w.mesh);
+  if (talonView) scene.remove(talonView.mesh, talonView.trail.mesh);
+  talonView = null;
+  if (whale) scene.remove(whale.mesh);
+  whale = null;
+  mochiUsed = false;
   battle = new Battle(level, SEED + Math.floor(Math.random() * 1000));
   anim.play('idle', { fade: 0.2 });
   closeMenu();
@@ -397,6 +425,7 @@ function updateHud(): void {
   }
   if (menuSlot !== null && hudDirty) renderMenu();
   hudDirty = false;
+  updateSkills();
   const boss = battle.enemies.find((e) => e.def.boss);
   const bar = $('boss') as HTMLElement;
   if (!!boss !== !bar.hidden) bar.hidden = !boss;
@@ -422,6 +451,34 @@ $('speed').addEventListener('click', () => {
   $('speed').textContent = `×${speed}`;
   $('speed').classList.toggle('on', speed === 2);
 });
+const SKILL_ICON: Record<SkillName, Painted> = { talon: EAGLE_ART, mochi: WHALE_ART };
+for (const name of ['talon', 'mochi'] as SkillName[]) {
+  const button = $(`skill-${name}`) as HTMLButtonElement;
+  (button.querySelector('img') as HTMLImageElement).src = (SKILL_ICON[name].texture.image as HTMLCanvasElement).toDataURL();
+  button.addEventListener('click', () => {
+    void sfx.unlock();
+    if (name === 'talon' ? battle.useTalon() : battle.useMochi()) sfx.play('click', 0.3, 0);
+  });
+}
+
+/** Mochi's first charge is shorter than the later ones. */
+let mochiUsed = false;
+
+function updateSkills(): void {
+  for (const name of ['talon', 'mochi'] as SkillName[]) {
+    const button = $(`skill-${name}`) as HTMLButtonElement;
+    const left = battle[name].cooldown;
+    const total = name === 'mochi' && !mochiUsed ? SKILLS.mochi.firstWait : SKILLS[name].cooldown;
+    const ready = battle.canUse(name);
+    button.disabled = !ready;
+    button.classList.toggle('ready', ready);
+    button.style.setProperty('--p', (left / total).toFixed(3));
+    const cd = button.querySelector('.cd') as HTMLElement;
+    const text = left > 0 ? String(Math.ceil(left)) : '';
+    if (cd.textContent !== text) cd.textContent = text;
+  }
+}
+
 $('again').addEventListener('click', () => {
   sfx.play('click', 0.35, 0);
   newBattle();
@@ -610,6 +667,51 @@ function onEvent(ev: BattleEvent): void {
         shake.add(0.4);
       }
       break;
+    case 'talon': {
+      anim.oneShot('cast', 'idle', { fade: 0.08 });
+      hero.facing = ev.target.pos[0] >= battle.hero.pos[0] ? 1 : -1;
+      const from: Pt = [battle.hero.pos[0] - 260 * hero.facing, battle.hero.pos[1] - 520];
+      const mesh = sprite(EAGLE_ART, EAGLE_SCALE, 'centre');
+      mesh.renderOrder = ORDER_ARROW + 2;
+      const trail = new Trail(FEATHER, 6, 16, 160);
+      trail.mesh.renderOrder = ORDER_ARROW + 1;
+      scene.add(mesh, trail.mesh);
+      if (talonView) scene.remove(talonView.mesh, talonView.trail.mesh);
+      talonView = { mesh, trail, from, target: ev.target, away: null };
+      sfx.play('levelup', 0.3, 0.1);
+      break;
+    }
+    case 'talonStrike': {
+      const at = world(ev.at);
+      fx.sparks(at, FEATHER, undefined, 16);
+      fx.glitter(at, FEATHER, 10);
+      shake.add(0.25);
+      time.hitStop(60);
+      sfx.play('hit', 0.6);
+      if (ev.rescued > 0) {
+        numbers.spawn(ev.rescued > 1 ? `Snatched ×${ev.rescued}!` : 'Snatched!', at.clone().add(tmp.set(0, 50, 0)), 'crit');
+        fx.glitter(at, CYAN, 12);
+        sfx.play('xp', 0.4);
+      }
+      if (talonView) talonView.away = { t: 0, from: [...ev.at], crystals: ev.rescued };
+      break;
+    }
+    case 'mochi': {
+      mochiUsed = true;
+      anim.oneShot('cast', 'idle', { fade: 0.08 });
+      showBanner('Mochi!');
+      time.slowMo(0.4, 0.9);
+      shake.add(0.4);
+      sfx.play('zap', 0.6);
+      sfx.play('levelup', 0.4, 0);
+      if (whale) scene.remove(whale.mesh);
+      const mesh = sprite(WHALE_ART, WHALE_SCALE, 'centre');
+      mesh.scale.x = -WHALE_SCALE;
+      mesh.renderOrder = ORDER_FX - 10;
+      scene.add(mesh);
+      whale = { mesh, t: 0, puff: 0 };
+      break;
+    }
     case 'shout': {
       const at = world(ev.enemy.pos, ev.enemy.def.radius);
       fx.ring(world(ev.enemy.pos, 4), RALLY, ev.radius / 57, 40);
@@ -818,7 +920,7 @@ function syncPirates(dt: number, t: number): void {
       continue;
     }
     const moving = Math.hypot(e.vel[0], e.vel[1]) > 1;
-    v.phase += dt * (e.def.speed / 6) * (e.frozen > 0 && !e.def.steady ? 0 : e.slow) * e.haste;
+    v.phase += dt * (e.def.speed / 6) * (e.stun > 0 || (e.frozen > 0 && !e.def.steady) ? 0 : e.slow) * e.haste;
     const sx = Math.abs(v.body?.scale.x ?? 1);
     let hop: number;
     if (v.puppet) {
@@ -848,6 +950,11 @@ function syncPirates(dt: number, t: number): void {
     if (chilled && v.frost <= 0) {
       v.frost = 0.35;
       fx.glitter(world(e.pos, e.def.altitude + e.def.radius * 1.4), ICE, 2);
+    }
+    // Stunned by a companion: stars circle its head.
+    if (e.stun > 0 && Math.random() < dt * 8) {
+      const a = t * 9 + v.phase;
+      fx.glitter(world([e.pos[0] + Math.cos(a) * 18, e.pos[1]], e.def.altitude + (v.puppet ? DECKHAND_HEIGHT : e.def.radius * 2.6) + 4 + Math.sin(a) * 5), DIZZY, 1);
     }
     // Rallied by a shout: they kick up dust as they hurry.
     v.dust -= dt;
@@ -942,6 +1049,73 @@ function syncCrystals(t: number): void {
     }
 }
 
+/** Talon and Mochi on screen, following the battle's skill state. */
+function syncCompanions(dt: number, t: number): void {
+  const tv = talonView;
+  if (tv) {
+    if (!tv.away) {
+      // Diving: from high above, accelerating onto the target wherever it is now.
+      const dive = battle.talon.dive;
+      const k = dive ? 1 - dive.t / SKILLS.talon.dive : 1;
+      const e = tv.target;
+      const to: Pt = [e.pos[0], e.pos[1] - e.def.altitude - e.def.radius];
+      const kk = k * k;
+      const p: Pt = [tv.from[0] + (to[0] - tv.from[0]) * kk, tv.from[1] + (to[1] - tv.from[1]) * kk];
+      world(p, 0, tv.mesh.position);
+      const dir = Math.sign(to[0] - tv.from[0]) || 1;
+      tv.mesh.scale.x = EAGLE_SCALE * dir;
+      tv.mesh.rotation.z = -dir * 0.6;
+      // The target was gone before the strike: Talon pulls up and leaves.
+      if (!dive) tv.away = { t: 0, from: p, crystals: 0 };
+    } else {
+      // Flying home to the vault (or just up and away), flapping, fading at the end.
+      const a = tv.away;
+      a.t += dt;
+      const k = Math.min(1, a.t / 0.9);
+      const home: Pt = a.crystals ? [level.vault[0], level.vault[1] - 60] : [a.from[0] + 300, a.from[1] - 500];
+      const p: Pt = [a.from[0] + (home[0] - a.from[0]) * k, a.from[1] + (home[1] - a.from[1]) * k - Math.sin(k * Math.PI) * 120];
+      world(p, 0, tv.mesh.position);
+      const dir = Math.sign(home[0] - a.from[0]) || 1;
+      tv.mesh.scale.set(EAGLE_SCALE * dir, EAGLE_SCALE * (1 + Math.sin(t * 28) * 0.12), 1);
+      tv.mesh.rotation.z = dir * 0.15;
+      (tv.mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = 1 - Math.max(0, (k - 0.8) / 0.2);
+      if (a.crystals && Math.random() < dt * 30) fx.glitter(tv.mesh.position.clone(), CYAN, 1);
+      if (k >= 1) {
+        if (a.crystals) {
+          fx.glitter(world(level.vault, 30), CYAN, 18);
+          sfx.play('coin', 0.35);
+        }
+        scene.remove(tv.mesh, tv.trail.mesh);
+        talonView = null;
+      }
+    }
+    if (talonView) {
+      tv.trail.push(tv.mesh.position);
+      tv.trail.update(camera);
+    }
+  }
+  if (whale) {
+    // The nose follows the sweep line (it is what hits the pirates); afterwards it swims on off the map.
+    whale.t += dt;
+    const sweep = battle.mochi.sweep;
+    const k = sweep ? sweep.t / SKILLS.mochi.sweep : 1 + (whale.t - SKILLS.mochi.sweep) / SKILLS.mochi.sweep;
+    const nose = level.map.w + 150 - k * (level.map.w + 300);
+    const half = (WHALE_ART.w * WHALE_SCALE) / 2;
+    world([nose + half * 0.9, 470 + Math.sin(whale.t * 3) * 25], 0, whale.mesh.position);
+    whale.mesh.rotation.z = Math.sin(whale.t * 3 + 1) * 0.06;
+    whale.puff -= dt;
+    if (whale.puff <= 0) {
+      whale.puff = 0.04;
+      fx.poof(whale.mesh.position.clone().add(tmp.set(half * 0.8, (Math.random() - 0.5) * 120, 0)), 1.1, 3);
+      fx.glitter(whale.mesh.position.clone().add(tmp.set((Math.random() - 0.5) * half, (Math.random() - 0.5) * 140, 0)), CYAN, 1);
+    }
+    if (nose < -half * 2.2) {
+      scene.remove(whale.mesh);
+      whale = null;
+    }
+  }
+}
+
 let dustT = 0;
 function syncHero(dt: number): void {
   const h = battle.hero;
@@ -972,6 +1146,7 @@ function frame(now: number): void {
   syncPirates(dt * speed, clock);
   syncShots(realDt);
   syncCrystals(clock);
+  syncCompanions(dt * speed, clock);
   syncHero(dt * speed);
   for (const tv of towers.values()) {
     tv.recoil = Math.max(0, tv.recoil - dt * 6);

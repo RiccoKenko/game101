@@ -220,6 +220,19 @@ export function towerSpec(kind: TowerKind, level: number, branch: Branch | null)
   return { name: def.name, attack: def, stats: def.levels[Math.min(level, def.levels.length) - 1] };
 }
 
+/**
+ * The hero's companions, called with skill buttons.
+ * - Talon the eagle dives on the pirate furthest along (a crystal carrier if there is one), snatches back what it
+ *   carries straight to the vault, and leaves it stunned.
+ * - Mochi the sky whale is the big one: it swims across the whole island, hitting and stunning every pirate.
+ */
+export const SKILLS = {
+  talon: { cooldown: 20, dive: 0.6, damage: 30, stun: 1.2 },
+  mochi: { cooldown: 60, firstWait: 25, sweep: 1.8, damage: 50, stun: 2 },
+};
+
+export type SkillName = keyof typeof SKILLS;
+
 export const HERO = {
   speed: 150,
   range: 250,

@@ -4,7 +4,7 @@ import { branchCost, nextCost, Purse, sellValue } from '../../src/td/economy';
 import { checkLevel, LEVEL1, type LevelDef } from '../../src/td/levels';
 import { closedCurve, insidePolygon, Path } from '../../src/td/path';
 import { intercept, pickTarget, type Targetable } from '../../src/td/targeting';
-import { afterArmor, ENEMIES, TOWERS, type Branch, type EnemyKind, type TowerKind } from '../../src/td/units';
+import { afterArmor, ENEMIES, SKILLS, TOWERS, type Branch, type EnemyKind, type TowerKind } from '../../src/td/units';
 import { stars, Vault } from '../../src/td/vault';
 import { WaveRunner } from '../../src/td/waves';
 
@@ -340,6 +340,53 @@ describe('the First Mate', () => {
     const d0 = boss.d;
     b.step(1);
     expect(boss.d - d0).toBeCloseTo(ENEMIES.firstMate.speed * 0.7, 0);
+  });
+});
+
+describe('companions', () => {
+  it('Talon snatches the crystals back from the carrier furthest along and stuns it', () => {
+    const b = new Battle(only('deckhand', 3, 2));
+    expect(b.useTalon()).toBe(false); // not before the battle starts
+    b.callWave();
+    run(b, 200, (e) => e.some((x) => x.type === 'steal'));
+    const carrier = b.enemies.find((e) => e.carrying)!;
+    expect(b.vault.stored).toBe(19);
+    expect(b.useTalon()).toBe(true);
+    expect(b.useTalon()).toBe(false); // cooling down
+    const events = run(b, 2, (e) => e.some((x) => x.type === 'talonStrike'));
+    const strike = events.find((e) => e.type === 'talonStrike');
+    expect(strike?.type === 'talonStrike' && strike.enemy).toBe(carrier);
+    expect(strike?.type === 'talonStrike' && strike.rescued).toBe(1);
+    expect(b.vault.stored).toBe(20);
+    expect(carrier.carrying).toBe(false);
+    expect(carrier.stun).toBeGreaterThan(1);
+    const d0 = carrier.d;
+    b.step(0.5);
+    expect(carrier.d).toBe(d0);
+    expect(b.talon.cooldown).toBeGreaterThan(SKILLS.talon.cooldown - 3);
+  });
+
+  it('Mochi waits a while at the start, then hits and stuns every pirate, flyers and bosses too', () => {
+    const b = new Battle({
+      ...FAR_AWAY,
+      waves: [{ groups: [{ enemy: 'deckhand', count: 3, gap: 1 }, { enemy: 'parrot', count: 2, gap: 1 }, { enemy: 'firstMate', count: 1, gap: 1 }] }],
+    });
+    b.callWave();
+    expect(b.useMochi()).toBe(false);
+    run(b, SKILLS.mochi.firstWait + 0.1);
+    expect(b.enemies.length).toBe(6);
+    expect(b.useMochi()).toBe(true);
+    const events = run(b, SKILLS.mochi.sweep + 0.2);
+    const hit = new Set(events.flatMap((e) => (e.type === 'hit' ? [e.enemy.id] : [])));
+    expect(hit.size).toBe(6);
+    // Hit right to left: the pirate furthest east is hit first.
+    const first = events.find((e) => e.type === 'hit');
+    const eastmost = [...b.enemies].sort((a, c) => c.pos[0] - a.pos[0])[0];
+    expect(first?.type === 'hit' && first.enemy.pos[0]).toBeGreaterThanOrEqual(eastmost.pos[0] - 200);
+    const boss = b.enemies.find((e) => e.kind === 'firstMate')!;
+    expect(boss.hp).toBe(ENEMIES.firstMate.hp - Math.round(SKILLS.mochi.damage));
+    expect(b.mochi.sweep).toBeNull();
+    expect(b.canUse('mochi')).toBe(false);
   });
 });
 

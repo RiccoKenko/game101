@@ -8,7 +8,7 @@ import { branchCost, nextCost, Purse, sellValue } from './economy';
 import type { LevelDef } from './levels';
 import { closedCurve, insidePolygon, Path, type Pt } from './path';
 import { intercept, pickTarget, pickTargets, type TargetMode } from './targeting';
-import { afterArmor, ENEMIES, HERO, MAX_LEVEL, TOWERS, towerSpec, type Branch, type DamageType, type EnemyDef, type EnemyKind, type TowerKind } from './units';
+import { afterArmor, ENEMIES, HERO, MAX_LEVEL, SKILLS, TOWERS, towerSpec, type Branch, type DamageType, type EnemyDef, type EnemyKind, type SkillName, type TowerKind } from './units';
 import { stars, Vault } from './vault';
 import { WaveRunner } from './waves';
 
@@ -44,6 +44,8 @@ export interface Enemy {
   slowFor: number;
   /** Seconds left frozen solid (not moving at all). */
   frozen: number;
+  /** Seconds left stunned by a companion (not moving; unlike freezing, bosses feel it too). */
+  stun: number;
   /** Speed multiplier from a boss's shout, and seconds it has left. */
   haste: number;
   hasteFor: number;
@@ -112,6 +114,11 @@ export type BattleEvent =
   /** Lightning (or a beam, for Arcane Lens); a chain of jumps comes as one zap per jump, `jump` counting from 0. */
   | { type: 'zap'; tower: Tower; from: Pt; to: Pt; enemy: Enemy; beam: boolean; jump: number }
   | { type: 'freeze'; enemy: Enemy }
+  /** Talon dives at `target`; then strikes it, taking `rescued` crystals home. */
+  | { type: 'talon'; target: Enemy }
+  | { type: 'talonStrike'; enemy: Enemy; rescued: number; at: Pt }
+  /** Mochi swims across the island from right to left over `duration` seconds. */
+  | { type: 'mochi'; duration: number }
   /** A boss shouted; `rallied` run faster for a while. */
   | { type: 'shout'; enemy: Enemy; radius: number; rallied: Enemy[] }
   | { type: 'pulse'; tower: Tower; at: Pt; radius: number; enemies: Enemy[] }
@@ -129,6 +136,21 @@ export type BattleEvent =
 
 export type BattleState = 'ready' | 'playing' | 'won' | 'lost';
 
+export interface SkillState {
+  /** Seconds until it can be used again. */
+  cooldown: number;
+}
+
+export interface TalonState extends SkillState {
+  /** A dive under way: the pirate it is diving at and seconds until it strikes. */
+  dive: { target: number; t: number } | null;
+}
+
+export interface MochiState extends SkillState {
+  /** A sweep under way: seconds into it, and the pirates already hit. */
+  sweep: { t: number; hit: Set<number> } | null;
+}
+
 export class Battle {
   readonly path: Path;
   readonly island: Pt[];
@@ -139,6 +161,8 @@ export class Battle {
   enemies: Enemy[] = [];
   shots: Shot[] = [];
   readonly hero: HeroState;
+  readonly talon: TalonState = { cooldown: 0, dive: null };
+  readonly mochi: MochiState = { cooldown: SKILLS.mochi.firstWait, sweep: null };
   state: BattleState = 'ready';
   time = 0;
   private events: BattleEvent[] = [];
@@ -222,6 +246,32 @@ export class Battle {
     return refund;
   }
 
+  /** Whether a skill can be used now (the battle is on, it has cooled down, and Talon has someone to dive at). */
+  canUse(skill: SkillName): boolean {
+    if (this.state !== 'playing') return false;
+    if (skill === 'talon') return this.talon.cooldown <= 0 && !this.talon.dive && this.enemies.length > 0;
+    return this.mochi.cooldown <= 0 && !this.mochi.sweep;
+  }
+
+  /** Talon dives at the pirate furthest along, crystal carriers first. */
+  useTalon(): boolean {
+    if (!this.canUse('talon')) return false;
+    const target = this.enemies.reduce((a, b) => (b.load > a.load || (b.load === a.load && b.progress > a.progress) ? b : a));
+    this.talon.dive = { target: target.id, t: SKILLS.talon.dive };
+    this.talon.cooldown = SKILLS.talon.cooldown;
+    this.events.push({ type: 'talon', target });
+    return true;
+  }
+
+  /** Mochi sweeps the island. */
+  useMochi(): boolean {
+    if (!this.canUse('mochi')) return false;
+    this.mochi.sweep = { t: 0, hit: new Set() };
+    this.mochi.cooldown = SKILLS.mochi.cooldown;
+    this.events.push({ type: 'mochi', duration: SKILLS.mochi.sweep });
+    return true;
+  }
+
   /** Sends the hero walking to `p`. False if `p` is off the island. */
   moveHero(p: Pt): boolean {
     if (this.over || !insidePolygon(this.island, p)) return false;
@@ -251,6 +301,7 @@ export class Battle {
     this.moveEnemies(dt);
     for (let n = this.vault.update(dt, this.path.length).length; n > 0; n--) this.events.push({ type: 'recover' });
     this.updateHero(dt);
+    this.updateSkills(dt);
     this.updateTowers(dt);
     this.moveShots(dt);
     if (this.vault.remaining === 0) {
@@ -267,7 +318,7 @@ export class Battle {
     const lane = (this.rng() - 0.5) * 0.55 * this.level.roadWidth;
     const enemy: Enemy = {
       id: this.nextId++, kind, def, hp: def.hp, d: 0, heading: 1, lane: def.boss ? 0 : lane, load: 0,
-      pos: [0, 0], vel: [0, 0], progress: 0, carrying: false, flying: def.flying, slow: 1, slowFor: 0, frozen: 0,
+      pos: [0, 0], vel: [0, 0], progress: 0, carrying: false, flying: def.flying, slow: 1, slowFor: 0, frozen: 0, stun: 0,
       haste: 1, hasteFor: 0, shoutIn: def.shout ? def.shout.every / 2 : Infinity,
     };
     this.place(enemy, def.speed);
@@ -294,6 +345,7 @@ export class Battle {
       e.slowFor = Math.max(0, e.slowFor - dt);
       if (e.slowFor === 0) e.slow = 1;
       e.frozen = Math.max(0, e.frozen - dt);
+      e.stun = Math.max(0, e.stun - dt);
       e.hasteFor = Math.max(0, e.hasteFor - dt);
       if (e.hasteFor === 0) e.haste = 1;
       if (e.def.shout && (e.shoutIn -= dt) <= 0) this.shout(e);
@@ -329,8 +381,9 @@ export class Battle {
     if (gone.length) this.enemies = this.enemies.filter((e) => !gone.includes(e));
   }
 
-  /** Speed multiplier from frost: 0 while frozen; steady pirates feel slows half as much and never freeze. */
+  /** Speed multiplier from frost: 0 while frozen; steady pirates feel slows half as much and never freeze. Stuns stop anyone. */
   private frostFactor(e: Enemy): number {
+    if (e.stun > 0) return 0;
     if (e.def.steady) return 1 - (1 - e.slow) * 0.5;
     return e.frozen > 0 ? 0 : e.slow;
   }
@@ -344,6 +397,39 @@ export class Battle {
       e.hasteFor = Math.max(e.hasteFor, s.for);
     }
     this.events.push({ type: 'shout', enemy: boss, radius: s.radius, rallied });
+  }
+
+  private updateSkills(dt: number): void {
+    if (this.state !== 'playing') return;
+    this.talon.cooldown = Math.max(0, this.talon.cooldown - dt);
+    this.mochi.cooldown = Math.max(0, this.mochi.cooldown - dt);
+    const dive = this.talon.dive;
+    if (dive && (dive.t -= dt) <= 0) {
+      this.talon.dive = null;
+      const e = this.enemy(dive.target);
+      if (e) {
+        const rescued = this.vault.rescue(e.id).length;
+        e.load = 0;
+        e.carrying = false;
+        e.stun = Math.max(e.stun, SKILLS.talon.stun);
+        this.events.push({ type: 'talonStrike', enemy: e, rescued, at: this.aimPoint(e) });
+        this.damage(e, SKILLS.talon.damage, 'physical', false, this.aimPoint(e));
+      }
+    }
+    const sweep = this.mochi.sweep;
+    if (sweep) {
+      sweep.t += dt;
+      // The whale's nose crosses the map from just off its right edge to just off its left.
+      const k = Math.min(1, sweep.t / SKILLS.mochi.sweep);
+      const x = this.level.map.w + 150 - k * (this.level.map.w + 300);
+      for (const e of [...this.enemies]) {
+        if (sweep.hit.has(e.id) || e.pos[0] < x) continue;
+        sweep.hit.add(e.id);
+        e.stun = Math.max(e.stun, SKILLS.mochi.stun);
+        this.damage(e, SKILLS.mochi.damage, 'magic', false, this.aimPoint(e));
+      }
+      if (k >= 1) this.mochi.sweep = null;
+    }
   }
 
   private enemy(id: number): Enemy | undefined {

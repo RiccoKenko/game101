@@ -240,6 +240,81 @@ body {
   paint-order: stroke fill;
 }
 
+/* Companion skills, bottom left: a round button each, darkened by a sweep while it recharges */
+.skills {
+  position: absolute;
+  left: max(14px, env(safe-area-inset-left, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.skill {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid var(--wood);
+  background: var(--panel);
+  box-shadow: 0 3px 0 var(--wood);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.skill.big {
+  width: 64px;
+  height: 64px;
+  border-color: #2f7fa8;
+  box-shadow: 0 3px 0 #2f7fa8;
+}
+
+.skill img {
+  position: absolute;
+  inset: 4px;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  object-fit: contain;
+}
+
+.skill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(rgba(34, 48, 77, 0.62) calc(var(--p, 0) * 360deg), transparent 0);
+}
+
+.skill .cd {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  font: 700 18px var(--font-display);
+  color: #fff;
+  -webkit-text-stroke: 4px var(--ink);
+  paint-order: stroke fill;
+}
+
+.skill:disabled {
+  cursor: default;
+}
+
+.skill.ready {
+  animation: glow 1.4s ease-in-out infinite;
+}
+
+.skill:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+@keyframes glow {
+  50% {
+    box-shadow: 0 3px 0 var(--wood), 0 0 14px 4px rgba(255, 220, 110, 0.85);
+  }
+}
+
 /* Tower menu, placed next to its spot every frame */
 .menu {
   position: absolute;
@@ -325,9 +400,9 @@ body {
 
 .hint {
   position: absolute;
-  left: max(14px, env(safe-area-inset-left, 0px));
+  left: calc(max(14px, env(safe-area-inset-left, 0px)) + 140px);
   bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
-  max-width: calc(100% - 220px);
+  max-width: calc(100% - 360px);
   margin: 0;
   padding: 6px 12px;
   border-radius: 10px;
@@ -477,6 +552,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .skill.ready,
   .call.first,
   .stat.bump,
   .stat.hurt {
