@@ -144,6 +144,8 @@ interface PuppetLook {
   height: number;
   /** The rest pose's bounds in character space (rig px, facing right, y up from the feet). */
   box: THREE.Box3;
+  /** The rig's `nose` point at rest, if it has one (Mochi's hit line). */
+  nose: [number, number] | null;
 }
 
 /**
@@ -160,9 +162,10 @@ async function puppetLook(id: string, fit: { height: number } | { width: number 
   probe.root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(probe.root);
   const top = assets.rig.points?.['head.top'] ? probe.point('head.top')[1] : box.max.y;
+  const nose = assets.rig.points?.nose ? probe.point('nose') : null;
   probe.dispose();
   const size = 'height' in fit ? fit.height / top : fit.width / (box.max.x - box.min.x);
-  return { assets, clips, size, height: top * size, box };
+  return { assets, clips, size, height: top * size, box, nose };
 }
 
 const [mapTexture, heroAssets, pirateLooks, talonLook, mochiLook] = await Promise.all([
@@ -302,7 +305,8 @@ class Companion {
   ) {
     if (look) {
       const b = look.box;
-      this.at = [pivot === 'nose' ? b.max.x : (b.min.x + b.max.x) / 2, (b.min.y + b.max.y) / 2];
+      const centre: [number, number] = [(b.min.x + b.max.x) / 2, (b.min.y + b.max.y) / 2];
+      this.at = pivot === 'nose' ? (look.nose ?? [b.max.x, centre[1]]) : centre;
       this.puppet = new Puppet(look.assets);
       this.puppet.size = look.size;
       this.puppet.setOrder(order);
