@@ -1,11 +1,11 @@
 /**
  * The Parrot Raider's moves: a cheeky, fast flying thief. Rotations in degrees (counter-clockwise), offsets in
  * rig pixels (y-up). Facing right: a negative body r pitches the beak down (flying forward), +r rears back.
- * Near side = the wing, leg and foot towards the viewer (left in the rig pose, drawn over the body); the far
- * wing sits behind the head. Wings: +r lifts... no: the near wing points up-left, so +r swings it DOWN (CCW),
- * while the far wing points up and -r swings it down (CW). `flap` hides that so clips think in "down" amounts.
- * The rest pose has both wings raised (the top of a beat). The far foot always grips the grappling hook's rope;
- * the near foot grips the stolen crystal while carrying.
+ * Near side = the wing, leg and foot towards the viewer (left in the rig pose; the near wing draws over the
+ * body); the far wing sits behind the head. The near wing points up-left, so +r swings it down, while the far
+ * wing points up and -r swings it down: `wings()` and `flap()` hide that, so clips think in "down" amounts.
+ * The rig pose has both wings raised (the top of a beat). The far foot always grips the grappling hook's rope
+ * (it dangles via `hang`); the near foot grips the stolen crystal while carrying.
  */
 import { ease, key, osc } from '../../anim/curves';
 import { layer, type Clip2D, type Pose2D } from '../pose';
@@ -35,6 +35,17 @@ export const STAND: Pose2D = {
     'foot.far': { r: 6 },
   },
 };
+
+/**
+ * One-shots that can interrupt `carry` leave the loot alone: without these slots in the pose the puppet keeps
+ * showing what the loop showed (the crystal in the near grip, or nothing).
+ */
+function keepLoot(pose: Pose2D): Pose2D {
+  const slots = { ...pose.slots };
+  delete slots.loot;
+  delete slots['foot.near'];
+  return { ...pose, slots };
+}
 
 /** The near wing points up-left (+r swings it down), the far wing up (-r swings it down). */
 const wings = (near: number, far: number, tipNear = 0, tipFar = 0): Pose2D => ({
@@ -78,7 +89,8 @@ function flap(p: number, size = 100, lift = 18): Pose2D {
 
 /**
  * The hook dangles from the far grip: cancel the turns above it so it hangs straight down, plus a swing.
- * `follow` < 1 lets it turn a little with the body (a stiff rope).
+ * `follow` (0..1) lets it turn partly with the body (a stiff rope): only for small turns, since after a whole
+ * loop it would be left turned by `follow` × 360°.
  */
 function hang(pose: Pose2D, swing = 0, follow = 0): Pose2D {
   const b = pose.bones ?? {};
@@ -110,8 +122,8 @@ function cruise(t: number, beat: number, size: number, lift: number): Pose2D {
   const p = t / beat;
   return layer(STAND, flap(p, size, lift), {
     bones: {
-      body: { r: -12 + 2 * osc(p, 1, 0.1) },
-      head: { r: 10 },
+      body: { r: -16 + 2 * osc(p, 1, 0.1) },
+      head: { r: 12 },
       tail: { r: 6 },
       'leg.near': { r: -28 },
       'foot.near': { r: -22 },
@@ -196,7 +208,7 @@ const hit: Clip2D = {
     const ruffle = key(t, [[0, 0], [0.04, 1, ease.out], [0.22, 0, ease.out]]);
     // Flapping resumes as it recovers.
     const beat = flap(t / 0.3, 100 * (1 - k), 14);
-    return hang(
+    return keepLoot(hang(
       layer(STAND, beat, wings(-30 * k, -26 * k, 20 * k, 16 * k), {
         slots: t < 0.28 ? FACE.hurt : FACE.angry,
         bones: {
@@ -212,7 +224,7 @@ const hit: Clip2D = {
       }),
       -28 * k,
       0.4,
-    );
+    ));
   },
 };
 
@@ -255,12 +267,12 @@ const taunt: Clip2D = {
     const wag = osc(t, 0.2) * up;
     // The far wing keeps it aloft; the near wing is raised high to wave.
     const beat = flap(t / 0.3, 98, 12);
-    return hang(
+    return keepLoot(hang(
       layer(STAND, beat, {
         slots: up > 0.4 ? FACE.smug : FACE.cheeky,
         bones: {
           // Override the near wing: lifted back and waggling (cancel its beat with the rest of the pose).
-          'wing.near': { r: -(beat.bones!['wing.near'].r ?? 0) * up + (-18 + 22 * wag) * up, sy: 1 },
+          'wing.near': { r: -(beat.bones!['wing.near'].r ?? 0) * up + (-14 + 30 * wag) * up },
           'wingTip.near': { r: -(beat.bones!['wingTip.near'].r ?? 0) * up + 16 * osc(t, 0.2, 0.2) * up },
           body: { r: 8 * up - 3 * wag, x: 6 * wag },
           head: { r: -6 * up + 7 * osc(t, 0.4, 0.1) * up },
@@ -270,7 +282,7 @@ const taunt: Clip2D = {
         },
       }),
       5 * osc(t, 0.7),
-    );
+    ));
   },
 };
 
@@ -287,7 +299,7 @@ const cheer: Clip2D = {
     const a = 2 * Math.PI * loop;
     const radius = 150;
     const beat = flap(t / 0.24, 90 * (1 - whoop), 10);
-    return hang(
+    return keepLoot(hang(
       layer(STAND, beat, wings(-36 * whoop + 8 * whoop * osc(t, 0.12), -30 * whoop + 8 * whoop * osc(t, 0.12, 0.3), 10 * whoop, 8 * whoop), {
         slots: t < 0.12 ? FACE.grin : FACE.laugh,
         bones: {
@@ -301,11 +313,8 @@ const cheer: Clip2D = {
       }),
       // Flung outwards round the loop.
       -40 * Math.sin(a) + 10 * whoop * osc(t, 0.5),
-    );
+    ));
   },
 };
 
 export const parrotRaiderClips: Clip2D[] = [idle, walk, carry, hit, ko, taunt, cheer, dive];
-// TEMP-LIFT (dev inspection only; remove before handing over)
-for (const c of [...parrotRaiderClips]) parrotRaiderClips.push({ ...c, name: 'zz' + c.name, pose: (t) => layer(c.pose(t), { bones: { body: { y: 380 } } }) });
-

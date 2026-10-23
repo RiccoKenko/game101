@@ -165,7 +165,8 @@
       "names": ["torso", "hips", "coat-tail-l", "coat-tail-r", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"],
       "erase": {
         "torso": [[432, 262, 38, 88, 0], [62, 280, 20, 58, 0]],
-        "hips": [[527, 455, 82, 40, 12], [722, 455, 78, 38, -8]]
+        "hips": [[527, 478, 125, 70, 10], [722, 478, 120, 70, -8]],
+        "thigh": [[1047, 594, 74, 30, -5]]
       }
     },
     "hands_props": { "names": ["anchor", "sack", "hand-l-open", "hand-l-fist", "hand-r-open", "hand-r-grip"] },
