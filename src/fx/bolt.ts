@@ -1,4 +1,4 @@
-/** A lightning bolt between two points: a jagged glowing ribbon with a white core that flickers out. */
+/** A lightning bolt between two points: a jagged glowing ribbon with a white core that flickers out (or a straight beam). */
 import * as THREE from 'three';
 
 function strip(points: THREE.Vector3[], width: number): THREE.BufferGeometry {
@@ -24,14 +24,14 @@ export class Bolt {
   private mats: THREE.MeshBasicMaterial[] = [];
 
   /** `from`/`to` in world units; `width` of the outer glow. */
-  constructor(from: THREE.Vector3, to: THREE.Vector3, color: THREE.Color, width = 10, private life = 0.2) {
+  constructor(from: THREE.Vector3, to: THREE.Vector3, color: THREE.Color, width = 10, private life = 0.2, jagged = true) {
     const len = from.distanceTo(to);
     const dir = to.clone().sub(from).normalize();
     const side = new THREE.Vector3(-dir.y, dir.x, 0);
     const n = Math.max(4, Math.round(len / 22));
     const points: THREE.Vector3[] = [];
     for (let i = 0; i <= n; i++) {
-      const jag = i === 0 || i === n ? 0 : (Math.random() - 0.5) * Math.min(28, len * 0.16);
+      const jag = !jagged || i === 0 || i === n ? 0 : (Math.random() - 0.5) * Math.min(28, len * 0.16);
       points.push(from.clone().lerp(to, i / n).addScaledVector(side, jag));
     }
     // A solid coloured glow (so it keeps its colour over grass) with an additive white-hot core.

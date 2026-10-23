@@ -52,24 +52,51 @@ export interface TowerLevel {
   /** Frost: speed multiplier while chilled, and how long a chill lasts. */
   slow?: number;
   slowFor?: number;
+  /** Arrows per volley, each at a different pirate. */
+  shots?: number;
+  /** Chance of a double-damage critical hit. */
+  crit?: number;
+  /** Lightning that jumps on to this many pirates in all, each jump reaching `chainRange` and doing `chainFalloff` of the last. */
+  chain?: number;
+  chainRange?: number;
+  chainFalloff?: number;
+  /** A beam that burns hotter while it holds one pirate: +`ramp` damage share per hit in a row, up to `rampMax` hits. */
+  ramp?: number;
+  rampMax?: number;
+  /** Seconds a hit freezes a pirate solid. */
+  freeze?: number;
 }
 
-export interface TowerDef {
-  name: string;
-  /** A few words for the build menu. */
-  blurb: string;
+/** How a tower attacks; a level-4 specialisation can change it. */
+export interface Attack {
   /**
-   * - arrow: a homing arrow.
-   * - shell: a cannonball lobbed at where the target will be; it bursts on the ground and hits everyone near.
-   * - zap: lightning that strikes at once.
+   * - arrow: a homing missile (an arrow, or an ice shard).
+   * - shell: a cannonball lobbed at where the target will be; it bursts and hits everyone near.
+   * - zap: magic that strikes at once (a lightning bolt, or a beam).
    * - pulse: a cold wave that chills everyone in range.
    */
   attack: 'arrow' | 'shell' | 'zap' | 'pulse';
   damageType: DamageType;
   hitsFlying: boolean;
   projectileSpeed: number;
-  levels: TowerLevel[];
 }
+
+/** A level-4 specialisation: one of two, chosen when upgrading from level 3. */
+export interface BranchDef extends Attack {
+  name: string;
+  blurb: string;
+  level: TowerLevel;
+}
+
+export interface TowerDef extends Attack {
+  name: string;
+  /** A few words for the build menu. */
+  blurb: string;
+  levels: TowerLevel[];
+  branches: [BranchDef, BranchDef];
+}
+
+export type Branch = 0 | 1;
 
 export const TOWERS: Record<TowerKind, TowerDef> = {
   archer: {
@@ -84,6 +111,16 @@ export const TOWERS: Record<TowerKind, TowerDef> = {
       { cost: 110, range: 260, damage: [7, 11], rate: 0.7 },
       { cost: 160, range: 285, damage: [11, 16], rate: 0.6 },
     ],
+    branches: [
+      {
+        name: 'Sniper Nest', blurb: 'Huge range · big crits', attack: 'arrow', damageType: 'physical', hitsFlying: true, projectileSpeed: 1300,
+        level: { cost: 250, range: 420, damage: [40, 55], rate: 1.6, crit: 0.3 },
+      },
+      {
+        name: 'Volley Tower', blurb: '3 arrows at once', attack: 'arrow', damageType: 'physical', hitsFlying: true, projectileSpeed: 860,
+        level: { cost: 240, range: 290, damage: [11, 16], rate: 0.6, shots: 3 },
+      },
+    ],
   },
   cannon: {
     name: 'Cannon',
@@ -96,6 +133,16 @@ export const TOWERS: Record<TowerKind, TowerDef> = {
       { cost: 90, range: 210, damage: [10, 18], rate: 2, splash: 75 },
       { cost: 130, range: 225, damage: [18, 28], rate: 1.9, splash: 82 },
       { cost: 190, range: 240, damage: [28, 42], rate: 1.8, splash: 90 },
+    ],
+    branches: [
+      {
+        name: 'Mortar', blurb: 'Far · giant blasts', attack: 'shell', damageType: 'physical', hitsFlying: false, projectileSpeed: 380,
+        level: { cost: 270, range: 340, damage: [55, 75], rate: 2.6, splash: 125 },
+      },
+      {
+        name: 'Flak Cannon', blurb: 'Bursts hit flyers too', attack: 'shell', damageType: 'physical', hitsFlying: true, projectileSpeed: 620,
+        level: { cost: 240, range: 260, damage: [22, 32], rate: 1, splash: 70 },
+      },
     ],
   },
   storm: {
@@ -110,6 +157,16 @@ export const TOWERS: Record<TowerKind, TowerDef> = {
       { cost: 140, range: 235, damage: [16, 24], rate: 1.3 },
       { cost: 200, range: 250, damage: [27, 38], rate: 1.2 },
     ],
+    branches: [
+      {
+        name: 'Lightning Spire', blurb: 'Bolts jump to 4', attack: 'zap', damageType: 'magic', hitsFlying: true, projectileSpeed: Infinity,
+        level: { cost: 260, range: 265, damage: [30, 40], rate: 1.2, chain: 4, chainRange: 130, chainFalloff: 0.75 },
+      },
+      {
+        name: 'Arcane Lens', blurb: 'Beam grows hotter', attack: 'zap', damageType: 'magic', hitsFlying: true, projectileSpeed: Infinity,
+        level: { cost: 260, range: 260, damage: [7, 9], rate: 0.2, ramp: 0.4, rampMax: 8 },
+      },
+    ],
   },
   frost: {
     name: 'Frost Cloud',
@@ -123,10 +180,33 @@ export const TOWERS: Record<TowerKind, TowerDef> = {
       { cost: 110, range: 185, damage: [0, 0], rate: 1, slow: 0.5, slowFor: 1.8 },
       { cost: 150, range: 200, damage: [0, 0], rate: 1, slow: 0.4, slowFor: 2 },
     ],
+    branches: [
+      {
+        name: 'Blizzard', blurb: 'Wide · slows and chips', attack: 'pulse', damageType: 'magic', hitsFlying: true, projectileSpeed: Infinity,
+        level: { cost: 220, range: 250, damage: [4, 6], rate: 1, slow: 0.35, slowFor: 2.2 },
+      },
+      {
+        name: 'Ice Shard', blurb: 'Shards freeze solid', attack: 'arrow', damageType: 'magic', hitsFlying: true, projectileSpeed: 700,
+        level: { cost: 230, range: 230, damage: [18, 26], rate: 1.1, freeze: 0.9 },
+      },
+    ],
   },
 };
 
 export const TOWER_KINDS = Object.keys(TOWERS) as TowerKind[];
+
+/** The highest level, reached by choosing a specialisation at level 3. */
+export const MAX_LEVEL = 4;
+
+/** What a tower at `level` (1-4, with its `branch` at level 4) does, and its numbers. */
+export function towerSpec(kind: TowerKind, level: number, branch: Branch | null): { name: string; attack: Attack; stats: TowerLevel } {
+  const def = TOWERS[kind];
+  if (level >= MAX_LEVEL && branch !== null) {
+    const b = def.branches[branch];
+    return { name: b.name, attack: b, stats: b.level };
+  }
+  return { name: def.name, attack: def, stats: def.levels[Math.min(level, def.levels.length) - 1] };
+}
 
 export const HERO = {
   speed: 150,

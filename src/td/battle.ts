@@ -4,11 +4,11 @@
  * always give the same battle, which the tests rely on.
  */
 import { mulberry32, type Rng } from '../core/rng';
-import { nextCost, Purse, sellValue } from './economy';
+import { branchCost, nextCost, Purse, sellValue } from './economy';
 import type { LevelDef } from './levels';
 import { closedCurve, insidePolygon, Path, type Pt } from './path';
-import { intercept, pickTarget, type TargetMode } from './targeting';
-import { afterArmor, ENEMIES, HERO, TOWERS, type DamageType, type EnemyDef, type EnemyKind, type TowerKind } from './units';
+import { intercept, pickTarget, pickTargets, type TargetMode } from './targeting';
+import { afterArmor, ENEMIES, HERO, MAX_LEVEL, TOWERS, towerSpec, type Branch, type DamageType, type EnemyDef, type EnemyKind, type TowerKind } from './units';
 import { stars, Vault } from './vault';
 import { WaveRunner } from './waves';
 
@@ -42,14 +42,21 @@ export interface Enemy {
   /** Speed multiplier from frost (1 when not chilled), and seconds the chill has left. */
   slow: number;
   slowFor: number;
+  /** Seconds left frozen solid (not moving at all). */
+  frozen: number;
 }
 
 export interface Tower {
   id: number;
   slot: number;
   kind: TowerKind;
+  /** 1-3, then 4 with a specialisation. */
   level: number;
+  branch: Branch | null;
   mode: TargetMode;
+  /** Beam towers: the pirate held and how many hits in a row it has taken. */
+  focus: number;
+  stacks: number;
   cooldown: number;
   /** Direction of the last shot, in radians (map axes, y down). */
   aim: number;
@@ -72,8 +79,11 @@ export interface Shot {
   speed: number;
   damage: number;
   damageType: DamageType;
-  /** Shells: blast radius. */
+  /** Shells: blast radius, and whether the burst reaches flyers (flak). */
   splash: number;
+  hitsFlying: boolean;
+  /** Seconds a hit freezes its target (ice shards). */
+  freeze: number;
   crit: boolean;
 }
 
@@ -94,7 +104,9 @@ export type BattleEvent =
   /** `blocked`: damage the armour stopped. */
   | { type: 'hit'; enemy: Enemy; damage: number; blocked: number; crit: boolean; at: Pt }
   | { type: 'boom'; shot: Shot; at: Pt; radius: number }
-  | { type: 'zap'; tower: Tower; from: Pt; to: Pt; enemy: Enemy }
+  /** Lightning (or a beam, for Arcane Lens); a chain of jumps comes as one zap per jump, `jump` counting from 0. */
+  | { type: 'zap'; tower: Tower; from: Pt; to: Pt; enemy: Enemy; beam: boolean; jump: number }
+  | { type: 'freeze'; enemy: Enemy }
   | { type: 'pulse'; tower: Tower; at: Pt; radius: number; enemies: Enemy[] }
   | { type: 'kill'; enemy: Enemy; bounty: number }
   | { type: 'land'; shot: Shot }
@@ -162,26 +174,40 @@ export class Battle {
   build(slot: number, kind: TowerKind = 'archer'): Tower | null {
     if (this.over || slot < 0 || slot >= this.towers.length || this.towers[slot]) return null;
     if (!this.purse.spend(nextCost(TOWERS[kind], 0)!)) return null;
-    const tower: Tower = { id: this.nextId++, slot, kind, level: 1, mode: 'first', cooldown: 0, aim: -Math.PI / 2 };
+    const tower: Tower = { id: this.nextId++, slot, kind, level: 1, branch: null, mode: 'first', focus: -1, stacks: 0, cooldown: 0, aim: -Math.PI / 2 };
     this.towers[slot] = tower;
     this.events.push({ type: 'build', tower });
     return tower;
   }
 
-  upgrade(slot: number): Tower | null {
+  /** Raises the tower a level; from level 3 to 4 it needs the `branch` (specialisation) to become. */
+  upgrade(slot: number, branch?: Branch): Tower | null {
     const tower = this.towers[slot];
-    if (this.over || !tower) return null;
-    const cost = nextCost(TOWERS[tower.kind], tower.level);
-    if (cost === null || !this.purse.spend(cost)) return null;
+    if (this.over || !tower || tower.level >= MAX_LEVEL) return null;
+    const def = TOWERS[tower.kind];
+    const toBranch = tower.level === def.levels.length;
+    if (toBranch && branch === undefined) return null;
+    const cost = toBranch ? branchCost(def, branch!) : nextCost(def, tower.level)!;
+    if (!this.purse.spend(cost)) return null;
     tower.level++;
+    if (toBranch) tower.branch = branch!;
+    tower.cooldown = 0;
     this.events.push({ type: 'upgrade', tower });
     return tower;
+  }
+
+  /** Which pirate the tower picks (frost waves hit everyone in range, so for them it changes nothing). */
+  setMode(slot: number, mode: TargetMode): boolean {
+    const tower = this.towers[slot];
+    if (this.over || !tower) return false;
+    tower.mode = mode;
+    return true;
   }
 
   sell(slot: number): number {
     const tower = this.towers[slot];
     if (this.over || !tower) return 0;
-    const refund = sellValue(TOWERS[tower.kind], tower.level);
+    const refund = sellValue(TOWERS[tower.kind], tower.level, tower.branch);
     this.purse.earn(refund);
     this.towers[slot] = null;
     this.events.push({ type: 'sell', slot, refund });
@@ -233,7 +259,7 @@ export class Battle {
     const lane = (this.rng() - 0.5) * 0.55 * this.level.roadWidth;
     const enemy: Enemy = {
       id: this.nextId++, kind, def, hp: def.hp, d: 0, heading: 1, lane, crystal: null,
-      pos: [0, 0], vel: [0, 0], progress: 0, carrying: false, flying: def.flying, slow: 1, slowFor: 0,
+      pos: [0, 0], vel: [0, 0], progress: 0, carrying: false, flying: def.flying, slow: 1, slowFor: 0, frozen: 0,
     };
     this.place(enemy, def.speed);
     this.enemies.push(enemy);
@@ -258,7 +284,8 @@ export class Battle {
     for (const e of this.enemies) {
       e.slowFor = Math.max(0, e.slowFor - dt);
       if (e.slowFor === 0) e.slow = 1;
-      const speed = e.def.speed * (e.crystal !== null ? e.def.carrySpeed : 1) * e.slow;
+      e.frozen = Math.max(0, e.frozen - dt);
+      const speed = e.def.speed * (e.crystal !== null ? e.def.carrySpeed : 1) * (e.frozen > 0 ? 0 : e.slow);
       e.d += speed * dt * e.heading;
       if (e.crystal === null) {
         const c = this.vault.dropped().find((x) => Math.abs(x.d - e.d) < PICKUP);
@@ -304,7 +331,7 @@ export class Battle {
   /** An arrow homing in on `target`. */
   private fire(by: Shot['by'], from: Pt, target: Enemy, speed: number, damage: number, crit: boolean, tower: Tower | null): void {
     const aimAt = this.aimPoint(target);
-    this.launch({ by, kind: 'arrow', start: [...from], target: target.id, aimAt, speed, damage, damageType: 'physical', splash: 0, crit }, from, tower);
+    this.launch({ by, kind: 'arrow', start: [...from], target: target.id, aimAt, speed, damage, damageType: 'physical', splash: 0, hitsFlying: true, freeze: 0, crit }, from, tower);
   }
 
   private launch(s: Omit<Shot, 'id' | 'pos' | 'dir'>, from: Pt, tower: Tower | null): void {
@@ -359,47 +386,87 @@ export class Battle {
       if (!t) continue;
       t.cooldown = Math.max(0, t.cooldown - dt);
       if (t.cooldown > 0) continue;
-      const def = TOWERS[t.kind];
-      const stats = def.levels[t.level - 1];
+      const { attack: a, stats } = towerSpec(t.kind, t.level, t.branch);
       const spot = this.level.slots[t.slot];
-      const target = pickTarget(spot, stats.range, this.enemies, t.mode, def.hitsFlying);
-      if (!target) continue;
+      const target = pickTarget(spot, stats.range, this.enemies, t.mode, a.hitsFlying);
+      if (!target) {
+        t.focus = -1;
+        continue;
+      }
       t.cooldown = stats.rate;
       const from: Pt = [spot[0], spot[1] - TOWER_TOP];
       t.aim = Math.atan2(target.pos[1] - from[1], target.pos[0] - from[0]);
-      switch (def.attack) {
-        case 'arrow':
-          this.fire('tower', from, target, def.projectileSpeed, this.roll(stats.damage), false, t);
+      switch (a.attack) {
+        case 'arrow': {
+          // A volley spreads its arrows over different pirates; a sniper's shot may crit.
+          const targets = stats.shots ? pickTargets(spot, stats.range, this.enemies, stats.shots, t.mode, a.hitsFlying) : [target];
+          for (const e of targets) {
+            const crit = !!stats.crit && this.rng() < stats.crit;
+            const damage = this.roll(stats.damage) * (crit ? 2 : 1);
+            this.launch(
+              { by: 'tower', kind: 'arrow', start: [...from], target: e.id, aimAt: this.aimPoint(e), speed: a.projectileSpeed, damage, damageType: a.damageType, splash: 0, hitsFlying: a.hitsFlying, freeze: stats.freeze ?? 0, crit },
+              from,
+              t,
+            );
+          }
           break;
+        }
         case 'shell': {
           // Lobbed at the ground where the target will be when the ball comes down.
-          const land = intercept(spot, target.pos, target.vel, def.projectileSpeed);
+          const land = intercept(spot, target.pos, target.vel, a.projectileSpeed);
           this.launch(
-            { by: 'tower', kind: 'shell', start: [...spot], target: -1, aimAt: land, speed: def.projectileSpeed, damage: this.roll(stats.damage), damageType: def.damageType, splash: stats.splash ?? 0, crit: false },
+            { by: 'tower', kind: 'shell', start: [...spot], target: -1, aimAt: land, speed: a.projectileSpeed, damage: this.roll(stats.damage), damageType: a.damageType, splash: stats.splash ?? 0, hitsFlying: a.hitsFlying, freeze: 0, crit: false },
             from,
             t,
           );
           break;
         }
-        case 'zap': {
-          const to = this.aimPoint(target);
-          this.events.push({ type: 'zap', tower: t, from, to, enemy: target });
-          this.damage(target, this.roll(stats.damage), def.damageType, false, to);
+        case 'zap':
+          if (stats.ramp) this.beam(t, from, target, stats.damage, stats.ramp, stats.rampMax ?? 1, a.damageType);
+          else this.lightning(t, from, target, this.roll(stats.damage), stats.chain ?? 1, stats.chainRange ?? 0, stats.chainFalloff ?? 1, a.damageType);
           break;
-        }
         case 'pulse': {
-          const chilled = this.enemies.filter((e) => (def.hitsFlying || !e.flying) && Math.hypot(e.pos[0] - spot[0], e.pos[1] - spot[1]) <= stats.range);
+          const chilled = this.enemies.filter((e) => (a.hitsFlying || !e.flying) && Math.hypot(e.pos[0] - spot[0], e.pos[1] - spot[1]) <= stats.range);
           for (const e of chilled) {
             e.slow = Math.min(e.slowFor > 0 ? e.slow : 1, stats.slow ?? 1);
             e.slowFor = Math.max(e.slowFor, stats.slowFor ?? 0);
           }
           this.events.push({ type: 'pulse', tower: t, at: [...spot], radius: stats.range, enemies: chilled });
           const dmg = this.roll(stats.damage);
-          if (dmg > 0) for (const e of chilled) this.damage(e, dmg, def.damageType, false, this.aimPoint(e));
+          if (dmg > 0) for (const e of chilled) this.damage(e, dmg, a.damageType, false, this.aimPoint(e));
           break;
         }
       }
     }
+  }
+
+  /** A bolt to `target`, then jumping on to the nearest pirates not yet struck, weaker each jump. */
+  private lightning(t: Tower, from: Pt, target: Enemy, damage: number, chain: number, reach: number, falloff: number, type: DamageType): void {
+    const struck = new Set<number>();
+    let at = from;
+    let e: Enemy | null = target;
+    for (let jump = 0; e && jump < chain; jump++) {
+      const to = this.aimPoint(e);
+      struck.add(e.id);
+      this.events.push({ type: 'zap', tower: t, from: at, to, enemy: e, beam: false, jump });
+      this.damage(e, Math.max(1, Math.round(damage)), type, false, to);
+      at = to;
+      damage *= falloff;
+      const here: Pt = e.pos;
+      e = pickTarget(here, reach, this.enemies.filter((x) => !struck.has(x.id)), 'nearest');
+    }
+  }
+
+  /** A steady beam: each hit in a row on the same pirate burns a little hotter. */
+  private beam(t: Tower, from: Pt, target: Enemy, damage: [number, number], ramp: number, max: number, type: DamageType): void {
+    if (t.focus === target.id) t.stacks = Math.min(max, t.stacks + 1);
+    else {
+      t.focus = target.id;
+      t.stacks = 0;
+    }
+    const to = this.aimPoint(target);
+    this.events.push({ type: 'zap', tower: t, from, to, enemy: target, beam: true, jump: t.stacks });
+    this.damage(target, Math.round(this.roll(damage) * (1 + ramp * t.stacks)), type, false, to);
   }
 
   private moveShots(dt: number): void {
@@ -416,8 +483,13 @@ export class Battle {
         s.pos = [...s.aimAt];
         done.push(s);
         if (s.kind === 'shell') this.burst(s);
-        else if (target) this.damage(target, s.damage, s.damageType, s.crit, [...s.pos]);
-        else this.events.push({ type: 'land', shot: s });
+        else if (target) {
+          this.damage(target, s.damage, s.damageType, s.crit, [...s.pos]);
+          if (s.freeze > 0 && this.enemies.includes(target)) {
+            target.frozen = Math.max(target.frozen, s.freeze);
+            this.events.push({ type: 'freeze', enemy: target });
+          }
+        } else this.events.push({ type: 'land', shot: s });
         continue;
       }
       s.dir = [dx / dist, dy / dist];
@@ -426,11 +498,11 @@ export class Battle {
     if (done.length) this.shots = this.shots.filter((s) => !done.includes(s));
   }
 
-  /** A cannonball bursts: full damage near the middle, half at the edge, and only to pirates on foot. */
+  /** A cannonball bursts: full damage near the middle, half at the edge, and only to pirates on foot (flak reaches flyers too). */
   private burst(s: Shot): void {
     this.events.push({ type: 'boom', shot: s, at: [...s.pos], radius: s.splash });
     for (const e of [...this.enemies]) {
-      if (e.flying) continue;
+      if (e.flying && !s.hitsFlying) continue;
       const d = Math.hypot(e.pos[0] - s.pos[0], e.pos[1] - s.pos[1]);
       if (d > s.splash + e.def.radius) continue;
       const falloff = 1 - 0.5 * Math.max(0, Math.min(1, (d - s.splash * 0.4) / (s.splash * 0.6)));

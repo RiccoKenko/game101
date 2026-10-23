@@ -1,5 +1,5 @@
 /** Gold during a level: towers cost gold, pirates and early waves pay it, selling gives some back. */
-import type { TowerDef } from './units';
+import type { Branch, TowerDef } from './units';
 
 /** Share of the gold spent on a tower that selling it returns. */
 export const SELL_REFUND = 0.6;
@@ -23,16 +23,22 @@ export class Purse {
   }
 }
 
-/** Gold to build the tower (level 0 → 1) or upgrade it from `level`; null at the top level. */
+/** Gold to build the tower (level 0 → 1) or upgrade it from `level` up to level 3; null from level 3 (see `branchCost`). */
 export function nextCost(def: TowerDef, level: number): number | null {
   return def.levels[level]?.cost ?? null;
 }
 
-/** Everything paid for a tower at `level`. */
-export function spentOn(def: TowerDef, level: number): number {
-  return def.levels.slice(0, level).reduce((sum, l) => sum + l.cost, 0);
+/** Gold to specialise a level-3 tower. */
+export function branchCost(def: TowerDef, branch: Branch): number {
+  return def.branches[branch].level.cost;
 }
 
-export function sellValue(def: TowerDef, level: number): number {
-  return Math.floor(spentOn(def, level) * SELL_REFUND);
+/** Everything paid for a tower at `level` (and its specialisation, if any). */
+export function spentOn(def: TowerDef, level: number, branch: Branch | null = null): number {
+  const levels = def.levels.slice(0, level).reduce((sum, l) => sum + l.cost, 0);
+  return levels + (branch !== null ? branchCost(def, branch) : 0);
+}
+
+export function sellValue(def: TowerDef, level: number, branch: Branch | null = null): number {
+  return Math.floor(spentOn(def, level, branch) * SELL_REFUND);
 }

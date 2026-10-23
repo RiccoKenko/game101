@@ -26,11 +26,12 @@ import type { Painted } from '../showcase/art';
 import { Shadow } from '../stage/shadow';
 import { createStage2D } from '../stage/stage2d';
 import { Battle, TOWER_TOP, type BattleEvent, type Enemy, type Shot } from '../td/battle';
-import { nextCost, sellValue } from '../td/economy';
+import { branchCost, nextCost, sellValue } from '../td/economy';
 import { LEVEL1 } from '../td/levels';
 import type { Pt } from '../td/path';
-import { ENEMIES, TOWER_KINDS, TOWERS, type EnemyKind, type TowerKind } from '../td/units';
-import { paintBall, paintCrystal, paintFrostWave, paintPirate, paintRing, paintTower } from './art';
+import type { TargetMode } from '../td/targeting';
+import { ENEMIES, MAX_LEVEL, TOWER_KINDS, TOWERS, towerSpec, type Branch, type EnemyKind, type TowerKind } from '../td/units';
+import { paintBall, paintCrystal, paintFrostWave, paintPirate, paintRing, paintShard, paintTower } from './art';
 import { clampView, pan, toMap, toScreen, zoomAt, type Bounds, type View } from './view';
 
 declare global {
@@ -127,7 +128,9 @@ shake.enabled = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const PIRATE_ART = Object.fromEntries((Object.keys(ENEMIES) as EnemyKind[]).map((k) => [k, paintPirate(k)])) as Record<EnemyKind, Painted>;
 const TOWER_ART = Object.fromEntries(TOWER_KINDS.map((k) => [k, [1, 2, 3].map((l) => paintTower(k, l))])) as Record<TowerKind, Painted[]>;
+const BRANCH_ART = Object.fromEntries(TOWER_KINDS.map((k) => [k, [0, 1].map((b) => paintTower(k, MAX_LEVEL, b as Branch))])) as Record<TowerKind, Painted[]>;
 const BALL_ART = paintBall();
+const SHARD_ART = paintShard();
 const CRYSTAL_ART = paintCrystal();
 const RING_ART = paintRing();
 const FROST_ART = paintFrostWave();
@@ -136,10 +139,12 @@ const GOLD = new THREE.Color(1, 0.85, 0.3);
 const TRAIL = new THREE.Color(1, 0.75, 0.35);
 const SMOKE = new THREE.Color(0.55, 0.52, 0.5);
 const STORM = new THREE.Color(0.72, 0.55, 1);
+const ARCANE = new THREE.Color(1, 0.45, 0.85);
 const ICE = new THREE.Color(0.6, 0.9, 1);
 const STEEL = new THREE.Color(0.85, 0.9, 1);
 const NO_TINT = new THREE.Color(1, 1, 1);
 const CHILL_TINT = new THREE.Color(0.78, 0.92, 1.1);
+const FROZEN_TINT = new THREE.Color(0.62, 0.9, 1.2);
 
 // ---------- hero
 
@@ -182,11 +187,13 @@ interface TowerView {
   recoil: number;
 }
 
-/** An arrow, or a cannonball drawn on an arc with a smoke trail. */
+/** An arrow or ice shard, or a cannonball drawn on an arc with a smoke trail. */
 interface ShotView {
   mesh: THREE.Mesh;
   trail: Trail;
   shell: boolean;
+  /** Flak bursts in the air, so its arc ends this high. */
+  endLift: number;
 }
 
 let battle: Battle;
@@ -238,7 +245,8 @@ function setTower(slot: number): void {
   }
   if (!t || towers.has(slot)) return;
   const [x, y] = level.slots[slot];
-  const mesh = sprite(TOWER_ART[t.kind][t.level - 1], (level.slotRadius * 2.1) / 150, 'feet');
+  const art = t.branch !== null ? BRANCH_ART[t.kind][t.branch] : TOWER_ART[t.kind][t.level - 1];
+  const mesh = sprite(art, (level.slotRadius * 2.1) / 150, 'feet');
   world([x, y + 20], 0, mesh.position);
   mesh.renderOrder = sortOrder(y + 20);
   scene.add(mesh);
@@ -247,13 +255,24 @@ function setTower(slot: number): void {
 
 function addShot(s: Shot): void {
   const shell = s.kind === 'shell';
-  const mesh = shell ? sprite(BALL_ART, 0.6, 'centre') : new THREE.Mesh(arrowGeo, arrowMat);
-  if (!shell) mesh.scale.setScalar(ARROW_SCALE);
+  const shard = s.freeze > 0;
+  let mesh: THREE.Mesh;
+  let trail: Trail;
+  if (shell) {
+    mesh = sprite(BALL_ART, s.splash > 100 ? 0.85 : 0.6, 'centre');
+    trail = new Trail(SMOKE, s.splash > 100 ? 10 : 7, 14, 90);
+  } else if (shard) {
+    mesh = sprite(SHARD_ART, 0.7, 'centre');
+    trail = new Trail(ICE, 3, 12, 70);
+  } else {
+    mesh = new THREE.Mesh(arrowGeo, arrowMat);
+    mesh.scale.setScalar(ARROW_SCALE * (s.speed > 1000 && s.by === 'tower' ? 1.3 : 1));
+    trail = new Trail(TRAIL, 2.2, 12, 70);
+  }
   mesh.renderOrder = ORDER_ARROW;
-  const trail = shell ? new Trail(SMOKE, 7, 14, 90) : new Trail(TRAIL, 2.2, 12, 70);
   trail.mesh.renderOrder = ORDER_ARROW - 1;
   scene.add(mesh, trail.mesh);
-  arrows.set(s.id, { mesh, trail, shell });
+  arrows.set(s.id, { mesh, trail, shell, endLift: shell && s.hitsFlying ? 60 : 0 });
 }
 
 function finishArrow(id: number): void {
@@ -375,40 +394,62 @@ function menuButton(label: string, cost: string, enabled: boolean, onClick: () =
   return b;
 }
 
+const MODE_LABEL: Record<TargetMode, string> = { first: 'First', nearest: 'Nearest', carrier: 'Thieves' };
+const MODES: TargetMode[] = ['first', 'nearest', 'carrier'];
+
 function renderMenu(): void {
   if (menuSlot === null) return;
   const slot = menuSlot;
   const menu = $('menu') as HTMLElement;
   menu.replaceChildren();
   const t = battle.towers[slot];
+  /** A button that, when pressed or hovered, shows how far that choice would reach. */
+  const withRange = (b: HTMLButtonElement, range: number) => {
+    const preview = () => showRing(slot, range);
+    b.addEventListener('pointerenter', preview);
+    b.addEventListener('pointerdown', preview);
+    return b;
+  };
   let range = 0;
   if (!t) {
-    // Pressing (or hovering) a tower shows how far it would reach before it is built.
     for (const kind of TOWER_KINDS) {
       const def = TOWERS[kind];
       const cost = nextCost(def, 0)!;
       const b = menuButton(def.name, `◉ ${cost}`, battle.purse.canAfford(cost), () => {
         if (battle.build(slot, kind)) closeMenu();
       }, def.blurb);
-      const preview = () => showRing(slot, def.levels[0].range);
-      b.addEventListener('pointerenter', preview);
-      b.addEventListener('pointerdown', preview);
-      menu.append(b);
+      menu.append(withRange(b, def.levels[0].range));
     }
   } else {
-    const cost = nextCost(TOWERS[t.kind], t.level);
-    range = TOWERS[t.kind].levels[Math.min(t.level, TOWERS[t.kind].levels.length - 1)].range;
-    menu.append(
-      cost === null
-        ? menuButton(`Level ${t.level}`, 'MAX', false, () => {})
-        : menuButton(`Upgrade to ${t.level + 1}`, `◉ ${cost}`, battle.purse.canAfford(cost), () => {
-            if (battle.upgrade(slot)) renderMenu();
-          }),
-      menuButton('Sell', `+${sellValue(TOWERS[t.kind], t.level)}`, true, () => {
-        battle.sell(slot);
-        closeMenu();
-      }),
-    );
+    const def = TOWERS[t.kind];
+    const spec = towerSpec(t.kind, t.level, t.branch);
+    range = spec.stats.range;
+    const cost = nextCost(def, t.level);
+    if (t.level >= MAX_LEVEL) menu.append(menuButton(spec.name, 'MAX', false, () => {}));
+    else if (cost !== null) {
+      const next = def.levels[t.level];
+      menu.append(withRange(menuButton(`Upgrade to ${t.level + 1}`, `◉ ${cost}`, battle.purse.canAfford(cost), () => {
+        if (battle.upgrade(slot)) renderMenu();
+      }), next.range));
+    } else
+      // Level 3: choose one of two specialisations.
+      def.branches.forEach((b, i) => {
+        const price = branchCost(def, i as Branch);
+        menu.append(withRange(menuButton(b.name, `◉ ${price}`, battle.purse.canAfford(price), () => {
+          if (battle.upgrade(slot, i as Branch)) renderMenu();
+        }, b.blurb), b.level.range));
+      });
+    // Frost waves hit everyone in range, so they have no target to pick.
+    if (spec.attack.attack !== 'pulse')
+      menu.append(menuButton('Target', `${MODE_LABEL[t.mode]} ▸`, true, () => {
+        battle.setMode(slot, MODES[(MODES.indexOf(t.mode) + 1) % MODES.length]);
+        sfx.play('click', 0.3, 0);
+        renderMenu();
+      }));
+    menu.append(menuButton('Sell', `+${sellValue(def, t.level, t.branch)}`, true, () => {
+      battle.sell(slot);
+      closeMenu();
+    }));
   }
   menu.hidden = false;
   if (range) showRing(slot, range);
@@ -514,24 +555,36 @@ function onEvent(ev: BattleEvent): void {
       if (ev.tower) recoil(ev.tower.slot);
       break;
     case 'boom': {
-      const at = world(ev.at, 6);
-      fx.poof(at, 1.1, 16);
-      fx.sparks(at, new THREE.Color(1, 0.65, 0.25), undefined, 16);
-      shake.add(0.12);
+      // Bigger blasts for the mortar; flak bursts up in the air.
+      const big = ev.radius / 80;
+      const at = world(ev.at, ev.shot.hitsFlying ? 60 : 6);
+      fx.poof(at, 1.1 * big, Math.round(16 * big));
+      fx.sparks(at, new THREE.Color(1, 0.65, 0.25), undefined, Math.round(16 * big));
+      shake.add(0.12 * big);
       sfx.play('explosion', 0.22);
       break;
     }
     case 'zap': {
-      const bolt = new Bolt(world(ev.from), world(ev.to), STORM, 11);
+      // Lightning (jumping on in a chain), or the Arcane Lens beam, which thickens as it heats up.
+      const bolt = ev.beam
+        ? new Bolt(world(ev.from), world(ev.to), ARCANE, 6 + ev.jump * 1.6, 0.16, false)
+        : new Bolt(world(ev.from), world(ev.to), STORM, ev.jump ? 8 : 11);
       bolt.renderOrder = ORDER_ARROW;
       scene.add(bolt.group);
       bolts.push(bolt);
-      fx.flash(world(ev.from), STORM);
-      fx.sparks(world(ev.to), STORM, undefined, 10);
-      sfx.play('zap', 0.2);
-      recoil(ev.tower.slot);
+      if (ev.jump === 0 || !ev.beam) fx.sparks(world(ev.to), ev.beam ? ARCANE : STORM, undefined, ev.beam ? 4 : 10);
+      if (ev.jump === 0) {
+        fx.flash(world(ev.from), ev.beam ? ARCANE : STORM);
+        recoil(ev.tower.slot);
+      }
+      if (!ev.beam && ev.jump === 0) sfx.play('zap', 0.2);
+      if (ev.beam && ev.jump === 0) sfx.play('zap', 0.12, 0.2);
       break;
     }
+    case 'freeze':
+      fx.glitter(world(ev.enemy.pos, ev.enemy.def.altitude + ev.enemy.def.radius), ICE, 10);
+      sfx.play('xp', 0.15, 0.2);
+      break;
     case 'pulse': {
       const mesh = sprite(FROST_ART, 0, 'centre');
       world(ev.at, 0, mesh.position);
@@ -596,6 +649,10 @@ function onEvent(ev: BattleEvent): void {
       setTower(ev.tower.slot);
       const at = world(level.slots[ev.tower.slot], 10);
       fx.poof(at, 0.8, 14);
+      if (ev.tower.level >= MAX_LEVEL) {
+        fx.ring(world(level.slots[ev.tower.slot], 4), GOLD, 1, 40);
+        showBanner(towerSpec(ev.tower.kind, ev.tower.level, ev.tower.branch).name + '!');
+      }
       fx.glitter(at.add(tmp.set(0, 60, 0)), GOLD, 10);
       sfx.play('levelup', 0.3);
       hudDirty = true;
@@ -653,7 +710,7 @@ function syncPirates(dt: number, t: number): void {
       continue;
     }
     const moving = Math.hypot(e.vel[0], e.vel[1]) > 1;
-    v.phase += dt * (e.def.speed / 6) * e.slow;
+    v.phase += dt * (e.def.speed / 6) * (e.frozen > 0 ? 0 : e.slow);
     const sx = Math.abs(v.body.scale.x);
     let hop: number;
     if (e.flying) {
@@ -669,9 +726,10 @@ function syncPirates(dt: number, t: number): void {
     if (Math.abs(e.vel[0]) > 2) v.body.scale.x = sx * Math.sign(e.vel[0]);
     v.shadow.place(e.pos[0], -e.pos[1], e.def.altitude + hop);
     const chilled = e.slowFor > 0;
-    (v.body.material as THREE.ShaderMaterial).uniforms.tint.value.copy(chilled ? CHILL_TINT : NO_TINT);
-    // Chilled pirates look frosted over: tinted blue and a little paler.
-    v.flash.value = Math.max(v.flash.value - dt * 9, chilled ? 0.2 : 0);
+    const frozen = e.frozen > 0;
+    (v.body.material as THREE.ShaderMaterial).uniforms.tint.value.copy(frozen ? FROZEN_TINT : chilled ? CHILL_TINT : NO_TINT);
+    // Chilled pirates look frosted over: tinted blue and a little paler; frozen ones paler still.
+    v.flash.value = Math.max(v.flash.value - dt * 9, frozen ? 0.4 : chilled ? 0.2 : 0);
     v.frost -= dt;
     if (chilled && v.frost <= 0) {
       v.frost = 0.35;
@@ -700,7 +758,7 @@ function syncShots(dt: number): void {
       // A lob: leaves the tower top, rises, and comes down on the landing spot.
       const total = Math.hypot(s.aimAt[0] - s.start[0], s.aimAt[1] - s.start[1]) || 1;
       const p = Math.min(1, Math.hypot(s.pos[0] - s.start[0], s.pos[1] - s.start[1]) / total);
-      world(s.pos, TOWER_TOP * (1 - p) + (50 + total * 0.35) * 4 * p * (1 - p), a.mesh.position);
+      world(s.pos, TOWER_TOP * (1 - p) + a.endLift * p + (50 + total * 0.35) * 4 * p * (1 - p), a.mesh.position);
       a.mesh.rotation.z += 0.2;
     } else {
       world(s.pos, 0, a.mesh.position);

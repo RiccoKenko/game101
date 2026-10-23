@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { Battle, type BattleEvent } from '../../src/td/battle';
-import { nextCost, Purse, sellValue } from '../../src/td/economy';
+import { branchCost, nextCost, Purse, sellValue } from '../../src/td/economy';
 import { checkLevel, LEVEL1, type LevelDef } from '../../src/td/levels';
 import { closedCurve, insidePolygon, Path } from '../../src/td/path';
 import { intercept, pickTarget, type Targetable } from '../../src/td/targeting';
-import { afterArmor, TOWERS, type TowerKind } from '../../src/td/units';
+import { afterArmor, TOWERS, type Branch, type TowerKind } from '../../src/td/units';
 import { stars, Vault } from '../../src/td/vault';
 import { WaveRunner } from '../../src/td/waves';
 
@@ -217,6 +217,72 @@ describe('towers', () => {
     b.sell(NEAR_DOCK);
     b.step(2);
     expect(e.slow).toBe(1);
+  });
+});
+
+describe('level 4 specialisations', () => {
+  /** A battle with one tower on the spot near the dock, raised to level 4 as `branch`. */
+  const special = (kind: TowerKind, branch: Branch, level: LevelDef) => {
+    const b = new Battle(level);
+    b.purse.gold = 5000;
+    b.build(NEAR_DOCK, kind);
+    b.upgrade(NEAR_DOCK);
+    b.upgrade(NEAR_DOCK);
+    expect(b.upgrade(NEAR_DOCK)).toBeNull();
+    expect(b.upgrade(NEAR_DOCK, branch)?.level).toBe(4);
+    expect(b.upgrade(NEAR_DOCK, branch)).toBeNull();
+    b.callWave();
+    return b;
+  };
+
+  it('costs the branch price and sells for 60% of everything paid', () => {
+    const b = special('archer', 0, only('deckhand'));
+    expect(b.purse.gold).toBe(5000 - 70 - 110 - 160 - branchCost(TOWERS.archer, 0));
+    expect(b.sell(NEAR_DOCK)).toBe(Math.floor((70 + 110 + 160 + 250) * 0.6));
+  });
+
+  it('a Volley Tower shoots three pirates at once', () => {
+    const b = special('archer', 1, only('deckhand', 5, 0.4));
+    run(b, 60, (e) => e.filter((x) => x.type === 'shoot').length >= 3 && b.enemies.length >= 3);
+    const volley = run(b, 5, (e) => e.some((x) => x.type === 'shoot'));
+    const shots = volley.filter((e) => e.type === 'shoot');
+    expect(new Set(shots.map((e) => e.type === 'shoot' && e.shot.target)).size).toBe(3);
+  });
+
+  it('Lightning Spire bolts jump between pirates', () => {
+    const b = special('storm', 0, only('deckhand', 5, 0.4));
+    const zaps = run(b, 60, (e) => e.some((x) => x.type === 'zap' && x.jump >= 2)).filter((e) => e.type === 'zap');
+    expect(Math.max(...zaps.map((e) => (e.type === 'zap' ? e.jump : 0)))).toBeGreaterThanOrEqual(2);
+  });
+
+  it('Arcane Lens burns hotter the longer it holds a pirate', () => {
+    const b = special('storm', 1, only('ironclad'));
+    const hits = run(b, 60, (e) => e.filter((x) => x.type === 'zap').length >= 8).filter((e) => e.type === 'hit');
+    const dmg = hits.map((e) => (e.type === 'hit' ? e.damage : 0));
+    expect(dmg.at(-1)!).toBeGreaterThan(dmg[0] * 2);
+  });
+
+  it('Ice Shard freezes a pirate in place', () => {
+    const b = special('frost', 1, only('ironclad'));
+    run(b, 60, (e) => e.some((x) => x.type === 'freeze'));
+    const e = b.enemies[0];
+    const d0 = e.d;
+    b.step(0.5);
+    expect(e.d).toBe(d0);
+  });
+
+  it('Flak bursts reach flyers, plain cannon shells do not', () => {
+    const b = special('cannon', 1, only('parrot', 3, 0.6));
+    const hits = run(b, 60, (e) => e.some((x) => x.type === 'hit'));
+    expect(hits.some((e) => e.type === 'hit' && e.enemy.flying)).toBe(true);
+  });
+
+  it('towers can be told which pirate to pick', () => {
+    const b = new Battle(only('deckhand'));
+    b.build(NEAR_DOCK, 'archer');
+    expect(b.setMode(NEAR_DOCK, 'carrier')).toBe(true);
+    expect(b.towers[NEAR_DOCK]!.mode).toBe('carrier');
+    expect(b.setMode(1, 'nearest')).toBe(false);
   });
 });
 

@@ -21,7 +21,8 @@
     - ป้อม 4 แบบ ระดับ 1-3: Archer, Cannon (ระเบิดวง ยิงตัวบินไม่ได้), Storm Crystal (เวท ทะลุเกราะ), Frost Cloud (ทำให้ช้า)
     - ศัตรูใหม่: Ironclad (เกราะ), Parrot Raider (บิน)
     - ด่าน 1 มี 8 เวฟ
-- **Test:** unit 58 ข้อ (6 ไฟล์) และ e2e 3 ข้อ ผ่านทั้งหมด
+    - ระดับ 4 เลือกสายได้ ป้อมละ 2 สาย รวม 8 แบบ (`TowerDef.branches`, `towerSpec()`), ปุ่ม Target ในเมนูป้อม
+- **Test:** unit 65 ข้อ (6 ไฟล์) และ e2e 3 ข้อ ผ่านทั้งหมด
 
 ## Artifacts (ลิงก์คงที่)
 - **หน้าโชว์ตัวละคร:** https://claude.ai/artifact/PNawa631NQkzXEZbZAbFRh
@@ -68,12 +69,10 @@
   6. ใส่แทนตัวกลมชั่วคราว
      - ใน `src/play/main.ts` ให้ `PirateView` ใช้ Puppet (Powder Monkey, Ironclad, Parrot ยังเป็นตัววาดด้วยโค้ดชั่วคราว)
      - ในแท็บ Battle ของหน้าโชว์ ใช้ Deckhand แทนเป้าซ้อม
-- **D. 2D-3 ที่เหลือ**
-  - สายแยกป้อมที่ Lv4 (Sniper Nest/Volley, Mortar/Flak, Lightning Spire/Arcane Lens, Blizzard/Ice Shard)
+- **D. 2D-3 ที่เหลือ** (ทำตามลำดับ)
   - บอส First Mate
   - สกิล Talon (แย่งคริสตัลคืน) และ Mochi (ท่าไม้ตาย)
   - การ์ดคำสั่งกัปตันทุก 5 เวฟ
-  - เลือกโหมดเล็งเป้าของป้อม (first / nearest / carrier) ในเมนู ระบบกติการองรับแล้ว
 
 ## ข้อเท็จจริงสำคัญ
 - **พิกัด:** ใช้พิกเซลบนภาพแผนที่ 1536×1024 แกน y ชี้ลง
@@ -89,6 +88,7 @@
   - ironclad: hp 140, speed 36, เกราะ 50% (ลดดาเมจกายภาพ), bounty 14
   - parrot: hp 42, speed 72, บินสูง 70 px, bounty 7
   - ราคาป้อม: archer 70/110/160, cannon 90/130/190, storm 100/140/200, frost 80/110/150
+  - ราคาสายระดับ 4: 220-270
   - hero: damage 6-9, rate 0.55, range 250, windup 0.25
   - ด่าน: เงินเริ่มต้น 220, คริสตัล 20, 8 เวฟ (นกเริ่มเวฟ 4, Ironclad เริ่มเวฟ 6)
   - ผลจาก bot 6 seed:
@@ -105,7 +105,18 @@
   - `shell` ยิงโค้งไปจุดที่คาดว่าเป้าจะอยู่ ระเบิดโดนเฉพาะตัวบนพื้น
   - `zap` โดนทันที
   - `pulse` ทำให้ทุกตัวในระยะช้าลง
-  - ฝั่งวาด: ลูกปืนใหญ่ลอยโค้งพร้อมควัน, สายฟ้าใช้ `src/fx/bolt.ts`, คลื่นเย็นเป็นวงกว้างเท่าระยะป้อม
+  - ระดับ 4 เพิ่มตัวเลือกใน `TowerLevel`:
+    - `shots` (Volley)
+    - `crit` (Sniper)
+    - `chain*` (Lightning Spire)
+    - `ramp*` (Arcane Lens)
+    - `freeze` (Ice Shard)
+    - Flak คือ shell ที่ `hitsFlying`
+  - สุ่มคริเฉพาะป้อมที่มีโอกาสคริ เพื่อไม่ให้ลำดับการสุ่มของผลเดิมเปลี่ยน
+  - ฝั่งวาด:
+    - ลูกปืนใหญ่ลอยโค้งพร้อมควัน (Flak ระเบิดกลางอากาศ)
+    - สายฟ้าและลำแสงใช้ `src/fx/bolt.ts`
+    - คลื่นเย็นเป็นวงกว้างเท่าระยะป้อม
 - **build ไฟล์เดียว:** `scripts/build-showcase.mjs <out> [index|play]`
   - ใช้ `configFile:false` + `inlineDynamicImports`
   - ใส่ sprites ทั้งหมด (ยกเว้น `master.png`), ภาพแผนที่ (เฉพาะหน้า play) และเสียง
