@@ -19,6 +19,7 @@ import { Shake } from '../fx/shake';
 import { GameTime } from '../fx/time';
 import { Trail } from '../fx/trail';
 import { Animator2D } from '../puppet/animator';
+import { deckhandClips } from '../puppet/clips/deckhand';
 import { heroClips } from '../puppet/clips/hero';
 import { loadPuppet, loadTexture } from '../puppet/loader';
 import { Puppet, spriteGeometry, spriteMaterial } from '../puppet/puppet';
@@ -112,7 +113,11 @@ function sprite(p: Painted, scale: number, anchor: 'feet' | 'centre', flash = fl
   return mesh;
 }
 
-const [mapTexture, heroAssets] = await Promise.all([loadTexture(level.map.art ?? level.map.sketch, renderer), loadPuppet('hero', renderer)]);
+const [mapTexture, heroAssets, deckhandAssets] = await Promise.all([
+  loadTexture(level.map.art ?? level.map.sketch, renderer),
+  loadPuppet('hero', renderer),
+  loadPuppet('deckhand', renderer),
+]);
 bar.style.width = '90%';
 const map = new THREE.Mesh(spriteGeometry(level.map.w, level.map.h), spriteMaterial(mapTexture, flash0));
 map.renderOrder = 0;
@@ -151,6 +156,9 @@ const FROZEN_TINT = new THREE.Color(0.62, 0.9, 1.2);
 // ---------- hero
 
 const HERO_SIZE = 0.08;
+/** The Deckhand puppet: about 90 px tall (its rig is ~1285 px from boots to bandana). */
+const DECKHAND_SIZE = 0.07;
+const DECKHAND_HEIGHT = 1285 * DECKHAND_SIZE;
 const hero = new Puppet(heroAssets);
 hero.size = HERO_SIZE;
 scene.add(hero.root);
@@ -169,7 +177,12 @@ const ARROW_SCALE = (430 * HERO_SIZE) / arrowSprite.w;
 interface PirateView {
   enemy: Enemy;
   group: THREE.Group;
-  body: THREE.Mesh;
+  /** A painted stand-in, or a drawn puppet with its moves (the Deckhand). */
+  body?: THREE.Mesh;
+  puppet?: Puppet;
+  anim?: Animator2D;
+  /** How it leaves: falling over (shot down) or a parting taunt at the dock. */
+  exit: 'ko' | 'taunt';
   flash: { value: number };
   shadow: Shadow;
   hpBack: THREE.Mesh;
@@ -215,11 +228,25 @@ const hpGeo = new THREE.PlaneGeometry(1, 1).translate(0.5, 0, 0);
 function addPirate(e: Enemy): void {
   const flash = { value: 0 };
   const group = new THREE.Group();
-  const art = PIRATE_ART[e.kind];
-  const body = sprite(art, (e.def.radius * 2.6) / art.h, 'feet', flash);
-  // Flyers hang in the air above their shadow on the road.
-  const top = e.def.altitude + e.def.radius * 2.6;
-  body.position.y = e.def.altitude;
+  let body: THREE.Mesh | undefined;
+  let puppet: Puppet | undefined;
+  let anim: Animator2D | undefined;
+  let height = e.def.radius * 2.6;
+  if (e.kind === 'deckhand') {
+    puppet = new Puppet(deckhandAssets);
+    puppet.size = DECKHAND_SIZE;
+    anim = new Animator2D(deckhandClips);
+    anim.play('walk', { fade: 0 });
+    height = DECKHAND_HEIGHT;
+    group.add(puppet.root);
+  } else {
+    const art = PIRATE_ART[e.kind];
+    body = sprite(art, height / art.h, 'feet', flash);
+    // Flyers hang in the air above their shadow on the road.
+    body.position.y = e.def.altitude;
+    group.add(body);
+  }
+  const top = e.def.altitude + height;
   const carries = e.def.carries ?? 1;
   const crystals = Array.from({ length: carries }, (_, i) => {
     const m = sprite(CRYSTAL_ART, 0.42, 'centre');
@@ -233,16 +260,39 @@ function addPirate(e: Enemy): void {
   hpBack.scale.set(40, 7, 1);
   hpBack.position.set(-20, top + 6, 0);
   hpFill.position.set(-19, top + 6, 0);
-  group.add(body, ...crystals, hpBack, hpFill);
+  group.add(...crystals, hpBack, hpFill);
   const shadow = new Shadow(e.def.radius * 2.4);
   shadow.mesh.renderOrder = ORDER_SHADOW;
   scene.add(group, shadow.mesh);
-  pirates.set(e.id, { enemy: e, group, body, flash, shadow, hpBack, hpFill, crystals, phase: Math.random() * 6, leaving: -1, frost: 0, dust: 0 });
+  pirates.set(e.id, { enemy: e, group, body, puppet, anim, exit: 'ko', flash, shadow, hpBack, hpFill, crystals, phase: Math.random() * 6, leaving: -1, frost: 0, dust: 0 });
 }
 
 function removePirate(v: PirateView): void {
   scene.remove(v.group, v.shadow.mesh);
+  v.puppet?.dispose();
   pirates.delete(v.enemy.id);
+}
+
+/** The Deckhand's moving clip: carrying a crystal or not. */
+const loopFor = (e: Enemy) => (e.carrying ? 'carry' : 'walk');
+
+/** Puppet pirates: play their move, mirror to face the way they walk, frost tint and draw order. */
+function drivePuppet(v: PirateView, dt: number, order: number): void {
+  const e = v.enemy;
+  const { puppet, anim } = v;
+  if (!puppet || !anim) return;
+  if (Math.abs(e.vel[0]) > 2) puppet.facing = e.vel[0] > 0 ? 1 : -1;
+  // Steps keep pace with the pirate: slower when chilled, still when frozen, quicker when rallied.
+  const pace = e.frozen > 0 && !e.def.steady ? 0 : e.slow * e.haste;
+  // A hit reaction finishes by itself; after a lost battle they keep cheering.
+  if (anim.playing !== 'hit' && anim.playing !== 'cheer') anim.play(loopFor(e), { speed: pace, fade: 0.15 });
+  puppet.setPose(anim.update(dt * (anim.playing === 'hit' ? 1 : pace) || 0));
+  puppet.setOrder(order);
+  puppet.update(dt);
+  const chilled = e.slowFor > 0;
+  const frozen = e.frozen > 0 && !e.def.steady;
+  puppet.tint(frozen ? FROZEN_TINT : chilled ? CHILL_TINT : NO_TINT);
+  puppet.hitFlash(frozen ? 0.4 : chilled ? 0.2 : 0);
 }
 
 function setTower(slot: number): void {
@@ -627,6 +677,10 @@ function onEvent(ev: BattleEvent): void {
     case 'hit': {
       const v = pirates.get(ev.enemy.id);
       if (v) v.flash.value = 1;
+      if (v?.puppet && v.anim && ev.enemy.hp > 0) {
+        v.puppet.hitFlash(1);
+        v.anim.oneShot('hit', loopFor(ev.enemy), { fade: 0.05 });
+      }
       const at = world(ev.at);
       // Armour clinks: steel-white sparks when it stops part of the hit.
       const spark = ev.blocked > 0 ? STEEL : ev.crit ? new THREE.Color(1, 0.75, 0.25) : new THREE.Color(1, 0.95, 0.75);
@@ -673,7 +727,10 @@ function onEvent(ev: BattleEvent): void {
       break;
     case 'escape': {
       const v = pirates.get(ev.enemy.id);
-      if (v) v.leaving = 0;
+      if (v) {
+        v.leaving = 0;
+        v.exit = 'taunt';
+      }
       if (ev.lost > 0) {
         shake.add(0.35 * ev.lost);
         bump('crystal-stat', 'hurt');
@@ -706,6 +763,8 @@ function onEvent(ev: BattleEvent): void {
       endScreen(true, ev.stars);
       break;
     case 'lose':
+      // The pirates celebrate.
+      for (const v of pirates.values()) if (v.anim && v.leaving < 0) v.anim.play('cheer', { once: true });
       endScreen(false, 0);
       break;
   }
@@ -738,35 +797,53 @@ function syncPirates(dt: number, t: number): void {
     if (v.leaving < 0 && !alive.has(e.id)) v.leaving = 0;
     if (v.leaving >= 0) {
       v.leaving += dt;
-      const k = Math.min(1, v.leaving / 0.25);
-      v.group.scale.set(1 + 0.4 * k, 1 - 0.6 * k, 1);
-      (v.body.material as THREE.ShaderMaterial).uniforms.opacity.value = 1 - k;
       for (const m of v.crystals) m.visible = false;
       v.hpBack.visible = v.hpFill.visible = false;
+      if (v.puppet && v.anim) {
+        // Falls over (or taunts from the dock), then fades away.
+        if (v.anim.playing !== v.exit) v.anim.play(v.exit, { once: true, fade: 0.08 });
+        const hold = v.anim.duration(v.exit) + 0.3;
+        const k = Math.min(1, Math.max(0, (v.leaving - hold) / 0.35));
+        v.puppet.setPose(v.anim.update(dt));
+        v.puppet.update(dt);
+        v.puppet.tint(NO_TINT);
+        v.puppet.opacity(1 - k);
+        if (k >= 1) removePirate(v);
+        continue;
+      }
+      const k = Math.min(1, v.leaving / 0.25);
+      v.group.scale.set(1 + 0.4 * k, 1 - 0.6 * k, 1);
+      (v.body!.material as THREE.ShaderMaterial).uniforms.opacity.value = 1 - k;
       if (k >= 1) removePirate(v);
       continue;
     }
     const moving = Math.hypot(e.vel[0], e.vel[1]) > 1;
     v.phase += dt * (e.def.speed / 6) * (e.frozen > 0 && !e.def.steady ? 0 : e.slow) * e.haste;
-    const sx = Math.abs(v.body.scale.x);
+    const sx = Math.abs(v.body?.scale.x ?? 1);
     let hop: number;
-    if (e.flying) {
+    if (v.puppet) {
+      // The walk clip bobs the body itself.
+      hop = 0;
+      v.group.rotation.z = 0;
+    } else if (e.flying) {
       // Bob up and down with each wing beat.
       hop = Math.sin(v.phase * 0.8) * 6;
-      v.body.scale.y = sx * (1 + Math.sin(v.phase * 1.6) * 0.06);
+      v.body!.scale.y = sx * (1 + Math.sin(v.phase * 1.6) * 0.06);
       v.group.rotation.z = 0;
     } else {
       hop = moving ? Math.abs(Math.sin(v.phase)) * 4 : 0;
       v.group.rotation.z = moving ? Math.sin(v.phase) * 0.07 : 0;
     }
     world(e.pos, hop, v.group.position);
-    if (Math.abs(e.vel[0]) > 2) v.body.scale.x = sx * Math.sign(e.vel[0]);
+    if (v.body && Math.abs(e.vel[0]) > 2) v.body.scale.x = sx * Math.sign(e.vel[0]);
     v.shadow.place(e.pos[0], -e.pos[1], e.def.altitude + hop);
     const chilled = e.slowFor > 0;
     const frozen = e.frozen > 0;
-    (v.body.material as THREE.ShaderMaterial).uniforms.tint.value.copy(frozen ? FROZEN_TINT : chilled ? CHILL_TINT : NO_TINT);
-    // Chilled pirates look frosted over: tinted blue and a little paler; frozen ones paler still.
-    v.flash.value = Math.max(v.flash.value - dt * 9, frozen ? 0.4 : chilled ? 0.2 : 0);
+    if (v.body) {
+      (v.body.material as THREE.ShaderMaterial).uniforms.tint.value.copy(frozen ? FROZEN_TINT : chilled ? CHILL_TINT : NO_TINT);
+      // Chilled pirates look frosted over: tinted blue and a little paler; frozen ones paler still.
+      v.flash.value = Math.max(v.flash.value - dt * 9, frozen ? 0.4 : chilled ? 0.2 : 0);
+    }
     v.frost -= dt;
     if (chilled && v.frost <= 0) {
       v.frost = 0.35;
@@ -779,10 +856,12 @@ function syncPirates(dt: number, t: number): void {
       fx.dust(world(e.pos, 2), e.vel[0] > 0 ? -1 : 1);
     }
     const order = sortOrder(e.pos[1]);
-    v.body.renderOrder = order;
-    for (const m of v.crystals) m.renderOrder = order + 2;
-    v.hpBack.renderOrder = order + 3;
-    v.hpFill.renderOrder = order + 4;
+    if (v.body) v.body.renderOrder = order;
+    drivePuppet(v, dt, order);
+    // Above every puppet part (their draw orders go up to about 60).
+    for (const m of v.crystals) m.renderOrder = order + 70;
+    v.hpBack.renderOrder = order + 80;
+    v.hpFill.renderOrder = order + 81;
     v.crystals.forEach((m, i) => {
       m.visible = i < e.load;
       m.position.x = (i - (v.crystals.length - 1) / 2) * 24 + Math.sin(t * 3 + v.phase + i) * 1.5;

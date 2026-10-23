@@ -146,6 +146,20 @@ export class Puppet {
     this.pose = pose;
   }
 
+  /** Colours the whole character (e.g. icy blue while chilled); white is its own colours. */
+  tint(color: THREE.Color): void {
+    for (const n of this.parts.values()) {
+      const shade = n.def.shade ?? 1;
+      (n.mesh.material as THREE.ShaderMaterial).uniforms.tint.value.setRGB(color.r * shade, color.g * shade, color.b * shade);
+    }
+  }
+
+  /** Fades the whole character (0 = gone). */
+  opacity(value: number): void {
+    for (const n of this.parts.values()) (n.mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = value;
+    if (this.arrow) (this.arrow.mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = value;
+  }
+
   /** Whitens the whole character for a moment (hit feedback). */
   hitFlash(amount = 1): void {
     this.flashU.value = Math.max(this.flashU.value, amount);

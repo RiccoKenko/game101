@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cropPiece, findPieces, groupByBoxes, groupPieces, orderPieces, removeBackground, type RgbaImage } from '../../scripts/art/slicer';
+import { cropPiece, eraseEllipses, findPieces, groupByBoxes, groupPieces, orderPieces, removeBackground, type RgbaImage } from '../../scripts/art/slicer';
 
 type Rgb = [number, number, number];
 const MAGENTA: Rgb = [255, 0, 255];
@@ -141,5 +141,19 @@ describe('art slicer', () => {
   it('copes with fewer parts than expected', () => {
     const { pieces } = findPieces(image);
     expect(groupPieces(pieces, 20).groups.length).toBe(11);
+  });
+});
+
+describe('erasing cut ends', () => {
+  it('clears a turned ellipse given in sheet pixels and leaves the rest', () => {
+    const img: RgbaImage = { data: new Uint8Array(40 * 20 * 4).fill(255), width: 40, height: 20 };
+    // The image sits at (100, 50) on the sheet; a wide ellipse turned 90° becomes tall.
+    const out = eraseEllipses(img, 100, 50, [[120, 60, 8, 3, 90]]);
+    const alpha = (x: number, y: number) => out.data[(y * 40 + x) * 4 + 3];
+    expect(alpha(20, 10)).toBe(0);
+    expect(alpha(20, 16)).toBe(0);
+    expect(alpha(26, 10)).toBe(255);
+    expect(alpha(0, 0)).toBe(255);
+    expect(img.data[(10 * 40 + 20) * 4 + 3]).toBe(255);
   });
 });

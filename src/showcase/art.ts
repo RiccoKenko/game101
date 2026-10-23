@@ -1,5 +1,5 @@
 /**
- * Stand-in scenery painted in code (floating island, clouds, coin, practice target) in the characters' style:
+ * Stand-in scenery painted in code (floating island, clouds, coin) in the characters' style:
  * warm brown outlines and soft cel shading. They make way for ChatGPT-painted art once the map is drawn.
  */
 import * as THREE from 'three';
@@ -166,68 +166,4 @@ export function paintCoin(): Painted {
   }
   g.fill();
   return { texture: texture(c), w: 96, h: 96 };
-}
-
-/** A straw archery target on a wooden easel. The bullseye is at (180, 190); the feet touch y = 500. */
-export function paintTarget(): Painted {
-  const [c, g] = canvas(360, 510);
-  g.lineJoin = 'round';
-  g.lineCap = 'round';
-  const wood = (x1: number, y1: number, x2: number, y2: number, w: number) => {
-    g.strokeStyle = INK;
-    g.lineWidth = w + 8;
-    g.beginPath();
-    g.moveTo(x1, y1);
-    g.lineTo(x2, y2);
-    g.stroke();
-    g.strokeStyle = '#a8713f';
-    g.lineWidth = w;
-    g.stroke();
-    g.strokeStyle = 'rgba(255, 220, 170, 0.35)';
-    g.lineWidth = w * 0.3;
-    g.beginPath();
-    g.moveTo(x1 - w * 0.2, y1);
-    g.lineTo(x2 - w * 0.2, y2);
-    g.stroke();
-  };
-  wood(110, 300, 60, 500, 24);
-  wood(250, 300, 300, 500, 24);
-  wood(180, 260, 180, 470, 22);
-  wood(80, 420, 280, 420, 16);
-  // Straw boss with painted rings.
-  const rings: [number, string][] = [[150, '#e9d29a'], [118, '#f6f1e4'], [92, '#d9483e'], [64, '#f6f1e4'], [38, '#f4c34f']];
-  for (const [r, col] of rings) {
-    g.fillStyle = col;
-    g.beginPath();
-    g.arc(180, 190, r, 0, Math.PI * 2);
-    g.fill();
-  }
-  g.strokeStyle = 'rgba(150, 110, 50, 0.35)';
-  g.lineWidth = 3;
-  for (let a = 0; a < Math.PI * 2; a += Math.PI / 14) {
-    g.beginPath();
-    g.moveTo(180 + Math.cos(a) * 122, 190 + Math.sin(a) * 122);
-    g.lineTo(180 + Math.cos(a) * 148, 190 + Math.sin(a) * 148);
-    g.stroke();
-  }
-  g.strokeStyle = INK;
-  g.lineWidth = 7;
-  g.beginPath();
-  g.arc(180, 190, 150, 0, Math.PI * 2);
-  g.stroke();
-  g.lineWidth = 3;
-  for (const [r] of rings.slice(1)) {
-    g.beginPath();
-    g.arc(180, 190, r, 0, Math.PI * 2);
-    g.stroke();
-  }
-  const shine = g.createRadialGradient(120, 120, 10, 180, 190, 150);
-  shine.addColorStop(0, 'rgba(255,255,255,0.35)');
-  shine.addColorStop(0.6, 'rgba(255,255,255,0)');
-  shine.addColorStop(1, 'rgba(60, 30, 80, 0.18)');
-  g.fillStyle = shine;
-  g.beginPath();
-  g.arc(180, 190, 147, 0, Math.PI * 2);
-  g.fill();
-  return { texture: texture(c), w: 360, h: 510 };
 }

@@ -389,6 +389,32 @@ export function cropPiece(img: RgbaImage, labels: Int32Array, piece: Piece, pad 
   return { data, width: w, height: h };
 }
 
+/** An ellipse in sheet pixels: centre, radii and turn in degrees. */
+export type Ellipse = [number, number, number, number, number?];
+
+/**
+ * Clears the pixels inside each ellipse. Used for the flat skin-coloured "cut ends" some sheets draw where a
+ * part meets the next one: hidden under that part in the rig pose, they show as holes once limbs move.
+ * `ox`, `oy`: where the image's top-left corner sits on the sheet.
+ */
+export function eraseEllipses(img: RgbaImage, ox: number, oy: number, ellipses: Ellipse[]): RgbaImage {
+  const out = new Uint8Array(img.data);
+  for (const [cx, cy, rx, ry, deg = 0] of ellipses) {
+    const c = Math.cos((deg * Math.PI) / 180);
+    const s = Math.sin((deg * Math.PI) / 180);
+    const r = Math.max(rx, ry);
+    for (let y = Math.max(0, Math.floor(cy - r - oy)); y < Math.min(img.height, Math.ceil(cy + r - oy)); y++)
+      for (let x = Math.max(0, Math.floor(cx - r - ox)); x < Math.min(img.width, Math.ceil(cx + r - ox)); x++) {
+        const dx = x + ox - cx;
+        const dy = y + oy - cy;
+        const u = (dx * c + dy * s) / rx;
+        const v = (-dx * s + dy * c) / ry;
+        if (u * u + v * v <= 1) out.fill(0, (y * img.width + x) * 4, (y * img.width + x) * 4 + 4);
+      }
+  }
+  return { data: out, width: img.width, height: img.height };
+}
+
 /** Crops a whole picture to its visible pixels plus `pad`. */
 export function trim(img: RgbaImage, pad = 8): { image: RgbaImage; box: Box } {
   const { data, width: w, height: h } = img;

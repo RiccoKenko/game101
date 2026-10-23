@@ -47,7 +47,9 @@
    - ต้นฉบับอยู่ที่ `art/incoming/maps/level1_map.webp` ส่วนไฟล์ที่เกมใช้คือ `public/maps/level1.webp`
    - วัดจากภาพแล้ว: ทางเดินคลาดเฉลี่ย 2.5 px และกว้าง 92 px จุดป้อมขยับไม่กี่พิกเซลให้ตรงกลางหิน
    - เจ้านายเลือกแล้วว่า**รอแผนที่ของจริง ไม่ทำแผนที่ชั่วคราวด้วยโค้ด** (เคยติว่าภาพร่างดูไม่มีดีเทล)
-3. **วาด Deckhand ด้วย Codex:** วาดครบ 8 ภาพแล้ว แต่ต้องให้เจ้านายส่งใหม่เป็นข้อความปกติ
+3. **Deckhand:** Codex วาดครบ 8 ภาพแล้ว ได้รับไฟล์ 4 ภาพ (master, rigpose, head_faces, parts_body) ซึ่งตัด ประกอบตัว และทำท่าแล้ว
+   - **ยังขาดภาพ hands_props (มือ + ดาบ + คริสตัล)** ตอนนี้แขนเป็นตอ ยังไม่มีมือและดาบ ต้องขอเจ้านายส่งใหม่เป็นข้อความปกติ
+   - ภาพ concept, poses, portraits ไม่จำเป็นต่อเกม (ใช้เป็นภาพอ้างอิง/ฉากเล่าเรื่อง) ขอทีหลังได้
    - ภาพที่แปะ "ระหว่างที่ Claude กำลังทำงาน" ไม่ถูกบันทึกเป็นไฟล์ในโฟลเดอร์ images
    - ภาพที่ส่งเป็นข้อความปกติจะถูกบันทึกที่ `/tmp/claude-0/<project>/<session>/images/`
    - ใช้ prompt เดียวจบ (8.10) หยุดหลังภาพ 2 เพื่อรออนุมัติ
@@ -70,7 +72,20 @@
   4. ซ้อนภาพกับภาพร่างเพื่อจูน `route`, `slots`, `dock`, `vault`, `heroStart`, `island`
   5. `npm run map:sketch -- level1` พิมพ์ปัญหาจาก `checkLevel` ออกมา และ unit test ก็เช็ก `checkLevel` ด้วย
   - ตัว build แบบไฟล์เดียวใส่ `public/maps/*.png` ให้เองอยู่แล้ว
-- **C. ได้ Deckhand แล้ว**
+- **C. Deckhand** (ทำแล้วส่วนใหญ่ เหลือมือและดาบ)
+  - `art/rigs/deckhand.json` สร้างโดยวิธี auto-fit: ให้สคริปต์หาตำแหน่ง ขนาด และมุมที่สีของชิ้นส่วนตรงกับภาพ rig pose มากที่สุด แล้วซ้อนดูทีละชิ้น
+    - สคริปต์ `fit.py`, `gen_rig.py` และ `compose.py` (Python + numpy) อยู่ใน scratchpad จึงอาจหายแล้ว
+  - ใน `sheets.json` ใช้ `erase` (ลบวงรี) ลบ "ปลายตัด" สีผิวที่ข้อต่อ ซึ่ง Codex วาดไว้ ไม่งั้นจะเห็นเป็นรูตอนขยับ
+  - ท่าทางอยู่ที่ `src/puppet/clips/deckhand.ts`: idle, walk, run, carry, hit, ko, taunt, cheer
+    - slot `weapon`/`loot` และมือ `hand-l-fist`, `hand-r-grip` ใช้ชื่อตาม hands_props ซึ่งพอได้ภาพก็จะแสดงเอง
+  - ในด่านทดลอง: Deckhand เป็น puppet จริง (ขนาด 0.07) ท่าเดินเร็วหรือช้าตามน้ำแข็งและการตะโกนของบอส ถูกยิงตายเล่นท่า ko ถ้าหนีถึงเรือเล่นท่า taunt
+  - ในหน้าโชว์ แท็บ Battle: Deckhand แทนเป้าซ้อมแล้ว
+  - **พอได้ hands_props:**
+    1. วางที่ `art/incoming/deckhand/deckhand_hands_props.webp`
+    2. รัน `npm run art -- deckhand hands_props`
+    3. เพิ่ม part ใน rig: มือที่ bone `hand.l`/`hand.r` (slot `hand.l`/`hand.r`), ดาบที่ bone ใหม่ `cutlass` ลูกของ `hand.r` (slot `weapon`), คริสตัลใน slot `loot`
+    4. รัน `npm run art:publish -- deckhand`
+- **C (เดิม). ขั้นตอนทำตัวละครใหม่**
   1. วางภาพที่ `art/incoming/deckhand/deckhand_<sheet>.png` (ภาพที่แปะในแชตอยู่ในโฟลเดอร์ uploads ของ session ให้ดูขนาดและเนื้อหาเพื่อจับคู่ชื่อแผ่น)
   2. รัน `npm run art -- deckhand` แล้วดูภาพตรวจ `.check.png`
      - ชื่อชิ้นอยู่ใน `scripts/art/sheets.json`
@@ -79,7 +94,7 @@
   4. รัน `npm run art:publish -- deckhand`
   5. เขียนท่าใน `src/puppet/clips/deckhand.ts`: idle, เดินโยก, วิ่ง, แบกคริสตัลเหนือหัว, โดนตี, ตาย, ยั่ว, เชียร์
   6. ใส่แทนตัวกลมชั่วคราว
-     - ใน `src/play/main.ts` ให้ `PirateView` ใช้ Puppet (Powder Monkey, Ironclad, Parrot ยังเป็นตัววาดด้วยโค้ดชั่วคราว)
+     - ใน `src/play/main.ts` `PirateView` รองรับทั้ง puppet และภาพวาดชั่วคราวแล้ว (Powder Monkey, Ironclad, Parrot, First Mate ยังเป็นตัววาดด้วยโค้ดชั่วคราว)
      - ในแท็บ Battle ของหน้าโชว์ ใช้ Deckhand แทนเป้าซ้อม
 - **D. 2D-3 ที่เหลือ** (ทำตามลำดับ)
   - สกิล Talon (แย่งคริสตัลคืน) และ Mochi (ท่าไม้ตาย)

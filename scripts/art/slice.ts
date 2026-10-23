@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import {
   cropPiece,
+  eraseEllipses,
   findPieces,
   groupByBoxes,
   groupPieces,
@@ -19,6 +20,7 @@ import {
   removeBackground,
   trim,
   type Box,
+  type Ellipse,
   type Piece,
   type RgbaImage,
 } from './slicer';
@@ -31,6 +33,8 @@ interface SheetConfig {
   regions?: [number, number][];
   /** Part boxes [x, y, w, h] in sheet pixels by part name, for sheets the automatic grouping gets wrong. */
   boxes?: Record<string, [number, number, number, number]>;
+  /** Ellipses [cx, cy, rx, ry, degrees] in sheet pixels to clear from a part, e.g. drawn "cut ends" at joints. */
+  erase?: Record<string, Ellipse[]>;
 }
 
 interface SheetEntry {
@@ -143,7 +147,9 @@ async function main() {
         const part = ordered[k];
         if (!part) continue;
         const out = `${sheet}/${String(k + 1).padStart(2, '0')}-${name}.png`;
-        await asSharp(cropPiece(image, labels, part)).png().toFile(join(outDir, out));
+        let cut = cropPiece(image, labels, part);
+        if (cfg.erase?.[name]) cut = eraseEllipses(cut, part.x - 8, part.y - 8, cfg.erase[name]);
+        await asSharp(cut).png().toFile(join(outDir, out));
         entry.parts.push({ name, file: out, x: part.x, y: part.y, w: part.w, h: part.h });
         checks.push({ box: part, label: `${k + 1} ${name}` });
       }

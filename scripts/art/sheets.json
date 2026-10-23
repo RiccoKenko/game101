@@ -40,15 +40,42 @@
   "deckhand": {
     "concept": { "names": ["front", "side", "back"] },
     "head_faces": {
-      "regions": [[0, 0.34], [0.34, 1]],
       "names": [
-        "head", "bandana-tails",
+        "head", "bandana-tail-1", "bandana-tail-2",
         "eyes-sneaky", "eyes-angry", "eyes-greedy", "eyes-closed", "eyes-hurt", "eyes-ko", "eyes-surprised", "eyes-smug",
         "mouth-grin", "mouth-laugh", "mouth-gritted", "mouth-ouch", "mouth-o", "mouth-smirk", "mouth-tongue"
-      ]
+      ],
+      "boxes": {
+        "head": [25, 140, 425, 430],
+        "bandana-tail-1": [30, 605, 185, 285],
+        "bandana-tail-2": [228, 605, 145, 285],
+        "eyes-sneaky": [495, 225, 225, 140],
+        "eyes-angry": [745, 225, 235, 140],
+        "eyes-greedy": [1005, 225, 235, 140],
+        "eyes-closed": [1280, 225, 225, 140],
+        "eyes-hurt": [490, 450, 222, 160],
+        "eyes-ko": [742, 450, 228, 160],
+        "eyes-surprised": [1000, 440, 232, 170],
+        "eyes-smug": [1272, 450, 225, 160],
+        "mouth-grin": [440, 715, 150, 110],
+        "mouth-laugh": [595, 715, 155, 110],
+        "mouth-gritted": [755, 715, 142, 110],
+        "mouth-ouch": [905, 715, 160, 110],
+        "mouth-o": [1100, 715, 70, 110],
+        "mouth-smirk": [1200, 715, 150, 110],
+        "mouth-tongue": [1355, 715, 155, 110]
+      }
     },
     "parts_body": {
-      "names": ["torso", "hips", "sash-ends", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"]
+      "names": ["torso", "hips", "sash-end-1", "sash-end-2", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"],
+      "erase": {
+        "torso": [[128, 228, 72, 64, 35]],
+        "hips": [[695, 341, 57, 23, 6], [928, 347, 53, 22, -6]],
+        "upper-arm-l": [[395, 433, 19, 45, -10]],
+        "upper-arm-r": [[1182, 440, 23, 51, 10]],
+        "thigh": [[817, 647, 56, 25, 0], [710, 941, 57, 27, 8]],
+        "shin": [[1272, 673, 54, 27, -6]]
+      }
     },
     "hands_props": {
       "names": ["cutlass", "crystal", "hand-l-open", "hand-l-fist", "hand-r-open", "hand-r-grip"]

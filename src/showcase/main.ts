@@ -1,6 +1,6 @@
 /**
  * Character showcase in 2D: Little Archer as a cut-out puppet on a floating island. Every move and face on a
- * button, a story-dialog preview with portraits, and a battle demo against a practice target with
+ * button, a story-dialog preview with portraits, and a battle demo against a Deckhand pirate with
  * Archero-style juice (arrow trails, hit flash, damage numbers, hit-stop, shake, slow-mo, coin bursts).
  */
 import '@fontsource/fredoka/500.css';
@@ -15,13 +15,14 @@ import { Shake } from '../fx/shake';
 import { GameTime } from '../fx/time';
 import { Trail } from '../fx/trail';
 import { Animator2D } from '../puppet/animator';
+import { deckhandClips } from '../puppet/clips/deckhand';
 import { heroClips } from '../puppet/clips/hero';
 import { assetUrl, loadPuppet } from '../puppet/loader';
 import { layer, type Pose2D } from '../puppet/pose';
 import { Puppet, spriteGeometry, spriteMaterial } from '../puppet/puppet';
 import { Shadow } from '../stage/shadow';
 import { createStage2D } from '../stage/stage2d';
-import { paintCloud, paintCoin, paintIsland, paintTarget, type Painted } from './art';
+import { paintCloud, paintCoin, paintIsland, type Painted } from './art';
 
 declare global {
   interface Window {
@@ -88,7 +89,7 @@ const INFO: Record<Tab, { who: string; blurb: string }> = {
   },
   battle: {
     who: 'Battle demo',
-    blurb: 'Arrows leave glowing trails; hits flash, sparks fly and numbers pop. Crits freeze time for a beat. Sky Burst slows everything down.',
+    blurb: 'A Deckhand to practise on. Arrows leave glowing trails; hits flash, sparks fly and numbers pop. Crits freeze time for a beat. Sky Burst slows everything down.',
   },
 };
 const STORY: { portrait: string; text: string; move?: string; face?: [string, string] }[] = [
@@ -137,7 +138,7 @@ const HERO_X = -190;
 const TARGET_X = 290;
 const HERO_SIZE = 0.26;
 
-const assets = await loadPuppet('hero', renderer);
+const [assets, pirateAssets] = await Promise.all([loadPuppet('hero', renderer), loadPuppet('deckhand', renderer)]);
 bar.style.width = '85%';
 const hero = new Puppet(assets);
 hero.size = HERO_SIZE;
@@ -149,19 +150,23 @@ island.add(heroShadow.mesh);
 const anim = new Animator2D(heroClips);
 anim.play('idle');
 
-// The practice target sways on a spring about its feet.
-const TARGET_SCALE = 0.62;
-const targetFlash = { value: 0 };
+// The Deckhand to practise on, facing the hero; he rocks back on a spring about his feet when hit.
+const PIRATE_SIZE = 0.23;
+const pirate = new Puppet(pirateAssets);
+pirate.size = PIRATE_SIZE;
+pirate.facing = -1;
+pirate.setOrder(150);
+const pirateAnim = new Animator2D(deckhandClips);
+pirateAnim.play('idle');
 const target = new THREE.Group();
-const targetMesh = spriteMesh(paintTarget(), TARGET_SCALE, 100, targetFlash);
-targetMesh.position.set(-180 * TARGET_SCALE, 500 * TARGET_SCALE, 0);
-target.add(targetMesh);
+target.add(pirate.root);
 target.position.set(TARGET_X, 14, 0);
 island.add(target);
-const targetShadow = new Shadow(260);
+const targetShadow = new Shadow(330);
 targetShadow.place(TARGET_X, 14);
 island.add(targetShadow.mesh);
-const BULLSEYE = new THREE.Vector3(TARGET_X, 14 + (500 - 190) * TARGET_SCALE, 0);
+/** Where arrows hit: the middle of his striped shirt (rig-pose y 600, ground at 1295). */
+const BULLSEYE = new THREE.Vector3(TARGET_X, 14 + (1295 - 600) * PIRATE_SIZE, 0);
 
 const fx = new Fx2D(420);
 fx.glow.points.renderOrder = 500;
@@ -342,6 +347,8 @@ function startBattle(): void {
   battle.state = 'up';
   target.scale.setScalar(1);
   target.visible = true;
+  pirate.opacity(1);
+  pirateAnim.play('idle', { fade: 0.1 });
   play('rapid', true);
 }
 
@@ -384,7 +391,8 @@ function hitTarget(at: THREE.Vector3, dir: THREE.Vector3, base: number, forceCri
   const crit = forceCrit || Math.random() < 0.22;
   const dmg = Math.round(crit ? base * 2.3 : base);
   battle.hp -= dmg;
-  targetFlash.value = 1;
+  pirate.hitFlash(1);
+  if (battle.hp > 0) pirateAnim.oneShot('hit', 'idle', { fade: 0.05 });
   battle.swayV += crit ? 5 : 2.5;
   fx.sparks(at, crit ? new THREE.Color(1, 0.75, 0.25) : new THREE.Color(1, 0.95, 0.75), dir, crit ? 22 : 12);
   numbers.spawn(String(dmg), toWorld(at.clone().add(local.set(0, 60, 0))), crit ? 'crit' : 'hit');
@@ -402,10 +410,14 @@ function breakTarget(): void {
   time.slowMo(0.35, 0.8);
   shake.add(0.6);
   sfx.play('enemy_die', 0.6);
-  fx.poof(BULLSEYE, 1.4);
   sfx.play('explosion', 0.35);
   burstCoins(BULLSEYE, 8);
-  target.visible = false;
+  // He goes down seeing spirals, then vanishes in a puff.
+  pirateAnim.play('ko', { once: true, fade: 0.05 });
+  afterGame(1.3, () => {
+    fx.poof(new THREE.Vector3(TARGET_X + 70, 60, 0), 1.4);
+    target.visible = false;
+  });
   play('cheer', false);
   afterGame(1.8, respawn);
 }
@@ -417,6 +429,8 @@ function respawn(): void {
   battle.spawnT = 0;
   target.visible = true;
   target.scale.setScalar(0.01);
+  // Back on his feet with a cheeky taunt.
+  pirateAnim.oneShot('taunt', 'idle', { fade: 0 });
   fx.poof(BULLSEYE, 0.9, 10);
 }
 
@@ -543,7 +557,8 @@ function frame(now: number): void {
   battle.swayV += (-60 * battle.sway - 5 * battle.swayV) * dt;
   battle.sway += battle.swayV * dt;
   target.rotation.z = -battle.sway * 0.04;
-  targetFlash.value = Math.max(0, targetFlash.value - dt * 9);
+  pirate.setPose(pirateAnim.update(dt));
+  pirate.update(dt);
   if (battle.state === 'spawn') {
     battle.spawnT += dt;
     const k = Math.min(1, battle.spawnT / 0.35);
