@@ -30,18 +30,19 @@ export interface LevelDef {
 export const LEVEL1: LevelDef = {
   id: 'level1',
   name: 'Pirates on the Horizon',
-  map: { w: 1536, h: 1024, sketch: 'maps/level1-sketch.png' },
+  // Painted by Codex over the sketch; the road and spots below were measured on the painting.
+  map: { w: 1536, h: 1024, art: 'maps/level1.webp', sketch: 'maps/level1-sketch.png' },
   route: [
     [1500, 300], [1330, 300], [1180, 330], [1090, 430], [1080, 560], [1120, 680], [1040, 780], [880, 800],
     [740, 740], [680, 620], [600, 500], [470, 450], [360, 480], [272, 520],
   ],
-  roadWidth: 84,
+  roadWidth: 92,
   slots: [
-    [1250, 440], [960, 470], [1235, 650], [920, 660], [560, 700], [800, 560], [560, 340], [400, 615],
+    [1251, 436], [961, 463], [1235, 650], [925, 655], [566, 697], [803, 555], [561, 338], [404, 614],
   ],
   slotRadius: 52,
   dock: [1440, 300],
-  vault: [222, 520],
+  vault: [218, 508],
   heroStart: [300, 640],
   island: [
     [150, 430], [215, 270], [380, 195], [600, 170], [820, 190], [1000, 170], [1200, 200], [1365, 250], [1420, 340],

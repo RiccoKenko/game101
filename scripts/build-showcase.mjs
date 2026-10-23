@@ -39,7 +39,7 @@ for (const id of readdirSync('public/sprites'))
     spriteAssets[`sprites/${id}/${f}`] = f.endsWith('.json') ? JSON.parse(readFileSync(path, 'utf8')) : `data:image/png;base64,${b64(path)}`;
   }
 if (pageName === 'play')
-  for (const f of readdirSync('public/maps')) spriteAssets[`maps/${f}`] = `data:image/png;base64,${b64(`public/maps/${f}`)}`;
+  for (const f of readdirSync('public/maps')) spriteAssets[`maps/${f}`] = `data:image/${f.endsWith('.webp') ? 'webp' : 'png'};base64,${b64(`public/maps/${f}`)}`;
 const sounds = Object.fromEntries(['shoot', 'hit', 'enemy_die', 'coin', 'explosion', 'click', 'zap', 'levelup', 'xp', 'boss_warning'].map((n) => [n, b64(`public/audio/${n}.mp3`)]));
 
 const page = `<title>${TITLES[pageName]}</title>
