@@ -758,7 +758,7 @@ PART RULES (the parts sheets become the animated sprite)
 - No shadows cast by other parts; each part is lit on its own from the upper left.
 - At least 60 px of empty background around every part; nothing touching or overlapping; nothing touching the image edge; each part exactly once; no labels.
 - Neat grid, left to right, top to bottom, in the numbered order given.
-- Anything that should swing on its own (the hat feather, the rope) is its own part. Each wing is TWO parts (inner half and outer flight feathers) so it can fold and flap. The body includes a short neck stub; the head does not include the neck.
+- Anything that should swing on its own (the neckerchief tails) is its own part. Each wing is TWO parts (inner half and outer flight feathers) so it can fold and flap. The body includes a short neck stub; the head does not include the neck.
 
 IMAGE LIST
 
