@@ -84,7 +84,28 @@
     "portraits": { "names": ["greedy", "angry", "panicked"] }
   },
   "powder_monkey": {
-    "head_faces": { "regions": [[0, 0.34], [0.34, 1]], "names": ["head", "scarf-tail-1", "scarf-tail-2", "eyes-cheeky", "eyes-angry", "eyes-greedy", "eyes-closed", "eyes-hurt", "eyes-ko", "eyes-surprised", "eyes-smug", "mouth-grin", "mouth-laugh", "mouth-gritted", "mouth-ouch", "mouth-o", "mouth-tongue"] },
+    "head_faces": {
+      "names": ["head", "scarf-tail-1", "scarf-tail-2", "eyes-cheeky", "eyes-angry", "eyes-greedy", "eyes-closed", "eyes-hurt", "eyes-ko", "eyes-surprised", "eyes-smug", "mouth-grin", "mouth-laugh", "mouth-gritted", "mouth-ouch", "mouth-o", "mouth-tongue"],
+      "boxes": {
+        "head": [30, 85, 520, 480],
+        "scarf-tail-1": [30, 580, 195, 285],
+        "scarf-tail-2": [335, 580, 175, 285],
+        "eyes-cheeky": [545, 190, 270, 175],
+        "eyes-angry": [830, 195, 270, 170],
+        "eyes-greedy": [1105, 190, 270, 175],
+        "eyes-closed": [1390, 210, 275, 145],
+        "eyes-hurt": [570, 440, 240, 145],
+        "eyes-ko": [840, 425, 245, 170],
+        "eyes-surprised": [1105, 395, 265, 195],
+        "eyes-smug": [1385, 425, 280, 155],
+        "mouth-grin": [545, 670, 195, 110],
+        "mouth-laugh": [755, 665, 185, 125],
+        "mouth-gritted": [945, 690, 190, 85],
+        "mouth-ouch": [1160, 700, 185, 65],
+        "mouth-o": [1385, 680, 85, 100],
+        "mouth-tongue": [1500, 675, 160, 115]
+      }
+    },
     "parts_body": { "names": ["torso", "hips", "tail-top", "tail-tip", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"] },
     "hands_props": { "names": ["bomb", "hand-l-open", "hand-l-fist", "hand-r-open", "hand-r-hold"] },
     "poses": { "names": ["idle", "run", "bomb-run", "run-away", "hit", "ko", "taunt", "cheer"] }
@@ -96,8 +117,31 @@
     "poses": { "names": ["idle", "walk", "charge", "carry", "hit", "ko", "taunt", "cheer"] }
   },
   "parrot_raider": {
-    "head_faces": { "regions": [[0, 0.34], [0.34, 1]], "names": ["head", "eyes-cheeky", "eyes-angry", "eyes-greedy", "eyes-closed", "eyes-hurt", "eyes-ko", "eyes-surprised", "eyes-smug", "beak-closed", "beak-squawk", "beak-laugh", "beak-tongue"] },
-    "parts_body": { "names": ["body", "tail", "wing-near-in", "wing-near-out", "wing-far-in", "wing-far-out", "leg-near", "leg-far", "neckerchief"] },
+    "head_faces": {
+      "names": ["head", "eyes-cheeky", "eyes-angry", "eyes-greedy", "eyes-closed", "eyes-hurt", "eyes-ko", "eyes-surprised", "eyes-smug", "beak-closed", "beak-squawk", "beak-laugh", "beak-tongue"],
+      "boxes": {
+        "head": [30, 250, 500, 540],
+        "eyes-cheeky": [530, 250, 225, 150],
+        "eyes-angry": [785, 250, 225, 150],
+        "eyes-greedy": [1045, 240, 220, 165],
+        "eyes-closed": [1285, 250, 230, 140],
+        "eyes-hurt": [535, 480, 220, 140],
+        "eyes-ko": [785, 470, 225, 170],
+        "eyes-surprised": [1040, 450, 225, 190],
+        "eyes-smug": [1285, 490, 230, 150],
+        "beak-closed": [555, 700, 200, 150],
+        "beak-squawk": [800, 700, 200, 165],
+        "beak-laugh": [1045, 695, 205, 175],
+        "beak-tongue": [1310, 720, 190, 160]
+      }
+    },
+    "parts_body": {
+      "names": ["body", "tail", "wing-near-in", "wing-near-out", "wing-far-in", "wing-far-out", "leg-near", "leg-far", "neckerchief"],
+      "erase": {
+        "leg-near": [[380, 1000, 400, 148, 0]],
+        "leg-far": [[820, 1006, 400, 148, 0]]
+      }
+    },
     "hands_props": { "names": ["hook", "foot-near-open", "foot-near-grip", "foot-far-open", "foot-far-grip"] },
     "poses": { "names": ["hover", "fly", "dive", "carry", "hit", "ko", "taunt", "cheer"] }
   },
@@ -109,15 +153,50 @@
     "portraits": { "names": ["sneer", "roar", "defeated"] }
   },
   "talon": {
-    "head_faces": { "regions": [[0, 0.34], [0.34, 1]], "names": ["head", "scarf-tail-1", "scarf-tail-2", "eyes-confident", "eyes-fierce", "eyes-happy", "eyes-closed", "eyes-hurt", "eyes-surprised", "eyes-proud", "eyes-determined", "beak-closed", "beak-cry", "beak-chirp"] },
+    "head_faces": {
+      "names": ["head", "scarf-tail-1", "scarf-tail-2", "eyes-confident", "eyes-fierce", "eyes-happy", "eyes-closed", "eyes-hurt", "eyes-surprised", "eyes-proud", "eyes-determined", "beak-closed", "beak-cry", "beak-chirp"],
+      "boxes": {
+        "head": [15, 75, 505, 440],
+        "scarf-tail-1": [20, 590, 380, 150],
+        "scarf-tail-2": [185, 745, 395, 140],
+        "eyes-confident": [525, 140, 260, 160],
+        "eyes-fierce": [800, 140, 275, 160],
+        "eyes-happy": [1100, 140, 290, 160],
+        "eyes-closed": [1400, 140, 265, 160],
+        "eyes-hurt": [525, 380, 265, 160],
+        "eyes-surprised": [800, 375, 270, 180],
+        "eyes-proud": [1095, 400, 290, 155],
+        "eyes-determined": [1400, 400, 265, 160],
+        "beak-closed": [750, 680, 220, 140],
+        "beak-cry": [1060, 690, 200, 155],
+        "beak-chirp": [1395, 690, 175, 145]
+      }
+    },
     "parts_body": { "names": ["body", "tail", "wing-near-in", "wing-near-out", "wing-far-in", "wing-far-out", "leg-near", "leg-far"] },
     "hands_props": { "names": ["crystal", "foot-near-open", "foot-near-grip", "foot-far-open", "foot-far-grip"] },
     "poses": { "names": ["perch", "hover", "dive", "swoop", "carry", "glide", "chirp", "land"] },
     "portraits": { "names": ["proud", "cry", "happy"] }
   },
   "mochi": {
-    "head_faces": { "names": ["eyes-gentle", "eyes-happy", "eyes-sparkle", "eyes-closed", "eyes-sleepy", "eyes-surprised", "eyes-determined", "eyes-hurt", "mouth-smile", "mouth-o", "mouth-laugh", "mouth-worried", "mouth-w"] },
-    "parts_body": { "names": ["body", "tail", "fin-near", "fin-far", "spout"] },
+    "head_faces": {
+      "names": ["eyes-gentle", "eyes-happy", "eyes-sparkle", "eyes-closed", "eyes-sleepy", "eyes-surprised", "eyes-determined", "eyes-hurt", "mouth-smile", "mouth-o", "mouth-laugh", "mouth-worried", "mouth-w"],
+      "boxes": {
+        "eyes-gentle": [42, 150, 350, 182],
+        "eyes-happy": [415, 185, 340, 145],
+        "eyes-sparkle": [790, 148, 330, 182],
+        "eyes-closed": [1165, 185, 335, 145],
+        "eyes-sleepy": [40, 478, 355, 158],
+        "eyes-surprised": [422, 444, 350, 192],
+        "eyes-determined": [798, 450, 342, 186],
+        "eyes-hurt": [1172, 470, 335, 160],
+        "mouth-smile": [118, 776, 165, 62],
+        "mouth-o": [424, 770, 126, 86],
+        "mouth-laugh": [672, 762, 206, 102],
+        "mouth-worried": [985, 790, 158, 42],
+        "mouth-w": [1288, 790, 126, 52]
+      }
+    },
+    "parts_body": { "names": ["body", "tail", "fin-near", "fin-far", "spout"], "erase": { "body": [[350, 205, 38, 80, 57]] } },
     "poses": { "names": ["float", "swim", "leap", "sweep", "spin", "sleep", "wave", "cheer"] }
   }
 }
