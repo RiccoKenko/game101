@@ -99,12 +99,28 @@ describe('art slicer', () => {
     expect(disc.data[3]).toBe(0);
   });
 
-  it('reads an already transparent image as is', () => {
-    const clear: RgbaImage = { data: new Uint8Array(20 * 20 * 4), width: 20, height: 20 };
-    clear.data.set([10, 20, 30, 255], (10 * 20 + 10) * 4);
-    const out = removeBackground(clear);
+  it('tidies an image that is already transparent, like ChatGPT cut-outs', () => {
+    const W = 60;
+    const img: RgbaImage = { data: new Uint8Array(W * W * 4), width: W, height: W };
+    const put = (x: number, y: number, rgba: number[]) => img.data.set(rgba, (y * W + x) * 4);
+    for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) put(x, y, [200, 30, 40, 3]); // tinted haze
+    for (let y = 10; y < 30; y++) for (let x = 10; x < 30; x++) put(x, y, [60, 120, 70, (x + y) % 2 ? 252 : 247]); // the art, ~98% opaque
+    for (let y = 10; y < 50; y++) put(40, y, [240, 230, 210, 180]); // a thin see-through string
+    put(30, 20, [60, 120, 70, 120]); // soft edge
+    put(55, 55, [200, 30, 40, 90]); // stray speck
+    const out = removeBackground(img);
+    const a = (x: number, y: number) => out.image.data[(y * W + x) * 4 + 3];
     expect(out.background).toBeNull();
-    expect(out.image.data[(10 * 20 + 10) * 4 + 3]).toBe(255);
+    expect(a(20, 20)).toBe(255);
+    expect(a(21, 20)).toBe(255);
+    expect(a(30, 20)).toBeGreaterThan(80);
+    expect(a(30, 20)).toBeLessThan(255);
+    expect(a(40, 45)).toBeGreaterThan(150);
+    expect(a(45, 5)).toBe(0);
+    const { pieces } = findPieces(out.image);
+    const { groups, dropped } = groupPieces(pieces, 1);
+    expect(dropped).toBe(1);
+    expect(groups[0].h).toBe(40); // the art and the string, without the speck
   });
 
   it('copes with fewer parts than expected', () => {

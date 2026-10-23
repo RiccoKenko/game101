@@ -57,7 +57,40 @@ export function borderColor(img: RgbaImage): Rgb {
 }
 
 /**
- * Makes the flat background transparent. Returns `background: null` when the image already has one.
+ * Tidies an image that came with its own transparency. AI cut-outs leave the art about 98% opaque
+ * (alpha 246–253) and a faint, often tinted haze (alpha 1–7) around it: the art becomes fully opaque
+ * and the haze goes, while soft edges and thin see-through details (a bowstring) keep their alpha.
+ * Stray specks further out are left to `groupPieces`.
+ */
+export function cleanAlpha(img: RgbaImage): RgbaImage {
+  const { data, width: w, height: h } = img;
+  const n = w * h;
+  const counts = new Array<number>(256).fill(0);
+  for (let p = 0; p < n; p++) counts[data[p * 4 + 3]]++;
+  // "Solid" = the level that 95% of the clearly visible pixels reach.
+  const visible = counts.slice(128).reduce((s, c) => s + c, 0);
+  let solid = 255;
+  for (let a = 128, seen = 0; a < 256; a++) {
+    seen += counts[a];
+    if (seen > visible * 0.05) {
+      solid = Math.max(a, 160);
+      break;
+    }
+  }
+  const LO = 8;
+  const out = new Uint8Array(n * 4);
+  for (let p = 0; p < n; p++) {
+    const a = Math.round(Math.min(1, Math.max(0, (data[p * 4 + 3] - LO) / (solid - LO))) * 255);
+    if (a === 0) continue;
+    out.set(data.subarray(p * 4, p * 4 + 3), p * 4);
+    out[p * 4 + 3] = a;
+  }
+  return { data: out, width: w, height: h };
+}
+
+/**
+ * Makes the flat background transparent. Returns `background: null` when the image already has one
+ * (then it is only tidied by `cleanAlpha`).
  *
  * - Background = everything reachable from the border through pixels close to the border colour.
  *   A saturated key colour (magenta) never appears in the art, so enclosed pockets of it go too.
@@ -74,7 +107,7 @@ export function removeBackground(img: RgbaImage, tolerance = 56): { image: RgbaI
     border++;
     if (data[p * 4 + 3] < 128) clear++;
   });
-  if (clear > border / 2) return { image: { data: data.slice(), width: w, height: h }, background: null };
+  if (clear > border / 2) return { image: cleanAlpha(img), background: null };
 
   const bg = borderColor(img);
   const isBg = new Uint8Array(n);
