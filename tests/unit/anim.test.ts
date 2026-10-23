@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { blend, defaults, ease, key, layer, poseKeys } from '../../sculpt/anim';
+import { ease, key } from '../../src/anim/curves';
+import { heroClips } from '../../src/puppet/clips/hero';
+import { poseKeys } from '../../src/puppet/pose';
+import rig from '../../public/sprites/hero/rig.json';
 
 describe('keyframes', () => {
   it('holds the ends and interpolates between keys', () => {
@@ -14,30 +17,23 @@ describe('keyframes', () => {
     expect(Math.max(...samples)).toBeGreaterThan(1);
     expect(ease.back(1)).toBeCloseTo(1);
   });
-});
-
-describe('poses', () => {
-  it('layer adds rotations and multiplies scales', () => {
-    const p = layer({ arm: { r: [10, 0, 0], s: 2 } }, { arm: { r: [5, 1, 0], s: [1, 0.5, 1] } });
-    expect(p.arm.r).toEqual([15, 1, 0]);
-    expect(p.arm.s).toEqual([2, 1, 2]);
-  });
-
-  it('defaults only fill what a pose leaves out', () => {
-    const p = defaults({ mouthOpen: { s: 0.001 }, arrow: { s: 0.001 } }, { arrow: { s: 1 } });
-    expect(p.arrow.s).toBe(1);
-    expect(p.mouthOpen.s).toBe(0.001);
-  });
-
-  it('blend fades an IK goal in by weight', () => {
-    const goal = { target: [0, 1, 0] as [number, number, number], pole: [0, 0, 1] as [number, number, number] };
-    const p = blend({}, { hand: { ik: goal } }, 0.25);
-    expect(p.hand.ik?.w).toBeCloseTo(0.25);
-    expect(p.hand.ik?.target).toEqual([0, 1, 0]);
-  });
 
   it('poseKeys walks through whole poses', () => {
-    const at = (t: number) => poseKeys(t, [[0, { a: { r: [0, 0, 0] } }], [1, { a: { r: [90, 0, 0] } }, ease.linear]]);
-    expect(at(0.5).a.r?.[0]).toBeCloseTo(45);
+    const at = (t: number) => poseKeys(t, [[0, { bones: { a: { r: 0 } } }], [1, { bones: { a: { r: 90 } } }, ease.linear]]);
+    expect(at(0.5).bones!.a.r).toBeCloseTo(45);
   });
+});
+
+describe('hero clips', () => {
+  const bones = new Set(rig.bones.map((b) => b.name));
+  const parts = new Map(rig.parts.map((p) => [p.name, p]));
+  for (const clip of heroClips)
+    it(`${clip.name}: only uses bones, slots and parts the rig has`, () => {
+      for (let t = 0; t <= clip.duration; t += clip.duration / 8) {
+        const pose = clip.pose(t);
+        for (const b of [...Object.keys(pose.bones ?? {}), ...Object.keys(pose.ik ?? {})]) expect(bones.has(b), `${clip.name}: bone ${b}`).toBe(true);
+        for (const [slot, part] of Object.entries(pose.slots ?? {})) expect(parts.get(part)?.slot, `${clip.name}: ${slot}=${part}`).toBe(slot);
+        for (const part of Object.keys(pose.z ?? {})) expect(parts.has(part), `${clip.name}: z ${part}`).toBe(true);
+      }
+    });
 });

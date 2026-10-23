@@ -1,29 +1,30 @@
 /**
- * Character showcase: the hand-sculpted cast on a floating islet, every move on a button, and a battle demo
- * with Archero-style juice (arrow trails, hit flash, damage numbers, hit-stop, shake, slow-mo, coin bursts).
+ * Character showcase in 2D: Little Archer as a cut-out puppet on a floating island. Every move and face on a
+ * button, a story-dialog preview with portraits, and a battle demo against a practice target with
+ * Archero-style juice (arrow trails, hit flash, damage numbers, hit-stop, shake, slow-mo, coin bursts).
  */
 import '@fontsource/fredoka/500.css';
 import '@fontsource/fredoka/600.css';
 import '@fontsource/fredoka/700.css';
 import './showcase.css';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { sfx } from '../audio/sfx';
-import { Actor } from '../engine/actor';
-import { createStage } from '../engine/renderer';
-import { Clouds, skyBackground } from '../engine/sky';
 import { DamageNumbers } from '../fx/damageNumbers';
-import { Fx } from '../fx/particles';
+import { Fx2D } from '../fx/fx2d';
 import { Shake } from '../fx/shake';
 import { GameTime } from '../fx/time';
 import { Trail } from '../fx/trail';
+import { Animator2D } from '../puppet/animator';
+import { heroClips } from '../puppet/clips/hero';
+import { assetUrl, loadPuppet } from '../puppet/loader';
+import { layer, type Pose2D } from '../puppet/pose';
+import { Puppet, spriteGeometry, spriteMaterial } from '../puppet/puppet';
+import { Shadow } from '../stage/shadow';
+import { createStage2D } from '../stage/stage2d';
+import { paintCloud, paintCoin, paintIsland, paintTarget, type Painted } from './art';
 
 declare global {
   interface Window {
-    /** Single-file builds inline the models here (base64). */
-    __MODELS__?: Record<string, string>;
     __ready?: boolean;
     __showcase?: unknown;
   }
@@ -41,185 +42,180 @@ const MARKUP = `
     <h1 id="who">Little Archer</h1>
     <p id="blurb"></p>
     <dl class="specs">
-      <div><dt>Moves</dt><dd id="moves-n">10</dd></div>
-      <div><dt>Triangles</dt><dd id="tris">27,584</dd></div>
-      <div><dt>Bones</dt><dd id="bones">27</dd></div>
+      <div><dt>Moves</dt><dd>10</dd></div>
+      <div><dt>Faces</dt><dd>8</dd></div>
+      <div><dt>Parts</dt><dd>34</dd></div>
     </dl>
   </section>
-  <nav class="tray">
+  <div class="dialog" id="dialog" hidden>
+    <img id="portrait" alt="" />
+    <div class="dialog-body"><b class="dialog-name">Little Archer</b><p id="line"></p></div>
+  </div>
+  <nav class="tray" id="tray">
     <div class="tabs" role="tablist">
-      <button role="tab" id="tab-hero" data-tab="hero" aria-selected="true">Little Archer</button>
-      <button role="tab" id="tab-pirate" data-tab="pirate" aria-selected="false">Deckhand</button>
-      <button role="tab" id="tab-battle" data-tab="battle" aria-selected="false">Battle demo</button>
+      <button role="tab" data-tab="hero" aria-selected="true">Hero</button>
+      <button role="tab" data-tab="story" aria-selected="false">Story</button>
+      <button role="tab" data-tab="battle" aria-selected="false">Battle</button>
     </div>
     <div class="moves" id="moves"></div>
   </nav>
-  <div class="loading" id="loading"><div class="bar"><i id="bar"></i></div><span>Unpacking the crew…</span></div>
+  <div class="loading" id="loading"><div class="bar"><i id="bar"></i></div><span>Waking up Little Archer…</span></div>
 </div>`;
 document.body.insertAdjacentHTML('afterbegin', MARKUP);
 const $ = (id: string) => document.getElementById(id)!;
 
-type Tab = 'hero' | 'pirate' | 'battle';
-const MOVES: Record<'hero' | 'pirate', [label: string, clip: string, loop: boolean][]> = {
-  hero: [
-    ['Idle', 'idle', true], ['Walk', 'walk', true], ['Run', 'run', true], ['Shoot', 'shoot', false],
-    ['Rapid fire', 'rapid', true], ['Dash', 'dodge', false], ['Hit', 'hit', false], ['Knocked out', 'ko', false],
-    ['Cheer', 'cheer', false], ['Call skill', 'cast', false],
-  ],
-  pirate: [
-    ['Idle', 'idle', true], ['Swagger', 'walk', true], ['Charge', 'run', true], ['Steal crystal', 'carry', true],
-    ['Hit', 'hit', false], ['Defeated', 'die', false], ['Taunt', 'taunt', false], ['Cheer', 'cheer', false],
-  ],
-};
-const INFO: Record<Tab, { who: string; blurb: string; moves: string; tris: string; bones: string }> = {
+type Tab = 'hero' | 'story' | 'battle';
+const MOVES: [label: string, clip: string, loop: boolean][] = [
+  ['Idle', 'idle', true], ['Walk', 'walk', true], ['Run', 'run', true], ['Shoot', 'shoot', false],
+  ['Rapid fire', 'rapid', true], ['Dash', 'dodge', false], ['Hit', 'hit', false], ['Knocked out', 'ko', false],
+  ['Cheer', 'cheer', false], ['Call skill', 'cast', false],
+];
+const FACES: [label: string, eyes: string, mouth: string][] = [
+  ['Happy', 'eyes-happy', 'mouth-cheer'],
+  ['Focus', 'eyes-focus', 'mouth-determined'],
+  ['Surprised', 'eyes-surprised', 'mouth-o'],
+  ['Ouch', 'eyes-hurt', 'mouth-ouch'],
+  ['Dizzy', 'eyes-ko', 'mouth-ouch'],
+];
+const INFO: Record<Tab, { who: string; blurb: string }> = {
   hero: {
     who: 'Little Archer',
-    blurb: 'Guardian of Sky Haven. Green hood, gold trim, and a bow whose string really draws back. Drag to spin the island, pinch to zoom.',
-    moves: '10', tris: '27,584', bones: '27',
+    blurb: 'Guardian of Sky Haven, drawn as one picture and cut into 34 parts that move on a 2D skeleton. Tap him for a cheer.',
   },
-  pirate: {
-    who: 'Deckhand',
-    blurb: "Captain Stormbeard's everyday crew. Swaggers, charges, and runs off hugging stolen Sky Crystals.",
-    moves: '8', tris: '25,094', bones: '25',
+  story: {
+    who: 'Story scenes',
+    blurb: 'Chapters open with dialog like this: a portrait that changes with the mood while the hero acts it out on stage.',
   },
   battle: {
     who: 'Battle demo',
     blurb: 'Arrows leave glowing trails; hits flash, sparks fly and numbers pop. Crits freeze time for a beat. Sky Burst slows everything down.',
-    moves: '—', tris: '52,678', bones: '52',
   },
 };
+const STORY: { portrait: string; text: string; move?: string; face?: [string, string] }[] = [
+  { portrait: 'smile', text: 'Morning, Sky Haven! The crystals are humming today.' },
+  { portrait: 'surprised', text: 'Wait… is that an airship on the horizon?', face: ['eyes-surprised', 'mouth-o'] },
+  { portrait: 'determined', text: 'Sky pirates! Nobody steals our crystals. Not on my watch!', move: 'shoot', face: ['eyes-focus', 'mouth-determined'] },
+  { portrait: 'smile', text: 'Talon, Mochi, get ready. Here they come!', move: 'cheer' },
+];
 
 // ---------- stage
 
 const stageEl = $('stage');
-const { renderer, scene, sun } = createStage(stageEl);
-scene.background = skyBackground();
-sun.position.set(-3, 6, 4);
-sun.target.position.set(0, 0, 0);
-Object.assign(sun.shadow.camera, { left: -1.8, right: 1.8, top: 1.8, bottom: -1.8, near: 1, far: 20 });
-sun.shadow.camera.updateProjectionMatrix();
-sun.shadow.radius = 4;
+const stage = createStage2D(stageEl);
+const { scene, camera, renderer } = stage;
+const bar = $('bar') as HTMLElement;
+bar.style.width = '15%';
 
-const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 80);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.enablePan = false;
-controls.minPolarAngle = 0.35;
-controls.maxPolarAngle = 1.42;
-controls.target.set(0, 0.32, 0);
-
-const clouds = new Clouds(16, 16, -6, 1.2);
-scene.add(clouds.group);
+/** Everything on the island lives in `island` (local units: hero ~380 tall, grass centre at the origin). */
+const set = new THREE.Group();
 const island = new THREE.Group();
-scene.add(island);
-const fx = new Fx();
-scene.add(fx.group);
+set.add(island);
+scene.add(set);
+
+const flash0 = { value: 0 };
+function spriteMesh(p: Painted, scale: number, order: number, flash = flash0): THREE.Mesh {
+  const mesh = new THREE.Mesh(spriteGeometry(p.w, p.h), spriteMaterial(p.texture, flash));
+  mesh.scale.set(scale, scale, 1);
+  mesh.renderOrder = order;
+  return mesh;
+}
+
+const ISLAND_SCALE = 1000 / 1200;
+const ground = spriteMesh(paintIsland(), ISLAND_SCALE, -5);
+ground.position.set(-600 * ISLAND_SCALE, 130 * ISLAND_SCALE, 0);
+island.add(ground);
+
+// Clouds drift behind the island at screen scale, wrapping round.
+const clouds = Array.from({ length: 6 }, (_, i) => {
+  const mesh = spriteMesh(paintCloud(i + 1), 0.5 + (i % 3) * 0.18, -20 + i);
+  (mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = 0.75 + (i % 2) * 0.2;
+  scene.add(mesh);
+  return { mesh, speed: 6 + (i % 3) * 5, x: Math.random(), y: 0.12 + (i / 6) * 0.7 };
+});
+
+const HERO_X = -190;
+const TARGET_X = 290;
+const HERO_SIZE = 0.26;
+
+const assets = await loadPuppet('hero', renderer);
+bar.style.width = '85%';
+const hero = new Puppet(assets);
+hero.size = HERO_SIZE;
+hero.root.position.set(HERO_X, -12, 0);
+hero.setOrder(200);
+island.add(hero.root);
+const heroShadow = new Shadow(520 * HERO_SIZE);
+island.add(heroShadow.mesh);
+const anim = new Animator2D(heroClips);
+anim.play('idle');
+
+// The practice target sways on a spring about its feet.
+const TARGET_SCALE = 0.62;
+const targetFlash = { value: 0 };
+const target = new THREE.Group();
+const targetMesh = spriteMesh(paintTarget(), TARGET_SCALE, 100, targetFlash);
+targetMesh.position.set(-180 * TARGET_SCALE, 500 * TARGET_SCALE, 0);
+target.add(targetMesh);
+target.position.set(TARGET_X, 14, 0);
+island.add(target);
+const targetShadow = new Shadow(260);
+targetShadow.place(TARGET_X, 14);
+island.add(targetShadow.mesh);
+const BULLSEYE = new THREE.Vector3(TARGET_X, 14 + (500 - 190) * TARGET_SCALE, 0);
+
+const fx = new Fx2D(420);
+fx.glow.points.renderOrder = 500;
+fx.soft.points.renderOrder = 450;
+island.add(fx.group);
 const numbers = new DamageNumbers($('fx'));
 const time = new GameTime();
-const shake = new Shake(0.045);
+const shake = new Shake(9);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 shake.enabled = !reduceMotion;
 
-function resize(): void {
-  const w = stageEl.clientWidth;
-  const h = stageEl.clientHeight;
-  renderer.setSize(w, h);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
-  // Fit the cast (and most of the island) whatever the screen shape. On wide screens aim a little left of
-  // centre so the cast clears the info card; tall screens keep it centred and a bit closer.
-  const v = THREE.MathUtils.degToRad(camera.fov);
-  const hFov = 2 * Math.atan(Math.tan(v / 2) * camera.aspect);
-  const wide = camera.aspect > 1.2;
-  const d = Math.max((wide ? 1.35 : 1.05) / Math.tan(hFov / 2), 0.95 / Math.tan(v / 2));
-  if (!userMoved) controls.target.set(wide ? -0.12 : 0, 0.32, 0);
-  controls.minDistance = d * 0.4;
-  controls.maxDistance = d * 1.7;
-  // Haze only the far sky, however far back a tall portrait screen puts the camera.
-  scene.fog = new THREE.Fog(0xd9f1ff, d * 2.2, d * 7);
-  if (!userMoved) {
-    const dir = new THREE.Vector3(0, 0.36, 1).normalize();
-    camera.position.copy(controls.target).addScaledVector(dir, d);
-  }
-  controls.update();
+let fit = 1;
+/** Fit the island into the space the UI leaves: beside the move panel on landscape phones, above it otherwise. */
+function layout(): void {
+  const w = stage.width;
+  const h = stage.height;
+  const tray = $('tray').getBoundingClientRect();
+  const side = tray.left > w * 0.5;
+  const right = side ? tray.left - 8 : w;
+  const bottom = side ? h : tray.top;
+  // Beside the panel the card may overlap the sky; above the tray the scene starts below the card.
+  const top = side ? 46 : document.querySelector('.card')!.getBoundingClientRect().bottom + 8;
+  fit = Math.min(right / 1150, (bottom - top) / 650);
+  set.scale.setScalar(fit);
+  // Island content spans local y -180 (rock) to 470 (a cheer jump); centre it in the free space.
+  const middle = side ? top + 325 * fit : (top + bottom) / 2;
+  set.position.set(right / 2 - w / 2 + (side ? 0.08 * right : 0), h / 2 - middle - 145 * fit, 0);
 }
-let userMoved = false;
-controls.addEventListener('start', () => (userMoved = true));
-window.addEventListener('resize', resize);
-
-// ---------- loading
-
-function decode(b64: string): ArrayBuffer {
-  const bin = atob(b64);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out.buffer;
-}
-
-async function loadModel(loader: GLTFLoader, name: string, onProgress: (f: number) => void): Promise<GLTF> {
-  const inline = window.__MODELS__?.[name];
-  if (inline) {
-    const gltf = await loader.parseAsync(decode(inline), '');
-    onProgress(1);
-    return gltf;
-  }
-  return loader.loadAsync(`${import.meta.env.BASE_URL}models/${name}.glb`, (e) => e.total && onProgress(e.loaded / e.total));
-}
-
-const loader = new GLTFLoader();
-loader.setMeshoptDecoder(MeshoptDecoder);
-const progress = { hero: 0, deckhand: 0, props: 0 };
-const showProgress = () => (($('bar') as HTMLElement).style.width = `${((progress.hero + progress.deckhand + progress.props) / 3) * 100}%`);
-const [heroGltf, pirateGltf, propsGltf] = await Promise.all(
-  (['hero', 'deckhand', 'props'] as const).map((n) => loadModel(loader, n, (f) => ((progress[n] = f), showProgress()))),
-);
-
-const props = new Map(propsGltf.scene.children.map((c) => [c.name, c]));
-const prop = (name: string) => {
-  const p = props.get(name)!.clone();
-  p.traverse((o) => {
-    const m = o as THREE.Mesh;
-    if (m.isMesh) {
-      m.castShadow = name !== 'islet';
-      m.receiveShadow = true;
-    }
-  });
-  return p;
-};
-
-const islet = prop('islet');
-island.add(islet);
-const hero = new Actor(heroGltf.scene, heroGltf.animations);
-const pirate = new Actor(pirateGltf.scene, pirateGltf.animations);
-const HERO_HOME = new THREE.Vector3(-0.5, 0, 0.08);
-const PIRATE_HOME = new THREE.Vector3(0.52, 0, 0);
-hero.root.position.copy(HERO_HOME);
-pirate.root.position.copy(PIRATE_HOME);
-hero.root.rotation.y = 0.45;
-pirate.root.rotation.y = -0.45;
-island.add(hero.root, pirate.root);
-hero.anim.play('idle');
-pirate.anim.play('idle');
-
-resize();
+window.addEventListener('resize', layout);
 $('loading').classList.add('done');
-// Screenshot/test hook: /?battle starts the fight straight away.
 const autoBattle = new URLSearchParams(location.search).has('battle');
 
 // ---------- UI
 
 let tab: Tab = 'hero';
-let activeLoop: Record<'hero' | 'pirate', string> = { hero: 'idle', pirate: 'idle' };
+let activeLoop = 'idle';
+/** A face held on top of whatever the clip shows. */
+let faceHold: { eyes: string; mouth: string; left: number } | null = null;
+
+function play(clip: string, loop: boolean): void {
+  if (loop) {
+    anim.play(clip, { fade: 0.22 });
+    activeLoop = clip;
+  } else anim.oneShot(clip, activeLoop, { fade: 0.12 });
+  if (clip === 'cast') afterGame(0.35, () => skyFlash());
+}
 
 function renderMoves(): void {
   const box = $('moves');
   box.innerHTML = '';
-  const info = INFO[tab];
-  $('who').textContent = info.who;
-  $('blurb').textContent = info.blurb;
-  $('moves-n').textContent = info.moves;
-  $('tris').textContent = info.tris;
-  $('bones').textContent = info.bones;
+  $('who').textContent = INFO[tab].who;
+  $('blurb').textContent = INFO[tab].blurb;
+  ($('dialog') as HTMLElement).hidden = tab !== 'story';
+  requestAnimationFrame(layout);
   if (tab === 'battle') {
     const start = button(battle.on ? 'Stop battle' : 'Start battle', () => {
       battle.on ? stopBattle() : startBattle();
@@ -229,27 +225,31 @@ function renderMoves(): void {
     box.append(
       start,
       button('Sky Burst', skyBurst),
-      button(shake.enabled ? 'Screen shake: on' : 'Screen shake: off', () => {
+      button(shake.enabled ? 'Shake: on' : 'Shake: off', () => {
         shake.enabled = !shake.enabled;
         renderMoves();
       }),
     );
     return;
   }
-  const who = tab;
-  for (const [label, clip, loop] of MOVES[who]) {
+  if (tab === 'story') {
+    const next = button(storyAt < STORY.length - 1 ? 'Next' : 'Again', () => showLine((storyAt + 1) % STORY.length));
+    next.classList.add('primary');
+    box.append(next);
+    return;
+  }
+  for (const [label, clip, loop] of MOVES) {
     const b = button(label, () => {
       if (battle.on) stopBattle();
-      const actor = who === 'hero' ? hero : pirate;
-      if (loop) {
-        actor.anim.play(clip, { fade: 0.25 });
-        activeLoop[who] = clip;
-      } else actor.anim.oneShot(clip, activeLoop[who], { fade: 0.12 });
-      if (clip === 'cast') afterGame(0.3, () => skyFlash());
-      if (clip === 'shoot') afterGame(0.5, () => fireArrow(null));
+      play(clip, loop);
       renderMoves();
     });
-    if (loop && activeLoop[who] === clip) b.classList.add('on');
+    if (loop && activeLoop === clip) b.classList.add('on');
+    box.append(b);
+  }
+  for (const [label, eyes, mouth] of FACES) {
+    const b = button(label, () => (faceHold = { eyes, mouth, left: 1.6 }));
+    b.classList.add('face');
     box.append(b);
   }
 }
@@ -269,26 +269,43 @@ function button(label: string, onClick: () => void): HTMLButtonElement {
 for (const t of document.querySelectorAll<HTMLButtonElement>('.tabs button')) {
   t.addEventListener('click', () => {
     void sfx.unlock();
-    tab = t.dataset.tab as Tab;
-    for (const o of document.querySelectorAll<HTMLButtonElement>('.tabs button')) o.setAttribute('aria-selected', String(o === t));
-    renderMoves();
+    selectTab(t.dataset.tab as Tab);
   });
 }
-renderMoves();
 
-// Tapping a character gets a reaction.
-const tapRay = new THREE.Raycaster();
+function selectTab(next: Tab): void {
+  if (battle.on && next !== 'battle') stopBattle();
+  tab = next;
+  for (const o of document.querySelectorAll<HTMLButtonElement>('.tabs button')) o.setAttribute('aria-selected', String(o.dataset.tab === tab));
+  if (tab === 'story') showLine(0);
+  renderMoves();
+}
+
+// ---------- story
+
+let storyAt = 0;
+let typing = 0;
+function showLine(i: number): void {
+  storyAt = i;
+  const line = STORY[i];
+  ($('portrait') as HTMLImageElement).src = assetUrl(`sprites/hero/${line.portrait}.png`);
+  $('line').textContent = '';
+  typing = 0;
+  if (line.face) faceHold = { eyes: line.face[0], mouth: line.face[1], left: 2.4 };
+  if (line.move) play(line.move, false);
+  renderMoves();
+}
+
+// Tapping the hero gets a cheer.
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (battle.on) return;
   const r = renderer.domElement.getBoundingClientRect();
-  tapRay.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
-  const hit = tapRay.intersectObjects([hero.model, pirate.model], true)[0];
-  if (!hit) return;
-  void sfx.unlock();
-  let o: THREE.Object3D | null = hit.object;
-  while (o && o !== hero.model && o !== pirate.model) o = o.parent;
-  if (o === hero.model) hero.anim.oneShot('cheer', activeLoop.hero, { fade: 0.1 });
-  else pirate.anim.oneShot('taunt', activeLoop.pirate, { fade: 0.1 });
+  const x = (e.clientX - r.left - stage.width / 2 - set.position.x) / fit;
+  const y = (stage.height / 2 - (e.clientY - r.top) - set.position.y) / fit;
+  if (Math.abs(x - HERO_X) < 140 && y > -20 && y < 400) {
+    void sfx.unlock();
+    play('cheer', false);
+  }
 });
 
 // ---------- tiny scheduler on game time (so slow-mo stretches sequences too)
@@ -301,11 +318,11 @@ function afterGame(seconds: number, fn: () => void): void {
 
 // ---------- battle
 
-const battle = { on: false, hp: 100, state: 'walk' as 'walk' | 'dead' | 'gone' | 'spawn', spawnT: 0, lastRapid: 0 };
-const MAX_HP = 100;
+const battle = { on: false, hp: 100, state: 'up' as 'up' | 'down' | 'spawn', spawnT: 0, sway: 0, swayV: 0 };
+const MAX_HP = 120;
 
 interface Arrow {
-  obj: THREE.Object3D;
+  mesh: THREE.Mesh;
   trail: Trail;
   vel: THREE.Vector3;
   age: number;
@@ -314,82 +331,83 @@ interface Arrow {
 const arrows: Arrow[] = [];
 const fading: Trail[] = [];
 const TRAIL = new THREE.Color(1.0, 0.72, 0.3);
+const arrowSprite = assets.sprites.arrow;
+const ARROW_LEN = 430 * HERO_SIZE;
+const arrowGeo = spriteGeometry(arrowSprite.w, arrowSprite.h).translate(-arrowSprite.w / 2, arrowSprite.h / 2, 0);
+const arrowMat = spriteMaterial(assets.textures.arrow, flash0);
 
 function startBattle(): void {
   battle.on = true;
   battle.hp = MAX_HP;
-  battle.state = 'walk';
-  pirate.root.visible = true;
-  pirate.root.scale.setScalar(1);
-  pirate.root.position.set(1.05, 0, 0);
-  pirate.anim.play('walk');
-  hero.root.position.copy(HERO_HOME);
-  hero.anim.play('rapid');
-  battle.lastRapid = 0;
+  battle.state = 'up';
+  target.scale.setScalar(1);
+  target.visible = true;
+  play('rapid', true);
 }
 
 function stopBattle(): void {
   battle.on = false;
-  pirate.root.visible = true;
-  pirate.root.scale.setScalar(1);
-  pirate.root.position.copy(PIRATE_HOME);
-  pirate.anim.play('idle');
-  hero.anim.play('idle');
-  activeLoop = { hero: 'idle', pirate: 'idle' };
+  play('idle', true);
 }
 
-const tmp = new THREE.Vector3();
-function pirateChest(out = new THREE.Vector3()): THREE.Vector3 {
-  return pirate.worldOf('chest', out).add(tmp.set(0, 0.04, 0));
+anim.onEvent = (name) => {
+  if (name === 'release') fireArrow(battle.on && battle.state === 'up');
+};
+
+const local = new THREE.Vector3();
+/** A puppet point in island space. */
+function heroPoint(name: string, out = new THREE.Vector3()): THREE.Vector3 {
+  const [x, y] = hero.point(name);
+  return out.set(HERO_X + x * HERO_SIZE, hero.root.position.y + y * HERO_SIZE, 0);
 }
 
-function fireArrow(target: 'pirate' | null): void {
-  const from = hero.worldOf('nock');
-  const obj = prop('arrow');
-  obj.position.copy(from);
-  const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(hero.root.getWorldQuaternion(new THREE.Quaternion()));
-  if (target === 'pirate') dir.copy(pirateChest()).sub(from).normalize();
-  const trail = new Trail(TRAIL, 0.016, 16, 0.55);
-  scene.add(obj, trail.mesh);
-  arrows.push({ obj, trail, vel: dir.multiplyScalar(7.5).add(tmp.set(0, 0.4, 0)), age: 0, homing: target === 'pirate' });
-  fx.flash(from, new THREE.Color(1, 0.9, 0.6));
+function fireArrow(homing: boolean): void {
+  const grip = heroPoint('bow.grip');
+  const dir = homing ? BULLSEYE.clone().sub(grip).normalize() : new THREE.Vector3(1, 0.04, 0);
+  const mesh = new THREE.Mesh(arrowGeo, arrowMat);
+  mesh.scale.setScalar(ARROW_LEN / arrowSprite.w);
+  mesh.renderOrder = 400;
+  mesh.position.copy(grip);
+  const trail = new Trail(TRAIL, 5, 16, 170);
+  trail.mesh.renderOrder = 390;
+  island.add(mesh, trail.mesh);
+  arrows.push({ mesh, trail, vel: dir.multiplyScalar(1500), age: 0, homing });
+  fx.flash(grip, new THREE.Color(1, 0.9, 0.6));
   sfx.play('shoot', 0.4);
 }
 
-function hitPirate(at: THREE.Vector3, dir: THREE.Vector3, base: number, forceCrit = false): void {
+function toWorld(v: THREE.Vector3): THREE.Vector3 {
+  return island.localToWorld(v.clone());
+}
+
+function hitTarget(at: THREE.Vector3, dir: THREE.Vector3, base: number, forceCrit = false): void {
   const crit = forceCrit || Math.random() < 0.22;
   const dmg = Math.round(crit ? base * 2.3 : base);
   battle.hp -= dmg;
-  pirate.flash(1);
+  targetFlash.value = 1;
+  battle.swayV += crit ? 5 : 2.5;
   fx.sparks(at, crit ? new THREE.Color(1, 0.75, 0.25) : new THREE.Color(1, 0.95, 0.75), dir, crit ? 22 : 12);
-  numbers.spawn(String(dmg), at.clone().add(tmp.set(0, 0.15, 0)), crit ? 'crit' : 'hit');
+  numbers.spawn(String(dmg), toWorld(at.clone().add(local.set(0, 60, 0))), crit ? 'crit' : 'hit');
   sfx.play('hit', crit ? 0.6 : 0.4);
   if (crit) {
     time.hitStop(70);
     shake.add(0.35);
   } else shake.add(0.12);
-  pirate.root.position.x += 0.04;
-  if (battle.hp <= 0) defeatPirate();
-  else pirate.anim.oneShot('hit', 'walk', { fade: 0.06 });
+  if (battle.hp <= 0) breakTarget();
 }
 
-function defeatPirate(): void {
-  battle.state = 'dead';
-  pirate.anim.play('die', { once: true, fade: 0.05 });
+function breakTarget(): void {
+  battle.state = 'down';
   time.hitStop(110);
   time.slowMo(0.35, 0.8);
   shake.add(0.6);
   sfx.play('enemy_die', 0.6);
-  hero.anim.oneShot('cheer', 'idle', { fade: 0.15 });
-  afterGame(1.15, () => {
-    const at = pirate.worldOf('hips');
-    fx.poof(at, 1.2);
-    sfx.play('explosion', 0.35);
-    burstCoins(at, 7);
-    pirate.root.visible = false;
-    battle.state = 'gone';
-    afterGame(1.4, respawn);
-  });
+  fx.poof(BULLSEYE, 1.4);
+  sfx.play('explosion', 0.35);
+  burstCoins(BULLSEYE, 8);
+  target.visible = false;
+  play('cheer', false);
+  afterGame(1.8, respawn);
 }
 
 function respawn(): void {
@@ -397,84 +415,76 @@ function respawn(): void {
   battle.hp = MAX_HP;
   battle.state = 'spawn';
   battle.spawnT = 0;
-  pirate.root.visible = true;
-  pirate.root.scale.setScalar(0.01);
-  pirate.root.position.set(1.05, 0, 0);
-  pirate.anim.play('taunt', { once: true, fade: 0 });
-  fx.poof(pirate.worldOf('hips'), 0.8, 10);
-  afterGame(1.0, () => {
-    if (!battle.on || battle.state !== 'spawn') return;
-    battle.state = 'walk';
-    pirate.anim.play('walk');
-    hero.anim.play('rapid');
-  });
+  target.visible = true;
+  target.scale.setScalar(0.01);
+  fx.poof(BULLSEYE, 0.9, 10);
 }
 
 function skyFlash(): void {
-  const at = hero.root.getWorldPosition(new THREE.Vector3()).add(tmp.set(0, 0.05, 0));
-  fx.ring(at, new THREE.Color(0.45, 0.95, 1), 1.6);
+  fx.ring(new THREE.Vector3(HERO_X, -10, 0), new THREE.Color(0.45, 0.95, 1), 1.6);
   time.slowMo(0.3, 1.1);
   shake.add(0.5);
   sfx.play('zap', 0.6);
 }
 
 function skyBurst(): void {
-  hero.anim.oneShot('cast', battle.on ? 'rapid' : 'idle', { fade: 0.1 });
-  afterGame(0.3, () => {
+  anim.oneShot('cast', battle.on ? 'rapid' : 'idle', { fade: 0.1 });
+  afterGame(0.35, () => {
     skyFlash();
-    if (battle.on && battle.state === 'walk')
+    if (battle.on && battle.state === 'up')
       afterGame(0.25, () => {
-        if (battle.state !== 'walk') return;
-        const at = pirateChest();
-        hitPirate(at, at.clone().sub(hero.root.position).normalize(), 60, true);
-        fx.ring(at, new THREE.Color(0.6, 1, 1), 0.6, 24);
+        if (battle.state !== 'up') return;
+        hitTarget(BULLSEYE.clone(), new THREE.Vector3(1, 0, 0), 60, true);
+        fx.ring(BULLSEYE, new THREE.Color(0.6, 1, 1), 0.6, 24);
       });
   });
 }
 
 // ---------- coins
 
+const coinArt = paintCoin();
 interface Coin {
-  obj: THREE.Object3D;
+  mesh: THREE.Mesh;
   vel: THREE.Vector3;
   age: number;
+  spin: number;
 }
 const coins: Coin[] = [];
 let coinCount = 0;
 
 function burstCoins(at: THREE.Vector3, n: number): void {
   for (let i = 0; i < n; i++) {
-    const obj = prop('coin');
-    obj.position.copy(at);
-    scene.add(obj);
-    const a = Math.random() * Math.PI * 2;
-    coins.push({ obj, vel: new THREE.Vector3(Math.cos(a) * 1.1, 2.4 + Math.random() * 0.9, Math.sin(a) * 1.1), age: 0 });
+    const mesh = spriteMesh(coinArt, 0.55, 300);
+    mesh.geometry = mesh.geometry.clone().translate(-coinArt.w / 2, coinArt.h / 2, 0);
+    mesh.position.copy(at);
+    island.add(mesh);
+    coins.push({ mesh, vel: new THREE.Vector3((Math.random() - 0.5) * 700, 650 + Math.random() * 350, 0), age: 0, spin: Math.random() * 6 });
   }
 }
 
 function updateCoins(dt: number): void {
-  const heroChest = hero.worldOf('chest');
+  const chest = new THREE.Vector3(HERO_X, 190, 0);
   for (let i = coins.length - 1; i >= 0; i--) {
     const c = coins[i];
     c.age += dt;
-    if (c.age < 0.75) {
-      c.vel.y -= 9 * dt;
-      c.obj.position.addScaledVector(c.vel, dt);
-      const floor = island.position.y + 0.035;
-      if (c.obj.position.y < floor) {
-        c.obj.position.y = floor;
+    c.spin += dt * 9;
+    c.mesh.scale.x = 0.55 * Math.abs(Math.cos(c.spin));
+    if (c.age < 0.8) {
+      c.vel.y -= 2200 * dt;
+      c.mesh.position.addScaledVector(c.vel, dt);
+      if (c.mesh.position.y < 10) {
+        c.mesh.position.y = 10;
         c.vel.y = Math.abs(c.vel.y) * 0.45;
         c.vel.x *= 0.7;
-        c.vel.z *= 0.7;
       }
     } else {
-      // Sucked into the hero, faster and faster.
-      const to = heroChest.clone().sub(c.obj.position);
+      // Pulled into the hero, faster and faster.
+      const to = chest.clone().sub(c.mesh.position);
       const d = to.length();
-      c.vel.lerp(to.normalize().multiplyScalar(2 + (c.age - 0.75) * 9), Math.min(1, dt * 8));
-      c.obj.position.addScaledVector(c.vel, dt);
-      if (d < 0.12) {
-        scene.remove(c.obj);
+      c.vel.lerp(to.normalize().multiplyScalar(500 + (c.age - 0.8) * 3000), Math.min(1, dt * 8));
+      c.mesh.position.addScaledVector(c.vel, dt);
+      if (d < 40) {
+        island.remove(c.mesh);
         coins.splice(i, 1);
         coinCount++;
         $('coins').textContent = String(coinCount);
@@ -482,12 +492,10 @@ function updateCoins(dt: number): void {
         purse.classList.remove('bump');
         void purse.offsetWidth;
         purse.classList.add('bump');
-        fx.glitter(heroChest, new THREE.Color(1, 0.85, 0.3), 4);
+        fx.glitter(chest, new THREE.Color(1, 0.85, 0.3), 4);
         sfx.play('coin', 0.35, 0.15);
-        continue;
       }
     }
-    c.obj.rotation.y += dt * 9;
   }
 }
 
@@ -495,8 +503,6 @@ function updateCoins(dt: number): void {
 
 let last = performance.now();
 let dustT = 0;
-let glitterT = 0;
-const nockWorld = new THREE.Vector3();
 
 function frame(now: number): void {
   const realDt = Math.min(0.05, (now - last) / 1000);
@@ -509,73 +515,65 @@ function frame(now: number): void {
       t.fn();
     }
 
-  island.position.y = Math.sin(now / 1000 * 0.7) * 0.025;
-  island.rotation.z = Math.sin(now / 1000 * 0.45) * 0.008;
-  clouds.update(realDt * (0.4 + 0.6 * time.scale));
-
-  if (battle.on) {
-    hero.faceTowards(pirate.root.position.x, pirate.root.position.z);
-    pirate.faceTowards(hero.root.position.x, hero.root.position.z);
-    if (battle.state === 'walk') {
-      if (pirate.anim.playing === 'walk') pirate.root.position.x = Math.max(0.42, pirate.root.position.x - 0.22 * dt);
-      // Fire on the release frame of each rapid-fire cycle.
-      const a = hero.anim.action;
-      if (hero.anim.playing === 'rapid' && a) {
-        const t = a.time % 0.5;
-        if (battle.lastRapid < 0.25 && t >= 0.25) fireArrow('pirate');
-        battle.lastRapid = t;
-      }
-    }
-    if (battle.state === 'spawn') {
-      battle.spawnT += dt;
-      const k = Math.min(1, battle.spawnT / 0.35);
-      const back = 1 + 2.2 * (k - 1) ** 3 + 1.2 * (k - 1) ** 2;
-      pirate.root.scale.setScalar(Math.max(0.01, back));
-    }
-  } else {
-    hero.faceYaw(0.45);
-    pirate.faceYaw(-0.45);
+  // Sky and island drift.
+  island.position.y = Math.sin((now / 1000) * 0.7) * 6;
+  for (const c of clouds) {
+    c.x = (c.x + (realDt * c.speed * (0.4 + 0.6 * time.scale)) / stage.width) % 1.3;
+    c.mesh.position.set((c.x - 0.65) * (stage.width + 400), stage.height * (0.5 - c.y) + 60, 0);
   }
 
+  // Hero.
+  let pose: Pose2D = anim.update(dt);
+  if (faceHold) {
+    faceHold.left -= dt;
+    pose = layer(pose, { slots: { eyes: faceHold.eyes, mouth: faceHold.mouth } });
+    if (faceHold.left <= 0) faceHold = null;
+  }
+  hero.setPose(pose);
   hero.update(dt);
-  pirate.update(dt);
-
-  // Little touches: dust while running, glitter off a stolen crystal.
+  const lift = Math.max(0, hero.skeleton.joint('hips')[1] - 550) * HERO_SIZE;
+  heroShadow.place(HERO_X, hero.root.position.y, lift);
   dustT -= dt;
-  if (dustT <= 0 && (hero.anim.playing === 'run' || pirate.anim.playing === 'run' || pirate.anim.playing === 'carry')) {
-    dustT = 0.09;
-    for (const actor of [hero, pirate])
-      if (['run', 'carry'].includes(actor.anim.playing)) fx.dust(actor.worldOf(Math.random() < 0.5 ? 'foot.L' : 'foot.R').setY(island.position.y + 0.02));
+  if (dustT <= 0 && ['run', 'walk', 'dodge'].includes(anim.playing)) {
+    dustT = anim.playing === 'walk' ? 0.2 : 0.08;
+    fx.dust(new THREE.Vector3(HERO_X - 20 + Math.random() * 60, -6, 0));
   }
-  glitterT -= dt;
-  if (glitterT <= 0 && pirate.anim.playing === 'carry') {
-    glitterT = 0.12;
-    fx.glitter(pirate.worldOf('loot'), new THREE.Color(0.5, 1, 1), 2);
+
+  // Target: spring sway, flash fade, pop-in after a respawn.
+  battle.swayV += (-60 * battle.sway - 5 * battle.swayV) * dt;
+  battle.sway += battle.swayV * dt;
+  target.rotation.z = -battle.sway * 0.04;
+  targetFlash.value = Math.max(0, targetFlash.value - dt * 9);
+  if (battle.state === 'spawn') {
+    battle.spawnT += dt;
+    const k = Math.min(1, battle.spawnT / 0.35);
+    target.scale.setScalar(Math.max(0.01, 1 + 2.2 * (k - 1) ** 3 + 1.2 * (k - 1) ** 2));
+    if (k >= 1) battle.state = 'up';
   }
 
   for (let i = arrows.length - 1; i >= 0; i--) {
     const ar = arrows[i];
     ar.age += dt;
-    if (ar.homing && battle.state === 'walk') {
-      const want = pirateChest().sub(ar.obj.position);
+    if (ar.homing && battle.state === 'up') {
+      const want = BULLSEYE.clone().sub(ar.mesh.position);
       const dist = want.length();
-      ar.vel.lerp(want.normalize().multiplyScalar(7.5), Math.min(1, dt * 10));
-      if (dist < 0.09) {
-        hitPirate(ar.obj.position.clone(), ar.vel.clone().normalize(), 20 + Math.floor(Math.random() * 13));
+      ar.vel.lerp(want.normalize().multiplyScalar(1500), Math.min(1, dt * 10));
+      if (dist < 40) {
+        hitTarget(ar.mesh.position.clone(), ar.vel.clone().normalize(), 20 + Math.floor(Math.random() * 13));
         ar.trail.detach();
         fading.push(ar.trail);
-        scene.remove(ar.obj);
+        island.remove(ar.mesh);
         arrows.splice(i, 1);
         continue;
       }
-    } else ar.vel.y -= 3 * dt;
-    ar.obj.position.addScaledVector(ar.vel, dt);
-    ar.obj.lookAt(nockWorld.copy(ar.obj.position).add(ar.vel));
-    ar.trail.push(ar.obj.position);
-    if (ar.age > 1.4) {
+    } else ar.vel.y -= 600 * dt;
+    ar.mesh.position.addScaledVector(ar.vel, dt);
+    ar.mesh.rotation.z = Math.atan2(ar.vel.y, ar.vel.x);
+    ar.trail.push(ar.mesh.position);
+    if (ar.age > 1.2) {
       ar.trail.detach();
       fading.push(ar.trail);
-      scene.remove(ar.obj);
+      island.remove(ar.mesh);
       arrows.splice(i, 1);
     }
   }
@@ -583,28 +581,36 @@ function frame(now: number): void {
   for (let i = fading.length - 1; i >= 0; i--) {
     fading[i].update(camera);
     if (fading[i].done) {
-      scene.remove(fading[i].mesh);
+      island.remove(fading[i].mesh);
       fading[i].dispose();
       fading.splice(i, 1);
     }
   }
 
   updateCoins(dt);
-  fx.update(dt, camera, renderer.domElement.height);
-  numbers.update(realDt, camera, stageEl.clientWidth, stageEl.clientHeight);
+  fx.update(dt, renderer.getPixelRatio() * fit);
+
+  // Story text types itself out.
+  if (tab === 'story') {
+    const text = STORY[storyAt].text;
+    typing = Math.min(text.length, typing + realDt * 40);
+    $('line').textContent = text.slice(0, Math.floor(typing));
+  }
+
+  numbers.update(realDt, camera, stage.width, stage.height);
   shake.update(realDt);
-  controls.update();
   shake.apply(camera);
-  renderer.render(scene, camera);
+  stage.render();
   shake.restore(camera);
   requestAnimationFrame(frame);
 }
+renderMoves();
+layout();
 if (autoBattle) {
-  tab = 'battle';
-  for (const o of document.querySelectorAll<HTMLButtonElement>('.tabs button')) o.setAttribute('aria-selected', String(o.dataset.tab === 'battle'));
+  selectTab('battle');
   startBattle();
   renderMoves();
 }
 requestAnimationFrame(frame);
 window.__ready = true;
-window.__showcase = { hero, pirate, startBattle, stopBattle, skyBurst, time, camera, controls };
+window.__showcase = { hero, anim, startBattle, stopBattle, skyBurst, time, selectTab };

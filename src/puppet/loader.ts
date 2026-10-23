@@ -22,12 +22,17 @@ export async function loadJson<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** A URL for an asset (e.g. an <img> src), inline in single-file builds. */
+export function assetUrl(path: string): string {
+  const inline = window.__ASSETS__?.[path];
+  return typeof inline === 'string' ? inline : BASE + path;
+}
+
 const loader = new THREE.TextureLoader();
 
 /** A sprite texture with premultiplied alpha and mipmaps, ready for `spriteMaterial`. */
 export async function loadTexture(path: string, renderer?: THREE.WebGLRenderer): Promise<THREE.Texture> {
-  const inline = window.__ASSETS__?.[path];
-  const tex = await loader.loadAsync(typeof inline === 'string' ? inline : BASE + path);
+  const tex = await loader.loadAsync(assetUrl(path));
   tex.premultiplyAlpha = true;
   tex.colorSpace = THREE.NoColorSpace;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
