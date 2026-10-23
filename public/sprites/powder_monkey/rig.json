@@ -25,7 +25,7 @@
     {"name": "foot.r", "parent": "shin.r", "at": [402, 1234]}
   ],
   "parts": [
-    {"name": "scarf-tail-2", "img": "scarf-tail-2", "bone": "scarf.2", "z": 3, "from": [[380, 622], [470, 830]], "to": [[312.0, 266.0], [231.1, 537.5]], "shade": 0.9},
+    {"name": "scarf-tail-2", "img": "scarf-tail-2", "bone": "scarf.2", "z": 3, "from": [[380, 622], [470, 830]], "to": [[312.0, 266.0], [319.4, 569.6]], "shade": 0.9},
     {"name": "scarf-tail-1", "img": "scarf-tail-1", "bone": "scarf.1", "z": 4, "from": [[182, 622], [80, 800]], "to": [[308.0, 260.0], [166.3, 456.3]]},
     {"name": "tail-tip", "img": "tail-tip", "bone": "tail2", "z": 1, "from": [[1322, 362], [1225, 255]], "to": [[179.7, 1060.3], [146.8, 931.6]]},
     {"name": "tail-top", "img": "tail-top", "bone": "tail", "z": 2, "from": [[915, 148], [790, 372]], "to": [[485, 984], [179.7, 1060.3]], "width": 0.86},
@@ -64,7 +64,7 @@
   ],
   "springs": [
     {"bone": "scarf.1", "tip": [166.3, 456.3], "gain": 0.06, "freq": 2.6, "damping": 0.28, "max": 28},
-    {"bone": "scarf.2", "tip": [231.1, 537.5], "gain": 0.05, "freq": 2.2, "damping": 0.3, "max": 24},
+    {"bone": "scarf.2", "tip": [319.4, 569.6], "gain": 0.05, "freq": 2.2, "damping": 0.3, "max": 24},
     {"bone": "tail", "tip": [179.7, 1060.3], "gain": 0.035, "freq": 1.8, "damping": 0.35, "max": 18},
     {"bone": "tail2", "tip": [146.8, 931.6], "gain": 0.05, "freq": 2.4, "damping": 0.3, "max": 22}
   ],

@@ -143,7 +143,7 @@ J_TOP, J_END = [915, 148], [790, 372]          # tail-top: thin end (hidden at t
 THIGH_TOP, THIGH_KNEE = [1172, 600], [1160, 815]
 SHIN_KNEE, SHIN_ANKLE = [1515, 545], [1470, 730]
 ST1 = similar([182, 622], KNOT, 1.18, 6)         # scarf tail 1: knot on the head's knot, tails fanning back
-ST2 = similar([380, 622], [KNOT[0] + 4, KNOT[1] + 6], 1.25, 40)
+ST2 = similar([380, 622], [KNOT[0] + 4, KNOT[1] + 6], 1.34, 22)
 
 parts = [
     placed('scarf-tail-2', 'scarf-tail-2', 'scarf.2', 3, [[380, 622], [470, 830]], ST2, shade=0.9),

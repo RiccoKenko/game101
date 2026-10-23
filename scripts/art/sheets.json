@@ -106,7 +106,10 @@
         "mouth-tongue": [1500, 675, 160, 115]
       }
     },
-    "parts_body": { "names": ["torso", "hips", "tail-top", "tail-tip", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"] },
+    "parts_body": {
+      "names": ["torso", "hips", "tail-top", "tail-tip", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"],
+      "erase": { "tail-top": [[720, 362, 68, 110, 0]] }
+    },
     "hands_props": { "names": ["bomb", "hand-l-open", "hand-l-fist", "hand-r-open", "hand-r-hold"] },
     "poses": { "names": ["idle", "run", "bomb-run", "run-away", "hit", "ko", "taunt", "cheer"] }
   },

@@ -357,7 +357,7 @@ const ko: Clip2D = {
   },
 };
 
-/** Pulls down an eyelid with one finger, tongue out, fist on the hip and a wiggle: "Nyah!" Still balancing the loot. */
+/** Pulls down an eyelid with one finger, tongue out, fist on the hip and a wiggle: "Nyah!" (Any loot stays on its head.) */
 const taunt: Clip2D = {
   name: 'taunt',
   duration: 1.4,
@@ -370,7 +370,7 @@ const taunt: Clip2D = {
     // Hands travel from the sides (where they start after the run) to the eyelid and the hip.
     const lerp = (a: Vec2, b: Vec2): Vec2 => [a[0] + (b[0] - a[0]) * up, a[1] + (b[1] - a[1]) * up];
     return layer(STAND, breathe(t, 0.5), reach('r', lerp(at(310, 850), at(545, 494)), body, 1, -1), reach('l', lerp(at(820, 860), at(740, 842)), body, 1, -1), {
-      slots: { ...(up > 0.5 ? FACE.smug : FACE.cheeky), weapon: 'none', loot: 'crystal', 'hand.r': 'hand-r-fist', 'hand.l': 'hand-l-fist' },
+      slots: { ...(up > 0.5 ? FACE.smug : FACE.cheeky), weapon: 'none', 'hand.r': 'hand-r-fist', 'hand.l': 'hand-l-fist' },
       bones: {
         hips: { x: 10 * wag, y: -30 * crouch, r: -2 * wag },
         torso: { r: 4 * up + 3 * wag },
@@ -400,12 +400,12 @@ const cheer: Clip2D = {
     return layer(STAND_BODY, reach('r', at(340 - 8 * shake, 320), body, 1.1, 1, arms), reach('l', at(845 + 8 * shake, 335), body, 1.1, -1, arms), {
       slots: { ...(t < 0.12 ? FACE.cheeky : FACE.laugh), weapon: 'none', loot: 'none', 'hand.r': 'hand-r-fist', 'hand.l': 'hand-l-fist' },
       bones: {
-        hips: { y: -50 * squat + 170 * air, sy: 1 - 0.05 * squat + 0.03 * air },
+        hips: { y: -50 * squat + 170 * air },
         // Arms swing down and back while it squats, then shoot up (the IK takes over as `arms` grows).
         'upperArm.r': { r: -25 * squat },
         'upperArm.l': { r: -40 * squat - 8 },
         'forearm.l': { r: -20 },
-        torso: { r: 4 * arms, sy: 1 - 0.04 * squat + 0.04 * air },
+        torso: { r: 4 * arms, sy: 1 - 0.07 * squat + 0.05 * air, sx: 1 + 0.04 * squat },
         head: { r: 8 * arms + 3 * shake },
         'hand.r': { wr: 185, ww: arms },
         'hand.l': { wr: 180, ww: arms },
