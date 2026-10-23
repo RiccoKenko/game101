@@ -104,9 +104,10 @@ def hand(name, z, shade=None):
 GRIP = hand_map('hand-r-grip')[2]([1263, 807])  # the hole in the near fist
 
 # ---- Props ----
-# Anchor: held by the shank just under the stock; at rest it hangs crown-down from the near fist.
-ANCHOR_GRIP, ANCHOR_CROWN = [300, 245], [300, 560]
-ANCHOR_SCALE = 0.86
+# Anchor: held by the shank just under the stock; at rest it hangs crown-down from the near fist. It is mirrored
+# so that, over his shoulder, its chain falls behind his head instead of across his chest.
+ANCHOR_GRIP, ANCHOR_CROWN = [300, 232], [300, 560]
+ANCHOR_SCALE = 0.95
 anchor_to = [GRIP, [GRIP[0], GRIP[1] + (ANCHOR_CROWN[1] - ANCHOR_GRIP[1]) * ANCHOR_SCALE]]
 # Sack: mirrored so its bulk hangs behind his back, held by the strap in the near fist.
 SACK_STRAP, SACK_BOTTOM = [618, 330], [618, 530]
@@ -171,7 +172,7 @@ parts = [
     part('upper-arm-r', 'upper-arm-r', 'upperArm.r', 40, [[535, 615], [440, 860]], [SHOULDER_R, ELBOW_R], width=0.8),
     part('forearm-r', 'forearm-l', 'forearm.r', 41, [[225, 640], [150, 888]], [ELBOW_R, WRIST_R], width=1.05),
     # The anchor sits in the fist (its shank through the hole), the fingers over it.
-    part('anchor', 'anchor', 'anchor', 43, [ANCHOR_GRIP, ANCHOR_CROWN], anchor_to, slot='weapon'),
+    part('anchor', 'anchor', 'anchor', 43, [ANCHOR_GRIP, ANCHOR_CROWN], anchor_to, slot='weapon', width=-ANCHOR_SCALE),
     hand('hand-r-grip', 44),
     hand('hand-r-open', 44),
     part('braid', 'beard-braid', 'braid', 48, [[240, 500], [240, 652]], [BRAID_TOP, BRAID_BAND]),

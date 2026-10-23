@@ -40,7 +40,7 @@
     {"name": "torso", "img": "torso", "bone": "torso", "z": 30, "from": [[232, 392], [132, 392], [232, 292]], "to": [[505, 688], [350.0, 688], [505, 556.0]]},
     {"name": "upper-arm-r", "img": "upper-arm-r", "bone": "upperArm.r", "z": 40, "from": [[535, 615], [440, 860]], "to": [[258, 478], [135, 602]], "width": 0.8},
     {"name": "forearm-r", "img": "forearm-l", "bone": "forearm.r", "z": 41, "from": [[225, 640], [150, 888]], "to": [[135, 602], [122, 815]], "width": 1.05},
-    {"name": "anchor", "img": "anchor", "bone": "anchor", "z": 43, "from": [[300, 245], [300, 560]], "to": [[93.3, 892.3], [93.3, 1163.2]], "slot": "weapon"},
+    {"name": "anchor", "img": "anchor", "bone": "anchor", "z": 43, "from": [[300, 232], [300, 560]], "to": [[93.3, 892.3], [93.3, 1203.9]], "slot": "weapon", "width": -0.95},
     {"name": "hand-r-grip", "img": "hand-r-grip", "bone": "hand.r", "z": 44, "from": [[1338, 645], [1290, 950]], "to": [[122, 815], [110.9, 957.1]], "slot": "hand.r", "width": 0.5309},
     {"name": "hand-r-open", "img": "hand-r-open", "bone": "hand.r", "z": 44, "from": [[785, 635], [745, 965]], "to": [[122, 815], [110.0, 968.0]], "slot": "hand.r", "width": 0.5309},
     {"name": "braid", "img": "beard-braid", "bone": "braid", "z": 48, "from": [[240, 500], [240, 652]], "to": [[540, 393], [563, 530]]},

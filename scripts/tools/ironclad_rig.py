@@ -7,6 +7,11 @@ trimmed rig-pose picture's pixels (art/sliced/ironclad/rigpose.png) at the end, 
 The Ironclad faces right in 3/4 view. Near side = his right (.r, viewer's left, holds the wrench); far side =
 his left (.l, holds the hatch shield). The sheet names are the other way round (the artist named them from the
 viewer's side): upper-arm-l / forearm-r / hand-l-* are the NEAR arm, upper-arm-r / forearm-l / hand-r-* the far.
+
+ironclad_fit.json holds fit.py results (CHAR=ironclad python3 scripts/tools/fit.py <part> cx cy scale [angle]):
+  head 530 330 0.76 | torso 545 640 1.2 | hips 555 960 1.2 | strap 775 1000 1.13 -10 | eyes-calm 645 365 0.6
+  shin 750 1270 1.15 (stored as "shin#far") | upper-arm-l 270 612 1.2 with the scale pinned (fit(..., fix_s=True)).
+Everything else (arms, hands, near leg, props) is placed from points measured with grid.mjs.
 """
 import json, math, os, sys
 
@@ -46,10 +51,6 @@ def placed(name, img, bone, z, a, b, A, s, turn=None, **extra):
 
 def lerp(p, q, t):
     return [round(p[0] + (q[0] - p[0]) * t, 1), round(p[1] + (q[1] - p[1]) * t, 1)]
-
-
-def angle(p, q):
-    return math.degrees(math.atan2(q[1] - p[1], q[0] - p[0]))
 
 
 # --- Legs -------------------------------------------------------------------------------------------------
@@ -116,7 +117,7 @@ GRIP_R = hand_point('hand-l-grip', 'r', [318, 900])
 GRIP_L = hand_point('hand-r-grip', 'l', [1228, 890])
 # The crystal sits on the open near hand's thumb side: when a clip turns the hand fingers-forward (+90 degrees)
 # that side faces up and the crystal stands upright on it, so on the rig pose it lies turned a quarter clockwise.
-NEST_R = hand_point('hand-l-open', 'r', [1470, 330])
+NEST_R = hand_point('hand-l-open', 'r', [1365, 400])
 
 # --- Strap ------------------------------------------------------------------------------------------------
 STRAP_TOP, STRAP_END = [1293, 78], [1352, 352]
@@ -169,9 +170,9 @@ parts = [
     fitted('upper-arm-r', 'upper-arm-l', 'upperArm.r', 40, UA_R_SHOULDER, UA_R_ELBOW),
     {'name': 'forearm-r', 'img': 'forearm-r', 'bone': 'forearm.r', 'z': 42, 'from': [[258, 722], [292, 908]], 'to': [lerp(ELBOW_R, WRIST_R, -0.25), lerp(ELBOW_R, WRIST_R, 1.5)], 'width': 1.1},
     placed('wrench', 'wrench', 'weapon', 43, WRENCH_GRIP, WRENCH_HEAD, GRIP_R, WRENCH_S, 75, slot='weapon'),
-    # The crystal rides on the near hand, tucked under the near forearm.
+    # The crystal rides on the near hand, under the hand and forearm (clips turn the hand to carry it).
     {'name': 'crystal', 'img': 'crystal', 'bone': 'hand.r', 'z': 41, 'slot': 'loot', 'from': [[722, 395], [842, 395]],
-     'to': [[NEST_R[0], NEST_R[1] - 48], [NEST_R[0], NEST_R[1] + 48]]},
+     'to': [[NEST_R[0], NEST_R[1] - 58], [NEST_R[0], NEST_R[1] + 58]]},
     hand('hand-r-grip', 'hand-l-grip', 'hand.r', 44),
     hand('hand-r-open', 'hand-l-open', 'hand.r', 44),
     fitted('head', 'head', 'head', 50, [150, 400], [550, 400]),
@@ -190,7 +191,7 @@ for n in ['eyes-calm', 'eyes-angry', 'eyes-closed', 'eyes-hurt', 'eyes-ko', 'eye
         e['shade'] = 2.6
     parts.append(e)
 
-# The calm eyes are the default (first) part of their slot; the rest pose holds the wrench, not the crystal.
+# The first part of each slot shows by default: calm eyes, the gripping fists.
 rig = {
     'id': 'ironclad',
     'ground': ground,
@@ -221,8 +222,6 @@ def dump(o):
     return '\n'.join(lines) + '\n'
 
 
-# Slot order: the first part of a slot shows by default.
-order = {'hand-r-grip': 0, 'hand-r-open': 1, 'hand-l-grip': 0, 'hand-l-open': 1}
 rp = man['rigpose']['parts'][0]
 OX, OY = rp['x'] - 8, rp['y'] - 8
 sh = lambda p: [round(p[0] - OX, 1), round(p[1] - OY, 1)]

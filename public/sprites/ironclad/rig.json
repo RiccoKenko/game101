@@ -36,7 +36,7 @@
     {"name": "upper-arm-r", "img": "upper-arm-l", "bone": "upperArm.r", "z": 40, "from": [[290, 490], [195, 638]], "to": [[260.1, 431.4], [150.0, 611.5]]},
     {"name": "forearm-r", "img": "forearm-r", "bone": "forearm.r", "z": 42, "from": [[258, 722], [292, 908]], "to": [[150.5, 592.0], [147.0, 728.5]], "width": 1.1},
     {"name": "wrench", "img": "wrench", "bone": "weapon", "z": 43, "from": [[826, 455], [800, 150]], "to": [[226.6, 816.7], [301.9, 1097.6]], "slot": "weapon"},
-    {"name": "crystal", "img": "crystal", "bone": "hand.r", "z": 41, "slot": "loot", "from": [[722, 395], [842, 395]], "to": [[360.9, 675.8], [360.9, 771.8]]},
+    {"name": "crystal", "img": "crystal", "bone": "hand.r", "z": 41, "slot": "loot", "from": [[722, 395], [842, 395]], "to": [[271.4, 736.3], [271.4, 852.3]]},
     {"name": "hand-r-grip", "img": "hand-l-grip", "bone": "hand.r", "z": 44, "from": [[297, 650], [266, 758]], "to": [[146.0, 621.5], [142.8, 713.6]], "slot": "hand.r", "width": 0.98},
     {"name": "hand-r-open", "img": "hand-l-open", "bone": "hand.r", "z": 44, "from": [[1275, 172], [1245, 318]], "to": [[146.0, 621.5], [141.7, 743.6]], "slot": "hand.r", "width": 0.98},
     {"name": "head", "img": "head", "bone": "head", "z": 50, "from": [[150, 400], [550, 400]], "to": [[351.0, 203.1], [659.8, 204.5]]},
