@@ -9,18 +9,13 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { LEVEL1, type LevelDef } from '../../src/td/levels';
-import { Path, type Pt } from '../../src/td/path';
+import { checkLevel, LEVEL1, type LevelDef } from '../../src/td/levels';
+import { closedCurve, Path, type Pt } from '../../src/td/path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const LEVELS: Record<string, LevelDef> = { level1: LEVEL1 };
 
 const pts = (p: Pt[]) => p.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-
-/** A smooth closed outline through the points (Catmull-Rom, wrapped). */
-function closedCurve(p: Pt[]): Pt[] {
-  return new Path([...p.slice(-2), ...p, ...p.slice(0, 3)], 10).points.slice(20, 20 + p.length * 10 + 1);
-}
 
 export function sketchSvg(level: LevelDef): string {
   const { w, h } = level.map;
@@ -48,32 +43,6 @@ export function sketchSvg(level: LevelDef): string {
   <circle cx="${level.vault[0]}" cy="${level.vault[1]}" r="62" fill="#a9a9b8" stroke="#3b2a2a" stroke-width="5"/>
   <polygon points="${pts([[level.vault[0], level.vault[1] - 58], [level.vault[0] + 30, level.vault[1] - 6], [level.vault[0], level.vault[1] + 22], [level.vault[0] - 30, level.vault[1] - 6]])}" fill="#6ff0ff" stroke="#1d7f8a" stroke-width="4"/>
 </svg>`;
-}
-
-/** Problems that would make the level unplayable: spots on the road, off the island, or overlapping. */
-export function checkLevel(level: LevelDef): string[] {
-  const road = new Path(level.route);
-  const island = closedCurve(level.island);
-  const inside = ([x, y]: Pt) => {
-    let c = false;
-    for (let i = 0, j = island.length - 1; i < island.length; j = i++) {
-      const [xi, yi] = island[i];
-      const [xj, yj] = island[j];
-      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
-    }
-    return c;
-  };
-  const problems: string[] = [];
-  level.slots.forEach((s, i) => {
-    const gap = road.nearest(s).dist - level.roadWidth / 2 - level.slotRadius;
-    if (gap < 8) problems.push(`slot ${i + 1} touches the road (gap ${gap.toFixed(0)} px)`);
-    if (!inside(s)) problems.push(`slot ${i + 1} is off the island`);
-    level.slots.forEach((t, j) => {
-      if (j > i && Math.hypot(s[0] - t[0], s[1] - t[1]) < level.slotRadius * 2 + 20) problems.push(`slots ${i + 1} and ${j + 1} overlap`);
-    });
-  });
-  if (!inside(level.heroStart)) problems.push('hero starts off the island');
-  return problems;
 }
 
 async function main() {

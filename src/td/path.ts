@@ -18,6 +18,22 @@ export function catmullRom(points: Pt[], perSegment = 16): Pt[] {
   return out;
 }
 
+/** A smooth closed outline through the points (Catmull-Rom, wrapped). */
+export function closedCurve(p: Pt[], perSegment = 10): Pt[] {
+  return new Path([...p.slice(-2), ...p, ...p.slice(0, 3)], perSegment).points.slice(2 * perSegment, (p.length + 2) * perSegment + 1);
+}
+
+/** Whether `p` lies inside the polygon (even-odd rule). */
+export function insidePolygon(poly: Pt[], [x, y]: Pt): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i];
+    const [xj, yj] = poly[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
 export class Path {
   /** The curve as short straight steps. */
   readonly points: Pt[];
