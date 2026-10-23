@@ -131,7 +131,7 @@ const PIRATE_PUPPETS: Record<EnemyKind, { id: string; height: number }> = {
   deckhand: { id: 'deckhand', height: 90 },
   powderMonkey: { id: 'powder_monkey', height: 65 },
   ironclad: { id: 'ironclad', height: 105 },
-  parrot: { id: 'parrot_raider', height: 88 },
+  parrot: { id: 'parrot_raider', height: 78 },
   firstMate: { id: 'first_mate', height: 150 },
 };
 
