@@ -62,8 +62,8 @@ FAR = 0.82  # shade of the far limbs
 HIPS, TORSO, NECK = [500, 740], [500, 720], [520, 385]
 SHOULDER_R, ELBOW_R, WRIST_R, TIP_R = [258, 478], [135, 602], [122, 815], [110, 968]
 SHOULDER_L, ELBOW_L, WRIST_L, TIP_L = [702, 480], [778, 612], [810, 822], [828, 962]
-HIP_R, KNEE_R, ANKLE_R = [400, 790], [352, 1040], [300, 1290]
-HIP_L, KNEE_L, ANKLE_L = [602, 790], [640, 1040], [662, 1290]
+HIP_R, KNEE_R, ANKLE_R = [395, 795], [365, 1050], [300, 1290]
+HIP_L, KNEE_L, ANKLE_L = [605, 795], [632, 1050], [665, 1290]
 GROUND = [490, 1345]
 
 # ---- Head and its swinging bits ----
@@ -142,7 +142,9 @@ BUCKLE, RIG_BUCKLE, TORSO_SX, TORSO_SY = [232, 392], [505, 688], 1.55, 1.32
 
 # Boots: cuff top centre, toe and heel on the sole (sheet) -> rig pose; the far boot is the same picture mirrored.
 BOOT = [[1360, 662], [1240, 945], [1420, 950]]
-THIGH = [[1065, 600], [1105, 885]]
+# Balloon trouser legs: top (its cut end erased in sheets.json) to the gathered hem, drawn a little fuller than
+# the sheet so they cover the hips' cut-off trouser legs as they swing. The near one is the picture mirrored.
+THIGH, THIGH_WIDTH = [[1045, 600], [1073, 878]], 1.06
 
 parts = [
     # Far arm, behind the body.
@@ -155,12 +157,13 @@ parts = [
     # Coat skirts hang from the waist, outside the legs.
     part('coat-tail-far', 'coat-tail-r', 'coat.l', 10, [[1063, 100], [1143, 485], [1237, 353]], [[688, 760], [745, 1110], [822, 1000]], shade=0.9),
     part('coat-tail-near', 'coat-tail-l', 'coat.r', 11, [[950, 100], [947, 485], [810, 310]], [[300, 760], [250, 1128], [100, 1000]]),
-    # Legs: boots under the trouser legs, the hips (belt and seat) over the thighs' tops.
+    # Legs: boots under the trouser legs. The hips (belt, seat and the shirt tail, its trouser legs cut off at the
+    # crotch) cover the far thigh's top; the near thigh goes over the hips so its swing never opens a gap.
     part('shin-l', 'shin', 'shin.l', 12, BOOT, [[632, 1045], [808, 1342], [590, 1340]], shade=FAR),
-    part('thigh-l', 'thigh', 'thigh.l', 14, THIGH, [HIP_L, KNEE_L], shade=FAR),
+    part('thigh-l', 'thigh', 'thigh.l', 14, THIGH, [HIP_L, KNEE_L], width=THIGH_WIDTH, shade=0.92),
     part('shin-r', 'shin', 'shin.r', 16, BOOT, [[345, 1045], [165, 1342], [372, 1340]]),
-    part('thigh-r', 'thigh', 'thigh.r', 18, THIGH, [HIP_R, KNEE_R], width=-0.9),
     part('hips', 'hips', 'hips', 20, [[621, 222], [621, 400]], [tf(fits['hips'], [621, 222]), tf(fits['hips'], [621, 400])]),
+    part('thigh-r', 'thigh', 'thigh.r', 22, THIGH, [HIP_R, KNEE_R], width=-THIGH_WIDTH),
     # The coat front, on the belt buckle, widened a little to the rig pose's broad chest.
     part('torso', 'torso', 'torso', 30, [BUCKLE, [BUCKLE[0] - 100, BUCKLE[1]], [BUCKLE[0], BUCKLE[1] - 100]],
          [RIG_BUCKLE, [RIG_BUCKLE[0] - 100 * TORSO_SX, RIG_BUCKLE[1]], [RIG_BUCKLE[0], RIG_BUCKLE[1] - 100 * TORSO_SY]]),

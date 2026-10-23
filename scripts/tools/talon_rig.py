@@ -106,9 +106,9 @@ def foot(name, z, shade=None):
 
 # The crystal sits in the near foot's curled toes (centre of the grip's hollow, hands sheet), upright.
 GRIP = foot_map('foot-near-grip')[2]
-CRYSTAL_C = GRIP([1500, 318])
-CRYSTAL_DOWN = GRIP([1500, 418])
-CRYSTAL_H = 0.38 * 300  # rig px from the crystal's top to its bottom
+CRYSTAL_C = GRIP([1510, 305])
+CRYSTAL_DOWN = GRIP([1510, 405])
+CRYSTAL_H = 0.48 * 300  # rig px from the crystal's top to its bottom
 d = [CRYSTAL_DOWN[0] - CRYSTAL_C[0], CRYSTAL_DOWN[1] - CRYSTAL_C[1]]
 dl = math.hypot(*d)
 d = [d[0] / dl, d[1] / dl]
@@ -139,9 +139,14 @@ SCARF = {'scarf-tail-1': ([380, 730], [35, 640]), 'scarf-tail-2': ([565, 712], [
 SCARF_SCALE = 0.75
 
 
+# Which way each tail streams on the rig pose (degrees, y down): the upper one straight back along the back,
+# the lower one back and down. Both stay hidden under the near wing until it beats.
+SCARF_DIR = {'scarf-tail-1': 182, 'scarf-tail-2': 161}
+
+
 def scarf(name, bone, z, root):
     a, b = SCARF[name]
-    tip = [root[0] + (b[0] - a[0]) * SCARF_SCALE, root[1] + (b[1] - a[1]) * SCARF_SCALE]
+    tip = along(root, SCARF_DIR[name], SCARF_SCALE * math.dist(a, b))
     return {'name': name, 'img': name, 'bone': bone, 'z': z, 'from': [a, b], 'to': [r1(root), r1(tip)]}
 
 

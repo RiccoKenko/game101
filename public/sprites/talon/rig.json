@@ -23,9 +23,9 @@
     {"name": "foot-far-open", "img": "foot-far-open", "bone": "foot.far", "z": 7, "slot": "foot.far", "from": [[258, 543], [300, 635]], "to": [[780.7, 1105.8], [804.9, 1159.3]], "shade": 0.86},
     {"name": "foot-far-grip", "img": "foot-far-grip", "bone": "foot.far", "z": 7, "slot": "foot.far", "from": [[862, 567], [885, 650]], "to": [[780.7, 1105.8], [801.3, 1151.3]], "shade": 0.86},
     {"name": "tail", "img": "tail", "bone": "tail", "z": 10, "from": [[790, 262], [440, 320]], "to": [[545.8, 931.0], [93.0, 989.9]]},
-    {"name": "scarf-tail-2", "img": "scarf-tail-2", "bone": "scarf.2", "z": 11, "from": [[565, 712], [195, 838]], "to": [[646, 738], [368.5, 832.5]]},
-    {"name": "scarf-tail-1", "img": "scarf-tail-1", "bone": "scarf.1", "z": 12, "from": [[380, 730], [35, 640]], "to": [[652, 712], [393.2, 644.5]]},
-    {"name": "crystal", "img": "crystal", "bone": "foot.near", "z": 14, "slot": "loot", "from": [[311, 123], [311, 423]], "to": [[590.9, 1148.8], [590.7, 1262.8]]},
+    {"name": "scarf-tail-2", "img": "scarf-tail-2", "bone": "scarf.2", "z": 11, "from": [[565, 712], [195, 838]], "to": [[646, 738], [368.8, 833.4]]},
+    {"name": "scarf-tail-1", "img": "scarf-tail-1", "bone": "scarf.1", "z": 12, "from": [[380, 730], [35, 640]], "to": [[652, 712], [384.8, 702.7]]},
+    {"name": "crystal", "img": "crystal", "bone": "foot.near", "z": 14, "slot": "loot", "from": [[311, 123], [311, 423]], "to": [[595.9, 1127.3], [595.7, 1271.3]]},
     {"name": "leg-near", "img": "leg-near", "bone": "leg.near", "z": 16, "from": [[1030, 545], [1040, 700]], "to": [[557.7, 966.8], [553.3, 1106.3]]},
     {"name": "foot-near-open", "img": "foot-near-open", "bone": "foot.near", "z": 17, "slot": "foot.near", "from": [[756, 42], [790, 140]], "to": [[542.1, 1072.7], [560.7, 1121.1]]},
     {"name": "foot-near-grip", "img": "foot-near-grip", "bone": "foot.near", "z": 17, "slot": "foot.near", "from": [[1402, 52], [1440, 150]], "to": [[542.1, 1072.7], [561.0, 1121.7]]},
@@ -46,8 +46,8 @@
     {"name": "eyes-determined", "img": "eyes-determined", "bone": "head", "z": 42, "slot": "eyes", "from": [[1493.3, 520.8], [1593.3, 523.4]], "to": [[806.3, 606.1], [882.7, 607.9]]}
   ],
   "springs": [
-    {"bone": "scarf.1", "tip": [393.2, 644.5], "gain": 0.05, "freq": 2.1, "damping": 0.25, "max": 28},
-    {"bone": "scarf.2", "tip": [368.5, 832.5], "gain": 0.05, "freq": 1.7, "damping": 0.22, "max": 30},
+    {"bone": "scarf.1", "tip": [384.8, 702.7], "gain": 0.05, "freq": 2.1, "damping": 0.25, "max": 28},
+    {"bone": "scarf.2", "tip": [368.8, 833.4], "gain": 0.05, "freq": 1.7, "damping": 0.22, "max": 30},
     {"bone": "tail", "tip": [93.0, 989.9], "gain": 0.015, "freq": 2.6, "damping": 0.35, "max": 9}
   ],
   "points": {"head.top": {"part": "head", "at": [215, 95]}, "beak": {"part": "head", "at": [455, 470]}, "talons": {"part": "foot-near-open", "at": [880, 330]}, "crystal": {"part": "crystal", "at": [311, 273]}},

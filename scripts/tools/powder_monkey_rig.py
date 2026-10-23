@@ -104,7 +104,7 @@ def hand(name, bone, z, img=None, side=None, mirror=False, shade=None):
 HOLD = hand_frame('hand-r-hold')
 # The bomb sits in the cupped hand (ball centre above the palm when the forearm points up).
 BOMB_BALL, BOMB_R = [206, 541], 156          # bomb sheet: ball centre and radius
-BOMB_SCALE = 0.86                             # ~270 rig px across
+BOMB_SCALE = 0.75                             # ~235 rig px across
 HAND_S = math.dist(*RIG_HAND['r']) / math.dist(*HAND_AXIS['hand-r-open'])
 CUP = [1400, 575]                             # palm of the cupped hand (hold sheet)
 ball_hold = [CUP[0] - 10, CUP[1] - (BOMB_R * BOMB_SCALE - 30) / HAND_S]

@@ -61,7 +61,8 @@ knee_l = tf(fits['shin#far'], SHIN_KNEE)
 sole_l = tf(fits['shin#far'], SOLE)
 knee_r, sole_r = [378, 1163], [366, 1418]
 hip_r, hip_l = [402, 985], [700, 1000]
-ground = [545, round(max(sole_r[1], sole_l[1]))]
+# The boots' rounded soles reach about 9 px below the sole points.
+ground = [545, round(max(sole_r[1], sole_l[1])) + 9]
 
 # --- Arms -------------------------------------------------------------------------------------------------
 # Rig-pose joints. The forearms are short stubs: on the rig pose the upper arm's tube runs straight into the
@@ -113,7 +114,9 @@ def hand_point(img, side, p):
 # Grip holes: where the wrench handle and the shield's back handle pass through the fists.
 GRIP_R = hand_point('hand-l-grip', 'r', [318, 900])
 GRIP_L = hand_point('hand-r-grip', 'l', [1228, 890])
-PALM_R = hand_point('hand-l-open', 'r', [1215, 430])
+# The crystal sits on the open near hand's thumb side: when a clip turns the hand fingers-forward (+90 degrees)
+# that side faces up and the crystal stands upright on it, so on the rig pose it lies turned a quarter clockwise.
+NEST_R = hand_point('hand-l-open', 'r', [1470, 330])
 
 # --- Strap ------------------------------------------------------------------------------------------------
 STRAP_TOP, STRAP_END = [1293, 78], [1352, 352]
@@ -166,9 +169,9 @@ parts = [
     fitted('upper-arm-r', 'upper-arm-l', 'upperArm.r', 40, UA_R_SHOULDER, UA_R_ELBOW),
     {'name': 'forearm-r', 'img': 'forearm-r', 'bone': 'forearm.r', 'z': 42, 'from': [[258, 722], [292, 908]], 'to': [lerp(ELBOW_R, WRIST_R, -0.25), lerp(ELBOW_R, WRIST_R, 1.5)], 'width': 1.1},
     placed('wrench', 'wrench', 'weapon', 43, WRENCH_GRIP, WRENCH_HEAD, GRIP_R, WRENCH_S, 75, slot='weapon'),
-    # The crystal rides in the near hand, the fingers over it.
-    {'name': 'crystal', 'img': 'crystal', 'bone': 'hand.r', 'z': 43, 'slot': 'loot', 'from': [[722, 395], [842, 395]],
-     'to': [[PALM_R[0] - 48, PALM_R[1]], [PALM_R[0] + 48, PALM_R[1]]]},
+    # The crystal rides on the near hand, tucked under the near forearm.
+    {'name': 'crystal', 'img': 'crystal', 'bone': 'hand.r', 'z': 41, 'slot': 'loot', 'from': [[722, 395], [842, 395]],
+     'to': [[NEST_R[0], NEST_R[1] - 48], [NEST_R[0], NEST_R[1] + 48]]},
     hand('hand-r-grip', 'hand-l-grip', 'hand.r', 44),
     hand('hand-r-open', 'hand-l-open', 'hand.r', 44),
     fitted('head', 'head', 'head', 50, [150, 400], [550, 400]),
@@ -181,7 +184,11 @@ for n in ['eyes-calm', 'eyes-angry', 'eyes-closed', 'eyes-hurt', 'eyes-ko', 'eye
     c = [b['x'] + b['w'] / 2, b['y'] + b['h'] / 2]
     f = {**eyes, 'c': c}
     a, q = [c[0] - 80, c[1]], [c[0] + 80, c[1]]
-    parts.append({'name': n, 'img': n, 'bone': 'head', 'z': 52, 'slot': 'eyes', 'from': [a, q], 'to': [tf(f, a), tf(f, q)]})
+    e = {'name': n, 'img': n, 'bone': 'head', 'z': 52, 'slot': 'eyes', 'from': [a, q], 'to': [tf(f, a), tf(f, q)]}
+    # The closed and hurt eyes are drawn dark navy, which vanishes in the dark porthole: lighten them.
+    if n in ('eyes-closed', 'eyes-hurt'):
+        e['shade'] = 2.6
+    parts.append(e)
 
 # The calm eyes are the default (first) part of their slot; the rest pose holds the wrench, not the crystal.
 rig = {
