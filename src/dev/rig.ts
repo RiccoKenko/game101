@@ -5,8 +5,7 @@
  * `play=1` animates the first copy, `cell` and `height` set the room each copy gets (rig pixels).
  */
 import * as THREE from 'three';
-import { deckhandClips } from '../puppet/clips/deckhand';
-import { heroClips } from '../puppet/clips/hero';
+import { CLIPS } from '../puppet/clips';
 import { loadPuppet, loadTexture } from '../puppet/loader';
 import type { Clip2D } from '../puppet/pose';
 import { Puppet, spriteGeometry, spriteMaterial } from '../puppet/puppet';
@@ -14,7 +13,7 @@ import { createStage2D } from '../stage/stage2d';
 
 const params = new URLSearchParams(location.search);
 const id = params.get('c') ?? 'hero';
-const clips: Record<string, Clip2D[]> = { hero: heroClips, deckhand: deckhandClips };
+const clips: Record<string, Clip2D[]> = CLIPS;
 const clipName = params.get('clip');
 const frames: [string | null, number][] = params.has('frames')
   ? params.get('frames')!.split(',').map((f) => [f.split('@')[0], Number(f.split('@')[1] ?? 0)])

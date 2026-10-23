@@ -4,6 +4,7 @@
  * Copies a character's sliced parts (from `npm run art`) into public/sprites/<id>/ for the game, with
  * sprites.json (each sprite's size and where it sat on its source sheet) and the rig from art/rigs/<id>.json.
  * Reference sheets (concept, rig pose, action poses) stay out of the game.
+ * A rig can borrow a sprite another character already published: `"borrow": { "crystal": "deckhand/crystal" }`.
  */
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -40,7 +41,17 @@ writeFileSync(join(out, 'sprites.json'), JSON.stringify(sprites, null, 1) + '\n'
 
 const rigFile = join(ROOT, 'art/rigs', `${id}.json`);
 if (existsSync(rigFile)) {
-  const rig = JSON.parse(readFileSync(rigFile, 'utf8')) as { parts: { img: string }[]; arrow?: { img: string } };
+  const rig = JSON.parse(readFileSync(rigFile, 'utf8')) as { parts: { img: string }[]; arrow?: { img: string }; borrow?: Record<string, string> };
+  for (const [name, from] of Object.entries(rig.borrow ?? {})) {
+    const [other, sprite] = from.split('/');
+    const dir = join(ROOT, 'public/sprites', other);
+    const info = (JSON.parse(readFileSync(join(dir, 'sprites.json'), 'utf8')) as typeof sprites)[sprite];
+    if (!info) throw new Error(`Cannot borrow "${from}": publish ${other} first`);
+    if (sprites[name]) throw new Error(`Two sprites are called "${name}"`);
+    copyFileSync(join(dir, `${sprite}.png`), join(out, `${name}.png`));
+    sprites[name] = info;
+  }
+  writeFileSync(join(out, 'sprites.json'), JSON.stringify(sprites, null, 1) + '\n');
   const missing = [...rig.parts.map((p) => p.img), ...(rig.arrow ? [rig.arrow.img] : [])].filter((n) => !sprites[n]);
   if (missing.length) throw new Error(`art/rigs/${id}.json uses sprites that do not exist: ${missing.join(', ')}`);
   copyFileSync(rigFile, join(out, 'rig.json'));
