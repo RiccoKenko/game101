@@ -25,7 +25,7 @@ rig_fg = _rig[..., 3] > 128
 # Starting guesses: rig-pose centre of the part, scale, angle (degrees), mirrored, angle search spread, fixed scale.
 GUESSES = {
     'head': dict(cx=760, cy=640, s=0.75),
-    'body': dict(cx=690, cy=900, s=1.15),
+    # 'body' is placed by hand in talon_rig.py: the colour fit shrinks the round body piece.
     'tail': dict(cx=330, cy=985, s=1.2),
     'wing-near-in': dict(cx=450, cy=500, s=1.3, th=20, spread=40),
     'wing-near-out': dict(cx=230, cy=400, s=1.3, spread=40),

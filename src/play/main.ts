@@ -172,7 +172,7 @@ const [mapTexture, heroAssets, pirateLooks, talonLook, mochiLook] = await Promis
   loadTexture(level.map.art ?? level.map.sketch, renderer),
   loadPuppet('hero', renderer),
   Promise.all((Object.keys(PIRATE_PUPPETS) as EnemyKind[]).map(async (k) => [k, await puppetLook(PIRATE_PUPPETS[k].id, { height: PIRATE_PUPPETS[k].height })] as const)),
-  puppetLook('talon', { width: 150 }),
+  puppetLook('talon', { width: 125 }),
   puppetLook('mochi', { width: 480 }),
 ]);
 /** Pirates without a drawn puppet yet use a painted stand-in. */
@@ -821,7 +821,8 @@ function onEvent(ev: BattleEvent): void {
     case 'talon': {
       anim.oneShot('cast', 'idle', { fade: 0.08 });
       hero.facing = ev.target.pos[0] >= battle.hero.pos[0] ? 1 : -1;
-      const from: Pt = [battle.hero.pos[0] - 260 * hero.facing, battle.hero.pos[1] - 520];
+      // From high in the sky on the hero's side of the thief, for a steep stoop.
+      const from: Pt = [ev.target.pos[0] - 380 * hero.facing, ev.target.pos[1] - 640];
       endTalon();
       const bird = new Companion(talonLook, EAGLE, 'centre', ORDER_ARROW + 2, 'dive');
       const trail = new Trail(FEATHER, 6, 16, 160);
@@ -1374,6 +1375,10 @@ window.__play = {
   },
   get view() {
     return view;
+  },
+  /** Talon's and Mochi's views while on screen (for tests and screenshots). */
+  get companions() {
+    return { talon: talonView, whale };
   },
   toScreen: (p: Pt) => toScreen(view, bounds(), p),
   setSpeed: (s: number) => (speed = s),

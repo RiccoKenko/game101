@@ -2,7 +2,7 @@
 import { createServer } from 'vite';
 import { chromium } from '@playwright/test';
 const [out, query, w = '900', h = '1100'] = process.argv.slice(2);
-const server = await createServer({ root: new URL('../..', import.meta.url).pathname, server: { port: 0 }, logLevel: 'error' });
+const server = await createServer({ root: new URL('../..', import.meta.url).pathname, server: { port: 0, hmr: false, watch: null }, logLevel: 'error' });
 await server.listen();
 const { port } = server.httpServer.address();
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
