@@ -68,11 +68,9 @@ GROUND = [490, 1345]
 
 # ---- Head and its swinging bits ----
 head = fits['head']
-# The braid hangs from under the beard; its gold band and tip measured on the rig pose.
+# The braid hangs from under the beard (its top and gold band measured on the rig pose).
 BRAID_TOP, BRAID_BAND = [540, 393], [563, 530]
-braid_map = mapper([240, 500], [240, 652], BRAID_TOP, BRAID_BAND)
-# The feather's plume top and its leftmost tip, sheet -> rig; it tucks into the hat band behind the crown.
-feather_map = mapper([250, 773], [60, 953], [368, 12], [205, 210])
+# The feather pivots where it tucks into the hat band behind the crown (plume top and tip placed on the rig pose).
 FEATHER_ROOT = [455, 150]
 
 # ---- Hands: wrist -> knuckle axis of each piece, at the open hand's size ----

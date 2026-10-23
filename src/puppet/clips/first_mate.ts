@@ -36,12 +36,13 @@ const FACE = {
 /** The near forearm comes towards us when folded, so it is drawn shorter; the hand undoes the squash. */
 const FORESHORTEN = 0.72;
 /**
- * World angle of the anchor over his shoulder: the shank goes up and back over the shoulder, behind the body,
- * so its crown and flukes stand out behind his near shoulder and the chain hangs down his back.
+ * World angle of the anchor over his shoulder, as in the idle reference pose: the shank runs through the fist and
+ * up over the shoulder, the crown and flukes stand up behind his head, and the stock and ring hang below the fist
+ * with the chain dangling.
  */
 const ON_SHOULDER = 205;
-/** Draw order with the near arm folded: forearm over the upper arm, anchor behind the body. */
-const Z_HOLD = { 'forearm-r': 42, anchor: 25 };
+/** Draw order with the near arm folded: forearm over the upper arm, the shank over the shoulder, fingers over it. */
+const Z_HOLD = { 'forearm-r': 42, anchor: 46, 'hand-r-grip': 47, 'hand-r-open': 47 };
 /** Draw order with the near arm raised or flung out: arm, anchor and fist over everything, even the hat. */
 const Z_RAISED = { 'upper-arm-r': 54, 'forearm-r': 55, anchor: 56, 'hand-r-grip': 57, 'hand-r-open': 57 };
 
@@ -227,7 +228,7 @@ const shout: Clip2D = {
     const point = key(t, [[0.18, 0], [0.32, 1, ease.back], [0.82, 1], [1.0, 0, ease.inOut]]);
     const roar = key(t, [[0.26, 0], [0.32, 1, ease.out], [0.8, 1], [0.95, 0, ease.inOut]]);
     const quake = osc(t, 0.07) * roar;
-    return layer(HOLD, march(t / SHOUT, (SPEED * 1.4 * SHOUT) / 4, 40, 0.3), {
+    return layer(HOLD, march(t / SHOUT, (SPEED * 1.5 * SHOUT) / 4, 40, 0.3), {
       slots: {
         ...(roar > 0.1 ? FACE.roar : breath > 0.3 ? FACE.surprised : FACE.fierce),
         'hand.l': point > 0.15 ? 'hand-l-open' : 'hand-l-fist',
@@ -251,8 +252,8 @@ const shout: Clip2D = {
 
 /**
  * Knocked out: the blow lands, he wobbles on his heels, then topples over backwards like a felled mast (slow to
- * start, fast at the end), slams flat on his back with a bounce, the anchor arm flung out past his head, and lies
- * still with his knees up. Falls to the left (behind him), about one body length.
+ * start, fast at the end), slams flat on his back with a bounce and lies still with his knees up, still clutching
+ * the anchor. Falls to the left (behind him), about one body length.
  */
 const ko: Clip2D = {
   name: 'ko',
@@ -265,34 +266,34 @@ const ko: Clip2D = {
     const thud = key(t, [[0.76, 0], [0.8, 1, ease.out], [1.05, 0, ease.inOut]]);
     const limp = key(t, [[0.7, 0], [1.1, 1, ease.out]]);
     const tilt = (88 * fall * Math.PI) / 180;
-    return layer(STAND, raise(fall), {
+    // He drops the sack (the game scatters his crystals) but keeps hold of the anchor on his shoulder.
+    return layer(STAND, {
       slots: { ...(t < 0.2 ? FACE.hurt : FACE.ko), 'hand.l': 'hand-l-open' },
       bones: {
         // Rocks back on his heels, then pivots over them: the hips swing round and down onto the coat.
         hips: {
           r: 6 * jolt + 3 * wobble + 88 * fall,
-          x: -20 * jolt - 560 * Math.sin(tilt),
-          y: -215 * (1 - Math.cos(tilt)),
-          sx: 1 + 0.05 * thud,
-          sy: 1 - 0.08 * thud,
+          x: -20 * jolt - 520 * Math.sin(tilt),
+          y: -385 * (1 - Math.cos(tilt)),
         },
-        torso: { r: 6 * jolt + 2 * wobble + 2 * fall },
+        torso: { r: 6 * jolt + 2 * wobble + 2 * fall, sx: 1 - 0.06 * thud, sy: 1 + 0.03 * thud },
         head: { r: 10 * jolt - 4 * wobble + 4 * fall - 10 * thud },
         braid: { r: 30 * fall + 10 * thud },
-        feather: { r: -25 * fall + 20 * thud },
-        'coat.r': { r: 20 * fall },
-        'coat.l': { r: 25 * fall },
-        'upperArm.r': { r: -14 * fall + 12 * limp },
-        'upperArm.l': { r: 25 * jolt + 20 * fall - 55 * limp },
-        'forearm.l': { r: 25 * fall },
-        anchor: { wr: ON_SHOULDER + (265 - ON_SHOULDER) * fall },
+        feather: { r: 20 * fall - 15 * thud },
+        // The coat tails flop down onto the ground under him.
+        'coat.r': { r: -12 * fall },
+        'coat.l': { r: -16 * fall },
+        'upperArm.r': { r: 12 * jolt - 10 * fall },
+        'upperArm.l': { r: 25 * jolt + 30 * fall - 75 * limp },
+        'forearm.l': { r: 20 * fall - 10 * limp },
+        // A world angle: the anchor turns with him and ends lying behind his head.
+        anchor: { wr: ON_SHOULDER + 88 * fall },
       },
-      // The boots stay on the ground as he goes over, then his knees come up.
+      // The boots stay where they stood as he goes over (knees up), then slump a little.
       ik: {
-        'foot.r': { target: [PLANT_R[0] - 300 * fall, PLANT_R[1] + 30 * limp], bend: 1 },
-        'foot.l': { target: [PLANT_L[0] - 420 * fall, PLANT_L[1] + 50 * limp], bend: 1 },
+        'foot.r': { target: [PLANT_R[0] + 40 * limp, PLANT_R[1] + 20 * fall - 10 * limp], bend: 1 },
+        'foot.l': { target: [PLANT_L[0] - 120 * fall + 30 * limp, PLANT_L[1] + 30 * fall - 15 * limp], bend: 1 },
       },
-      z: fall > 0.2 ? Z_RAISED : Z_HOLD,
     });
   },
 };
