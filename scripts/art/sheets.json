@@ -7,7 +7,26 @@
         "head", "hood-tip",
         "eyes-open", "eyes-half", "eyes-closed", "eyes-happy", "eyes-focus", "eyes-hurt", "eyes-ko", "eyes-surprised",
         "mouth-smile", "mouth-neutral", "mouth-cheer", "mouth-determined", "mouth-shout", "mouth-ouch", "mouth-o"
-      ]
+      ],
+      "boxes": {
+        "head": [10, 115, 555, 485],
+        "hood-tip": [70, 610, 200, 340],
+        "eyes-open": [555, 255, 245, 160],
+        "eyes-half": [803, 255, 230, 160],
+        "eyes-closed": [1036, 255, 245, 160],
+        "eyes-happy": [1285, 255, 235, 160],
+        "eyes-focus": [515, 500, 250, 165],
+        "eyes-hurt": [775, 500, 230, 165],
+        "eyes-ko": [1010, 500, 245, 165],
+        "eyes-surprised": [1262, 500, 250, 165],
+        "mouth-smile": [440, 735, 125, 70],
+        "mouth-neutral": [600, 735, 120, 70],
+        "mouth-cheer": [750, 735, 125, 90],
+        "mouth-determined": [900, 735, 125, 70],
+        "mouth-shout": [1050, 735, 140, 95],
+        "mouth-ouch": [1215, 735, 120, 70],
+        "mouth-o": [1380, 735, 70, 85]
+      }
     },
     "parts_body": {
       "names": ["torso", "hips", "capelet", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"]

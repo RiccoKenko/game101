@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cropPiece, findPieces, groupPieces, orderPieces, removeBackground, type RgbaImage } from '../../scripts/art/slicer';
+import { cropPiece, findPieces, groupByBoxes, groupPieces, orderPieces, removeBackground, type RgbaImage } from '../../scripts/art/slicer';
 
 type Rgb = [number, number, number];
 const MAGENTA: Rgb = [255, 0, 255];
@@ -121,6 +121,21 @@ describe('art slicer', () => {
     const { groups, dropped } = groupPieces(pieces, 1);
     expect(dropped).toBe(1);
     expect(groups[0].h).toBe(40); // the art and the string, without the speck
+  });
+
+  it('groups by hand-drawn boxes when eye pieces sit closer together than their own eyes', () => {
+    // Two eye pieces, each two eyes 50 px apart, but only 20 px between the pieces.
+    const blob = (x: number) => ({ x, y: 10, w: 30, h: 30, area: 700, labels: [x] });
+    const pieces = [blob(0), blob(80), blob(130), blob(210), blob(400)];
+    const { groups, dropped } = groupByBoxes(pieces, [
+      { x: 0, y: 0, w: 120, h: 50 },
+      { x: 120, y: 0, w: 130, h: 50 },
+      { x: 300, y: 0, w: 20, h: 20 },
+    ]);
+    expect(groups[0]).toMatchObject({ x: 0, w: 110, labels: [0, 80] });
+    expect(groups[1]).toMatchObject({ x: 130, w: 110, labels: [130, 210] });
+    expect(groups[2]).toBeNull();
+    expect(dropped).toBe(1);
   });
 
   it('copes with fewer parts than expected', () => {

@@ -330,6 +330,24 @@ export function groupPieces(pieces: Piece[], count?: number, gap = 12): { groups
 }
 
 /**
+ * Joins blobs into parts by hand-drawn boxes, for sheets where parts sit closer together than their own
+ * pieces (an eye piece is two eyes and two brows): each blob joins the box its centre falls in. Returns one
+ * entry per box (null when nothing landed in it) and how many blobs fell outside every box.
+ */
+export function groupByBoxes(pieces: Piece[], boxes: Box[]): { groups: (Piece | null)[]; dropped: number } {
+  const groups: (Piece | null)[] = boxes.map(() => null);
+  let dropped = 0;
+  for (const p of pieces) {
+    const cx = p.x + p.w / 2;
+    const cy = p.y + p.h / 2;
+    const k = boxes.findIndex((b) => cx >= b.x && cx < b.x + b.w && cy >= b.y && cy < b.y + b.h);
+    if (k < 0) dropped++;
+    else groups[k] = groups[k] ? merge(groups[k]!, p) : p;
+  }
+  return { groups, dropped };
+}
+
+/**
  * Puts parts in reading order: region by region (fractions of the width, e.g. the head column then the
  * face grid), and inside a region row by row, left to right.
  */

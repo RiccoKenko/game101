@@ -10,7 +10,18 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { cropPiece, findPieces, groupPieces, orderPieces, removeBackground, trim, type Box, type RgbaImage } from './slicer';
+import {
+  cropPiece,
+  findPieces,
+  groupByBoxes,
+  groupPieces,
+  orderPieces,
+  removeBackground,
+  trim,
+  type Box,
+  type Piece,
+  type RgbaImage,
+} from './slicer';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const SHEETS = ['concept', 'master', 'rigpose', 'head_faces', 'parts_body', 'hands_props', 'poses', 'portraits'];
@@ -18,6 +29,8 @@ const SHEETS = ['concept', 'master', 'rigpose', 'head_faces', 'parts_body', 'han
 interface SheetConfig {
   names: string[];
   regions?: [number, number][];
+  /** Part boxes [x, y, w, h] in sheet pixels by part name, for sheets the automatic grouping gets wrong. */
+  boxes?: Record<string, [number, number, number, number]>;
 }
 
 interface SheetEntry {
@@ -104,21 +117,37 @@ async function main() {
     const cfg = config[id]?.[sheet];
     if (cfg) {
       const { pieces, labels } = findPieces(image);
-      const { groups, dropped } = groupPieces(pieces, cfg.names.length);
-      const ordered = orderPieces(groups, image.width, cfg.regions);
-      if (ordered.length < cfg.names.length)
-        entry.warnings.push(`Found ${ordered.length} of ${cfg.names.length} parts: some parts touch each other or are missing.`);
+      let ordered: (Piece | null)[];
+      let dropped: number;
+      if (cfg.boxes) {
+        const boxes = cfg.names.map((name) => {
+          const b = cfg.boxes![name];
+          if (!b) throw new Error(`sheets.json: ${id}.${sheet} has no box for "${name}".`);
+          return { x: b[0], y: b[1], w: b[2], h: b[3] };
+        });
+        ({ groups: ordered, dropped } = groupByBoxes(pieces, boxes));
+      } else {
+        const grouped = groupPieces(pieces, cfg.names.length);
+        ordered = orderPieces(grouped.groups, image.width, cfg.regions);
+        dropped = grouped.dropped;
+      }
+      const found = ordered.filter((p) => p).length;
+      if (found < cfg.names.length)
+        entry.warnings.push(`Found ${found} of ${cfg.names.length} parts: some parts touch each other or are missing.`);
       if (dropped) entry.warnings.push(`Ignored ${dropped} stray specks.`);
       const dir = join(outDir, sheet);
       rmSync(dir, { recursive: true, force: true });
       mkdirSync(dir, { recursive: true });
-      for (const [k, part] of ordered.entries()) {
-        const name = cfg.names[k];
+      const checks: { box: Box; label: string }[] = [];
+      for (const [k, name] of cfg.names.entries()) {
+        const part = ordered[k];
+        if (!part) continue;
         const out = `${sheet}/${String(k + 1).padStart(2, '0')}-${name}.png`;
         await asSharp(cropPiece(image, labels, part)).png().toFile(join(outDir, out));
         entry.parts.push({ name, file: out, x: part.x, y: part.y, w: part.w, h: part.h });
+        checks.push({ box: part, label: `${k + 1} ${name}` });
       }
-      await writeCheck(image, ordered.map((p, k) => ({ box: p, label: `${k + 1} ${cfg.names[k]}` })), join(outDir, `${sheet}.check.png`));
+      await writeCheck(image, checks, join(outDir, `${sheet}.check.png`));
     } else {
       const { image: cut, box } = trim(image);
       await asSharp(cut).png().toFile(join(outDir, `${sheet}.png`));
