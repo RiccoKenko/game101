@@ -5,7 +5,7 @@
 ## สถานะ (23 ต.ค. 2026)
 - **โปรเจกต์:** Little Archer: Sky Pirates
   - เกม TD แบบ 2.5D สไตล์ Kingdom Rush บนมือถือแนวนอน ภาพ 2D แนวอนิเมะ
-  - เจ้านายวาดใน ChatGPT แล้ว Claude นำมาตัดชิ้น ใส่กระดูก และทำท่า
+  - เจ้านายวาดภาพด้วย Codex (เดิมใช้ ChatGPT) แล้ว Claude นำมาตัดชิ้น ใส่กระดูก และทำท่า
   - เทคโนโลยี: Three.js ใช้กล้อง orthographic
 - **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (branch นี้คือ branch ที่ deploy ด้วย)
 - **ลิงก์จริง:** little-archer.vercel.app
@@ -17,7 +17,11 @@
   - ภาพร่างแผนที่ + prompt วาดแผนที่
   - แกนระบบ TD (`src/td/`)
   - ด่านทดลองที่เล่นได้ (`/play.html`)
-- **Test:** unit 52 ข้อ (6 ไฟล์) และ e2e 3 ข้อ ผ่านทั้งหมด
+  - 2D-3 ส่วนกติกา (ภาพยังเป็นตัววาดด้วยโค้ดชั่วคราว):
+    - ป้อม 4 แบบ ระดับ 1-3: Archer, Cannon (ระเบิดวง ยิงตัวบินไม่ได้), Storm Crystal (เวท ทะลุเกราะ), Frost Cloud (ทำให้ช้า)
+    - ศัตรูใหม่: Ironclad (เกราะ), Parrot Raider (บิน)
+    - ด่าน 1 มี 8 เวฟ
+- **Test:** unit 58 ข้อ (6 ไฟล์) และ e2e 3 ข้อ ผ่านทั้งหมด
 
 ## Artifacts (ลิงก์คงที่)
 - **หน้าโชว์ตัวละคร:** https://claude.ai/artifact/PNawa631NQkzXEZbZAbFRh
@@ -32,12 +36,14 @@
 ## รอเจ้านาย
 1. **ลองเล่นด่านทดลองแล้วบอกความเห็น** เช่น ความยาก ขนาดฮีโร่ ราคาป้อม
    - ปรับตามที่ติ แล้วค่อย deploy
-2. **วาดแผนที่ด่าน 1 ใน ChatGPT**
-   - แนบ `art/maps/level1-sketch.png` แล้วใช้ prompt หัวข้อ 9.1 ใน `docs/art/CHARACTER_BRIEF.md` (ข้อความเดียวกับการ์ด Map)
+2. **วาดแผนที่ด่าน 1 ด้วย Codex**
+   - ใช้ prompt หัวข้อ 9.1 ใน `docs/art/CHARACTER_BRIEF.md` ซึ่งมีส่วน "IF YOU ARE CODEX" ให้ Codex อ่าน `art/maps/level1-sketch.png` และเปิด PR จาก branch `art/level1-map-v1`
    - เจ้านายเลือกแล้วว่า**รอแผนที่ของจริง ไม่ทำแผนที่ชั่วคราวด้วยโค้ด** (เคยติว่าภาพร่างดูไม่มีดีเทล)
-3. **วาด Deckhand**
-   - ใช้ prompt เดียวจบ แท็บ Deckhand
-   - หยุดหลังภาพ 2 เพื่อรออนุมัติ
+3. **วาด Deckhand ด้วย Codex**
+   - ใช้ prompt เดียวจบ (8.10 หรือแท็บ Deckhand ในหน้า prompt) ซึ่งมีส่วน "IF YOU ARE CODEX"
+   - Codex จะ push ที่ branch `art/deckhand-v1` แล้วหยุดหลังภาพ 2 เพื่อรออนุมัติ
+   - เจ้านายเลือกให้ส่ง prompt เป็นกล่องข้อความในแชตให้ก๊อปวางได้เลย ไม่ต้องเปิดหน้า Artifact
+   - ถ้า Codex เปิด PR ไม่ได้ (ยังไม่ได้เชื่อม repo) ให้เจ้านายส่งภาพมาในแชตแทน
 
 ## งานถัดไปของ Claude
 - **A. Deploy `/play.html` หลังเจ้านายโอเค**
@@ -48,14 +54,14 @@
     - `gitSource`: `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`
   - รอสถานะ READY แล้วเปิด `little-archer.vercel.app/play.html` เพื่อยืนยัน
 - **B. ได้แผนที่แล้ว**
-  1. เก็บภาพต้นฉบับที่ `art/incoming/maps/level1_map.png`
+  1. เก็บภาพต้นฉบับที่ `art/incoming/maps/level1_map.png` (ถ้ามาจาก PR ของ Codex ให้ `git fetch origin art/level1-map-v1` แล้วคัดลอกไฟล์มา)
   2. ทำไฟล์ 1536×1024 ที่ `public/maps/level1.png`
   3. ตั้ง `LEVEL1.map.art = 'maps/level1.png'` ใน `src/td/levels.ts`
   4. ซ้อนภาพกับภาพร่างเพื่อจูน `route`, `slots`, `dock`, `vault`, `heroStart`, `island`
   5. `npm run map:sketch -- level1` พิมพ์ปัญหาจาก `checkLevel` ออกมา และ unit test ก็เช็ก `checkLevel` ด้วย
   - ตัว build แบบไฟล์เดียวใส่ `public/maps/*.png` ให้เองอยู่แล้ว
 - **C. ได้ Deckhand แล้ว**
-  1. วางภาพที่ `art/incoming/deckhand/deckhand_<sheet>.png`
+  1. วางภาพที่ `art/incoming/deckhand/deckhand_<sheet>.png` (ถ้ามาจาก PR ของ Codex ให้ดึงจาก branch `art/deckhand-v1`)
   2. รัน `npm run art -- deckhand` แล้วดูภาพตรวจ `.check.png`
      - ชื่อชิ้นอยู่ใน `scripts/art/sheets.json`
      - แผ่นหน้าอาจต้องใส่ `boxes` เหมือนของ hero
@@ -63,13 +69,14 @@
   4. รัน `npm run art:publish -- deckhand`
   5. เขียนท่าใน `src/puppet/clips/deckhand.ts`: idle, เดินโยก, วิ่ง, แบกคริสตัลเหนือหัว, โดนตี, ตาย, ยั่ว, เชียร์
   6. ใส่แทนตัวกลมชั่วคราว
-     - ใน `src/play/main.ts` ให้ `PirateView` ใช้ Puppet (Powder Monkey ยังเป็นตัวกลมชั่วคราว)
+     - ใน `src/play/main.ts` ให้ `PirateView` ใช้ Puppet (Powder Monkey, Ironclad, Parrot ยังเป็นตัววาดด้วยโค้ดชั่วคราว)
      - ในแท็บ Battle ของหน้าโชว์ ใช้ Deckhand แทนเป้าซ้อม
-- **D. ต่อจากนั้น (2D-3)**
-  - ป้อม 4 แบบ พร้อมสายแยกที่ Lv4
-  - ศัตรูเพิ่ม: Ironclad, Parrot Raider ที่บินได้, บอส First Mate
-  - สกิล Talon และ Mochi
-  - การ์ดคำสั่งกัปตัน
+- **D. 2D-3 ที่เหลือ**
+  - สายแยกป้อมที่ Lv4 (Sniper Nest/Volley, Mortar/Flak, Lightning Spire/Arcane Lens, Blizzard/Ice Shard)
+  - บอส First Mate
+  - สกิล Talon (แย่งคริสตัลคืน) และ Mochi (ท่าไม้ตาย)
+  - การ์ดคำสั่งกัปตันทุก 5 เวฟ
+  - เลือกโหมดเล็งเป้าของป้อม (first / nearest / carrier) ในเมนู ระบบกติการองรับแล้ว
 
 ## ข้อเท็จจริงสำคัญ
 - **พิกัด:** ใช้พิกเซลบนภาพแผนที่ 1536×1024 แกน y ชี้ลง
@@ -79,17 +86,29 @@
   - `src/play/main.ts` อ่าน state แล้ววาด
   - เหตุการณ์จาก `drain()` แปลงเป็นเอฟเฟกต์และเสียง
   - ล็อกการสุ่มด้วย `?seed=`
-- **ค่าสมดุลปัจจุบัน**
+- **ค่าสมดุลปัจจุบัน** (ตัวเลขทั้งหมดอยู่ใน `src/td/units.ts`)
   - deckhand: hp 65, speed 52, bounty 5
   - powderMonkey: hp 35, speed 86, bounty 3
-  - archer: ราคา 70 / 110 / 160
+  - ironclad: hp 140, speed 36, เกราะ 50% (ลดดาเมจกายภาพ), bounty 14
+  - parrot: hp 42, speed 72, บินสูง 70 px, bounty 7
+  - ราคาป้อม: archer 70/110/160, cannon 90/130/190, storm 100/140/200, frost 80/110/150
   - hero: damage 6-9, rate 0.55, range 250, windup 0.25
-  - ด่าน: เงินเริ่มต้น 220, คริสตัล 20, 6 เวฟ
-  - ผลจาก bot ทดสอบ: ฮีโร่ยืนนิ่ง + 2 ป้อมเสียคริสตัลประมาณ 3, + 4 ป้อมไม่เสียเลย
+  - ด่าน: เงินเริ่มต้น 220, คริสตัล 20, 8 เวฟ (นกเริ่มเวฟ 4, Ironclad เริ่มเวฟ 6)
+  - ผลจาก bot 6 seed:
+    - 8 ป้อมแบบไหนก็ได้ 2-3 ดาว
+    - 4 ป้อม 1-3 ดาว
+    - ปืนใหญ่ล้วน 1 ดาว เพราะนกบินผ่าน
+    - ฮีโร่คนเดียวแพ้
   - สคริปต์ bot อยู่ใน scratchpad ซึ่งอาจหายแล้ว ทำใหม่ได้ง่าย: วนเรียก `Battle.step(1/30)` แล้วให้ bot สร้างหรืออัปเกรดป้อม
 - **ฮีโร่**
   - ขนาด 0.08 ในด่าน (สูงประมาณ 105 px) และ 0.26 ในหน้าโชว์
   - จังหวะยิงตรงกัน: เหตุการณ์ `draw` สั่ง `anim.oneShot('rapid')` ซึ่งปล่อยลูกที่ 0.25 s ตรงกับ `HERO.windup`
+- **การโจมตีของป้อม** (`TowerDef.attack`)
+  - `arrow` ติดตามเป้า
+  - `shell` ยิงโค้งไปจุดที่คาดว่าเป้าจะอยู่ ระเบิดโดนเฉพาะตัวบนพื้น
+  - `zap` โดนทันที
+  - `pulse` ทำให้ทุกตัวในระยะช้าลง
+  - ฝั่งวาด: ลูกปืนใหญ่ลอยโค้งพร้อมควัน, สายฟ้าใช้ `src/fx/bolt.ts`, คลื่นเย็นเป็นวงกว้างเท่าระยะป้อม
 - **build ไฟล์เดียว:** `scripts/build-showcase.mjs <out> [index|play]`
   - ใช้ `configFile:false` + `inlineDynamicImports`
   - ใส่ sprites ทั้งหมด (ยกเว้น `master.png`), ภาพแผนที่ (เฉพาะหน้า play) และเสียง
@@ -111,7 +130,7 @@
   - ตอบภาษาไทยปนศัพท์เทคนิคภาษาอังกฤษ
   - ส่งงานก่อนแล้วค่อยอธิบาย
   - อธิบายแบบคนที่ไม่ใช่สาย dev
-  - มี "📚 บทเรียนที่ N" ซึ่งถึง 22 แล้ว
+  - มี "📚 บทเรียนที่ N" ซึ่งถึง 23 แล้ว
 - **checkpoint:** เมื่อถึงจุดที่หยุดได้ให้บอกก่อน เพราะเจ้านายจะสั่ง handoff แล้ว compact
-- **งานภาพ:** วาดใน ChatGPT ปกติ (Codex ไม่ได้ต่อ GitHub) แล้วส่งภาพมาในแชต
+- **งานภาพ:** ตอนนี้ใช้ Codex (เจ้านายเปลี่ยนจาก ChatGPT) ส่ง prompt เป็นกล่องข้อความในแชตให้ก๊อปวาง
 - **git:** ไม่เปิด PR ถ้าไม่ได้สั่ง, ใส่ trailer ใน commit, ไม่ใส่ชื่อ model

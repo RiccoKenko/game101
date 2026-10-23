@@ -211,13 +211,20 @@ body {
 .menu button {
   display: grid;
   gap: 1px;
-  min-width: 96px;
-  padding: 6px 12px;
+  min-width: 92px;
+  padding: 6px 10px;
   text-align: center;
 }
 
 .menu button span {
   font-size: 14px;
+}
+
+.menu button small {
+  font-size: 11px;
+  font-weight: 500;
+  color: #7a6450;
+  white-space: nowrap;
 }
 
 .menu button b {

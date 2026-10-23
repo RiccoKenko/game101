@@ -49,13 +49,24 @@ export const LEVEL1: LevelDef = {
   ],
   startGold: 220,
   crystals: 20,
+  // New pirates arrive one kind at a time: flyers in wave 4 (cannons can't reach them), armour in wave 6
+  // (arrows bounce off, lightning doesn't).
   waves: [
     { groups: [{ enemy: 'deckhand', count: 6, gap: 1.6 }] },
     { groups: [{ enemy: 'deckhand', count: 9, gap: 1.3 }] },
     { groups: [{ enemy: 'powderMonkey', count: 6, gap: 0.8 }, { enemy: 'deckhand', count: 5, gap: 1.4, delay: 4 }] },
-    { groups: [{ enemy: 'deckhand', count: 13, gap: 1 }] },
-    { groups: [{ enemy: 'powderMonkey', count: 10, gap: 0.6 }, { enemy: 'deckhand', count: 9, gap: 1.1, delay: 3 }] },
-    { groups: [{ enemy: 'deckhand', count: 16, gap: 0.8 }, { enemy: 'powderMonkey', count: 12, gap: 0.5, delay: 6 }] },
+    { groups: [{ enemy: 'parrot', count: 6, gap: 1.2 }, { enemy: 'deckhand', count: 8, gap: 1.1, delay: 3 }] },
+    { groups: [{ enemy: 'deckhand', count: 13, gap: 1 }, { enemy: 'powderMonkey', count: 10, gap: 0.6, delay: 5 }] },
+    { groups: [{ enemy: 'ironclad', count: 3, gap: 3 }, { enemy: 'deckhand', count: 10, gap: 1, delay: 2 }] },
+    { groups: [{ enemy: 'parrot', count: 8, gap: 1 }, { enemy: 'powderMonkey', count: 10, gap: 0.6, delay: 4 }, { enemy: 'ironclad', count: 3, gap: 3, delay: 8 }] },
+    {
+      groups: [
+        { enemy: 'deckhand', count: 12, gap: 0.9 },
+        { enemy: 'powderMonkey', count: 8, gap: 0.6, delay: 6 },
+        { enemy: 'ironclad', count: 4, gap: 2.5, delay: 10 },
+        { enemy: 'parrot', count: 6, gap: 1.1, delay: 15 },
+      ],
+    },
   ],
 };
 

@@ -4,7 +4,7 @@ import { nextCost, Purse, sellValue } from '../../src/td/economy';
 import { checkLevel, LEVEL1, type LevelDef } from '../../src/td/levels';
 import { closedCurve, insidePolygon, Path } from '../../src/td/path';
 import { intercept, pickTarget, type Targetable } from '../../src/td/targeting';
-import { TOWERS } from '../../src/td/units';
+import { afterArmor, TOWERS, type TowerKind } from '../../src/td/units';
 import { stars, Vault } from '../../src/td/vault';
 import { WaveRunner } from '../../src/td/waves';
 
@@ -21,6 +21,10 @@ function run(b: Battle, seconds: number, done: (e: BattleEvent[]) => boolean = (
 }
 
 const FAR_AWAY: LevelDef = { ...LEVEL1, heroStart: [-5000, -5000] };
+/** Level 1 with the hero out of the way and one made-up wave. */
+const only = (enemy: 'deckhand' | 'powderMonkey' | 'ironclad' | 'parrot', count = 1, gap = 1): LevelDef => ({ ...FAR_AWAY, waves: [{ groups: [{ enemy, count, gap }] }] });
+/** Slot 0 sits beside the first bend after the dock. */
+const NEAR_DOCK = 0;
 
 describe('road', () => {
   it('measures a straight road and finds points along it', () => {
@@ -144,6 +148,78 @@ describe('economy', () => {
   });
 });
 
+describe('armour', () => {
+  it('cuts physical damage, never below 1, and lets magic through', () => {
+    expect(afterArmor(10, 'physical', 0.5)).toBe(5);
+    expect(afterArmor(1, 'physical', 0.5)).toBe(1);
+    expect(afterArmor(10, 'magic', 0.5)).toBe(10);
+    expect(afterArmor(10, 'physical', 0)).toBe(10);
+  });
+});
+
+describe('towers', () => {
+  const firstHit = (kind: 'archer' | 'storm') => {
+    const b = new Battle(only('ironclad'));
+    b.build(NEAR_DOCK, kind);
+    b.callWave();
+    const hit = run(b, 60, (e) => e.some((x) => x.type === 'hit')).find((e) => e.type === 'hit');
+    return hit?.type === 'hit' ? hit : null;
+  };
+
+  it('arrows bounce off an Ironclad, lightning does not', () => {
+    const arrow = firstHit('archer')!;
+    expect(arrow.blocked).toBeGreaterThan(0);
+    expect(arrow.damage + arrow.blocked).toBeGreaterThanOrEqual(4);
+    const zap = firstHit('storm')!;
+    expect(zap.blocked).toBe(0);
+    expect(zap.damage).toBeGreaterThanOrEqual(9);
+  });
+
+  it('a cannon ignores flyers and blasts pirates walking close together', () => {
+    const air = new Battle(only('parrot', 4, 0.5));
+    air.build(NEAR_DOCK, 'cannon');
+    air.callWave();
+    expect(run(air, 40).some((e) => e.type === 'shoot' && e.tower)).toBe(false);
+
+    const ground = new Battle(only('deckhand', 6, 0.3));
+    ground.build(NEAR_DOCK, 'cannon');
+    ground.callWave();
+    const events = run(ground, 40);
+    const booms = events.flatMap((e, i) => (e.type === 'boom' ? [i] : []));
+    expect(booms.length).toBeGreaterThan(0);
+    // Hits that follow a blast in the same step belong to it.
+    const hitsAfter = booms.map((i) => {
+      let n = 0;
+      while (events[i + 1 + n]?.type === 'hit') n++;
+      return n;
+    });
+    expect(Math.max(...hitsAfter)).toBeGreaterThanOrEqual(2);
+  });
+
+  it('lightning reaches flyers', () => {
+    const b = new Battle(only('parrot'));
+    b.build(NEAR_DOCK, 'storm');
+    b.callWave();
+    const zap = run(b, 40, (e) => e.some((x) => x.type === 'zap')).find((e) => e.type === 'zap');
+    expect(zap?.type === 'zap' && zap.enemy.flying).toBe(true);
+  });
+
+  it('frost slows pirates in range for a while', () => {
+    const b = new Battle(only('deckhand'));
+    b.build(NEAR_DOCK, 'frost');
+    b.callWave();
+    run(b, 60, (e) => e.some((x) => x.type === 'pulse'));
+    const e = b.enemies[0];
+    expect(e.slow).toBeCloseTo(0.6);
+    const d0 = e.d;
+    b.step(0.5);
+    expect((e.d - d0) / 0.5).toBeCloseTo(52 * 0.6, 0);
+    b.sell(NEAR_DOCK);
+    b.step(2);
+    expect(e.slow).toBe(1);
+  });
+});
+
 describe('battle', () => {
   it('builds, upgrades and sells on tower spots', () => {
     const b = new Battle(LEVEL1);
@@ -198,13 +274,16 @@ describe('battle', () => {
     expect(b.state).toBe('won');
   });
 
-  it('level 1 can be won with towers and the hero', () => {
+  it.each([
+    ['archers only', {} as Record<number, TowerKind>],
+    ['a mix of towers', { 3: 'cannon', 7: 'storm', 4: 'frost', 0: 'cannon', 2: 'storm' } as Record<number, TowerKind>],
+  ])('level 1 can be won with the hero and %s', (_, kinds) => {
     const b = new Battle(LEVEL1, 7);
     const order = [5, 3, 1, 7, 4, 0, 2, 6];
     b.callWave();
     const events = run(b, 900, undefined, () => {
       const empty = order.find((s) => !b.towers[s]);
-      if (empty !== undefined) b.build(empty);
+      if (empty !== undefined) b.build(empty, kinds[empty] ?? 'archer');
       else {
         const low = order.map((s) => b.towers[s]!).sort((x, y) => x.level - y.level)[0];
         b.upgrade(low.slot);

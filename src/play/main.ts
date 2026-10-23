@@ -1,5 +1,6 @@
 /**
- * Playable test level: the level 1 battle on the layout sketch, with stand-in pirates and towers and the real
+ * Playable test level: the level 1 battle on the layout sketch, with stand-in pirates and towers (archer, cannon,
+ * storm crystal, frost cloud) and the real
  * Little Archer. Tap a stone spot to build, tap the ground to move the hero (he shoots by himself when he
  * stands still), drag to look around and pinch to zoom. The rules live in src/td/battle.ts; this file only
  * draws them and turns battle events into animation, sound and effects.
@@ -11,6 +12,7 @@ import './play.css';
 import * as THREE from 'three';
 import { sfx } from '../audio/sfx';
 import { Gestures } from '../engine/input';
+import { Bolt } from '../fx/bolt';
 import { DamageNumbers } from '../fx/damageNumbers';
 import { Fx2D } from '../fx/fx2d';
 import { Shake } from '../fx/shake';
@@ -23,12 +25,12 @@ import { Puppet, spriteGeometry, spriteMaterial } from '../puppet/puppet';
 import type { Painted } from '../showcase/art';
 import { Shadow } from '../stage/shadow';
 import { createStage2D } from '../stage/stage2d';
-import { Battle, type BattleEvent, type Enemy, type Shot } from '../td/battle';
+import { Battle, TOWER_TOP, type BattleEvent, type Enemy, type Shot } from '../td/battle';
 import { nextCost, sellValue } from '../td/economy';
 import { LEVEL1 } from '../td/levels';
 import type { Pt } from '../td/path';
-import { TOWERS } from '../td/units';
-import { paintCrystal, paintPirate, paintRing, paintTower } from './art';
+import { ENEMIES, TOWER_KINDS, TOWERS, type EnemyKind, type TowerKind } from '../td/units';
+import { paintBall, paintCrystal, paintFrostWave, paintPirate, paintRing, paintTower } from './art';
 import { clampView, pan, toMap, toScreen, zoomAt, type Bounds, type View } from './view';
 
 declare global {
@@ -123,13 +125,21 @@ const time = new GameTime();
 const shake = new Shake(10);
 shake.enabled = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const PIRATE_ART = { deckhand: paintPirate('deckhand'), powderMonkey: paintPirate('powderMonkey') };
-const TOWER_ART = [1, 2, 3].map(paintTower);
+const PIRATE_ART = Object.fromEntries((Object.keys(ENEMIES) as EnemyKind[]).map((k) => [k, paintPirate(k)])) as Record<EnemyKind, Painted>;
+const TOWER_ART = Object.fromEntries(TOWER_KINDS.map((k) => [k, [1, 2, 3].map((l) => paintTower(k, l))])) as Record<TowerKind, Painted[]>;
+const BALL_ART = paintBall();
 const CRYSTAL_ART = paintCrystal();
 const RING_ART = paintRing();
+const FROST_ART = paintFrostWave();
 const CYAN = new THREE.Color(0.45, 1, 1);
 const GOLD = new THREE.Color(1, 0.85, 0.3);
 const TRAIL = new THREE.Color(1, 0.75, 0.35);
+const SMOKE = new THREE.Color(0.55, 0.52, 0.5);
+const STORM = new THREE.Color(0.72, 0.55, 1);
+const ICE = new THREE.Color(0.6, 0.9, 1);
+const STEEL = new THREE.Color(0.85, 0.9, 1);
+const NO_TINT = new THREE.Color(1, 1, 1);
+const CHILL_TINT = new THREE.Color(0.78, 0.92, 1.1);
 
 // ---------- hero
 
@@ -161,23 +171,32 @@ interface PirateView {
   phase: number;
   /** Seconds since it fell or escaped; the view fades out, then goes. */
   leaving: number;
+  /** Countdown to the next frost mote while chilled. */
+  frost: number;
 }
 
 interface TowerView {
   mesh: THREE.Mesh;
+  kind: TowerKind;
   level: number;
   recoil: number;
 }
 
-interface ArrowView {
+/** An arrow, or a cannonball drawn on an arc with a smoke trail. */
+interface ShotView {
   mesh: THREE.Mesh;
   trail: Trail;
+  shell: boolean;
 }
 
 let battle: Battle;
 const pirates = new Map<number, PirateView>();
 const towers = new Map<number, TowerView>();
-const arrows = new Map<number, ArrowView>();
+const arrows = new Map<number, ShotView>();
+const bolts: Bolt[] = [];
+/** Frost waves spreading out to a tower's range. */
+const frostWaves: { mesh: THREE.Mesh; range: number; age: number }[] = [];
+const FROST_WAVE_LIFE = 0.55;
 const fading: Trail[] = [];
 const dropped = new Map<number, THREE.Mesh>();
 const hpGeo = new THREE.PlaneGeometry(1, 1).translate(0.5, 0, 0);
@@ -187,19 +206,22 @@ function addPirate(e: Enemy): void {
   const group = new THREE.Group();
   const art = PIRATE_ART[e.kind];
   const body = sprite(art, (e.def.radius * 2.6) / art.h, 'feet', flash);
+  // Flyers hang in the air above their shadow on the road.
+  const top = e.def.altitude + e.def.radius * 2.6;
+  body.position.y = e.def.altitude;
   const crystal = sprite(CRYSTAL_ART, 0.42, 'centre');
-  crystal.position.y = e.def.radius * 2.6 + 18;
+  crystal.position.y = top + 18;
   crystal.visible = false;
   const hpBack = new THREE.Mesh(hpGeo, new THREE.MeshBasicMaterial({ color: 0x3b2a2a, depthTest: false, depthWrite: false, transparent: true }));
   const hpFill = new THREE.Mesh(hpGeo, new THREE.MeshBasicMaterial({ color: 0x7ee05a, depthTest: false, depthWrite: false, transparent: true }));
   hpBack.scale.set(40, 7, 1);
-  hpBack.position.set(-20, e.def.radius * 2.6 + 6, 0);
-  hpFill.position.set(-19, e.def.radius * 2.6 + 6, 0);
+  hpBack.position.set(-20, top + 6, 0);
+  hpFill.position.set(-19, top + 6, 0);
   group.add(body, crystal, hpBack, hpFill);
   const shadow = new Shadow(e.def.radius * 2.4);
   shadow.mesh.renderOrder = ORDER_SHADOW;
   scene.add(group, shadow.mesh);
-  pirates.set(e.id, { enemy: e, group, body, flash, shadow, hpBack, hpFill, crystal, phase: Math.random() * 6, leaving: -1 });
+  pirates.set(e.id, { enemy: e, group, body, flash, shadow, hpBack, hpFill, crystal, phase: Math.random() * 6, leaving: -1, frost: 0 });
 }
 
 function removePirate(v: PirateView): void {
@@ -210,27 +232,28 @@ function removePirate(v: PirateView): void {
 function setTower(slot: number): void {
   const t = battle.towers[slot];
   const old = towers.get(slot);
-  if (old && (!t || old.level !== t.level)) {
+  if (old && (!t || old.level !== t.level || old.kind !== t.kind)) {
     scene.remove(old.mesh);
     towers.delete(slot);
   }
   if (!t || towers.has(slot)) return;
   const [x, y] = level.slots[slot];
-  const mesh = sprite(TOWER_ART[t.level - 1], (level.slotRadius * 2.1) / 150, 'feet');
+  const mesh = sprite(TOWER_ART[t.kind][t.level - 1], (level.slotRadius * 2.1) / 150, 'feet');
   world([x, y + 20], 0, mesh.position);
   mesh.renderOrder = sortOrder(y + 20);
   scene.add(mesh);
-  towers.set(slot, { mesh, level: t.level, recoil: 0 });
+  towers.set(slot, { mesh, kind: t.kind, level: t.level, recoil: 0 });
 }
 
-function addArrow(s: Shot): void {
-  const mesh = new THREE.Mesh(arrowGeo, arrowMat);
-  mesh.scale.setScalar(ARROW_SCALE);
+function addShot(s: Shot): void {
+  const shell = s.kind === 'shell';
+  const mesh = shell ? sprite(BALL_ART, 0.6, 'centre') : new THREE.Mesh(arrowGeo, arrowMat);
+  if (!shell) mesh.scale.setScalar(ARROW_SCALE);
   mesh.renderOrder = ORDER_ARROW;
-  const trail = new Trail(TRAIL, 2.2, 12, 70);
+  const trail = shell ? new Trail(SMOKE, 7, 14, 90) : new Trail(TRAIL, 2.2, 12, 70);
   trail.mesh.renderOrder = ORDER_ARROW - 1;
   scene.add(mesh, trail.mesh);
-  arrows.set(s.id, { mesh, trail });
+  arrows.set(s.id, { mesh, trail, shell });
 }
 
 function finishArrow(id: number): void {
@@ -249,6 +272,11 @@ function newBattle(): void {
   for (const id of [...arrows.keys()]) finishArrow(id);
   for (const m of dropped.values()) scene.remove(m);
   dropped.clear();
+  for (const b of bolts.splice(0)) {
+    scene.remove(b.group);
+    b.dispose();
+  }
+  for (const w of frostWaves.splice(0)) scene.remove(w.mesh);
   battle = new Battle(level, SEED + Math.floor(Math.random() * 1000));
   anim.play('idle', { fade: 0.2 });
   closeMenu();
@@ -334,10 +362,10 @@ function closeMenu(): void {
   ring.visible = false;
 }
 
-function menuButton(label: string, cost: string, enabled: boolean, onClick: () => void): HTMLButtonElement {
+function menuButton(label: string, cost: string, enabled: boolean, onClick: () => void, note = ''): HTMLButtonElement {
   const b = document.createElement('button');
   b.type = 'button';
-  b.innerHTML = `<span>${label}</span><b>${cost}</b>`;
+  b.innerHTML = `<span>${label}</span>${note ? `<small>${note}</small>` : ''}<b>${cost}</b>`;
   b.disabled = !enabled;
   b.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -353,14 +381,20 @@ function renderMenu(): void {
   const menu = $('menu') as HTMLElement;
   menu.replaceChildren();
   const t = battle.towers[slot];
-  const def = TOWERS.archer;
-  let range: number;
+  let range = 0;
   if (!t) {
-    const cost = nextCost(def, 0)!;
-    range = def.levels[0].range;
-    menu.append(menuButton('Archer Tower', `◉ ${cost}`, battle.purse.canAfford(cost), () => {
-      if (battle.build(slot)) closeMenu();
-    }));
+    // Pressing (or hovering) a tower shows how far it would reach before it is built.
+    for (const kind of TOWER_KINDS) {
+      const def = TOWERS[kind];
+      const cost = nextCost(def, 0)!;
+      const b = menuButton(def.name, `◉ ${cost}`, battle.purse.canAfford(cost), () => {
+        if (battle.build(slot, kind)) closeMenu();
+      }, def.blurb);
+      const preview = () => showRing(slot, def.levels[0].range);
+      b.addEventListener('pointerenter', preview);
+      b.addEventListener('pointerdown', preview);
+      menu.append(b);
+    }
   } else {
     const cost = nextCost(TOWERS[t.kind], t.level);
     range = TOWERS[t.kind].levels[Math.min(t.level, TOWERS[t.kind].levels.length - 1)].range;
@@ -377,10 +411,15 @@ function renderMenu(): void {
     );
   }
   menu.hidden = false;
+  if (range) showRing(slot, range);
+  else ring.visible = false;
+  placeMenu();
+}
+
+function showRing(slot: number, range: number): void {
   ring.visible = true;
   world(level.slots[slot], 0, ring.position);
   ring.scale.setScalar((range * 2) / 244);
-  placeMenu();
 }
 
 function placeMenu(): void {
@@ -463,19 +502,53 @@ function onEvent(ev: BattleEvent): void {
       anim.oneShot('rapid', 'idle', { fade: 0.06 });
       break;
     case 'shoot':
-      addArrow(ev.shot);
-      fx.flash(world(ev.from), new THREE.Color(1, 0.9, 0.6));
-      sfx.play('shoot', ev.tower ? 0.12 : 0.3);
-      if (ev.tower) {
-        const tv = towers.get(ev.tower.slot);
-        if (tv) tv.recoil = 1;
+      addShot(ev.shot);
+      if (ev.shot.kind === 'shell') {
+        fx.poof(world(ev.from, 8), 0.45, 8);
+        fx.flash(world(ev.from, 8), new THREE.Color(1, 0.7, 0.35));
+        sfx.play('explosion', 0.1, 0.15);
+      } else {
+        fx.flash(world(ev.from), new THREE.Color(1, 0.9, 0.6));
+        sfx.play('shoot', ev.tower ? 0.12 : 0.3);
       }
+      if (ev.tower) recoil(ev.tower.slot);
       break;
+    case 'boom': {
+      const at = world(ev.at, 6);
+      fx.poof(at, 1.1, 16);
+      fx.sparks(at, new THREE.Color(1, 0.65, 0.25), undefined, 16);
+      shake.add(0.12);
+      sfx.play('explosion', 0.22);
+      break;
+    }
+    case 'zap': {
+      const bolt = new Bolt(world(ev.from), world(ev.to), STORM, 11);
+      bolt.renderOrder = ORDER_ARROW;
+      scene.add(bolt.group);
+      bolts.push(bolt);
+      fx.flash(world(ev.from), STORM);
+      fx.sparks(world(ev.to), STORM, undefined, 10);
+      sfx.play('zap', 0.2);
+      recoil(ev.tower.slot);
+      break;
+    }
+    case 'pulse': {
+      const mesh = sprite(FROST_ART, 0, 'centre');
+      world(ev.at, 0, mesh.position);
+      mesh.renderOrder = ORDER_RING + 1;
+      scene.add(mesh);
+      frostWaves.push({ mesh, range: ev.radius, age: 0 });
+      fx.glitter(world(ev.at, 70), ICE, 5);
+      recoil(ev.tower.slot);
+      break;
+    }
     case 'hit': {
       const v = pirates.get(ev.enemy.id);
       if (v) v.flash.value = 1;
       const at = world(ev.at);
-      fx.sparks(at, ev.crit ? new THREE.Color(1, 0.75, 0.25) : new THREE.Color(1, 0.95, 0.75), undefined, ev.crit ? 18 : 8);
+      // Armour clinks: steel-white sparks when it stops part of the hit.
+      const spark = ev.blocked > 0 ? STEEL : ev.crit ? new THREE.Color(1, 0.75, 0.25) : new THREE.Color(1, 0.95, 0.75);
+      fx.sparks(at, spark, undefined, ev.crit ? 18 : 8);
       numbers.spawn(String(ev.damage), at.clone().add(tmp.set(0, 26, 0)), ev.crit ? 'crit' : 'hit');
       sfx.play('hit', ev.crit ? 0.5 : 0.25);
       if (ev.crit) {
@@ -544,6 +617,11 @@ function onEvent(ev: BattleEvent): void {
   }
 }
 
+function recoil(slot: number): void {
+  const tv = towers.get(slot);
+  if (tv) tv.recoil = 1;
+}
+
 function endScreen(won: boolean, stars: number): void {
   closeMenu();
   anim.play(won ? 'cheer' : 'ko', { fade: 0.15, once: true });
@@ -575,12 +653,30 @@ function syncPirates(dt: number, t: number): void {
       continue;
     }
     const moving = Math.hypot(e.vel[0], e.vel[1]) > 1;
-    v.phase += dt * (e.def.speed / 6);
-    const hop = moving ? Math.abs(Math.sin(v.phase)) * 4 : 0;
+    v.phase += dt * (e.def.speed / 6) * e.slow;
+    const sx = Math.abs(v.body.scale.x);
+    let hop: number;
+    if (e.flying) {
+      // Bob up and down with each wing beat.
+      hop = Math.sin(v.phase * 0.8) * 6;
+      v.body.scale.y = sx * (1 + Math.sin(v.phase * 1.6) * 0.06);
+      v.group.rotation.z = 0;
+    } else {
+      hop = moving ? Math.abs(Math.sin(v.phase)) * 4 : 0;
+      v.group.rotation.z = moving ? Math.sin(v.phase) * 0.07 : 0;
+    }
     world(e.pos, hop, v.group.position);
-    v.group.rotation.z = moving ? Math.sin(v.phase) * 0.07 : 0;
-    if (Math.abs(e.vel[0]) > 2) v.body.scale.x = Math.abs(v.body.scale.x) * Math.sign(e.vel[0]);
-    v.shadow.place(e.pos[0], -e.pos[1], hop);
+    if (Math.abs(e.vel[0]) > 2) v.body.scale.x = sx * Math.sign(e.vel[0]);
+    v.shadow.place(e.pos[0], -e.pos[1], e.def.altitude + hop);
+    const chilled = e.slowFor > 0;
+    (v.body.material as THREE.ShaderMaterial).uniforms.tint.value.copy(chilled ? CHILL_TINT : NO_TINT);
+    // Chilled pirates look frosted over: tinted blue and a little paler.
+    v.flash.value = Math.max(v.flash.value - dt * 9, chilled ? 0.2 : 0);
+    v.frost -= dt;
+    if (chilled && v.frost <= 0) {
+      v.frost = 0.35;
+      fx.glitter(world(e.pos, e.def.altitude + e.def.radius * 1.4), ICE, 2);
+    }
     const order = sortOrder(e.pos[1]);
     v.body.renderOrder = order;
     v.crystal.renderOrder = order + 2;
@@ -592,20 +688,46 @@ function syncPirates(dt: number, t: number): void {
     v.hpBack.visible = v.hpFill.visible = share < 1;
     v.hpFill.scale.set(38 * share, 5, 1);
     (v.hpFill.material as THREE.MeshBasicMaterial).color.setHex(share > 0.5 ? 0x7ee05a : share > 0.25 ? 0xf4c34f : 0xe5533d);
-    v.flash.value = Math.max(0, v.flash.value - dt * 9);
   }
 }
 
-function syncArrows(): void {
+function syncShots(dt: number): void {
   const live = new Map(battle.shots.map((s) => [s.id, s]));
   for (const id of [...arrows.keys()]) if (!live.has(id)) finishArrow(id);
   for (const [id, a] of arrows) {
     const s = live.get(id)!;
-    world(s.pos, 0, a.mesh.position);
-    a.mesh.rotation.z = Math.atan2(-s.dir[1], s.dir[0]);
+    if (a.shell) {
+      // A lob: leaves the tower top, rises, and comes down on the landing spot.
+      const total = Math.hypot(s.aimAt[0] - s.start[0], s.aimAt[1] - s.start[1]) || 1;
+      const p = Math.min(1, Math.hypot(s.pos[0] - s.start[0], s.pos[1] - s.start[1]) / total);
+      world(s.pos, TOWER_TOP * (1 - p) + (50 + total * 0.35) * 4 * p * (1 - p), a.mesh.position);
+      a.mesh.rotation.z += 0.2;
+    } else {
+      world(s.pos, 0, a.mesh.position);
+      a.mesh.rotation.z = Math.atan2(-s.dir[1], s.dir[0]);
+    }
     a.trail.push(a.mesh.position);
   }
   for (const a of arrows.values()) a.trail.update(camera);
+  for (let i = frostWaves.length - 1; i >= 0; i--) {
+    const w = frostWaves[i];
+    w.age += dt;
+    const k = Math.min(1, w.age / FROST_WAVE_LIFE);
+    w.mesh.scale.setScalar(((w.range * 2) / 244) * (0.3 + 0.7 * (1 - (1 - k) ** 3)));
+    (w.mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = 1 - k * k;
+    if (k >= 1) {
+      scene.remove(w.mesh);
+      frostWaves.splice(i, 1);
+    }
+  }
+  for (let i = bolts.length - 1; i >= 0; i--) {
+    bolts[i].update(dt);
+    if (bolts[i].done) {
+      scene.remove(bolts[i].group);
+      bolts[i].dispose();
+      bolts.splice(i, 1);
+    }
+  }
   for (let i = fading.length - 1; i >= 0; i--) {
     fading[i].update(camera);
     if (fading[i].done) {
@@ -665,7 +787,7 @@ function frame(now: number): void {
   battle.step(dt * speed);
   for (const ev of battle.drain()) onEvent(ev);
   syncPirates(dt * speed, clock);
-  syncArrows();
+  syncShots(realDt);
   syncCrystals(clock);
   syncHero(dt * speed);
   for (const tv of towers.values()) {

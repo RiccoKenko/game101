@@ -472,4 +472,9 @@ RULES
 
 Make the image now. Under it write only: Save as: level1_map.png
 If I write REDO (or วาดใหม่), paint it again and follow the layout more strictly. Any other comment is a change request: repaint with that change and keep everything else.
+
+IF YOU ARE CODEX (an agent working in the GitHub repository riccokenko/game101)
+- The layout sketch is in the repository at art/maps/level1-sketch.png: use it as the reference image.
+- Make the map with your image generation tool. Never draw it with code (SVG, canvas, Pillow). If you cannot generate images, stop and tell me.
+- Save it as art/incoming/maps/level1_map.png, commit only that file on a new branch art/level1-map-v1 and open a pull request titled "Art: level 1 map v1". Do not change any other file.
 ```
