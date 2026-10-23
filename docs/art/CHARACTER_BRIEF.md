@@ -344,7 +344,7 @@ For Step 2, send the same message with "Step 2 (images 3–6)" and "use art/inco
   - `APPROVED` / `ผ่าน`: required after Image 2.
   - `REDO` / `วาดใหม่`: redraw the last image.
   - Any other comment: a change request for the last image.
-- **Codex.** The same prompt works for Codex: its last section tells Codex how to save and commit the files.
+- **Codex.** The same prompt works for Codex used as a plain chat (no repository): its last section asks for images in the chat, never drawn with code.
 - **Filling the slots.** Fill `{NAME}` and `{id}` from the card in section 7, and `{STYLE + TECHNICAL}` with the STYLE and TECHNICAL blocks of 8.0. Fill every other slot from the character's table.
 
 ```
@@ -422,11 +422,9 @@ Image 8 (save as {id}_portraits.png): DIALOG PORTRAITS, landscape.
 Three waist-up portraits of the same character for story dialog boxes, 3/4 view facing right, larger and more detailed than the sprite, same style and colours, side by side and clearly separated:
 {PORTRAITS}
 
-IF YOU ARE CODEX (an agent working in the GitHub repository riccokenko/game101)
-- Make every image with your image generation tool. Never draw the character with code (SVG, canvas, Pillow). If you cannot generate images, stop and tell me.
-- Save each image with its exact file name in art/incoming/{id}/, plus NOTES.md listing the files and any rule you could not meet.
-- Commit only those files on a new branch art/{id}-v1 and open a pull request titled "Art: {NAME} v1". Do not change any other file.
-- After Image 2, push and stop; wait for APPROVED, then continue with Images 3 to 8 on the same branch.
+HOW TO DELIVER
+- Make every image with your image generation tool and show it here in the chat so I can download it. Never draw the character with code (SVG, canvas, Python, Pillow). If you cannot generate images, stop and tell me.
+- No repository or file work: do not create branches, commits or pull requests.
 
 Start now with Image 1.
 ```
@@ -473,8 +471,7 @@ RULES
 Make the image now. Under it write only: Save as: level1_map.png
 If I write REDO (or วาดใหม่), paint it again and follow the layout more strictly. Any other comment is a change request: repaint with that change and keep everything else.
 
-IF YOU ARE CODEX (an agent working in the GitHub repository riccokenko/game101)
-- The layout sketch is in the repository at art/maps/level1-sketch.png: use it as the reference image.
-- Make the map with your image generation tool. Never draw it with code (SVG, canvas, Pillow). If you cannot generate images, stop and tell me.
-- Save it as art/incoming/maps/level1_map.png, commit only that file on a new branch art/level1-map-v1 and open a pull request titled "Art: level 1 map v1". Do not change any other file.
+HOW TO DELIVER
+- Make the map with your image generation tool and show it here in the chat so I can download it. Never draw it with code (SVG, canvas, Python, Pillow). If you cannot generate images, stop and tell me.
+- No repository or file work: do not create branches, commits or pull requests.
 ```

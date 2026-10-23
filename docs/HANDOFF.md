@@ -37,13 +37,10 @@
 1. **ลองเล่นด่านทดลองแล้วบอกความเห็น** เช่น ความยาก ขนาดฮีโร่ ราคาป้อม
    - ปรับตามที่ติ แล้วค่อย deploy
 2. **วาดแผนที่ด่าน 1 ด้วย Codex**
-   - ใช้ prompt หัวข้อ 9.1 ใน `docs/art/CHARACTER_BRIEF.md` ซึ่งมีส่วน "IF YOU ARE CODEX" ให้ Codex อ่าน `art/maps/level1-sketch.png` และเปิด PR จาก branch `art/level1-map-v1`
+   - แนบ `art/maps/level1-sketch.png` แล้วใช้ prompt หัวข้อ 9.1 ใน `docs/art/CHARACTER_BRIEF.md`
    - เจ้านายเลือกแล้วว่า**รอแผนที่ของจริง ไม่ทำแผนที่ชั่วคราวด้วยโค้ด** (เคยติว่าภาพร่างดูไม่มีดีเทล)
 3. **วาด Deckhand ด้วย Codex**
-   - ใช้ prompt เดียวจบ (8.10 หรือแท็บ Deckhand ในหน้า prompt) ซึ่งมีส่วน "IF YOU ARE CODEX"
-   - Codex จะ push ที่ branch `art/deckhand-v1` แล้วหยุดหลังภาพ 2 เพื่อรออนุมัติ
-   - เจ้านายเลือกให้ส่ง prompt เป็นกล่องข้อความในแชตให้ก๊อปวางได้เลย ไม่ต้องเปิดหน้า Artifact
-   - ถ้า Codex เปิด PR ไม่ได้ (ยังไม่ได้เชื่อม repo) ให้เจ้านายส่งภาพมาในแชตแทน
+   - ใช้ prompt เดียวจบ (8.10) หยุดหลังภาพ 2 เพื่อรออนุมัติ
 
 ## งานถัดไปของ Claude
 - **A. Deploy `/play.html` หลังเจ้านายโอเค**
@@ -54,14 +51,14 @@
     - `gitSource`: `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`
   - รอสถานะ READY แล้วเปิด `little-archer.vercel.app/play.html` เพื่อยืนยัน
 - **B. ได้แผนที่แล้ว**
-  1. เก็บภาพต้นฉบับที่ `art/incoming/maps/level1_map.png` (ถ้ามาจาก PR ของ Codex ให้ `git fetch origin art/level1-map-v1` แล้วคัดลอกไฟล์มา)
+  1. เก็บภาพต้นฉบับที่ `art/incoming/maps/level1_map.png`
   2. ทำไฟล์ 1536×1024 ที่ `public/maps/level1.png`
   3. ตั้ง `LEVEL1.map.art = 'maps/level1.png'` ใน `src/td/levels.ts`
   4. ซ้อนภาพกับภาพร่างเพื่อจูน `route`, `slots`, `dock`, `vault`, `heroStart`, `island`
   5. `npm run map:sketch -- level1` พิมพ์ปัญหาจาก `checkLevel` ออกมา และ unit test ก็เช็ก `checkLevel` ด้วย
   - ตัว build แบบไฟล์เดียวใส่ `public/maps/*.png` ให้เองอยู่แล้ว
 - **C. ได้ Deckhand แล้ว**
-  1. วางภาพที่ `art/incoming/deckhand/deckhand_<sheet>.png` (ถ้ามาจาก PR ของ Codex ให้ดึงจาก branch `art/deckhand-v1`)
+  1. วางภาพที่ `art/incoming/deckhand/deckhand_<sheet>.png` (ภาพที่แปะในแชตอยู่ในโฟลเดอร์ uploads ของ session ให้ดูขนาดและเนื้อหาเพื่อจับคู่ชื่อแผ่น)
   2. รัน `npm run art -- deckhand` แล้วดูภาพตรวจ `.check.png`
      - ชื่อชิ้นอยู่ใน `scripts/art/sheets.json`
      - แผ่นหน้าอาจต้องใส่ `boxes` เหมือนของ hero
@@ -130,7 +127,10 @@
   - ตอบภาษาไทยปนศัพท์เทคนิคภาษาอังกฤษ
   - ส่งงานก่อนแล้วค่อยอธิบาย
   - อธิบายแบบคนที่ไม่ใช่สาย dev
-  - มี "📚 บทเรียนที่ N" ซึ่งถึง 23 แล้ว
+  - มี "📚 บทเรียนที่ N" ซึ่งถึง 25 แล้ว
 - **checkpoint:** เมื่อถึงจุดที่หยุดได้ให้บอกก่อน เพราะเจ้านายจะสั่ง handoff แล้ว compact
-- **งานภาพ:** ตอนนี้ใช้ Codex (เจ้านายเปลี่ยนจาก ChatGPT) ส่ง prompt เป็นกล่องข้อความในแชตให้ก๊อปวาง
+- **งานภาพ:** เจ้านายใช้ Codex (account กลาง **ไม่ได้เชื่อม GitHub**) เป็นแชตธรรมดา
+  - ส่ง prompt เป็นกล่องข้อความในแชตให้ก๊อปวาง ไม่ต้องเปิดหน้า Artifact
+  - ห้ามมีขั้นตอน branch, commit หรือ PR ใน prompt
+  - เจ้านายเซฟภาพแล้วแปะกลับมาในแชต
 - **git:** ไม่เปิด PR ถ้าไม่ได้สั่ง, ใส่ trailer ใน commit, ไม่ใส่ชื่อ model
