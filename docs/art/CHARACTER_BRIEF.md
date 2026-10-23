@@ -5,6 +5,7 @@
 >   - วางหนึ่งครั้งต่อหนึ่งตัวละคร แล้วพิมพ์ "ต่อ" / "ผ่าน" / "วาดใหม่"
 >   - ในหน้า Art Brief ที่ Claude ส่งให้ มีแบบเติมช่องครบแล้วพร้อมปุ่ม Copy
 > - ถ้าอยากคุมเองทีละภาพ: ใช้ prompt แยกในหัวข้อ 8.0-8.9
+> - **แผนที่ด่าน:** หัวข้อ 9 แนบภาพร่างจาก Claude แล้ววาง prompt ให้ ChatGPT วาดทับ
 >
 > ผลลัพธ์ที่ได้กลับมา Claude จะนำไปตัดชิ้น ใส่กระดูก และทำท่าทางในเกมเอง
 
@@ -12,6 +13,7 @@ This brief is for an AI image generator (Codex `$imagegen`, ChatGPT Images or si
 - **Read sections 1–6 before drawing anything.**
 - Each character's look is defined in section 7.
 - Section 8 holds the exact prompts, one image per prompt.
+- Section 9 is for level maps, painted over a layout sketch.
 
 ---
 
@@ -427,4 +429,47 @@ IF YOU ARE CODEX (an agent working in the GitHub repository riccokenko/game101)
 - After Image 2, push and stop; wait for APPROVED, then continue with Images 3 to 8 on the same branch.
 
 Start now with Image 1.
+```
+
+---
+
+## 9. Level maps (one painted picture per level)
+
+Each battle level is **one painted picture**, seen from above at a steep angle like Kingdom Rush. The game draws the characters, towers and effects on top of it.
+
+- **The layout comes first.** The game team draws a flat-colour layout sketch from the level data (`npm run map:sketch -- <level>` writes `art/maps/<level>-sketch.png`). The road, tower spots, dock and vault in the sketch are at the exact pixels the game code uses.
+- **The painter repaints the sketch.** Attach the sketch to the chat, then paste the prompt below. The painting must keep every road curve and tower spot where the sketch has it.
+- **Delivery.** Save the result as `art/incoming/maps/<level>_map.png`. The team checks that it lines up and nudges the level data if the painting drifted slightly.
+
+### 9.1 Level 1 map: `level1_map.png` (landscape, attach `level1-sketch.png`)
+
+```
+You are the environment artist for "Little Archer: Sky Pirates", a mobile tower-defense game in the style of Kingdom Rush. The attached image is the LAYOUT SKETCH of level 1, "Pirates on the Horizon". Repaint it as a finished, beautiful game map.
+
+KEEP THE LAYOUT EXACTLY
+The game's code uses the pixel positions of this sketch, so the painting must line up with it.
+- One landscape image, 1536 x 1024, with exactly the same framing as the sketch. Do not crop, zoom, rotate, mirror or re-frame.
+- Tan band = the ROAD the pirates walk: a dirt path with worn cobblestones. Keep its exact route, curves and width. No branches, no shortcuts.
+- 8 grey circles = TOWER SPOTS: empty round stone platforms, flat and slightly raised, with a ring of moss. Same place and same size. Leave them empty.
+- Brown planks on the right = the AIRSHIP DOCK: a wooden pier over the sky with posts and rope railings, where the road starts. No airship.
+- Grey circle with the cyan diamond on the left = the CRYSTAL VAULT: a small stone shrine holding a cluster of glowing cyan Sky Crystals, where the road ends.
+- Green shape = the grassy top of the floating island. Brown band below it = the island's rocky cliff, with hanging roots and a few small crystals in the rock. The light-blue line on the left is a small waterfall pouring off the edge into the clouds.
+- Dark green dots = round, leafy storybook trees. You may add small bushes, flowers, rocks, a fence or a signpost, but only on open grass.
+- Light blue with white shapes = bright sky with soft clouds around the island.
+
+VIEW
+- Seen from above at a steep angle, like Kingdom Rush: the island top keeps the shape of the sketch; trees, rocks and the shrine stand upright and are seen slightly from above; the cliff shows the island's thickness below its front edge.
+
+STYLE
+- HD 2D hand-drawn anime game art that matches the game's characters: clean warm-brown line art (#3B2A2A, never black), soft cel shading, light from the upper left, warm and adventurous, bright and easy to read on a phone.
+- Grass with gentle colour variation and tiny flowers; the road with wheel ruts, pebbles and a soft edge into the grass.
+
+RULES
+- Do not move, add or remove the road, the tower spots, the dock or the vault.
+- Keep the road and the tower spots clear: nothing stands on them or hangs over them, and tall things (trees, rocks) never hide them.
+- No characters, no airship, no towers, no text, no numbers, no UI, no frame, no watermark.
+- No dark vignette and no heavy fog: the whole map stays bright.
+
+Make the image now. Under it write only: Save as: level1_map.png
+If I write REDO (or วาดใหม่), paint it again and follow the layout more strictly. Any other comment is a change request: repaint with that change and keep everything else.
 ```

@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "art": "tsx scripts/art/slice.ts",
     "art:publish": "tsx scripts/art/publish.ts",
+    "map:sketch": "tsx scripts/art/map-sketch.ts",
     "showcase:artifact": "node scripts/build-showcase.mjs"
   },
   "dependencies": {
