@@ -5,187 +5,143 @@
 ## สถานะ (23 ต.ค. 2026)
 - **โปรเจกต์:** Little Archer: Sky Pirates
   - เกม TD แบบ 2.5D สไตล์ Kingdom Rush บนมือถือแนวนอน ภาพ 2D แนวอนิเมะ
-  - เจ้านายวาดภาพด้วย Codex (เดิมใช้ ChatGPT) แล้ว Claude นำมาตัดชิ้น ใส่กระดูก และทำท่า
-  - เทคโนโลยี: Three.js ใช้กล้อง orthographic
-- **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (branch นี้คือ branch ที่ deploy ด้วย)
+  - เจ้านายวาดภาพด้วย Codex แล้ว Claude ตัดชิ้น ใส่กระดูก ทำท่า และใส่เกม
+  - เทคโนโลยี: Three.js กล้อง orthographic, TypeScript, Vite
+- **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (branch นี้ใช้ deploy ด้วย)
 - **ลิงก์จริง:** little-archer.vercel.app
-  - ตอนนี้เป็นหน้าโชว์ 2D ที่ deploy จาก commit 78a23e3 (`dpl_51k13bQFB8tERqLttXwhxpXQoWrA`)
-  - `/play.html` **ยังไม่ deploy**
-- **เสร็จแล้ว**
-  - ฮีโร่ 2D: 10 ท่า, 8 สีหน้า
-  - หน้าโชว์ตัวละคร
-  - ภาพร่างแผนที่ + prompt วาดแผนที่
-  - แกนระบบ TD (`src/td/`)
-  - ด่านทดลองที่เล่นได้ (`/play.html`)
-  - 2D-3 ส่วนกติกา (ภาพยังเป็นตัววาดด้วยโค้ดชั่วคราว):
-    - ป้อม 4 แบบ ระดับ 1-3: Archer, Cannon (ระเบิดวง ยิงตัวบินไม่ได้), Storm Crystal (เวท ทะลุเกราะ), Frost Cloud (ทำให้ช้า)
-    - ศัตรูใหม่: Ironclad (เกราะ), Parrot Raider (บิน)
-    - ด่าน 1 มี 8 เวฟ
-    - ระดับ 4 เลือกสายได้ ป้อมละ 2 สาย รวม 8 แบบ (`TowerDef.branches`, `towerSpec()`), ปุ่ม Target ในเมนูป้อม
-    - บอส First Mate ท้ายเวฟ 8:
-      - แบกคริสตัลได้ 3 ก้อน (`carries`)
-      - ตะโกนให้โจรรอบตัววิ่งเร็วขึ้น (`shout`)
-      - ทนน้ำแข็ง (`steady`)
-      - มีแถบเลือดใน HUD
-    - สกิลคู่หู (`SKILLS` ใน units.ts, `useTalon()`/`useMochi()`/`canUse()` ใน battle.ts)
-      - Talon แย่งคริสตัลคืนจากโจรที่ไปไกลสุด และทำให้มึน (`Enemy.stun`)
-      - Mochi กวาดทั้งแผนที่จากขวาไปซ้าย
-      - ในหน้า play มีปุ่มกลมมุมซ้ายล่างพร้อมวงคูลดาวน์ นกและวาฬยังเป็นภาพวาดด้วยโค้ดชั่วคราว
-    - การ์ดคำสั่งกัปตัน (`src/td/cards.ts`):
-      - `LevelDef.ordersAfter` = เวฟที่ให้เลือกการ์ด (ด่าน 1 คือ [2, 4, 6])
-      - ตอนรอเลือก `battle.choice` ไม่เป็น null และ `step()` หยุด จนกว่าจะเรียก `choose(i)`
-      - การ์ดเปลี่ยน `battle.mods` (ตัวคูณดาเมจ ระยะ ความเร็ว ราคา ค่าหัว คูลดาวน์)
-      - ราคาและค่าคืนใช้ `costOf()`/`refundFor()` (เก็บ `Tower.spent`)
-      - สุ่มการ์ดด้วย rng แยก ไม่ให้ผลการต่อสู้เปลี่ยนตาม
-- **2D-3 เสร็จครบแล้ว** (ฝั่งกติกา) ภาพของป้อม โจรตัวอื่น นก และวาฬยังเป็นตัววาดด้วยโค้ดชั่วคราว
+  - ยังเป็นหน้าโชว์ 2D จาก commit 78a23e3 (`dpl_51k13bQFB8tERqLttXwhxpXQoWrA`)
+  - **`/play.html` ยังไม่ deploy** และหน้าโชว์บนเว็บยังเป็นเวอร์ชันที่มีเป้าซ้อม
+- **เฟส 2D-3 (First Battle): กติกาเสร็จครบแล้ว** เล่นได้ใน `/play.html` (ด่าน 1, 8 เวฟ)
+  - **แผนที่:** ภาพวาดจริงจาก Codex
+  - **ฮีโร่ Little Archer:** แตะพื้นให้เดิน ยืนนิ่งแล้วยิงเอง
+  - **ป้อม 4 แบบ:**
+    - Archer, Cannon (ระเบิด ยิงตัวบินไม่ได้), Storm Crystal (เวท ทะลุเกราะ), Frost Cloud (ทำให้ช้า)
+    - อัปเกรดระดับ 1-3 แล้วเลือกสายที่ระดับ 4 ป้อมละ 2 สาย และมีปุ่ม Target เลือกเป้า
+  - **ศัตรู:**
+    - Deckhand (**ภาพจริงจาก Codex**)
+    - Powder Monkey, Ironclad (เกราะ), Parrot Raider (บิน) และบอส First Mate (แบก 3 ก้อน, ตะโกนเร่งลูกน้อง, ทนน้ำแข็ง)
+  - **สกิลคู่หู:** Talon (แย่งคริสตัลคืน) และ Mochi (วาฬกวาดทั้งเกาะ ทำให้มึน)
+  - **คำสั่งกัปตัน:** หลังเวฟ 2, 4, 6 ให้เลือกการ์ด 1 ใบจาก 3 ใบ (มี 13 ใบ)
+- **ภาพที่ยังเป็นตัววาดด้วยโค้ดชั่วคราว:** ป้อมทุกแบบ, Powder Monkey, Ironclad, Parrot, First Mate, นก Talon, วาฬ Mochi
 - **Test:** unit 76 ข้อ (6 ไฟล์) และ e2e 3 ข้อ ผ่านทั้งหมด
+  - e2e ของ play ทดสอบ: สร้างป้อม, เรียกเวฟ, กด Talon, เลือกการ์ด
 
 ## Artifacts (ลิงก์คงที่)
-- **หน้าโชว์ตัวละคร:** https://claude.ai/artifact/PNawa631NQkzXEZbZAbFRh
-  - สร้างใหม่ด้วย `npm run showcase:artifact -- <out.html>`
-- **หน้า prompt วาดภาพ** (ตัวละคร + การ์ดแผนที่): https://claude.ai/artifact/MhaaL8qZeM38uGnb3wBw2z
-  - ต้นฉบับ HTML อยู่ใน scratchpad เท่านั้น ไม่อยู่ใน repo
-  - ถ้าเป็น container ใหม่ ให้ใช้ Artifact `action: read` กับ url นี้ แล้วแก้และ publish พร้อมใส่ `url` เดิม
-- **ด่านทดลอง:** https://claude.ai/artifact/MXkN26QoVLgRMQsmvjhD98
-  - สร้างใหม่ด้วย `node scripts/build-showcase.mjs <out.html> play`
-  - publish ทับลิงก์เดิมโดยใส่ `url`
+- **ด่านทดลอง** (version 10): https://claude.ai/artifact/MXkN26QoVLgRMQsmvjhD98
+  - สร้างใหม่ด้วย `node scripts/build-showcase.mjs <out.html> play` แล้ว publish ทับลิงก์เดิม
+  - ไฟล์ใหญ่ราว 9.7 MB จากภาพ Deckhand (จำกัด 16 MB)
+- **หน้าโชว์ตัวละคร** (version 3, มี Deckhand ในแท็บ Battle): https://claude.ai/artifact/PNawa631NQkzXEZbZAbFRh
+  - สร้างใหม่ด้วย `node scripts/build-showcase.mjs <out.html> index`
+- **หน้า prompt วาดภาพ (เก่า):** https://claude.ai/artifact/MhaaL8qZeM38uGnb3wBw2z
+  - **ไม่ได้ใช้แล้ว** เจ้านายเลือกให้ส่ง prompt เป็นกล่องข้อความในแชตแทน
+  - prompt ล่าสุดทั้งหมดอยู่ใน `docs/art/CHARACTER_BRIEF.md`
 
 ## รอเจ้านาย
-1. **ลองเล่นด่านทดลองแล้วบอกความเห็น** เช่น ความยาก ขนาดฮีโร่ ราคาป้อม
-   - ปรับตามที่ติ แล้วค่อย deploy
-2. ~~วาดแผนที่ด่าน 1~~ **เสร็จแล้ว** (23 ต.ค.)
-   - Codex วาดตามภาพร่างได้ตรงมาก
-   - ต้นฉบับอยู่ที่ `art/incoming/maps/level1_map.webp` ส่วนไฟล์ที่เกมใช้คือ `public/maps/level1.webp`
-   - วัดจากภาพแล้ว: ทางเดินคลาดเฉลี่ย 2.5 px และกว้าง 92 px จุดป้อมขยับไม่กี่พิกเซลให้ตรงกลางหิน
-   - เจ้านายเลือกแล้วว่า**รอแผนที่ของจริง ไม่ทำแผนที่ชั่วคราวด้วยโค้ด** (เคยติว่าภาพร่างดูไม่มีดีเทล)
-3. ~~Deckhand~~ **เสร็จแล้ว**: ได้ภาพครบ 8 ภาพ ตัด ประกอบตัว ทำท่าทาง และใส่ในเกมกับหน้าโชว์แล้ว
-- **เรื่องภาพที่เจ้านายส่ง**
-  - ภาพที่แปะ "ระหว่างที่ Claude กำลังทำงาน" ไม่ถูกบันทึกเป็นไฟล์ในโฟลเดอร์ images ต้องขอให้ส่งใหม่หลัง Claude ตอบจบ
-  - ภาพที่ส่งเป็นข้อความปกติจะถูกบันทึกที่ `/tmp/claude-0/<project>/<session>/images/`
-   - ใช้ prompt เดียวจบ (8.10) หยุดหลังภาพ 2 เพื่อรออนุมัติ
+1. **ให้ Codex วาดตัวละครที่เหลือ 6 ตัว** (ส่ง prompt ให้แล้ว และอยู่ใน `docs/art/CHARACTER_BRIEF.md` หัวข้อ 10)
+   - ตัวละคร: Powder Monkey, Ironclad, Parrot Raider, First Mate, Talon, Mochi
+   - ตัวละ 6-7 ภาพ: master → rig pose → หน้า/สีหน้า → ชิ้นส่วนตัว → มือ/อุปกรณ์ → ท่าทาง (→ ภาพครึ่งตัวสำหรับ First Mate กับ Talon)
+   - **Mochi ไม่มีแผ่นมือ/อุปกรณ์** ภาพที่ 3 คือแผ่นหน้า (ตา/ปาก) ภาพที่ 5 คือท่าทาง และภาพที่ 6 คือภาพครึ่งตัว
+   - เจ้านายจะแปะภาพกลับมาในแชต
+2. **ลองเล่นด่านทดลองแล้วให้ความเห็น** เรื่องความยาก ขนาดตัว ราคา ก่อน deploy
 
 ## งานถัดไปของ Claude
-- **A. Deploy `/play.html` หลังเจ้านายโอเค**
-  - Vercel MCP `create_deployment`
-    - `project`: `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`
-    - `teamId`/slug: `cat-team5`
-    - `target`: `production`
-    - `gitSource`: `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`
-  - รอสถานะ READY แล้วเปิด `little-archer.vercel.app/play.html` เพื่อยืนยัน
-- **B. ได้แผนที่แล้ว** (ทำแล้วสำหรับด่าน 1 ใช้เป็นขั้นตอนสำหรับด่านต่อไป)
-  - สคริปต์ช่วย (อยู่ใน scratchpad อาจหายแล้ว):
-    - ซ้อนเส้นทาง จุดป้อม และขอบเกาะทับภาพด้วย sharp + SVG
-    - วัดความกว้างทางเดินและหาจุดศูนย์กลางหินจากสีพิกเซล
-  1. เก็บภาพต้นฉบับที่ `art/incoming/maps/level1_map.png`
-  2. ทำไฟล์ 1536×1024 ที่ `public/maps/level1.png`
-  3. ตั้ง `LEVEL1.map.art = 'maps/level1.png'` ใน `src/td/levels.ts`
-  4. ซ้อนภาพกับภาพร่างเพื่อจูน `route`, `slots`, `dock`, `vault`, `heroStart`, `island`
-  5. `npm run map:sketch -- level1` พิมพ์ปัญหาจาก `checkLevel` ออกมา และ unit test ก็เช็ก `checkLevel` ด้วย
-  - ตัว build แบบไฟล์เดียวใส่ `public/maps/*.png` ให้เองอยู่แล้ว
-- **C. Deckhand** (เสร็จแล้ว)
-  - `art/rigs/deckhand.json` สร้างโดยวิธี auto-fit: ให้สคริปต์หาตำแหน่ง ขนาด และมุมที่สีของชิ้นส่วนตรงกับภาพ rig pose มากที่สุด แล้วซ้อนดูทีละชิ้น
-    - สคริปต์ `fit.py`, `gen_rig.py` และ `compose.py` (Python + numpy) อยู่ใน scratchpad จึงอาจหายแล้ว
-  - ใน `sheets.json` ใช้ `erase` (ลบวงรี) ลบ "ปลายตัด" สีผิวที่ข้อต่อ ซึ่ง Codex วาดไว้ ไม่งั้นจะเห็นเป็นรูตอนขยับ
-  - ท่าทางอยู่ที่ `src/puppet/clips/deckhand.ts`: idle, walk, run, carry, hit, ko, taunt, cheer
-    - slot `weapon`/`loot` และมือ `hand-l-fist`, `hand-r-grip` ใช้ชื่อตาม hands_props ซึ่งพอได้ภาพก็จะแสดงเอง
-  - ในด่านทดลอง: Deckhand เป็น puppet จริง (ขนาด 0.07) ท่าเดินเร็วหรือช้าตามน้ำแข็งและการตะโกนของบอส ถูกยิงตายเล่นท่า ko ถ้าหนีถึงเรือเล่นท่า taunt
-  - ในหน้าโชว์ แท็บ Battle: Deckhand แทนเป้าซ้อมแล้ว
-  - มือ: วางข้อมือตรงข้อมือใน rig pose และหมุนตามแกนข้อมือถึงปลายนิ้ว (ใช้ auto-fit ไม่ได้ เพราะมือไหลไปทับแขนที่สีผิวเหมือนกัน)
-  - ดาบอยู่ที่ bone `cutlass` ลูกของ `hand.r` (slot `weapon`) ส่วนคริสตัลอยู่ในมือไกล (slot `loot`)
-  - Puppet ถือคริสตัลในมือเอง จึงไม่แสดงคริสตัลลอยเหนือหัว (ตัวชั่วคราวยังแสดงอยู่)
-- **C (เดิม). ขั้นตอนทำตัวละครใหม่**
-  1. วางภาพที่ `art/incoming/deckhand/deckhand_<sheet>.png` (ภาพที่แปะในแชตอยู่ในโฟลเดอร์ uploads ของ session ให้ดูขนาดและเนื้อหาเพื่อจับคู่ชื่อแผ่น)
-  2. รัน `npm run art -- deckhand` แล้วดูภาพตรวจ `.check.png`
-     - ชื่อชิ้นอยู่ใน `scripts/art/sheets.json`
-     - แผ่นหน้าอาจต้องใส่ `boxes` เหมือนของ hero
-  3. ทำ `art/rigs/deckhand.json` แบบเดียวกับ `art/rigs/hero.json` คือ fit แต่ละชิ้นกับ rig pose ด้วย 2-3 จุด
-  4. รัน `npm run art:publish -- deckhand`
-  5. เขียนท่าใน `src/puppet/clips/deckhand.ts`: idle, เดินโยก, วิ่ง, แบกคริสตัลเหนือหัว, โดนตี, ตาย, ยั่ว, เชียร์
-  6. ใส่แทนตัวกลมชั่วคราว
-     - ใน `src/play/main.ts` `PirateView` รองรับทั้ง puppet และภาพวาดชั่วคราวแล้ว (Powder Monkey, Ironclad, Parrot, First Mate ยังเป็นตัววาดด้วยโค้ดชั่วคราว)
-     - ในแท็บ Battle ของหน้าโชว์ ใช้ Deckhand แทนเป้าซ้อม
-- **D. ต่อจาก 2D-3**
-  - ใส่ภาพตัวละครจาก Codex ที่เหลือ ตาม prompt ใน `docs/art/CHARACTER_BRIEF.md` หัวข้อ 10 (ชื่อชิ้นอยู่ใน `scripts/art/sheets.json` แล้ว)
-    - Powder Monkey, Ironclad, Parrot Raider, First Mate, Talon, Mochi
-    - ตัว id ไฟล์ใช้ขีดล่าง เช่น `powder_monkey_master.png`
-  - ภาพป้อม 4 แบบ + สายระดับ 4 (ยังไม่มี prompt)
-  - เฟส 2: Chapter 1 (ฉากเล่าเรื่อง แผนที่เลือกด่าน 3 ด่าน ความยาก 3 ระดับ)
+- **A. พอได้ภาพตัวละครใหม่:** ทำตามขั้นตอน "ทำตัวละครใหม่" ด้านล่าง
+- **B. Deploy `/play.html` เมื่อเจ้านายโอเค** (ใช้ Vercel MCP `create_deployment`)
+  - `project`: `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`
+  - teamId/slug: `cat-team5`
+  - `target`: `production`
+  - `gitSource`: `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`
+  - รอ READY แล้วเปิด `little-archer.vercel.app/play.html` และหน้าแรกเพื่อยืนยัน
+- **C. ตัวเลือกที่เสนอเจ้านายไว้ (ยังไม่ได้สั่ง)**
+  - Prompt ภาพป้อม 4 แบบพร้อมสายระดับ 4
+  - เฟส 2: Chapter 1
+    - ฉากเล่าเรื่อง, แผนที่เลือกด่าน, ด่าน 2-3, ความยาก 3 ระดับ
+    - ต้องทำภาพร่างแผนที่ด่าน 2-3 ด้วย `npm run map:sketch` แล้วให้ Codex วาด
+
+### ขั้นตอนทำตัวละครใหม่ (ใช้กับ Deckhand มาแล้ว)
+1. **รับภาพ**
+   - ภาพที่เจ้านายแปะในแชต**ตอน Claude ตอบจบแล้ว**จะอยู่ที่ `/tmp/claude-0/<project>/<session>/images/N.webp`
+   - ภาพที่แปะระหว่างที่ Claude กำลังทำงาน**ไม่ถูกบันทึกเป็นไฟล์** ต้องขอให้ส่งใหม่
+2. **คัดลอกเข้า repo** ที่ `art/incoming/<id>/<id>_<sheet>.webp`
+   - ดูเนื้อหาภาพแล้วจับคู่ชื่อแผ่น: master, rigpose, head_faces, parts_body, hands_props, poses, portraits (concept ถ้ามี)
+   - id ใช้ขีดล่าง: `powder_monkey`, `ironclad`, `parrot_raider`, `first_mate`, `talon`, `mochi`
+3. **ตัดภาพ:** `npm run art -- <id>` แล้วดู `art/sliced/<id>/<sheet>.check.png`
+   - ชื่อชิ้นของทุกตัวเตรียมไว้แล้วใน `scripts/art/sheets.json` ตามลำดับใน prompt
+   - ถ้าจัดกลุ่มผิด (มักเป็นแผ่นหน้า) ให้ใส่ `boxes`
+   - ถ้ามี "ปลายตัด" สีผิวที่ข้อต่อ ให้ใส่ `erase` (วงรี `[cx, cy, rx, ry, องศา]` เป็นพิกเซลบนแผ่น)
+4. **ทำ rig** `art/rigs/<id>.json`
+   - พิกัดเป็นพิกเซลของภาพ rig pose ที่ตัดขอบแล้ว (`art/sliced/<id>/rigpose.png` = ต้นฉบับลบด้วยตำแหน่ง trim − 8)
+   - เครื่องมือใน `scripts/tools/` (ดู README ในโฟลเดอร์):
+     - `grid.mjs`: กริดวัดจุด
+     - `fit.py`: auto-fit ด้วยสี
+     - `compose.py`: ซ้อนตรวจ
+     - `deckhand_rig.py`: ตัวอย่างการสร้าง rig
+   - มือและชิ้นที่สีเหมือนชิ้นข้าง ๆ ให้วางด้วยจุดที่วัดเอง เพราะ auto-fit จะไหลไปทับชิ้นข้าง ๆ
+   - ตรวจด้วย `/dev/rig.html?c=<id>&overlay=0.45` และ `&frames=walk@0.2,...`
+5. **Publish:** `npm run art:publish -- <id>` จะคัดลอกไปที่ `public/sprites/<id>/`
+6. **ท่าทาง:** เขียน `src/puppet/clips/<id>.ts` ตามแบบ `deckhand.ts` แล้วลงทะเบียนใน `src/dev/rig.ts`
+   - ใช้ภาพ poses เป็นแบบอ้างอิง
+7. **ใส่เกม:** ใน `src/play/main.ts` ตอนนี้ `addPirate` ใช้ puppet เฉพาะ `e.kind === 'deckhand'`
+   - ให้ทำเป็นตาราง kind → (assets, clips, size)
+   - ชื่อท่าที่ `drivePuppet` เรียก: walk, carry, hit, ko, taunt, cheer
+   - นกกับวาฬ: แทน `paintEagle`/`paintWhale` ใน `syncCompanions` ด้วย puppet
 
 ## ข้อเท็จจริงสำคัญ
-- **พิกัด:** ใช้พิกเซลบนภาพแผนที่ 1536×1024 แกน y ชี้ลง
+- **พิกัด:** พิกเซลบนภาพแผนที่ 1536×1024 แกน y ชี้ลง
   - ใน Three.js คือ `(x, -y)`
-  - ลำดับการวาด `sortOrder = 1000 + y*100` เพื่อให้ตัวที่อยู่ต่ำบนจอวาดทับ
-- **`src/td/battle.ts` เป็นกติกาล้วน ไม่มีการวาด**
-  - `src/play/main.ts` อ่าน state แล้ววาด
-  - เหตุการณ์จาก `drain()` แปลงเป็นเอฟเฟกต์และเสียง
+  - `sortOrder = 1000 + y*100` ทำให้ตัวที่อยู่ต่ำบนจอวาดทับ
+  - ชิ้นส่วน puppet บวก z ได้ถึงประมาณ 60 คริสตัลกับหลอดเลือดจึงใช้ +70/+80
+- **แยกกติกากับการวาด**
+  - `src/td/battle.ts` เป็นกติกาล้วน
+  - `src/play/main.ts` อ่าน state แล้ววาด และแปลงเหตุการณ์จาก `drain()` เป็นเอฟเฟกต์และเสียง
   - ล็อกการสุ่มด้วย `?seed=`
-- **ค่าสมดุลปัจจุบัน** (ตัวเลขทั้งหมดอยู่ใน `src/td/units.ts`)
-  - deckhand: hp 65, speed 52, bounty 5
-  - powderMonkey: hp 35, speed 86, bounty 3
-  - ironclad: hp 140, speed 36, เกราะ 50% (ลดดาเมจกายภาพ), bounty 14
-  - parrot: hp 42, speed 72, บินสูง 70 px, bounty 7
-  - firstMate (บอส): hp 1000, speed 28, เกราะ 30%, แบก 3 ก้อน, ตะโกนทุก 7 วินาที (รัศมี 180, เร็วขึ้น ×1.5 นาน 2.5 วินาที)
-    - bot 8 ป้อมมักฆ่าบอสได้ ส่วน 4 ป้อมบอสมักหนีไปได้
-  - คลังคริสตัล: โจรแบกได้หลายก้อน (`Enemy.load`) และจะเดินต่อจนเต็มมือ (`carries`) ก่อนหันกลับ
-  - ราคาป้อม: archer 70/110/160, cannon 90/130/190, storm 100/140/200, frost 80/110/150
-  - ราคาสายระดับ 4: 220-270
-  - hero: damage 6-9, rate 0.55, range 250, windup 0.25
-  - Talon: คูลดาวน์ 20 วินาที, ดาเมจ 30, มึน 1.2 วินาที
-  - Mochi: รอครั้งแรก 25 วินาที แล้วคูลดาวน์ 60 วินาที, ดาเมจเวท 50, มึน 2 วินาที
-  - การ์ด: bot ที่สร้าง 8 ป้อมแล้วเลือกการ์ดได้ 3 ดาวเกือบทุกรอบ (ด่าน 1 ควรง่ายอยู่แล้ว)
-    - เคยตั้ง 70 แล้วฆ่า Deckhand (hp 65) ได้ทั้งเวฟ ง่ายเกินไป
-  - ด่าน: เงินเริ่มต้น 220, คริสตัล 20, 8 เวฟ (นกเริ่มเวฟ 4, Ironclad เริ่มเวฟ 6)
-  - ผลจาก bot 6 seed:
-    - 8 ป้อมแบบไหนก็ได้ 2-3 ดาว
-    - 4 ป้อม 1-3 ดาว
-    - ปืนใหญ่ล้วน 1 ดาว เพราะนกบินผ่าน
-    - ฮีโร่คนเดียวแพ้
-  - สคริปต์ bot อยู่ใน scratchpad ซึ่งอาจหายแล้ว ทำใหม่ได้ง่าย: วนเรียก `Battle.step(1/30)` แล้วให้ bot สร้างหรืออัปเกรดป้อม
-- **ฮีโร่**
-  - ขนาด 0.08 ในด่าน (สูงประมาณ 105 px) และ 0.26 ในหน้าโชว์
-  - จังหวะยิงตรงกัน: เหตุการณ์ `draw` สั่ง `anim.oneShot('rapid')` ซึ่งปล่อยลูกที่ 0.25 s ตรงกับ `HERO.windup`
-- **การโจมตีของป้อม** (`TowerDef.attack`)
-  - `arrow` ติดตามเป้า
-  - `shell` ยิงโค้งไปจุดที่คาดว่าเป้าจะอยู่ ระเบิดโดนเฉพาะตัวบนพื้น
-  - `zap` โดนทันที
-  - `pulse` ทำให้ทุกตัวในระยะช้าลง
-  - ระดับ 4 เพิ่มตัวเลือกใน `TowerLevel`:
-    - `shots` (Volley)
-    - `crit` (Sniper)
-    - `chain*` (Lightning Spire)
-    - `ramp*` (Arcane Lens)
-    - `freeze` (Ice Shard)
-    - Flak คือ shell ที่ `hitsFlying`
-  - สุ่มคริเฉพาะป้อมที่มีโอกาสคริ เพื่อไม่ให้ลำดับการสุ่มของผลเดิมเปลี่ยน
-  - ฝั่งวาด:
-    - ลูกปืนใหญ่ลอยโค้งพร้อมควัน (Flak ระเบิดกลางอากาศ)
-    - สายฟ้าและลำแสงใช้ `src/fx/bolt.ts`
-    - คลื่นเย็นเป็นวงกว้างเท่าระยะป้อม
+  - การ์ดใช้ rng แยก จึงไม่ทำให้ผลการต่อสู้เปลี่ยน
+- **ตัวเลขทั้งหมด**
+  - ศัตรู/ป้อม/ฮีโร่/สกิล อยู่ใน `src/td/units.ts`
+  - ด่าน อยู่ใน `src/td/levels.ts`
+  - การ์ด อยู่ใน `src/td/cards.ts`
+  - ค่าหลัก:
+    - deckhand hp 65, powderMonkey 35, ironclad 140 (เกราะ 50%), parrot 42 (บิน), firstMate 1000 (เกราะ 30%)
+    - ราคาป้อม 70-100 ต่อระดับ 1, สายระดับ 4 ราคา 220-270
+    - Talon คูลดาวน์ 20 วินาที
+    - Mochi รอครั้งแรก 25 วินาที แล้วคูลดาวน์ 60 วินาที, ดาเมจ 50 (ต่ำกว่าเลือด Deckhand โดยตั้งใจ)
+    - ด่าน 1: เงิน 220, คริสตัล 20, 8 เวฟ, `ordersAfter: [2, 4, 6]`
+- **ความยาก** (จาก `scripts/tools/balance_bot.mts` 6 seed)
+  - 8 ป้อมได้ 3 ดาวเกือบทุกรอบเมื่อเลือกการ์ด
+  - 4 ป้อมได้ 1-3 ดาว
+  - ปืนใหญ่ล้วนได้ 1 ดาว เพราะนกบินผ่าน
+  - ฮีโร่คนเดียวแพ้
+- **กลไกที่ควรรู้**
+  - โจรเดินต่อจนแบกเต็มมือ (`carries`) ก่อนหันกลับ
+  - ถูกยิงตายทำคริสตัลหล่นแล้วลอยกลับคลัง
+  - `stun` หยุดทุกตัว ส่วน `frozen` หยุดได้ทุกตัวยกเว้นบอส (`steady`)
+- **Puppet**
+  - Deckhand ขนาด 0.07 ในด่าน, 0.23 ในหน้าโชว์
+  - ฮีโร่ขนาด 0.08 ในด่าน, 0.26 ในหน้าโชว์
+  - `Puppet.tint()`/`opacity()`/`hitFlash()` ใช้กับเอฟเฟกต์น้ำแข็ง การหายไป และการโดนตี
 - **build ไฟล์เดียว:** `scripts/build-showcase.mjs <out> [index|play]`
-  - ใช้ `configFile:false` + `inlineDynamicImports`
-  - ใส่ sprites ทั้งหมด (ยกเว้น `master.png`), ภาพแผนที่ (เฉพาะหน้า play) และเสียง
+  - ใส่ sprites ทุกตัว (ยกเว้น `master.png`), แผนที่ (png/webp เฉพาะหน้า play) และเสียง
 - **การทดสอบ**
-  - `npm run typecheck`
-  - `npx vitest run`
-  - `PW_CHROMIUM=/opt/pw-browsers/chromium npx playwright test`
-  - `npm run build`
-  - ใน Playwright ปุ่ม `#call` เต้นอยู่ตลอด ต้องใช้ `click({force:true})`
-  - ถ่ายภาพหน้าจอด้วย `scripts/shot.mjs`
+  - คำสั่ง: `npm run typecheck`, `npx vitest run`, `PW_CHROMIUM=/opt/pw-browsers/chromium npx playwright test`, `npm run build`
+  - ปุ่ม `#call` เต้นอยู่ ใน Playwright จึงต้องใช้ `click({force:true})`
+  - helper `run()` ใน `tests/unit/td.test.ts` เลือกการ์ดใบแรกให้อัตโนมัติ
 - **ข้อจำกัดที่รู้แล้ว**
-  - ลูกบอลข้อต่อที่ศอกและเข่ายังเห็นนิดหน่อย
-  - sprites รวมประมาณ 5 MB
-  - ภาพร่างแผนที่แตกเป็นขั้นตอนซูมเข้า เพราะใช้ palette 64 สี
+  - ลูกบอลข้อต่อของฮีโร่ที่ศอกและเข่ายังเห็นนิดหน่อย
+  - ปลายตัดที่ต้นขา Deckhand ยังเหลือเศษเล็กมาก (น้อยกว่า 1 px ในเกม)
+  - แผ่น portraits ของ Deckhand ตัดได้ 2 จาก 3 ภาพ (ภาพติดกัน) ยังไม่ได้ใช้
 
 ## วิธีทำงานกับเจ้านาย
 - **การสื่อสาร**
   - เรียก "เจ้านาย"
-  - ตอบภาษาไทยปนศัพท์เทคนิคภาษาอังกฤษ
+  - ภาษาไทยปนศัพท์เทคนิค
   - ส่งงานก่อนแล้วค่อยอธิบาย
   - อธิบายแบบคนที่ไม่ใช่สาย dev
-  - มี "📚 บทเรียนที่ N" ซึ่งถึง 25 แล้ว
+  - มี "📚 บทเรียนที่ N" ซึ่งถึง **31** แล้ว
 - **checkpoint:** เมื่อถึงจุดที่หยุดได้ให้บอกก่อน เพราะเจ้านายจะสั่ง handoff แล้ว compact
-- **งานภาพ:** เจ้านายใช้ Codex (account กลาง **ไม่ได้เชื่อม GitHub**) เป็นแชตธรรมดา
-  - ส่ง prompt เป็นกล่องข้อความในแชตให้ก๊อปวาง ไม่ต้องเปิดหน้า Artifact
-  - ห้ามมีขั้นตอน branch, commit หรือ PR ใน prompt
-  - เจ้านายเซฟภาพแล้วแปะกลับมาในแชต
+- **งานภาพ:** Codex เป็น account กลางที่**ไม่ได้เชื่อม GitHub** ใช้เป็นแชตธรรมดา
+  - ส่ง prompt เป็นกล่องข้อความในแชตให้ก๊อปวาง (ไม่ต้องใช้ Artifact)
+  - ห้ามมีขั้นตอน branch/commit/PR ใน prompt
+  - เตือนเจ้านายเสมอว่าให้แปะภาพหลัง Claude ตอบจบ
+- **ความยาว:** ถ้าจะส่ง prompt หลายตัวในข้อความเดียว ให้ส่งก่อนแล้วค่อยทำงานต่อ เพื่อให้เจ้านายเริ่มวาดได้เลย
 - **git:** ไม่เปิด PR ถ้าไม่ได้สั่ง, ใส่ trailer ใน commit, ไม่ใส่ชื่อ model
+- **เครดิต cloud:** เจ้านายเลือกทำงานใน cloud ต่อ (เครดิตฟรีหมดอายุ 5 พ.ย. หลังจากนั้นใช้โควตาแพ็กเกจปกติ ย้ายไป local ได้ด้วย `claude --teleport`)
