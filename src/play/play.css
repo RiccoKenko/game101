@@ -1,0 +1,442 @@
+/* The test battle: the map fills the screen; a slim parchment HUD on top, game buttons in the corners. */
+:root {
+  --ink: #22304d;
+  --panel: #fffaf0;
+  --panel-edge: #e6d6b8;
+  --wood: #8c5a33;
+  --wood-deep: #5d3a1f;
+  --leaf: #3e9a4f;
+  --leaf-deep: #2b6e38;
+  --gold: #f4c34f;
+  --gold-deep: #c98a17;
+  --crystal: #4fd8e8;
+  --crystal-deep: #1d6f7a;
+  --danger: #d9473b;
+  --sky: #bfe6ff;
+  --font-display: 'Fredoka', 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--sky);
+  color: var(--ink);
+  font-family: var(--font-display);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+  background: var(--sky);
+}
+
+.stage,
+.stage canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* HUD */
+.hud {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 0;
+  right: 0;
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px 3px 6px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 3px 0 rgba(93, 58, 31, 0.18);
+}
+
+.stat.wave {
+  padding-left: 12px;
+}
+
+.stat.wave span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #52617f;
+}
+
+.stat.bump {
+  animation: bump 0.25s ease-out;
+}
+
+.stat.hurt {
+  animation: hurt 0.5s ease-out;
+}
+
+@keyframes bump {
+  40% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes hurt {
+  20% {
+    transform: scale(1.2);
+    background: #ffd6cf;
+    border-color: var(--danger);
+  }
+}
+
+.coin {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3b0 0 18%, var(--gold) 19% 62%, var(--gold-deep) 63%);
+  box-shadow: inset 0 0 0 2px var(--gold-deep);
+}
+
+.gem {
+  width: 16px;
+  height: 20px;
+  background: linear-gradient(135deg, #e9feff 0 22%, var(--crystal) 23% 70%, #2fb2c2 71%);
+  clip-path: polygon(50% 0, 100% 42%, 50% 100%, 0 42%);
+  filter: drop-shadow(0 0 1px var(--crystal-deep));
+}
+
+/* Buttons */
+.pill,
+.call,
+.menu button,
+.end button {
+  font: 600 15px var(--font-display);
+  border-radius: 12px;
+  border: 2px solid var(--wood);
+  background: var(--panel);
+  color: var(--wood-deep);
+  box-shadow: 0 3px 0 var(--wood);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.06s;
+}
+
+.pill {
+  min-width: 48px;
+  min-height: 36px;
+  padding: 2px 12px;
+}
+
+.pill.on {
+  background: var(--gold);
+}
+
+.pill:active,
+.call:active,
+.menu button:active,
+.end button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--wood);
+}
+
+.call {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  min-height: 46px;
+  padding: 6px 20px;
+  font-size: 17px;
+  background: var(--leaf);
+  border-color: var(--leaf-deep);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--leaf-deep);
+}
+
+.call.first {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    transform: scale(1.07);
+  }
+}
+
+.call[hidden],
+.menu[hidden],
+.end[hidden] {
+  display: none;
+}
+
+/* Tower menu, placed next to its spot every frame */
+.menu {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(255, 250, 240, 0.94);
+  border: 2px solid var(--panel-edge);
+  box-shadow: 0 4px 14px rgba(34, 48, 77, 0.25);
+}
+
+.menu button {
+  display: grid;
+  gap: 1px;
+  min-width: 96px;
+  padding: 6px 12px;
+  text-align: center;
+}
+
+.menu button span {
+  font-size: 14px;
+}
+
+.menu button b {
+  font-size: 16px;
+  color: var(--gold-deep);
+}
+
+.menu button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Wave banner and first-time hint */
+.banner {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  margin: 0;
+  translate: -50% -50%;
+  font-size: 40px;
+  font-weight: 700;
+  color: #fff;
+  -webkit-text-stroke: 6px var(--wood-deep);
+  paint-order: stroke fill;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.banner.show {
+  animation: banner 1.6s ease-out;
+}
+
+@keyframes banner {
+  0% {
+    opacity: 0;
+    scale: 0.6;
+  }
+  15% {
+    opacity: 1;
+    scale: 1.08;
+  }
+  25% {
+    scale: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hint {
+  position: absolute;
+  left: max(14px, env(safe-area-inset-left, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  max-width: calc(100% - 220px);
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(255, 250, 240, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+
+.hint.gone {
+  opacity: 0;
+}
+
+/* End of battle */
+.end {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(34, 48, 77, 0.35);
+}
+
+.end-card {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  min-width: 260px;
+  padding: 18px 28px;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 3px solid var(--panel-edge);
+  box-shadow: 0 6px 0 rgba(93, 58, 31, 0.25);
+  animation: bump 0.35s ease-out;
+}
+
+.end-card h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.end-card p {
+  margin: 0;
+}
+
+.stars {
+  font-size: 34px;
+  letter-spacing: 4px;
+  color: var(--gold-deep);
+}
+
+.end button {
+  margin-top: 6px;
+  min-height: 44px;
+  padding: 6px 22px;
+  background: var(--leaf);
+  border-color: var(--leaf-deep);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--leaf-deep);
+}
+
+/* Loading */
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--sky);
+  font-size: 16px;
+  font-weight: 600;
+  transition: opacity 0.4s;
+}
+
+.loading.done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bar {
+  width: min(260px, 70%);
+  height: 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 2px solid var(--wood);
+  overflow: hidden;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--leaf);
+  transition: width 0.2s;
+}
+
+/* Damage numbers */
+.dmg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 700;
+  font-size: 18px;
+  color: #fff;
+  -webkit-text-stroke: 4px #3a2414;
+  paint-order: stroke fill;
+  white-space: nowrap;
+  animation: pop 0.22s ease-out;
+  will-change: transform, opacity;
+}
+
+.dmg-crit {
+  font-size: 26px;
+  color: #ffd23f;
+  -webkit-text-stroke: 5px #a32a10;
+  animation: popcrit 0.28s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.dmg-gold {
+  font-size: 16px;
+  color: #ffe27a;
+}
+
+@keyframes pop {
+  from {
+    scale: 0.4;
+  }
+  60% {
+    scale: 1.25;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+@keyframes popcrit {
+  from {
+    scale: 0.2;
+    rotate: -12deg;
+  }
+  to {
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .call.first,
+  .stat.bump,
+  .stat.hurt {
+    animation: none;
+  }
+  .banner.show {
+    animation: fade 1.6s linear;
+  }
+}
+
+@keyframes fade {
+  10%,
+  75% {
+    opacity: 1;
+  }
+}

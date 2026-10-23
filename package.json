@@ -13,7 +13,8 @@
     "art": "tsx scripts/art/slice.ts",
     "art:publish": "tsx scripts/art/publish.ts",
     "map:sketch": "tsx scripts/art/map-sketch.ts",
-    "showcase:artifact": "node scripts/build-showcase.mjs"
+    "showcase:artifact": "node scripts/build-showcase.mjs",
+    "play:artifact": "node scripts/build-showcase.mjs sky-pirates-play.html play"
   },
   "dependencies": {
     "@fontsource/fredoka": "5.3.0",

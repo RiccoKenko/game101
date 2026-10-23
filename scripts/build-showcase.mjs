@@ -1,16 +1,28 @@
-// Builds the character showcase as ONE self-contained HTML fragment (JS, CSS, fonts, sprites, sounds inlined)
-// for a claude.ai artifact. Usage: node scripts/build-showcase.mjs <out.html>
+// Builds one page of the game (the character showcase, or the test battle) as ONE self-contained HTML fragment
+// (JS, CSS, fonts, sprites, maps, sounds inlined) for a claude.ai artifact.
+// Usage: node scripts/build-showcase.mjs <out.html> [index|play]
 import { build } from 'vite';
 import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const out = process.argv[2] ?? 'sky-pirates-cast.html';
+const pageName = process.argv[3] ?? 'index';
+const TITLES = { index: 'Sky Pirates Cast', play: 'Sky Pirates Test Battle' };
 const outDir = mkdtempSync(join(tmpdir(), 'showcase-'));
 await build({
+  configFile: false,
   base: './',
   logLevel: 'warn',
-  build: { outDir, emptyOutDir: true, assetsInlineLimit: 100_000_000, cssCodeSplit: false, modulePreload: false },
+  build: {
+    outDir,
+    emptyOutDir: true,
+    target: 'es2022',
+    assetsInlineLimit: 100_000_000,
+    cssCodeSplit: false,
+    modulePreload: false,
+    rollupOptions: { input: `${pageName}.html`, output: { inlineDynamicImports: true } },
+  },
 });
 const assets = join(outDir, 'assets');
 const files = readdirSync(assets);
@@ -26,9 +38,11 @@ for (const id of readdirSync('public/sprites'))
     const path = `public/sprites/${id}/${f}`;
     spriteAssets[`sprites/${id}/${f}`] = f.endsWith('.json') ? JSON.parse(readFileSync(path, 'utf8')) : `data:image/png;base64,${b64(path)}`;
   }
+if (pageName === 'play')
+  for (const f of readdirSync('public/maps')) spriteAssets[`maps/${f}`] = `data:image/png;base64,${b64(`public/maps/${f}`)}`;
 const sounds = Object.fromEntries(['shoot', 'hit', 'enemy_die', 'coin', 'explosion', 'click', 'zap', 'levelup', 'xp'].map((n) => [n, b64(`public/audio/${n}.mp3`)]));
 
-const page = `<title>Sky Pirates Cast</title>
+const page = `<title>${TITLES[pageName]}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#bfe7ff">
 <style>
