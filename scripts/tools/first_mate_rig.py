@@ -120,8 +120,8 @@ bones = [
     {'name': 'head', 'parent': 'torso', 'at': NECK},
     {'name': 'feather', 'parent': 'head', 'at': FEATHER_ROOT},
     {'name': 'braid', 'parent': 'head', 'at': BRAID_TOP},
-    {'name': 'coat.r', 'parent': 'hips', 'at': [300, 750]},
-    {'name': 'coat.l', 'parent': 'hips', 'at': [690, 750]},
+    {'name': 'coat.r', 'parent': 'hips', 'at': [300, 730]},
+    {'name': 'coat.l', 'parent': 'hips', 'at': [690, 730]},
     {'name': 'upperArm.l', 'parent': 'torso', 'at': SHOULDER_L},
     {'name': 'forearm.l', 'parent': 'upperArm.l', 'at': ELBOW_L},
     {'name': 'hand.l', 'parent': 'forearm.l', 'at': WRIST_L},
@@ -145,7 +145,7 @@ BUCKLE, RIG_BUCKLE, TORSO_SX, TORSO_SY = [232, 392], [505, 688], 1.55, 1.32
 BOOT = [[1360, 662], [1240, 945], [1420, 950]]
 # Balloon trouser legs: top (its cut end erased in sheets.json) to the gathered hem, drawn a little fuller than
 # the sheet so they cover the hips' cut-off trouser legs as they swing. The near one is the picture mirrored.
-THIGH, THIGH_WIDTH = [[1045, 600], [1073, 878]], 1.06
+THIGH, THIGH_WIDTH = [[1045, 600], [1073, 878]], 1.1
 
 parts = [
     # Far arm, behind the body.
@@ -156,8 +156,8 @@ parts = [
     # The sack of stolen crystals hangs behind his back from the near fist.
     part('sack', 'sack', 'sack', 9, [SACK_STRAP, SACK_BOTTOM], sack_to, slot='loot', width=-SACK_SCALE),
     # Coat skirts hang from the waist, outside the legs.
-    part('coat-tail-far', 'coat-tail-r', 'coat.l', 10, [[1063, 100], [1143, 485], [1237, 353]], [[688, 760], [745, 1110], [822, 1000]], shade=0.9),
-    part('coat-tail-near', 'coat-tail-l', 'coat.r', 11, [[950, 100], [947, 485], [810, 310]], [[300, 760], [250, 1128], [100, 1000]]),
+    part('coat-tail-far', 'coat-tail-r', 'coat.l', 10, [[1063, 100], [1143, 485], [1237, 353]], [[676, 712], [745, 1110], [818, 1000]], shade=0.9),
+    part('coat-tail-near', 'coat-tail-l', 'coat.r', 11, [[950, 100], [947, 485], [810, 310]], [[345, 716], [250, 1128], [108, 996]]),
     # Legs: boots under the trouser legs. The hips (belt, seat and the shirt tail, its trouser legs cut off at the
     # crotch) cover the far thigh's top; the near thigh goes over the hips so its swing never opens a gap.
     part('shin-l', 'shin', 'shin.l', 12, BOOT, [[632, 1045], [808, 1342], [590, 1340]], shade=FAR),

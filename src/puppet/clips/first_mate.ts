@@ -42,6 +42,8 @@ const FORESHORTEN = 0.72;
 const ON_SHOULDER = 205;
 /** Draw order with the near arm folded: forearm over the upper arm, anchor behind the body. */
 const Z_HOLD = { 'forearm-r': 42, anchor: 25 };
+/** Draw order with the near arm raised or flung out: arm, anchor and fist over everything, even the hat. */
+const Z_RAISED = { 'upper-arm-r': 54, 'forearm-r': 55, anchor: 56, 'hand-r-grip': 57, 'hand-r-open': 57 };
 
 /**
  * The near arm folded with its fist up by the collar, holding the anchor's shank (or the sack's strap) over the
@@ -123,8 +125,9 @@ function march(p: number, reach: number, lift = 45, swing = 1): Pose2D {
   const [lx, ly] = foot(p + 0.5, reach, lift);
   return {
     bones: {
-      hips: { y: -drop - 7 * stomp, r: 2.5 * c, sx: 1 + 0.015 * stomp, sy: 1 - 0.015 * stomp },
-      torso: { r: -4 - 1.8 * c, sy: 1 - 0.012 * stomp },
+      // Squash goes on the torso: scaling the hips would stretch the IK legs past their reach.
+      hips: { y: -drop - 7 * stomp, r: 2.5 * c },
+      torso: { r: -4 - 1.8 * c, sx: 1 + 0.015 * stomp, sy: 1 - 0.025 * stomp },
       head: { r: 1.5 * c + 1.5 * stomp },
       braid: { r: 4 * Math.cos(2 * Math.PI * (p - 0.15)) },
       feather: { r: -3 * stomp },
@@ -192,8 +195,8 @@ const hit: Clip2D = {
     return layer(HOLD, march(0, REACH), {
       slots: t < 0.26 ? FACE.hurt : FACE.furious,
       bones: {
-        hips: { x: -16 * k, y: -6 * k, sx: 1 + 0.03 * k, sy: 1 - 0.03 * k },
-        torso: { r: 8 * k + 1.5 * shake },
+        hips: { x: -16 * k, y: -6 * k },
+        torso: { r: 8 * k + 1.5 * shake, sx: 1 + 0.03 * k, sy: 1 - 0.04 * k },
         head: { r: 9 * k - 2 * shake },
         braid: { r: 10 * k },
         feather: { r: -12 * k },
@@ -236,9 +239,9 @@ const shout: Clip2D = {
         braid: { r: -8 * breath + 14 * roar + 4 * quake },
         feather: { r: 6 * breath - 10 * roar + 3 * quake },
         // The far arm draws back, then shoots out level, the open hand pointing ahead.
-        'upperArm.l': { r: -24 * breath + 78 * point },
-        'forearm.l': { r: -8 * point },
-        'hand.l': { r: 16 * point },
+        'upperArm.l': { r: -24 * breath + 88 * point },
+        'forearm.l': { r: -10 * point },
+        'hand.l': { r: 34 * point },
         'upperArm.r': { r: -4 * breath + 3 * roar },
         anchor: { wr: ON_SHOULDER - 6 * breath + 4 * quake },
       },
@@ -246,7 +249,11 @@ const shout: Clip2D = {
   },
 };
 
-/** Knocked out: the hit lands, he wobbles, then topples flat on his back like a felled mast, bounces once and lies still. */
+/**
+ * Knocked out: the blow lands, he wobbles on his heels, then topples over backwards like a felled mast (slow to
+ * start, fast at the end), slams flat on his back with a bounce, the anchor arm flung out past his head, and lies
+ * still with his knees up. Falls to the left (behind him), about one body length.
+ */
 const ko: Clip2D = {
   name: 'ko',
   duration: 1.2,
@@ -254,34 +261,38 @@ const ko: Clip2D = {
   pose: (t) => {
     const jolt = key(t, [[0, 0], [0.06, 1, ease.out], [0.22, 0.3, ease.inOut]]);
     const wobble = osc(t, 0.3) * key(t, [[0.1, 0], [0.2, 1], [0.38, 0]]);
-    const fall = key(t, [[0.3, 0], [0.78, 1, ease.in], [0.86, 0.94, ease.out], [0.96, 1, ease.in]]);
-    const thud = key(t, [[0.76, 0], [0.8, 1, ease.out], [1.0, 0, ease.inOut]]);
-    const limp = key(t, [[0.6, 0], [1.05, 1, ease.out]]);
-    return layer(STAND, {
+    const fall = key(t, [[0.3, 0], [0.78, 1, ease.in], [0.86, 0.95, ease.out], [0.96, 1, ease.in]]);
+    const thud = key(t, [[0.76, 0], [0.8, 1, ease.out], [1.05, 0, ease.inOut]]);
+    const limp = key(t, [[0.7, 0], [1.1, 1, ease.out]]);
+    const tilt = (88 * fall * Math.PI) / 180;
+    return layer(STAND, raise(fall), {
       slots: { ...(t < 0.2 ? FACE.hurt : FACE.ko), 'hand.l': 'hand-l-open' },
       bones: {
-        // Rocks back on his heels, then goes over backwards, landing on his back with the head to the left.
-        hips: { r: 6 * jolt + 3 * wobble + 84 * fall, x: -20 * jolt - 470 * fall, y: -260 * fall, sx: 1 + 0.05 * thud, sy: 1 - 0.07 * thud },
-        torso: { r: 6 * jolt + 2 * wobble + 4 * fall },
-        head: { r: 10 * jolt - 4 * wobble + 6 * fall - 8 * thud },
-        braid: { r: 30 * fall },
-        feather: { r: -20 * fall + 15 * thud },
-        'coat.r': { r: 25 * fall },
-        'coat.l': { r: 20 * fall },
-        // Legs swing up as he goes over, then flop down with the knees bent.
-        'thigh.r': { r: 40 * fall - 18 * limp },
-        'shin.r': { r: -25 * fall + 10 * limp },
-        'thigh.l': { r: 30 * fall - 10 * limp },
-        'shin.l': { r: -35 * fall + 14 * limp },
-        // The anchor arm flies out over his head; the other flops.
-        'upperArm.r': { r: -110 * fall },
-        'forearm.r': { r: -128 * fall },
-        'hand.r': { sy: 1 + (FORESHORTEN - 1) * fall },
-        'upperArm.l': { r: 25 * jolt + 70 * fall - 30 * limp },
-        'forearm.l': { r: 30 * fall },
-        anchor: { wr: ON_SHOULDER + 50 * fall },
+        // Rocks back on his heels, then pivots over them: the hips swing round and down onto the coat.
+        hips: {
+          r: 6 * jolt + 3 * wobble + 88 * fall,
+          x: -20 * jolt - 560 * Math.sin(tilt),
+          y: -215 * (1 - Math.cos(tilt)),
+          sx: 1 + 0.05 * thud,
+          sy: 1 - 0.08 * thud,
+        },
+        torso: { r: 6 * jolt + 2 * wobble + 2 * fall },
+        head: { r: 10 * jolt - 4 * wobble + 4 * fall - 10 * thud },
+        braid: { r: 30 * fall + 10 * thud },
+        feather: { r: -25 * fall + 20 * thud },
+        'coat.r': { r: 20 * fall },
+        'coat.l': { r: 25 * fall },
+        'upperArm.r': { r: -14 * fall + 12 * limp },
+        'upperArm.l': { r: 25 * jolt + 20 * fall - 55 * limp },
+        'forearm.l': { r: 25 * fall },
+        anchor: { wr: ON_SHOULDER + (265 - ON_SHOULDER) * fall },
       },
-      z: fall > 0.3 ? { 'forearm-r': 42, anchor: 39, 'upper-arm-r': 41 } : Z_HOLD,
+      // The boots stay on the ground as he goes over, then his knees come up.
+      ik: {
+        'foot.r': { target: [PLANT_R[0] - 300 * fall, PLANT_R[1] + 30 * limp], bend: 1 },
+        'foot.l': { target: [PLANT_L[0] - 420 * fall, PLANT_L[1] + 50 * limp], bend: 1 },
+      },
+      z: fall > 0.2 ? Z_RAISED : Z_HOLD,
     });
   },
 };
@@ -302,8 +313,8 @@ const taunt: Clip2D = {
     return layer(HOLD, planted(), breathe(t, 0.4), {
       slots: { ...(smug ? FACE.smug : FACE.laugh), 'hand.l': 'hand-l-open' },
       bones: {
-        hips: { y: -10 * back - 6 * har, sy: 1 - 0.02 * har },
-        torso: { r: 9 * back + 3 * har, sy: 1 + 0.025 * har },
+        hips: { y: -10 * back - 6 * har },
+        torso: { r: 9 * back + 3 * har, sy: 1 + 0.025 * har - 0.02 * har },
         head: { r: 10 * back + 5 * har - (smug ? 6 : 0) },
         braid: { r: -6 * back - 8 * har },
         feather: { r: 5 * har },
@@ -343,8 +354,8 @@ const cheer: Clip2D = {
     return layer(STAND, raise(up), planted(), {
       slots: up > 0.5 ? FACE.laugh : FACE.grim,
       bones: {
-        hips: { y: -40 * crouch, sx: 1 + 0.03 * crouch, sy: 1 - 0.04 * crouch },
-        torso: { r: -8 * crouch + 6 * up },
+        hips: { y: -40 * crouch },
+        torso: { r: -8 * crouch + 6 * up, sx: 1 + 0.03 * crouch, sy: 1 - 0.04 * crouch + 0.03 * up },
         head: { r: -6 * crouch + 10 * up },
         braid: { r: 10 * up - 6 * crouch },
         feather: { r: -10 * up },
@@ -353,7 +364,7 @@ const cheer: Clip2D = {
         'forearm.l': { r: 38 * up },
         anchor: { wr: ON_SHOULDER + (180 - ON_SHOULDER) * up },
       },
-      z: up > 0.4 ? { 'upper-arm-r': 54, 'forearm-r': 55, anchor: 56, 'hand-r-grip': 57, 'hand-r-open': 57 } : Z_HOLD,
+      z: up > 0.4 ? Z_RAISED : Z_HOLD,
     });
   },
 };
@@ -369,8 +380,8 @@ const SWING_WIND: Pose2D = {
 };
 const SWING_SLAM: Pose2D = {
   bones: {
-    hips: { y: -55, x: 30, sx: 1.04, sy: 0.95 },
-    torso: { r: -16 },
+    hips: { y: -55, x: 30 },
+    torso: { r: -16, sx: 1.04, sy: 0.95 },
     head: { r: -8 },
     'upperArm.l': { r: 30 },
     'forearm.l': { r: 30 },
@@ -378,24 +389,24 @@ const SWING_SLAM: Pose2D = {
 };
 const swing: Clip2D = {
   name: 'swing',
-  duration: 1.0,
+  duration: 1.1,
   loop: false,
   pose: (t) => {
-    const lift = key(t, [[0, 0], [0.3, 1, ease.inOut], [0.62, 1], [0.95, 0, ease.inOut]]);
-    // The arm swings from overhead down to the front: from the raised pose (0) to pointing forward and down (1).
-    const down = key(t, [[0.32, 0], [0.46, 1, ease.in], [0.62, 1], [0.95, 0, ease.inOut]]);
-    const body = poseKeys(t, [[0, {}], [0.3, SWING_WIND], [0.46, SWING_SLAM, ease.in], [0.62, SWING_SLAM], [0.95, {}]]);
+    const lift = key(t, [[0, 0], [0.3, 1, ease.inOut], [0.82, 1], [1.08, 0, ease.inOut]]);
+    // The arm swings from overhead down to the front (1), then back up overhead before it folds to the shoulder.
+    const down = key(t, [[0.32, 0], [0.46, 1, ease.in], [0.6, 1], [0.82, 0, ease.inOut]]);
+    const body = poseKeys(t, [[0, {}], [0.3, SWING_WIND], [0.46, SWING_SLAM, ease.in], [0.6, SWING_SLAM], [0.95, {}]]);
     const shake = osc(t, 0.06) * key(t, [[0.46, 1], [0.6, 0]]);
     return layer(STAND, raise(lift), planted(), body, {
       slots: t < 0.3 ? FACE.grim : t < 0.7 ? FACE.roar : FACE.fierce,
       bones: {
         'upperArm.r': { r: -130 * down },
         torso: { r: shake },
-        anchor: { wr: key(t, [[0, ON_SHOULDER], [0.3, 225], [0.46, 50, ease.in], [0.62, 50], [0.95, ON_SHOULDER]]) },
+        anchor: { wr: key(t, [[0, ON_SHOULDER], [0.3, 225], [0.46, 50, ease.in], [0.6, 50], [0.82, 180, ease.inOut], [1.08, ON_SHOULDER, ease.inOut]]) },
         braid: { r: 12 * down - 8 * lift },
         feather: { r: -12 * down },
       },
-      z: lift > 0.3 ? { 'upper-arm-r': 54, 'forearm-r': 55, anchor: 56, 'hand-r-grip': 57, 'hand-r-open': 57 } : Z_HOLD,
+      z: lift > 0.6 ? Z_RAISED : Z_HOLD,
     });
   },
   events: [[0.46, 'impact']],
