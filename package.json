@@ -7,10 +7,11 @@
     "dev": "vite --host",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview --host --port 4173",
-    "typecheck": "tsc --noEmit && tsc -p sculpt/tsconfig.json --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p sculpt/tsconfig.json --noEmit && tsc -p scripts/tsconfig.json --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "models": "tsx sculpt/build.ts",
+    "art": "tsx scripts/art/slice.ts",
     "showcase:artifact": "node scripts/build-showcase.mjs"
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "@types/node": "22.20.5",
     "@types/three": "0.185.4",
     "meshoptimizer": "0.22.0",
+    "sharp": "0.34.5",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vite": "7.3.7",

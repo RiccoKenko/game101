@@ -1,0 +1,40 @@
+{
+  "hero": {
+    "concept": { "names": ["front", "side", "back"] },
+    "head_faces": {
+      "regions": [[0, 0.34], [0.34, 1]],
+      "names": [
+        "head", "hood-tip",
+        "eyes-open", "eyes-half", "eyes-closed", "eyes-happy", "eyes-focus", "eyes-hurt", "eyes-ko", "eyes-surprised",
+        "mouth-smile", "mouth-neutral", "mouth-cheer", "mouth-determined", "mouth-shout", "mouth-ouch", "mouth-o"
+      ]
+    },
+    "parts_body": {
+      "names": ["torso", "hips", "capelet", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"]
+    },
+    "hands_props": {
+      "names": ["bow", "arrow", "quiver", "hand-l-open", "hand-l-grip", "hand-r-open", "hand-r-pinch"]
+    },
+    "poses": { "names": ["idle", "run", "draw", "release", "dash", "hit", "ko", "cheer"] },
+    "portraits": { "names": ["smile", "determined", "surprised"] }
+  },
+  "deckhand": {
+    "concept": { "names": ["front", "side", "back"] },
+    "head_faces": {
+      "regions": [[0, 0.34], [0.34, 1]],
+      "names": [
+        "head", "bandana-tails",
+        "eyes-sneaky", "eyes-angry", "eyes-greedy", "eyes-closed", "eyes-hurt", "eyes-ko", "eyes-surprised", "eyes-smug",
+        "mouth-grin", "mouth-laugh", "mouth-gritted", "mouth-ouch", "mouth-o", "mouth-smirk", "mouth-tongue"
+      ]
+    },
+    "parts_body": {
+      "names": ["torso", "hips", "sash-ends", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"]
+    },
+    "hands_props": {
+      "names": ["cutlass", "crystal", "hand-l-open", "hand-l-fist", "hand-r-open", "hand-r-grip"]
+    },
+    "poses": { "names": ["idle", "walk", "run-attack", "run-away", "hit", "ko", "taunt", "cheer"] },
+    "portraits": { "names": ["greedy", "angry", "panicked"] }
+  }
+}

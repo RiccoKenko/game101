@@ -27,6 +27,21 @@
 
 สร้างโมเดลใหม่หลังแก้สูตร: `npm run models` (ผลลัพธ์อยู่ใน `public/models/`)
 
+## งานภาพ 2D แนวอนิเมะ (กำลังย้ายมาใช้)
+
+ตัวละครชุดใหม่วาดด้วย ChatGPT ตามคู่มือ `docs/art/CHARACTER_BRIEF.md` จากนั้นเครื่องมือตัดภาพจะจัดการต่อให้อัตโนมัติ:
+1. ลบพื้นหลังสีชมพู
+2. แยกแผ่นชิ้นส่วนออกเป็นไฟล์ทีละชิ้น
+3. ตั้งชื่อแต่ละชิ้น
+
+| โฟลเดอร์ | มีอะไร |
+|---|---|
+| `art/incoming/<ตัวละคร>/` | ภาพจาก ChatGPT ตั้งชื่อตามคู่มือ เช่น `hero_parts_body.png` |
+| `art/sliced/<ตัวละคร>/` | ผลลัพธ์ ซึ่งสร้างใหม่ได้เสมอจึงไม่เก็บใน git<br>• ชิ้นส่วนแยกไฟล์<br>• `manifest.json`<br>• ภาพตรวจ `<แผ่น>.check.png` ที่ตีกรอบและใส่เลขทุกชิ้น |
+| `scripts/art/sheets.json` | รายชื่อชิ้นส่วนของแต่ละแผ่น เรียงตามลำดับใน prompt |
+
+ตัดภาพ: `npm run art -- hero` หรือระบุเฉพาะบางแผ่น เช่น `npm run art -- hero parts_body`
+
 ## อยากปรับอะไร สั่ง Claude Code ได้เลย
 
 พิมพ์บอกเป็นภาษาธรรมดาได้ เช่น
@@ -45,6 +60,7 @@
 npm install
 npm run dev            # เปิดที่ http://localhost:5173 (หน้าโชว์ตัวละคร)
 npm run models         # ปั้นโมเดลใหม่ทั้งหมด (หรือ npm run models -- hero)
+npm run art -- hero    # ตัดภาพ 2D จาก art/incoming/hero/ ไปที่ art/sliced/hero/
 npm run build          # typecheck + build ไปที่ dist/
 npm test               # unit tests (Vitest)
 PW_CHROMIUM=/opt/pw-browsers/chromium npm run test:e2e   # smoke test บนจอ iPhone 15 แนวนอน
