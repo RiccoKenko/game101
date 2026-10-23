@@ -7,3 +7,4 @@ playwright-report/
 .DS_Store
 art/sliced/
 sky-pirates-*.html
+__pycache__/
