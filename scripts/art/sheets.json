@@ -82,5 +82,42 @@
     },
     "poses": { "names": ["idle", "walk", "run-attack", "run-away", "hit", "ko", "taunt", "cheer"] },
     "portraits": { "names": ["greedy", "angry", "panicked"] }
+  },
+  "powder_monkey": {
+    "head_faces": { "regions": [[0, 0.34], [0.34, 1]], "names": ["head", "scarf-tail-1", "scarf-tail-2", "eyes-cheeky", "eyes-angry", "eyes-greedy", "eyes-closed", "eyes-hurt", "eyes-ko", "eyes-surprised", "eyes-smug", "mouth-grin", "mouth-laugh", "mouth-gritted", "mouth-ouch", "mouth-o", "mouth-tongue"] },
+    "parts_body": { "names": ["torso", "hips", "tail-top", "tail-tip", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"] },
+    "hands_props": { "names": ["bomb", "hand-l-open", "hand-l-fist", "hand-r-open", "hand-r-hold"] },
+    "poses": { "names": ["idle", "run", "bomb-run", "run-away", "hit", "ko", "taunt", "cheer"] }
+  },
+  "ironclad": {
+    "head_faces": { "regions": [[0, 0.34], [0.34, 1]], "names": ["head", "eyes-calm", "eyes-angry", "eyes-closed", "eyes-hurt", "eyes-ko", "eyes-surprised", "eyes-smug", "eyes-greedy"] },
+    "parts_body": { "names": ["torso", "hips", "strap", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"] },
+    "hands_props": { "names": ["shield", "wrench", "hand-l-open", "hand-l-grip", "hand-r-open", "hand-r-grip"] },
+    "poses": { "names": ["idle", "walk", "charge", "carry", "hit", "ko", "taunt", "cheer"] }
+  },
+  "parrot_raider": {
+    "head_faces": { "regions": [[0, 0.34], [0.34, 1]], "names": ["head", "eyes-cheeky", "eyes-angry", "eyes-greedy", "eyes-closed", "eyes-hurt", "eyes-ko", "eyes-surprised", "eyes-smug", "beak-closed", "beak-squawk", "beak-laugh", "beak-tongue"] },
+    "parts_body": { "names": ["body", "tail", "wing-near-in", "wing-near-out", "wing-far-in", "wing-far-out", "leg-near", "leg-far", "neckerchief"] },
+    "hands_props": { "names": ["hook", "foot-near-open", "foot-near-grip", "foot-far-open", "foot-far-grip"] },
+    "poses": { "names": ["hover", "fly", "dive", "carry", "hit", "ko", "taunt", "cheer"] }
+  },
+  "first_mate": {
+    "head_faces": { "regions": [[0, 0.34], [0.34, 1]], "names": ["head", "beard-braid", "hat-feather", "eye-fierce", "eye-furious", "eye-greedy", "eye-closed", "eye-hurt", "eye-ko", "eye-surprised", "eye-smug", "mouth-sneer", "mouth-roar", "mouth-laugh", "mouth-ouch", "mouth-o", "mouth-gritted"] },
+    "parts_body": { "names": ["torso", "hips", "coat-tail-l", "coat-tail-r", "upper-arm-l", "forearm-l", "upper-arm-r", "forearm-r", "thigh", "shin"] },
+    "hands_props": { "names": ["anchor", "sack", "hand-l-open", "hand-l-fist", "hand-r-open", "hand-r-grip"] },
+    "poses": { "names": ["idle", "march", "swing", "carry", "hit", "ko", "shout", "cheer"] },
+    "portraits": { "names": ["sneer", "roar", "defeated"] }
+  },
+  "talon": {
+    "head_faces": { "regions": [[0, 0.34], [0.34, 1]], "names": ["head", "scarf-tail-1", "scarf-tail-2", "eyes-confident", "eyes-fierce", "eyes-happy", "eyes-closed", "eyes-hurt", "eyes-surprised", "eyes-proud", "eyes-determined", "beak-closed", "beak-cry", "beak-chirp"] },
+    "parts_body": { "names": ["body", "tail", "wing-near-in", "wing-near-out", "wing-far-in", "wing-far-out", "leg-near", "leg-far"] },
+    "hands_props": { "names": ["crystal", "foot-near-open", "foot-near-grip", "foot-far-open", "foot-far-grip"] },
+    "poses": { "names": ["perch", "hover", "dive", "swoop", "carry", "glide", "chirp", "land"] },
+    "portraits": { "names": ["proud", "cry", "happy"] }
+  },
+  "mochi": {
+    "head_faces": { "names": ["eyes-gentle", "eyes-happy", "eyes-sparkle", "eyes-closed", "eyes-sleepy", "eyes-surprised", "eyes-determined", "eyes-hurt", "mouth-smile", "mouth-o", "mouth-laugh", "mouth-worried", "mouth-w"] },
+    "parts_body": { "names": ["body", "tail", "fin-near", "fin-far", "spout"] },
+    "poses": { "names": ["float", "swim", "leap", "sweep", "spin", "sleep", "wave", "cheer"] }
   }
 }
