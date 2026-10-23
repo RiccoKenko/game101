@@ -1,7 +1,7 @@
 /**
- * The Sky Crystals. They sit in the vault until a pirate carries one off. A carrier that is shot down drops
- * its crystal on the road, where it floats back to the vault (another pirate can grab it on the way).
- * A crystal carried all the way to the dock is lost; losing them all loses the level.
+ * The Sky Crystals. They sit in the vault until a pirate carries one off (a boss can carry several). A carrier
+ * that is shot down drops what it carries on the road, where it floats back to the vault (another pirate can
+ * grab it on the way). A crystal carried all the way to the dock is lost; losing them all loses the level.
  */
 
 export type CrystalState = 'vault' | 'carried' | 'dropped' | 'lost';
@@ -44,8 +44,8 @@ export class Vault {
     return this.crystals.filter((c) => c.state === 'dropped');
   }
 
-  carriedBy(carrier: number): Crystal | null {
-    return this.crystals.find((c) => c.state === 'carried' && c.carrier === carrier) ?? null;
+  carriedBy(carrier: number): Crystal[] {
+    return this.crystals.filter((c) => c.state === 'carried' && c.carrier === carrier);
   }
 
   /** A pirate at the vault takes a crystal. Null if the vault is empty. */
@@ -61,23 +61,25 @@ export class Vault {
     return c;
   }
 
-  /** The carrier fell at distance `d` along the road. */
-  drop(carrier: number, d: number): Crystal | null {
-    const c = this.carriedBy(carrier);
-    if (!c) return null;
-    c.state = 'dropped';
-    c.carrier = null;
-    c.d = d;
-    return c;
+  /** The carrier fell at distance `d` along the road: everything it carried drops there. */
+  drop(carrier: number, d: number): Crystal[] {
+    const out = this.carriedBy(carrier);
+    for (const c of out) {
+      c.state = 'dropped';
+      c.carrier = null;
+      c.d = d;
+    }
+    return out;
   }
 
-  /** The carrier reached the dock. */
-  escape(carrier: number): Crystal | null {
-    const c = this.carriedBy(carrier);
-    if (!c) return null;
-    c.state = 'lost';
-    c.carrier = null;
-    return c;
+  /** The carrier reached the dock: everything it carried is lost. */
+  escape(carrier: number): Crystal[] {
+    const out = this.carriedBy(carrier);
+    for (const c of out) {
+      c.state = 'lost';
+      c.carrier = null;
+    }
+    return out;
   }
 
   /** Drifts dropped crystals toward the vault (at `roadLength`). Returns the ones that got home. */

@@ -194,6 +194,52 @@ body {
   display: none;
 }
 
+/* Boss health, in the middle of the HUD row */
+.boss {
+  position: absolute;
+  left: 50%;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  translate: -50% 0;
+  width: min(260px, 32vw);
+  height: 26px;
+  border-radius: 999px;
+  background: #3b2a2a;
+  border: 2px solid var(--panel);
+  box-shadow: 0 3px 0 rgba(93, 58, 31, 0.25);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.boss[hidden] {
+  display: none;
+}
+
+.boss-bar,
+.boss-bar i {
+  position: absolute;
+  inset: 0;
+}
+
+.boss-bar i {
+  display: block;
+  width: 100%;
+  background: linear-gradient(#ff7a5c, var(--danger));
+  transition: width 0.15s;
+}
+
+.boss span {
+  position: relative;
+  z-index: 1;
+  display: block;
+  line-height: 22px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  -webkit-text-stroke: 3px #3b2a2a;
+  paint-order: stroke fill;
+}
+
 /* Tower menu, placed next to its spot every frame */
 .menu {
   position: absolute;

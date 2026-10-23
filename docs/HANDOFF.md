@@ -22,7 +22,12 @@
     - ศัตรูใหม่: Ironclad (เกราะ), Parrot Raider (บิน)
     - ด่าน 1 มี 8 เวฟ
     - ระดับ 4 เลือกสายได้ ป้อมละ 2 สาย รวม 8 แบบ (`TowerDef.branches`, `towerSpec()`), ปุ่ม Target ในเมนูป้อม
-- **Test:** unit 65 ข้อ (6 ไฟล์) และ e2e 3 ข้อ ผ่านทั้งหมด
+    - บอส First Mate ท้ายเวฟ 8:
+      - แบกคริสตัลได้ 3 ก้อน (`carries`)
+      - ตะโกนให้โจรรอบตัววิ่งเร็วขึ้น (`shout`)
+      - ทนน้ำแข็ง (`steady`)
+      - มีแถบเลือดใน HUD
+- **Test:** unit 69 ข้อ (6 ไฟล์) และ e2e 3 ข้อ ผ่านทั้งหมด
 
 ## Artifacts (ลิงก์คงที่)
 - **หน้าโชว์ตัวละคร:** https://claude.ai/artifact/PNawa631NQkzXEZbZAbFRh
@@ -70,7 +75,6 @@
      - ใน `src/play/main.ts` ให้ `PirateView` ใช้ Puppet (Powder Monkey, Ironclad, Parrot ยังเป็นตัววาดด้วยโค้ดชั่วคราว)
      - ในแท็บ Battle ของหน้าโชว์ ใช้ Deckhand แทนเป้าซ้อม
 - **D. 2D-3 ที่เหลือ** (ทำตามลำดับ)
-  - บอส First Mate
   - สกิล Talon (แย่งคริสตัลคืน) และ Mochi (ท่าไม้ตาย)
   - การ์ดคำสั่งกัปตันทุก 5 เวฟ
 
@@ -87,6 +91,9 @@
   - powderMonkey: hp 35, speed 86, bounty 3
   - ironclad: hp 140, speed 36, เกราะ 50% (ลดดาเมจกายภาพ), bounty 14
   - parrot: hp 42, speed 72, บินสูง 70 px, bounty 7
+  - firstMate (บอส): hp 1000, speed 28, เกราะ 30%, แบก 3 ก้อน, ตะโกนทุก 7 วินาที (รัศมี 180, เร็วขึ้น ×1.5 นาน 2.5 วินาที)
+    - bot 8 ป้อมมักฆ่าบอสได้ ส่วน 4 ป้อมบอสมักหนีไปได้
+  - คลังคริสตัล: โจรแบกได้หลายก้อน (`Enemy.load`) และจะเดินต่อจนเต็มมือ (`carries`) ก่อนหันกลับ
   - ราคาป้อม: archer 70/110/160, cannon 90/130/190, storm 100/140/200, frost 80/110/150
   - ราคาสายระดับ 4: 220-270
   - hero: damage 6-9, rate 0.55, range 250, windup 0.25

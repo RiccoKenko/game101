@@ -52,6 +52,7 @@ const MARKUP = `
     <span class="spacer"></span>
     <button type="button" class="pill" id="speed" aria-label="Game speed">×1</button>
   </header>
+  <div class="boss" id="boss" hidden><span id="boss-name">First Mate</span><div class="boss-bar"><i id="boss-hp"></i></div></div>
   <button type="button" class="call" id="call">Start battle</button>
   <div class="menu" id="menu" hidden></div>
   <p class="banner" id="banner" aria-live="polite"></p>
@@ -141,6 +142,7 @@ const SMOKE = new THREE.Color(0.55, 0.52, 0.5);
 const STORM = new THREE.Color(0.72, 0.55, 1);
 const ARCANE = new THREE.Color(1, 0.45, 0.85);
 const ICE = new THREE.Color(0.6, 0.9, 1);
+const RALLY = new THREE.Color(1, 0.45, 0.2);
 const STEEL = new THREE.Color(0.85, 0.9, 1);
 const NO_TINT = new THREE.Color(1, 1, 1);
 const CHILL_TINT = new THREE.Color(0.78, 0.92, 1.1);
@@ -172,12 +174,14 @@ interface PirateView {
   shadow: Shadow;
   hpBack: THREE.Mesh;
   hpFill: THREE.Mesh;
-  crystal: THREE.Mesh;
+  /** One per crystal it can carry (bosses carry several, side by side). */
+  crystals: THREE.Mesh[];
   phase: number;
   /** Seconds since it fell or escaped; the view fades out, then goes. */
   leaving: number;
-  /** Countdown to the next frost mote while chilled. */
+  /** Countdown to the next frost mote while chilled, or dust puff while rallied. */
   frost: number;
+  dust: number;
 }
 
 interface TowerView {
@@ -216,19 +220,24 @@ function addPirate(e: Enemy): void {
   // Flyers hang in the air above their shadow on the road.
   const top = e.def.altitude + e.def.radius * 2.6;
   body.position.y = e.def.altitude;
-  const crystal = sprite(CRYSTAL_ART, 0.42, 'centre');
-  crystal.position.y = top + 18;
-  crystal.visible = false;
+  const carries = e.def.carries ?? 1;
+  const crystals = Array.from({ length: carries }, (_, i) => {
+    const m = sprite(CRYSTAL_ART, 0.42, 'centre');
+    m.position.set((i - (carries - 1) / 2) * 24, top + 18 + (i % 2) * 6, 0);
+    m.visible = false;
+    return m;
+  });
   const hpBack = new THREE.Mesh(hpGeo, new THREE.MeshBasicMaterial({ color: 0x3b2a2a, depthTest: false, depthWrite: false, transparent: true }));
+  if (e.def.boss) hpBack.visible = false;
   const hpFill = new THREE.Mesh(hpGeo, new THREE.MeshBasicMaterial({ color: 0x7ee05a, depthTest: false, depthWrite: false, transparent: true }));
   hpBack.scale.set(40, 7, 1);
   hpBack.position.set(-20, top + 6, 0);
   hpFill.position.set(-19, top + 6, 0);
-  group.add(body, crystal, hpBack, hpFill);
+  group.add(body, ...crystals, hpBack, hpFill);
   const shadow = new Shadow(e.def.radius * 2.4);
   shadow.mesh.renderOrder = ORDER_SHADOW;
   scene.add(group, shadow.mesh);
-  pirates.set(e.id, { enemy: e, group, body, flash, shadow, hpBack, hpFill, crystal, phase: Math.random() * 6, leaving: -1, frost: 0 });
+  pirates.set(e.id, { enemy: e, group, body, flash, shadow, hpBack, hpFill, crystals, phase: Math.random() * 6, leaving: -1, frost: 0, dust: 0 });
 }
 
 function removePirate(v: PirateView): void {
@@ -338,6 +347,13 @@ function updateHud(): void {
   }
   if (menuSlot !== null && hudDirty) renderMenu();
   hudDirty = false;
+  const boss = battle.enemies.find((e) => e.def.boss);
+  const bar = $('boss') as HTMLElement;
+  if (!!boss !== !bar.hidden) bar.hidden = !boss;
+  if (boss) {
+    $('boss-name').textContent = boss.def.name;
+    ($('boss-hp') as HTMLElement).style.width = `${(Math.max(0, boss.hp / boss.def.hp) * 100).toFixed(1)}%`;
+  }
 }
 
 function showBanner(text: string): void {
@@ -537,8 +553,21 @@ function onEvent(ev: BattleEvent): void {
       break;
     case 'spawn':
       addPirate(ev.enemy);
-      fx.poof(world(ev.enemy.pos, 10), 0.5, 8);
+      fx.poof(world(ev.enemy.pos, 10), ev.enemy.def.boss ? 1.4 : 0.5, ev.enemy.def.boss ? 20 : 8);
+      if (ev.enemy.def.boss) {
+        showBanner(`${ev.enemy.def.name}!`);
+        sfx.play('boss_warning', 0.5, 0);
+        shake.add(0.4);
+      }
       break;
+    case 'shout': {
+      const at = world(ev.enemy.pos, ev.enemy.def.radius);
+      fx.ring(world(ev.enemy.pos, 4), RALLY, ev.radius / 57, 40);
+      numbers.spawn('Hurry, ye dogs!', at.clone().add(tmp.set(0, 30, 0)), 'crit');
+      for (const e of ev.rallied) if (e !== ev.enemy) fx.glitter(world(e.pos, e.def.radius * 2), RALLY, 3);
+      shake.add(0.15);
+      break;
+    }
     case 'draw':
       anim.oneShot('rapid', 'idle', { fade: 0.06 });
       break;
@@ -614,8 +643,16 @@ function onEvent(ev: BattleEvent): void {
       const v = pirates.get(ev.enemy.id);
       if (v) v.leaving = 0;
       const at = world(ev.enemy.pos, ev.enemy.def.radius);
-      fx.poof(at, 0.55, 12);
-      fx.glitter(at, GOLD, 6);
+      const boss = !!ev.enemy.def.boss;
+      fx.poof(at, boss ? 1.6 : 0.55, boss ? 30 : 12);
+      fx.glitter(at, GOLD, boss ? 30 : 6);
+      if (boss) {
+        showBanner(`${ev.enemy.def.name} defeated!`);
+        time.hitStop(120);
+        time.slowMo(0.35, 0.9);
+        shake.add(0.6);
+        sfx.play('explosion', 0.5);
+      }
       numbers.spawn(`+${ev.bounty}`, at.clone().add(tmp.set(0, 40, 0)), 'gold');
       sfx.play('enemy_die', 0.35);
       sfx.play('coin', 0.2, 0.15);
@@ -627,7 +664,7 @@ function onEvent(ev: BattleEvent): void {
       sfx.play('zap', 0.25);
       break;
     case 'drop':
-      fx.glitter(world(ev.at, 30), CYAN, 12);
+      fx.glitter(world(ev.at, 30), CYAN, 12 * ev.count);
       sfx.play('xp', 0.4);
       break;
     case 'recover':
@@ -637,8 +674,8 @@ function onEvent(ev: BattleEvent): void {
     case 'escape': {
       const v = pirates.get(ev.enemy.id);
       if (v) v.leaving = 0;
-      if (ev.lost) {
-        shake.add(0.35);
+      if (ev.lost > 0) {
+        shake.add(0.35 * ev.lost);
         bump('crystal-stat', 'hurt');
         sfx.play('explosion', 0.25);
       }
@@ -704,13 +741,13 @@ function syncPirates(dt: number, t: number): void {
       const k = Math.min(1, v.leaving / 0.25);
       v.group.scale.set(1 + 0.4 * k, 1 - 0.6 * k, 1);
       (v.body.material as THREE.ShaderMaterial).uniforms.opacity.value = 1 - k;
-      v.crystal.visible = false;
+      for (const m of v.crystals) m.visible = false;
       v.hpBack.visible = v.hpFill.visible = false;
       if (k >= 1) removePirate(v);
       continue;
     }
     const moving = Math.hypot(e.vel[0], e.vel[1]) > 1;
-    v.phase += dt * (e.def.speed / 6) * (e.frozen > 0 ? 0 : e.slow);
+    v.phase += dt * (e.def.speed / 6) * (e.frozen > 0 && !e.def.steady ? 0 : e.slow) * e.haste;
     const sx = Math.abs(v.body.scale.x);
     let hop: number;
     if (e.flying) {
@@ -735,15 +772,23 @@ function syncPirates(dt: number, t: number): void {
       v.frost = 0.35;
       fx.glitter(world(e.pos, e.def.altitude + e.def.radius * 1.4), ICE, 2);
     }
+    // Rallied by a shout: they kick up dust as they hurry.
+    v.dust -= dt;
+    if (e.hasteFor > 0 && !e.flying && v.dust <= 0 && moving) {
+      v.dust = 0.12;
+      fx.dust(world(e.pos, 2), e.vel[0] > 0 ? -1 : 1);
+    }
     const order = sortOrder(e.pos[1]);
     v.body.renderOrder = order;
-    v.crystal.renderOrder = order + 2;
+    for (const m of v.crystals) m.renderOrder = order + 2;
     v.hpBack.renderOrder = order + 3;
     v.hpFill.renderOrder = order + 4;
-    v.crystal.visible = e.carrying;
-    v.crystal.position.x = Math.sin(t * 3 + v.phase) * 1.5;
+    v.crystals.forEach((m, i) => {
+      m.visible = i < e.load;
+      m.position.x = (i - (v.crystals.length - 1) / 2) * 24 + Math.sin(t * 3 + v.phase + i) * 1.5;
+    });
     const share = Math.max(0, e.hp / e.def.hp);
-    v.hpBack.visible = v.hpFill.visible = share < 1;
+    v.hpBack.visible = v.hpFill.visible = share < 1 && !e.def.boss;
     v.hpFill.scale.set(38 * share, 5, 1);
     (v.hpFill.material as THREE.MeshBasicMaterial).color.setHex(share > 0.5 ? 0x7ee05a : share > 0.25 ? 0xf4c34f : 0xe5533d);
   }

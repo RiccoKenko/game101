@@ -79,10 +79,12 @@ function bean(g: CanvasRenderingContext2D, body: string, shade: string, inside?:
  * - Powder Monkey: small, brown, orange cap.
  * - Ironclad: a steel barrel of a pirate with a riveted helmet.
  * - Parrot Raider: a green parrot in a pirate hat, wings spread (it flies, so no feet).
+ * - First Mate: the boss, a broad pirate in a long red coat and tricorn hat, with an eyepatch and a big beard.
  */
 export function paintPirate(kind: EnemyKind): Painted {
   const [c, g] = canvas(128, 140);
   if (kind === 'parrot') return paintParrot(c, g);
+  if (kind === 'firstMate') return paintFirstMate(c, g);
   const monkey = kind === 'powderMonkey';
   const iron = kind === 'ironclad';
   // Feet.
@@ -124,6 +126,76 @@ export function paintPirate(kind: EnemyKind): Painted {
   stroke(g, 5);
   ellipse(g, 20, 54, 9, 7, cap, 4);
   face(g);
+  return painted(c);
+}
+
+function paintFirstMate(c: HTMLCanvasElement, g: CanvasRenderingContext2D): Painted {
+  // Boots planted wide.
+  for (const x of [44, 84]) ellipse(g, x, 129, 15, 9, '#2f2a2e', 4);
+  // Long coat flaring out below a round body.
+  g.beginPath();
+  g.moveTo(22, 124);
+  g.quadraticCurveTo(14, 70, 64, 52);
+  g.quadraticCurveTo(114, 70, 106, 124);
+  g.closePath();
+  g.fillStyle = '#b8322b';
+  g.fill();
+  stroke(g, 6);
+  // Shirt and belt in the coat's opening, gold buttons down both sides.
+  g.beginPath();
+  g.moveTo(52, 124);
+  g.lineTo(58, 66);
+  g.lineTo(70, 66);
+  g.lineTo(76, 124);
+  g.closePath();
+  g.fillStyle = '#f6efe2';
+  g.fill();
+  stroke(g, 4);
+  g.fillStyle = '#4a3328';
+  g.fillRect(24, 96, 80, 11);
+  g.strokeRect(24, 96, 80, 11);
+  g.fillStyle = '#f4c34f';
+  g.fillRect(57, 94, 14, 15);
+  g.strokeRect(57, 94, 14, 15);
+  for (const [x, y] of [[44, 78], [42, 116], [84, 78], [86, 116]]) ellipse(g, x, y, 4, 4, '#f4c34f', 2);
+  // Big round head with a beard.
+  ellipse(g, 66, 42, 30, 28, '#f2c393', 5);
+  g.beginPath();
+  g.moveTo(40, 46);
+  g.quadraticCurveTo(44, 84, 70, 82);
+  g.quadraticCurveTo(96, 80, 94, 46);
+  g.quadraticCurveTo(80, 60, 68, 56);
+  g.quadraticCurveTo(54, 60, 40, 46);
+  g.fillStyle = '#3b2a22';
+  g.fill();
+  stroke(g, 4);
+  // Eye, eyepatch and a scowl.
+  ellipse(g, 82, 38, 6, 7, '#fff', 3);
+  ellipse(g, 84, 39, 3, 4, INK);
+  g.beginPath();
+  g.moveTo(76, 30);
+  g.lineTo(90, 33);
+  stroke(g, 4);
+  ellipse(g, 62, 38, 8, 7, '#2b2b38', 3);
+  g.beginPath();
+  g.moveTo(40, 30);
+  g.lineTo(94, 46);
+  stroke(g, 3);
+  // Tricorn hat with a gold trim and a skull.
+  g.beginPath();
+  g.moveTo(26, 28);
+  g.quadraticCurveTo(66, -6, 108, 26);
+  g.quadraticCurveTo(66, 14, 26, 28);
+  g.fillStyle = '#2b2b38';
+  g.fill();
+  stroke(g, 5);
+  g.beginPath();
+  g.moveTo(30, 26);
+  g.quadraticCurveTo(66, 12, 104, 24);
+  g.lineWidth = 3;
+  g.strokeStyle = '#f4c34f';
+  g.stroke();
+  ellipse(g, 66, 12, 6, 5, '#f6efe2', 2);
   return painted(c);
 }
 

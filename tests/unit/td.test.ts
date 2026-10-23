@@ -4,7 +4,7 @@ import { branchCost, nextCost, Purse, sellValue } from '../../src/td/economy';
 import { checkLevel, LEVEL1, type LevelDef } from '../../src/td/levels';
 import { closedCurve, insidePolygon, Path } from '../../src/td/path';
 import { intercept, pickTarget, type Targetable } from '../../src/td/targeting';
-import { afterArmor, TOWERS, type Branch, type TowerKind } from '../../src/td/units';
+import { afterArmor, ENEMIES, TOWERS, type Branch, type EnemyKind, type TowerKind } from '../../src/td/units';
 import { stars, Vault } from '../../src/td/vault';
 import { WaveRunner } from '../../src/td/waves';
 
@@ -22,7 +22,7 @@ function run(b: Battle, seconds: number, done: (e: BattleEvent[]) => boolean = (
 
 const FAR_AWAY: LevelDef = { ...LEVEL1, heroStart: [-5000, -5000] };
 /** Level 1 with the hero out of the way and one made-up wave. */
-const only = (enemy: 'deckhand' | 'powderMonkey' | 'ironclad' | 'parrot', count = 1, gap = 1): LevelDef => ({ ...FAR_AWAY, waves: [{ groups: [{ enemy, count, gap }] }] });
+const only = (enemy: EnemyKind, count = 1, gap = 1): LevelDef => ({ ...FAR_AWAY, waves: [{ groups: [{ enemy, count, gap }] }] });
 /** Slot 0 sits beside the first bend after the dock. */
 const NEAR_DOCK = 0;
 
@@ -55,8 +55,8 @@ describe('vault', () => {
     expect(v.take(1)?.carrier).toBe(1);
     expect(v.take(2)?.carrier).toBe(2);
     expect(v.take(3)).toBeNull();
-    expect(v.escape(1)?.state).toBe('lost');
-    expect(v.escape(3)).toBeNull();
+    expect(v.escape(1).map((c) => c.state)).toEqual(['lost']);
+    expect(v.escape(3)).toEqual([]);
     expect(v.remaining).toBe(1);
   });
 
@@ -283,6 +283,63 @@ describe('level 4 specialisations', () => {
     expect(b.setMode(NEAR_DOCK, 'carrier')).toBe(true);
     expect(b.towers[NEAR_DOCK]!.mode).toBe('carrier');
     expect(b.setMode(1, 'nearest')).toBe(false);
+  });
+});
+
+describe('the First Mate', () => {
+  it('carries three crystals off at once', () => {
+    const b = new Battle(only('firstMate'));
+    b.callWave();
+    const events = run(b, 400);
+    const escape = events.find((e) => e.type === 'escape');
+    expect(escape?.type === 'escape' && escape.lost).toBe(3);
+    expect(b.vault.lost).toBe(3);
+  });
+
+  it('drops all three when brought down', () => {
+    const b = new Battle(only('firstMate'));
+    b.callWave();
+    run(b, 400, (e) => e.some((x) => x.type === 'steal'));
+    const boss = b.enemies[0];
+    expect(boss.load).toBe(3);
+    boss.hp = 1;
+    b.hero.pos = [boss.pos[0] - 120, boss.pos[1]];
+    const events = run(b, 60, (e) => e.some((x) => x.type === 'drop'));
+    const drop = events.find((e) => e.type === 'drop');
+    expect(drop?.type === 'drop' && drop.count).toBe(3);
+    expect(b.vault.dropped()).toHaveLength(3);
+  });
+
+  it('shouts to hurry the pirates around it', () => {
+    const b = new Battle({ ...FAR_AWAY, waves: [{ groups: [{ enemy: 'firstMate', count: 1, gap: 1 }, { enemy: 'deckhand', count: 3, gap: 0.3 }] }] });
+    b.callWave();
+    const events = run(b, 30, (e) => e.some((x) => x.type === 'shout'));
+    const shout = events.find((e) => e.type === 'shout');
+    expect(shout?.type === 'shout' && shout.rallied.length).toBeGreaterThanOrEqual(2);
+    const deckhand = b.enemies.find((e) => e.kind === 'deckhand')!;
+    expect(deckhand.haste).toBe(1.5);
+    expect(deckhand.vel[0] ** 2 + deckhand.vel[1] ** 2).toBeCloseTo((52 * 1.5) ** 2, -1);
+  });
+
+  it('shrugs off frost: half-strength slows and no freezing', () => {
+    const b = new Battle(only('firstMate'));
+    b.purse.gold = 5000;
+    b.build(NEAR_DOCK, 'frost');
+    b.upgrade(NEAR_DOCK);
+    b.upgrade(NEAR_DOCK);
+    b.upgrade(NEAR_DOCK, 1);
+    b.callWave();
+    const events = run(b, 60, (e) => e.filter((x) => x.type === 'hit').length >= 2);
+    expect(events.some((e) => e.type === 'freeze')).toBe(false);
+    const boss = b.enemies[0];
+    boss.slow = 0.4;
+    boss.slowFor = 5;
+    // No shout in the way of the measurement.
+    Object.assign(boss, { shoutIn: Infinity, haste: 1, hasteFor: 0 });
+    b.sell(NEAR_DOCK);
+    const d0 = boss.d;
+    b.step(1);
+    expect(boss.d - d0).toBeCloseTo(ENEMIES.firstMate.speed * 0.7, 0);
   });
 });
 

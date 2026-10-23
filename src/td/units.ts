@@ -2,7 +2,7 @@
  * Numbers for everything that fights. Distances are map pixels (the road is 84 px wide), times are seconds.
  */
 
-export type EnemyKind = 'deckhand' | 'powderMonkey' | 'ironclad' | 'parrot';
+export type EnemyKind = 'deckhand' | 'powderMonkey' | 'ironclad' | 'parrot' | 'firstMate';
 
 export interface EnemyDef {
   name: string;
@@ -20,6 +20,14 @@ export interface EnemyDef {
   armor: number;
   /** Body radius, for drawing and for arrows to hit. */
   radius: number;
+  /** Bosses get a health bar across the top of the screen. */
+  boss?: boolean;
+  /** Crystals it takes from the vault in one go (1 if not set). */
+  carries?: number;
+  /** Shrugs off frost: slows are half as strong and it cannot be frozen. */
+  steady?: boolean;
+  /** Every `every` seconds it shouts, and pirates within `radius` (itself too) run `boost` times faster for `for` seconds. */
+  shout?: { every: number; radius: number; boost: number; for: number };
 }
 
 export const ENEMIES: Record<EnemyKind, EnemyDef> = {
@@ -28,6 +36,10 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
   powderMonkey: { name: 'Powder Monkey', hp: 35, speed: 86, carrySpeed: 0.75, bounty: 3, flying: false, altitude: 0, armor: 0, radius: 16 },
   ironclad: { name: 'Ironclad', hp: 140, speed: 36, carrySpeed: 0.85, bounty: 14, flying: false, altitude: 0, armor: 0.5, radius: 26 },
   parrot: { name: 'Parrot Raider', hp: 42, speed: 72, carrySpeed: 0.8, bounty: 7, flying: true, altitude: 70, armor: 0, radius: 18 },
+  firstMate: {
+    name: 'First Mate', hp: 1000, speed: 28, carrySpeed: 0.9, bounty: 150, flying: false, altitude: 0, armor: 0.3, radius: 38,
+    boss: true, carries: 3, steady: true, shout: { every: 7, radius: 180, boost: 1.5, for: 2.5 },
+  },
 };
 
 export type DamageType = 'physical' | 'magic';

@@ -50,7 +50,7 @@ export const LEVEL1: LevelDef = {
   startGold: 220,
   crystals: 20,
   // New pirates arrive one kind at a time: flyers in wave 4 (cannons can't reach them), armour in wave 6
-  // (arrows bounce off, lightning doesn't).
+  // (arrows bounce off, lightning doesn't), and the First Mate at the end of the last wave.
   waves: [
     { groups: [{ enemy: 'deckhand', count: 6, gap: 1.6 }] },
     { groups: [{ enemy: 'deckhand', count: 9, gap: 1.3 }] },
@@ -65,6 +65,7 @@ export const LEVEL1: LevelDef = {
         { enemy: 'powderMonkey', count: 8, gap: 0.6, delay: 6 },
         { enemy: 'ironclad', count: 4, gap: 2.5, delay: 10 },
         { enemy: 'parrot', count: 6, gap: 1.1, delay: 15 },
+        { enemy: 'firstMate', count: 1, gap: 1, delay: 20 },
       ],
     },
   ],

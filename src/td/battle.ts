@@ -31,8 +31,8 @@ export interface Enemy {
   heading: 1 | -1;
   /** Sideways offset from the road's centre line (mirrored on the way back, so pirates pass each other). */
   lane: number;
-  /** Id of the crystal it carries. */
-  crystal: number | null;
+  /** Crystals it carries. */
+  load: number;
   /** Feet position on the map, and velocity. */
   pos: Pt;
   vel: Pt;
@@ -44,6 +44,11 @@ export interface Enemy {
   slowFor: number;
   /** Seconds left frozen solid (not moving at all). */
   frozen: number;
+  /** Speed multiplier from a boss's shout, and seconds it has left. */
+  haste: number;
+  hasteFor: number;
+  /** Seconds to its next shout (shouting pirates only). */
+  shoutIn: number;
 }
 
 export interface Tower {
@@ -107,13 +112,16 @@ export type BattleEvent =
   /** Lightning (or a beam, for Arcane Lens); a chain of jumps comes as one zap per jump, `jump` counting from 0. */
   | { type: 'zap'; tower: Tower; from: Pt; to: Pt; enemy: Enemy; beam: boolean; jump: number }
   | { type: 'freeze'; enemy: Enemy }
+  /** A boss shouted; `rallied` run faster for a while. */
+  | { type: 'shout'; enemy: Enemy; radius: number; rallied: Enemy[] }
   | { type: 'pulse'; tower: Tower; at: Pt; radius: number; enemies: Enemy[] }
   | { type: 'kill'; enemy: Enemy; bounty: number }
   | { type: 'land'; shot: Shot }
   | { type: 'steal'; enemy: Enemy }
-  | { type: 'drop'; enemy: Enemy; at: Pt }
+  | { type: 'drop'; enemy: Enemy; at: Pt; count: number }
   | { type: 'recover' }
-  | { type: 'escape'; enemy: Enemy; lost: boolean }
+  /** `lost`: crystals it got away with. */
+  | { type: 'escape'; enemy: Enemy; lost: number }
   | { type: 'build' | 'upgrade'; tower: Tower }
   | { type: 'sell'; slot: number; refund: number }
   | { type: 'win'; stars: 1 | 2 | 3 }
@@ -258,8 +266,9 @@ export class Battle {
     const def = ENEMIES[kind];
     const lane = (this.rng() - 0.5) * 0.55 * this.level.roadWidth;
     const enemy: Enemy = {
-      id: this.nextId++, kind, def, hp: def.hp, d: 0, heading: 1, lane, crystal: null,
+      id: this.nextId++, kind, def, hp: def.hp, d: 0, heading: 1, lane: def.boss ? 0 : lane, load: 0,
       pos: [0, 0], vel: [0, 0], progress: 0, carrying: false, flying: def.flying, slow: 1, slowFor: 0, frozen: 0,
+      haste: 1, hasteFor: 0, shoutIn: def.shout ? def.shout.every / 2 : Infinity,
     };
     this.place(enemy, def.speed);
     this.enemies.push(enemy);
@@ -275,7 +284,7 @@ export class Battle {
     e.pos = [x - dy * side, y + dx * side];
     e.vel = [dx * speed * e.heading, dy * speed * e.heading];
     e.progress = e.heading === 1 ? e.d : 2 * L - e.d;
-    e.carrying = e.crystal !== null;
+    e.carrying = e.load > 0;
   }
 
   private moveEnemies(dt: number): void {
@@ -285,27 +294,32 @@ export class Battle {
       e.slowFor = Math.max(0, e.slowFor - dt);
       if (e.slowFor === 0) e.slow = 1;
       e.frozen = Math.max(0, e.frozen - dt);
-      const speed = e.def.speed * (e.crystal !== null ? e.def.carrySpeed : 1) * (e.frozen > 0 ? 0 : e.slow);
+      e.hasteFor = Math.max(0, e.hasteFor - dt);
+      if (e.hasteFor === 0) e.haste = 1;
+      if (e.def.shout && (e.shoutIn -= dt) <= 0) this.shout(e);
+      const speed = e.def.speed * (e.load > 0 ? e.def.carrySpeed : 1) * this.frostFactor(e) * e.haste;
       e.d += speed * dt * e.heading;
-      if (e.crystal === null) {
+      // A pirate heads home once its hands are full (a boss carries several, so it keeps going to the vault).
+      const fill = e.def.carries ?? 1;
+      if (e.load < fill) {
         const c = this.vault.dropped().find((x) => Math.abs(x.d - e.d) < PICKUP);
         if (c) {
           this.vault.pickUp(c, e.id);
-          e.crystal = c.id;
-          e.heading = -1;
+          e.load++;
+          if (e.load >= fill) e.heading = -1;
           this.events.push({ type: 'steal', enemy: e });
         }
       }
       if (e.heading === 1 && e.d >= L) {
         e.d = L;
         e.heading = -1;
-        const c = this.vault.take(e.id);
-        e.crystal = c?.id ?? null;
-        if (c) this.events.push({ type: 'steal', enemy: e });
+        const before = e.load;
+        while (e.load < fill && this.vault.take(e.id)) e.load++;
+        if (e.load > before) this.events.push({ type: 'steal', enemy: e });
       }
       if (e.heading === -1 && e.d <= 0) {
         e.d = 0;
-        const lost = this.vault.escape(e.id) !== null;
+        const lost = this.vault.escape(e.id).length;
         this.events.push({ type: 'escape', enemy: e, lost });
         gone.push(e);
         continue;
@@ -313,6 +327,23 @@ export class Battle {
       this.place(e, speed);
     }
     if (gone.length) this.enemies = this.enemies.filter((e) => !gone.includes(e));
+  }
+
+  /** Speed multiplier from frost: 0 while frozen; steady pirates feel slows half as much and never freeze. */
+  private frostFactor(e: Enemy): number {
+    if (e.def.steady) return 1 - (1 - e.slow) * 0.5;
+    return e.frozen > 0 ? 0 : e.slow;
+  }
+
+  private shout(boss: Enemy): void {
+    const s = boss.def.shout!;
+    boss.shoutIn = s.every;
+    const rallied = this.enemies.filter((e) => Math.hypot(e.pos[0] - boss.pos[0], e.pos[1] - boss.pos[1]) <= s.radius);
+    for (const e of rallied) {
+      e.haste = Math.max(e.haste, s.boost);
+      e.hasteFor = Math.max(e.hasteFor, s.for);
+    }
+    this.events.push({ type: 'shout', enemy: boss, radius: s.radius, rallied });
   }
 
   private enemy(id: number): Enemy | undefined {
@@ -485,7 +516,7 @@ export class Battle {
         if (s.kind === 'shell') this.burst(s);
         else if (target) {
           this.damage(target, s.damage, s.damageType, s.crit, [...s.pos]);
-          if (s.freeze > 0 && this.enemies.includes(target)) {
+          if (s.freeze > 0 && !target.def.steady && this.enemies.includes(target)) {
             target.frozen = Math.max(target.frozen, s.freeze);
             this.events.push({ type: 'freeze', enemy: target });
           }
@@ -518,10 +549,10 @@ export class Battle {
     if (e.hp > 0) return;
     this.purse.earn(e.def.bounty);
     this.events.push({ type: 'kill', enemy: e, bounty: e.def.bounty });
-    if (e.crystal !== null) {
-      this.vault.drop(e.id, e.d);
-      e.crystal = null;
-      this.events.push({ type: 'drop', enemy: e, at: [...e.pos] });
+    if (e.load > 0) {
+      const count = this.vault.drop(e.id, e.d).length;
+      e.load = 0;
+      this.events.push({ type: 'drop', enemy: e, at: [...e.pos], count });
     }
     this.enemies = this.enemies.filter((x) => x !== e);
   }
