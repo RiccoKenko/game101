@@ -6,7 +6,8 @@ Helpers used while bringing art into the game and tuning balance. They are run b
 |---|---|
 | `grid.mjs <img> <out.png> [step] [x,y,w,h,zoom]` | Draws a labelled pixel grid over a picture (or a zoomed crop), to read off joint and wrist points. |
 | `fit.py`, `compose.py` | Auto-fit a sliced part onto the rig pose by colour (Python + numpy + Pillow), and draw the fitted parts beside the rig pose to check them. |
-| `deckhand_rig.py` + `deckhand_fit.json` | How `art/rigs/deckhand.json` was generated from the fits and hand-measured points. A template for the next characters. |
+| `<id>_rig.py` + `<id>_fit.json` | How each `art/rigs/<id>.json` was generated from the fits and hand-measured points (deckhand, ironclad, powder_monkey, parrot_raider, first_mate, talon, mochi). Rerun one to rebuild its rig. |
+| `parrot_raider_fit.py`, `talon_fit.py`, `parrot_raider_compose.py` | `fit.py` / `compose.py` variants for pictures with a real transparent background (they use the alpha channel instead of the magenta). |
 | `rigshot.mjs <out.png> "<query>" [w h]` | Screenshots `dev/rig.html` (e.g. `"c=deckhand&frames=walk@0.2,cheer@0.4"`). |
 | `playshot.mjs <prefix> "<query>" "<js>" <ms,ms>` | Opens `play.html`, runs some JS once it is ready (e.g. `__play.battle.callWave()`), then screenshots after each delay. |
 | `map_overlay.mts <map> <out.png>` | Draws the level's road, tower spots, dock, vault and island over a painted map. |

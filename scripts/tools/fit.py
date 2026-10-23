@@ -78,6 +78,6 @@ def fit(name, cx, cy, s0, th0=0.0, mirror=False, spread=25, fix_s=False):
             'mirror': mirror, 't': [round(x[0], 1), round(x[1], 1)]}
 
 if __name__ == '__main__':
-    a = sys.argv[2:]
+    a = sys.argv[1:]
     r = fit(a[0], float(a[1]), float(a[2]), float(a[3]), float(a[4]) if len(a) > 4 else 0.0, len(a) > 5 and a[5] == 'm')
     print(json.dumps(r))
