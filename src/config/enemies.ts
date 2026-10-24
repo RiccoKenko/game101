@@ -59,7 +59,7 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
   bee: { id: 'bee', name: 'Buzzbee', texture: 'bee', hp: 5, speed: 215, damage: 4, radius: 26, xp: 1, coinChance: 0.05, behavior: 'swarm', knockbackResist: 0, motion: 'flap', color: 0xffd23f },
   puff: { id: 'puff', name: 'Puffball', texture: 'puff', hp: 26, speed: 88, damage: 8, radius: 32, xp: 3, coinChance: 0.14, behavior: 'splitter', knockbackResist: 0.2, motion: 'walk', color: 0xfff4d6 },
   pumpkin: { id: 'pumpkin', name: 'Pumpkin Bomb', texture: 'pumpkin', hp: 30, speed: 128, damage: 10, radius: 32, xp: 3, coinChance: 0.15, behavior: 'exploder', knockbackResist: 0.2, motion: 'walk', color: 0xff9a3d },
-  wraith: { id: 'wraith', name: 'Wraith', texture: 'wraith', hp: 24, speed: 110, damage: 8, radius: 32, xp: 3, coinChance: 0.14, behavior: 'ranged', knockbackResist: 0.1, alpha: 0.92, motion: 'float', color: 0x7fd6c8, shot: 'orb' },
+  wraith: { id: 'wraith', name: 'Wraith', texture: 'wraith', hp: 24, speed: 110, damage: 8, radius: 32, xp: 3, coinChance: 0.14, behavior: 'ranged', knockbackResist: 0.1, alpha: 0.92, motion: 'float', color: 0x7fd6c8, shot: 'spirit' },
   mimic: { id: 'mimic', name: 'Mimic', texture: 'mimic', hp: 140, speed: 175, damage: 16, radius: 40, xp: 10, coinChance: 1, behavior: 'ambush', knockbackResist: 0.7, motion: 'heavy', color: 0xc89a4a },
   wisp: { id: 'wisp', name: 'Flame Wisp', texture: 'wisp', hp: 18, speed: 195, damage: 9, radius: 28, xp: 2, coinChance: 0.1, behavior: 'swarm', knockbackResist: 0, motion: 'float', color: 0xff8a3d },
 };
@@ -90,4 +90,6 @@ export const BOSSES: Record<BossId, BossDef> = {
 export const ENEMY_SHOTS = {
   fireball: { texture: 'fireball', speed: 380, radius: 16, damage: 10 },
   orb: { texture: 'orb', speed: 300, radius: 18, damage: 14 },
+  /** A Wraith's lantern spark: the Lich's orb, slower and weaker. */
+  spirit: { texture: 'orb', speed: 260, radius: 15, damage: 7 },
 };

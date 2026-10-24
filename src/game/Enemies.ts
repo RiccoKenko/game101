@@ -87,7 +87,7 @@ interface Shot {
 const ELITE_TINT = 0xffd36b;
 /** An exploder's blast radius, and how long its fuse burns once lit. */
 const EXPLODE_RADIUS = 130;
-const FUSE = 0.7;
+const FUSE = 0.8;
 /** Seconds a boss takes to drop in from the sky. */
 const BOSS_DROP = 0.9;
 
@@ -267,7 +267,7 @@ export class EnemyManager {
     fx.explosion(e.x, e.y, r);
     this.ctx.shake(160, 0.006);
     audio.sfx('explosion');
-    if (Math.hypot(player.x - e.x, player.y - e.y) < r + player.radius) this.ctx.hurtPlayer(e.damage * 2.2);
+    if (Math.hypot(player.x - e.x, player.y - e.y) < r + player.radius) this.ctx.hurtPlayer(e.damage * 1.5);
     e.selfDestructed = true;
     this.forEachInRadius(e.x, e.y, r, (o) => {
       if (o !== e) this.damage(o, 25, e.x, e.y, 1.4, false);
@@ -306,7 +306,7 @@ export class EnemyManager {
     s.radius = def.radius;
     s.damage = def.damage * damageMultiplier(this.ctx.runTime);
     s.life = 4;
-    s.spin = kind === 'orb' ? 6 : 0;
+    s.spin = kind === 'fireball' ? 0 : 6;
   }
 
   forEachInRadius(x: number, y: number, r: number, fn: (e: Enemy) => void): void {
