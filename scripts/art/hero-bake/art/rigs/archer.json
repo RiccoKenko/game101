@@ -1,0 +1,1225 @@
+{
+ "id": "archer",
+ "ground": [
+  470,
+  1250
+ ],
+ "bones": [
+  {
+   "name": "hips",
+   "at": [
+    480,
+    800
+   ]
+  },
+  {
+   "name": "torso",
+   "parent": "hips",
+   "at": [
+    482,
+    760
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "torso",
+   "at": [
+    515,
+    470
+   ]
+  },
+  {
+   "name": "hoodTip",
+   "parent": "head",
+   "at": [
+    297,
+    214
+   ]
+  },
+  {
+   "name": "capelet",
+   "parent": "torso",
+   "at": [
+    510,
+    520
+   ]
+  },
+  {
+   "name": "quiver",
+   "parent": "torso",
+   "at": [
+    330,
+    600
+   ]
+  },
+  {
+   "name": "upperArm.r",
+   "parent": "torso",
+   "at": [
+    322,
+    625
+   ]
+  },
+  {
+   "name": "forearm.r",
+   "parent": "upperArm.r",
+   "at": [
+    282,
+    708
+   ]
+  },
+  {
+   "name": "hand.r",
+   "parent": "forearm.r",
+   "at": [
+    237,
+    780
+   ]
+  },
+  {
+   "name": "upperArm.l",
+   "parent": "torso",
+   "at": [
+    650,
+    625
+   ]
+  },
+  {
+   "name": "forearm.l",
+   "parent": "upperArm.l",
+   "at": [
+    677,
+    705
+   ]
+  },
+  {
+   "name": "hand.l",
+   "parent": "forearm.l",
+   "at": [
+    735,
+    803
+   ]
+  },
+  {
+   "name": "bow",
+   "parent": "hand.l",
+   "at": [
+    752.3,
+    852.8
+   ]
+  },
+  {
+   "name": "thigh.r",
+   "parent": "hips",
+   "at": [
+    390,
+    815
+   ]
+  },
+  {
+   "name": "shin.r",
+   "parent": "thigh.r",
+   "at": [
+    386,
+    1008
+   ]
+  },
+  {
+   "name": "thigh.l",
+   "parent": "hips",
+   "at": [
+    565,
+    815
+   ]
+  },
+  {
+   "name": "shin.l",
+   "parent": "thigh.l",
+   "at": [
+    573,
+    1008
+   ]
+  }
+ ],
+ "parts": [
+  {
+   "name": "cape",
+   "img": "capelet",
+   "bone": "capelet",
+   "z": 2,
+   "from": [
+    [
+     1027,
+     147
+    ],
+    [
+     850,
+     395
+    ],
+    [
+     1211,
+     377
+    ]
+   ],
+   "to": [
+    [
+     531,
+     537
+    ],
+    [
+     222,
+     1008
+    ],
+    [
+     688,
+     978
+    ]
+   ]
+  },
+  {
+   "name": "quiver",
+   "img": "quiver",
+   "bone": "quiver",
+   "z": 4,
+   "from": [
+    [
+     1170,
+     270
+    ],
+    [
+     1270,
+     520
+    ]
+   ],
+   "to": [
+    [
+     300,
+     560
+    ],
+    [
+     372,
+     740
+    ]
+   ]
+  },
+  {
+   "name": "forearm-l",
+   "img": "bracer",
+   "bone": "forearm.l",
+   "z": 12,
+   "from": [
+    [
+     1210,
+     502
+    ],
+    [
+     1289,
+     604
+    ]
+   ],
+   "to": [
+    [
+     676,
+     704
+    ],
+    [
+     737,
+     806
+    ]
+   ],
+   "width": 1.0,
+   "shade": 0.86
+  },
+  {
+   "name": "upper-arm-l",
+   "img": "sleeve-b",
+   "bone": "upperArm.l",
+   "z": 14,
+   "from": [
+    [
+     528,
+     475
+    ],
+    [
+     633,
+     584
+    ]
+   ],
+   "to": [
+    [
+     652,
+     598
+    ],
+    [
+     677,
+     703
+    ]
+   ],
+   "width": 1.1,
+   "shade": 0.86
+  },
+  {
+   "name": "bow",
+   "img": "bow",
+   "bone": "bow",
+   "z": 18,
+   "from": [
+    [
+     205,
+     565
+    ],
+    [
+     205,
+     165
+    ]
+   ],
+   "to": [
+    [
+     752.3,
+     852.8
+    ],
+    [
+     752.3,
+     520.8
+    ]
+   ]
+  },
+  {
+   "name": "hand-l-grip",
+   "img": "hand-l-grip",
+   "bone": "hand.l",
+   "z": 20,
+   "from": [
+    [
+     690,
+     850
+    ],
+    [
+     690,
+     650
+    ]
+   ],
+   "to": [
+    [
+     735,
+     803
+    ],
+    [
+     775.7,
+     920.1
+    ]
+   ],
+   "width": 0.62,
+   "shade": 0.86,
+   "slot": "hand.l"
+  },
+  {
+   "name": "hand-l-open",
+   "img": "hand-l-open",
+   "bone": "hand.l",
+   "z": 20,
+   "from": [
+    [
+     427,
+     860
+    ],
+    [
+     427,
+     660
+    ]
+   ],
+   "to": [
+    [
+     735,
+     803
+    ],
+    [
+     775.7,
+     920.1
+    ]
+   ],
+   "width": 0.62,
+   "shade": 0.86,
+   "slot": "hand.l"
+  },
+  {
+   "name": "shin-l",
+   "img": "shin",
+   "bone": "shin.l",
+   "z": 22,
+   "from": [
+    [
+     902,
+     722
+    ],
+    [
+     893,
+     925
+    ]
+   ],
+   "to": [
+    [
+     575.7,
+     995.3
+    ],
+    [
+     551.9,
+     1235.9
+    ]
+   ],
+   "shade": 0.86
+  },
+  {
+   "name": "thigh-l",
+   "img": "thigh",
+   "bone": "thigh.l",
+   "z": 24,
+   "from": [
+    [
+     574,
+     724
+    ],
+    [
+     560,
+     893
+    ]
+   ],
+   "to": [
+    [
+     566,
+     811
+    ],
+    [
+     573,
+     1012
+    ]
+   ],
+   "width": 1.19,
+   "shade": 0.86
+  },
+  {
+   "name": "shin-r",
+   "img": "shin",
+   "bone": "shin.r",
+   "z": 26,
+   "from": [
+    [
+     902,
+     722
+    ],
+    [
+     893,
+     925
+    ]
+   ],
+   "to": [
+    [
+     384,
+     1012
+    ],
+    [
+     345,
+     1252
+    ]
+   ],
+   "width": 1.19
+  },
+  {
+   "name": "thigh-r",
+   "img": "thigh",
+   "bone": "thigh.r",
+   "z": 28,
+   "from": [
+    [
+     574,
+     724
+    ],
+    [
+     560,
+     893
+    ]
+   ],
+   "to": [
+    [
+     390,
+     811
+    ],
+    [
+     386,
+     1012
+    ]
+   ],
+   "width": 1.19
+  },
+  {
+   "name": "torso",
+   "img": "torso",
+   "bone": "torso",
+   "z": 30,
+   "from": [
+    [
+     280.5,
+     242.6
+    ],
+    [
+     380.5,
+     242.6
+    ]
+   ],
+   "to": [
+    [
+     483.0,
+     654.5
+    ],
+    [
+     601.6,
+     644.6
+    ]
+   ]
+  },
+  {
+   "name": "hips",
+   "img": "hips",
+   "bone": "hips",
+   "z": 34,
+   "from": [
+    [
+     618.3,
+     238.3
+    ],
+    [
+     718.3,
+     238.3
+    ]
+   ],
+   "to": [
+    [
+     479.5,
+     828.0
+    ],
+    [
+     600.2,
+     829.6
+    ]
+   ]
+  },
+  {
+   "name": "forearm-r",
+   "img": "forearm-r",
+   "bone": "forearm.r",
+   "z": 42,
+   "from": [
+    [
+     300,
+     800
+    ],
+    [
+     300,
+     900
+    ]
+   ],
+   "to": [
+    [
+     227,
+     693
+    ],
+    [
+     227,
+     793
+    ]
+   ]
+  },
+  {
+   "name": "upper-arm-r",
+   "img": "sleeve-a",
+   "bone": "upperArm.r",
+   "z": 44,
+   "from": [
+    [
+     1282,
+     139
+    ],
+    [
+     1366,
+     283
+    ]
+   ],
+   "to": [
+    [
+     334,
+     600
+    ],
+    [
+     290,
+     708
+    ]
+   ],
+   "width": 1.1
+  },
+  {
+   "name": "hand-r-open",
+   "img": "hand-r-open",
+   "bone": "hand.r",
+   "z": 46,
+   "from": [
+    [
+     948,
+     855
+    ],
+    [
+     948.0,
+     655.0
+    ]
+   ],
+   "to": [
+    [
+     237,
+     780
+    ],
+    [
+     200.5,
+     901.6
+    ]
+   ],
+   "width": 0.635,
+   "slot": "hand.r"
+  },
+  {
+   "name": "hand-r-pinch",
+   "img": "hand-r-pinch",
+   "bone": "hand.r",
+   "z": 46,
+   "from": [
+    [
+     1258,
+     852
+    ],
+    [
+     1258.0,
+     652.0
+    ]
+   ],
+   "to": [
+    [
+     237,
+     780
+    ],
+    [
+     200.5,
+     901.6
+    ]
+   ],
+   "width": 0.635,
+   "slot": "hand.r"
+  },
+  {
+   "name": "hand-r-fist",
+   "img": "hand-r-fist",
+   "bone": "hand.r",
+   "z": 46,
+   "from": [
+    [
+     918,
+     522
+    ],
+    [
+     1054.0,
+     668.6
+    ]
+   ],
+   "to": [
+    [
+     237,
+     780
+    ],
+    [
+     200.5,
+     901.6
+    ]
+   ],
+   "width": 0.635,
+   "slot": "hand.r"
+  },
+  {
+   "name": "cape-collar",
+   "img": "cape-collar",
+   "bone": "torso",
+   "z": 50,
+   "from": [
+    [
+     1027,
+     147
+    ],
+    [
+     849,
+     232
+    ],
+    [
+     1180,
+     225
+    ]
+   ],
+   "to": [
+    [
+     531,
+     537
+    ],
+    [
+     260,
+     620
+    ],
+    [
+     680,
+     607
+    ]
+   ]
+  },
+  {
+   "name": "feather",
+   "img": "feather",
+   "bone": "hoodTip",
+   "z": 58,
+   "from": [
+    [
+     335,
+     775
+    ],
+    [
+     95,
+     628
+    ]
+   ],
+   "to": [
+    [
+     298.6,
+     227.3
+    ],
+    [
+     29.1,
+     72.6
+    ]
+   ]
+  },
+  {
+   "name": "head",
+   "img": "head",
+   "bone": "head",
+   "z": 60,
+   "from": [
+    [
+     262.2,
+     332.3
+    ],
+    [
+     362.2,
+     332.3
+    ]
+   ],
+   "to": [
+    [
+     453.0,
+     243.5
+    ],
+    [
+     570.6,
+     247.6
+    ]
+   ]
+  },
+  {
+   "name": "eyes-open",
+   "img": "eyes-open",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     682.5,
+     335.1
+    ],
+    [
+     782.5,
+     335.1
+    ]
+   ],
+   "to": [
+    [
+     559.5,
+     370.8
+    ],
+    [
+     673.2,
+     369.1
+    ]
+   ],
+   "slot": "eyes"
+  },
+  {
+   "name": "eyes-half",
+   "img": "eyes-half",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     926.8,
+     331.7
+    ],
+    [
+     1026.8,
+     331.7
+    ]
+   ],
+   "to": [
+    [
+     559.5,
+     370.8
+    ],
+    [
+     673.2,
+     369.1
+    ]
+   ],
+   "slot": "eyes"
+  },
+  {
+   "name": "eyes-closed",
+   "img": "eyes-closed",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     1166.5,
+     330.4
+    ],
+    [
+     1266.5,
+     330.4
+    ]
+   ],
+   "to": [
+    [
+     559.5,
+     370.8
+    ],
+    [
+     673.2,
+     369.1
+    ]
+   ],
+   "slot": "eyes"
+  },
+  {
+   "name": "eyes-happy",
+   "img": "eyes-happy",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     1405.8,
+     330.9
+    ],
+    [
+     1505.8,
+     330.9
+    ]
+   ],
+   "to": [
+    [
+     559.5,
+     370.8
+    ],
+    [
+     673.2,
+     369.1
+    ]
+   ],
+   "slot": "eyes"
+  },
+  {
+   "name": "eyes-focus",
+   "img": "eyes-focus",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     671.7,
+     568.4
+    ],
+    [
+     771.7,
+     568.4
+    ]
+   ],
+   "to": [
+    [
+     559.5,
+     370.8
+    ],
+    [
+     673.2,
+     369.1
+    ]
+   ],
+   "slot": "eyes"
+  },
+  {
+   "name": "eyes-hurt",
+   "img": "eyes-hurt",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     911.9,
+     568.5
+    ],
+    [
+     1011.9,
+     568.5
+    ]
+   ],
+   "to": [
+    [
+     559.5,
+     370.8
+    ],
+    [
+     673.2,
+     369.1
+    ]
+   ],
+   "slot": "eyes"
+  },
+  {
+   "name": "eyes-ko",
+   "img": "eyes-ko",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     1158.0,
+     571.7
+    ],
+    [
+     1258.0,
+     571.7
+    ]
+   ],
+   "to": [
+    [
+     559.5,
+     370.8
+    ],
+    [
+     673.2,
+     369.1
+    ]
+   ],
+   "slot": "eyes"
+  },
+  {
+   "name": "eyes-surprised",
+   "img": "eyes-surprised",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     1400.3,
+     573.4
+    ],
+    [
+     1500.3,
+     573.4
+    ]
+   ],
+   "to": [
+    [
+     559.5,
+     370.8
+    ],
+    [
+     673.2,
+     369.1
+    ]
+   ],
+   "slot": "eyes"
+  },
+  {
+   "name": "mouth-smile",
+   "img": "mouth-smile",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     536.0,
+     744
+    ],
+    [
+     601.0,
+     744
+    ]
+   ],
+   "to": [
+    [
+     508,
+     407
+    ],
+    [
+     567,
+     408
+    ]
+   ],
+   "slot": "mouth"
+  },
+  {
+   "name": "mouth-neutral",
+   "img": "mouth-neutral",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     687.0,
+     752
+    ],
+    [
+     752.0,
+     752
+    ]
+   ],
+   "to": [
+    [
+     508,
+     407
+    ],
+    [
+     567,
+     408
+    ]
+   ],
+   "slot": "mouth"
+  },
+  {
+   "name": "mouth-cheer",
+   "img": "mouth-cheer",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     837.0,
+     734
+    ],
+    [
+     902.0,
+     734
+    ]
+   ],
+   "to": [
+    [
+     508,
+     407
+    ],
+    [
+     567,
+     408
+    ]
+   ],
+   "slot": "mouth"
+  },
+  {
+   "name": "mouth-determined",
+   "img": "mouth-determined",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     983.0,
+     752
+    ],
+    [
+     1048.0,
+     752
+    ]
+   ],
+   "to": [
+    [
+     508,
+     407
+    ],
+    [
+     567,
+     408
+    ]
+   ],
+   "slot": "mouth"
+  },
+  {
+   "name": "mouth-shout",
+   "img": "mouth-shout",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     1125.0,
+     733
+    ],
+    [
+     1190.0,
+     733
+    ]
+   ],
+   "to": [
+    [
+     508,
+     407
+    ],
+    [
+     567,
+     408
+    ]
+   ],
+   "slot": "mouth"
+  },
+  {
+   "name": "mouth-ouch",
+   "img": "mouth-ouch",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     1270.5,
+     753
+    ],
+    [
+     1335.5,
+     753
+    ]
+   ],
+   "to": [
+    [
+     508,
+     407
+    ],
+    [
+     567,
+     408
+    ]
+   ],
+   "slot": "mouth"
+  },
+  {
+   "name": "mouth-o",
+   "img": "mouth-o",
+   "bone": "head",
+   "z": 62,
+   "from": [
+    [
+     1395.0,
+     742
+    ],
+    [
+     1460.0,
+     742
+    ]
+   ],
+   "to": [
+    [
+     508,
+     407
+    ],
+    [
+     567,
+     408
+    ]
+   ],
+   "slot": "mouth"
+  }
+ ],
+ "springs": [
+  {
+   "bone": "hoodTip",
+   "tip": [
+    15,
+    75
+   ],
+   "gain": 0.05,
+   "freq": 2.2,
+   "damping": 0.3,
+   "max": 25
+  },
+  {
+   "bone": "capelet",
+   "tip": [
+    450,
+    1000
+   ],
+   "gain": 0.02,
+   "freq": 2.6,
+   "damping": 0.4,
+   "max": 10
+  }
+ ],
+ "points": {
+  "bow.top": {
+   "part": "bow",
+   "at": [
+    152,
+    172
+   ]
+  },
+  "bow.bottom": {
+   "part": "bow",
+   "at": [
+    137,
+    893
+   ]
+  },
+  "bow.grip": {
+   "part": "bow",
+   "at": [
+    205,
+    565
+   ]
+  },
+  "pinch": {
+   "part": "hand-r-pinch",
+   "at": [
+    1296,
+    692
+   ]
+  },
+  "head.top": {
+   "part": "head",
+   "at": [
+    250,
+    150
+   ]
+  }
+ },
+ "blink": {
+  "slot": "eyes",
+  "open": "eyes-open",
+  "half": "eyes-half",
+  "closed": "eyes-closed"
+ },
+ "string": {
+  "top": "bow.top",
+  "bottom": "bow.bottom",
+  "nock": "pinch",
+  "color": "#fbf4e2",
+  "width": 4,
+  "z": 19,
+  "drawnZ": 65
+ },
+ "arrow": {
+  "img": "arrow",
+  "nock": [
+   412,
+   347
+  ],
+  "tip": [
+   925,
+   347
+  ],
+  "length": 400,
+  "toward": "bow.grip",
+  "z": 66
+ }
+}

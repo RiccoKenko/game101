@@ -18,26 +18,38 @@
       "fps": 16,
       "loop": true
     },
-    "shoot": {
+    "runaim": {
       "start": 24,
+      "count": 8,
+      "fps": 16,
+      "loop": true
+    },
+    "runrelease": {
+      "start": 32,
+      "count": 8,
+      "fps": 16,
+      "loop": true
+    },
+    "shoot": {
+      "start": 40,
       "count": 8,
       "fps": 16,
       "loop": false
     },
     "hurt": {
-      "start": 32,
+      "start": 48,
       "count": 6,
       "fps": 12,
       "loop": false
     },
     "ko": {
-      "start": 38,
+      "start": 54,
       "count": 10,
       "fps": 12,
       "loop": false
     },
     "cheer": {
-      "start": 48,
+      "start": 64,
       "count": 12,
       "fps": 12,
       "loop": false

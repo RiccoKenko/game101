@@ -36,6 +36,11 @@
   - งบ OpenAI หลังเฟสนี้: $1.44 จาก $5
   - บอสตกลง**ครึ่งล่างของจอ** (560 px ใต้ฮีโร่) เพราะครึ่งบนมีแถบเลือดบอสของ HUD บัง
   - **สถานะ: เสร็จ รอเจ้านายลองเล่น** (Artifact เดิม https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH) ยังไม่ deploy ขึ้นลิงก์หลัก (ลิงก์หลักยังเป็น Monster Rush ภาพเวกเตอร์เดิม)
+- **รอบแก้หลังลองเล่น (24 ต.ค. บ่าย):** เจ้านายขอ 3 ข้อ ทำครบแล้ว
+  1. วิ่งไปยิงไป: hero sheet มี `run` (ธนูต่ำ), `runaim` (ง้าง), `runrelease` (ปล่อย) ที่ขาเหมือนกันทุกเฟรม; `Player.ts` สลับที่ frame เดียวกัน (`playStride`), ตอนยิงจริงเปลี่ยนเป็น runrelease 0.19 วิแล้วกลับ runaim; หันหน้าไปทางเป้า; ลูกธนูออกจาก `bowPoint()`
+  2. ออกแบบตัวละครหลักใหม่: แบบ B "Feather Cap" (หมวกแดงขนนก ผ้าคลุมน้ำเงิน) เพิ่มดีเทล/เท็กเจอร์ — ภาพ `art/incoming/mr/hero_{concepts,master,rigpose,head_faces,parts_body,hands_props}.png`; puppet id `archer` บนโครงกระดูกเดิม (ใน worktree sky-pirates-td) bake เป็น `art/baked/hero/` (256px, 76 เฟรม) → `public/art/hero/hero.webp` (192px) ; ภาพเมนูตัดจาก master; ฮีโร่อนิเมะเดิมเก็บที่ `art/baked/hero_anime/`
+  3. ปุ่มเดินอยู่กับที่ กลางล่างจอ (`HudScene`, แตะห่างจากปุ่มไม่เกิน 250px ถึงจะจับ)
+  - งบ OpenAI: $2.11 จาก $5
 - **เฟสถัดไป:** 3 เนื้อหาเล่นซ้ำ: อาวุธ/ศัตรูใหม่, ภารกิจ, ตัวละครให้เลือก
 
 ## Sky Pirates (พักไว้)

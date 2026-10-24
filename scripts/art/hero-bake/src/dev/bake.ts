@@ -1,21 +1,23 @@
 /**
- * Bakes the hero puppet into sprite frames: /dev/bake.html, driven by scripts/bake-hero.mjs.
+ * Bakes a puppet (the archer, or the old hero) into sprite frames: /dev/bake.html, driven by scripts/bake-hero.mjs.
  * Renders ONLY the puppet on a fully transparent canvas (premultiplied alpha, cleared to 0), facing right,
  * through an orthographic camera whose origin is the puppet's feet, so every frame has the same scale and
  * baseline. Time is stepped in small fixed substeps (springy hood and capelet stay deterministic) and a frame is
  * read back raw (premultiplied RGBA, rows bottom-up) whenever the driver asks for one.
  */
 import * as THREE from 'three';
+import { CLIPS } from '../puppet/clips';
 import { heroClips, STAND } from '../puppet/clips/hero';
 import { loadPuppet } from '../puppet/loader';
 import { ease, key } from '../anim/curves';
-import { blend, layer, type Pose2D } from '../puppet/pose';
+import { blend, layer, type Clip2D, type Pose2D } from '../puppet/pose';
 import { Puppet, type PuppetAssets } from '../puppet/puppet';
 
 const osc = (t: number, period: number, phase = 0) => Math.sin(2 * Math.PI * (t / period + phase));
+let id = 'hero';
 const clip = (name: string) => {
-  const c = heroClips.find((k) => k.name === name);
-  if (!c) throw new Error(`No hero clip "${name}"`);
+  const c = (id === 'hero' ? heroClips : CLIPS[id] ?? []).find((k) => k.name === name);
+  if (!c) throw new Error(`No ${id} clip "${name}"`);
   return c;
 };
 
@@ -53,6 +55,7 @@ interface Anim {
 const clamp = (t: number, d: number) => Math.min(d, Math.max(0, t));
 
 function anim(name: string, o: AnimOpts): Anim {
+  if (id !== 'hero') return plain(clip(name));
   const period = o.period ?? 1.6;
   const amount = o.amount ?? 1;
   const rapid = clip('rapid');
@@ -104,11 +107,14 @@ function anim(name: string, o: AnimOpts): Anim {
         },
       };
     }
-    default: {
-      const c = clip(name);
-      return { loop: c.loop, pose: (t) => c.pose(c.loop ? ((t % c.duration) + c.duration) % c.duration : clamp(t, c.duration)) };
-    }
+    default:
+      return plain(clip(name));
   }
+}
+
+/** A clip as it is: loops wrap (and pre-roll through their own motion), one-shots hold their ends. */
+function plain(c: Clip2D): Anim {
+  return { loop: c.loop, pose: (t) => c.pose(c.loop ? ((t % c.duration) + c.duration) % c.duration : clamp(t, c.duration)) };
 }
 
 const SUBSTEP = 1 / 240;
@@ -148,17 +154,21 @@ async function toBase64(buf: Uint8Array): Promise<string> {
 
 const api = {
   /**
-   * `size`: square canvas in render px. `feet`: where the puppet's ground point lands, render px from the top
-   * left. `scale`: render px per rig px. `stringWidth`: bowstring thickness in rig px (the rig's is 4).
+   * `id`: the character (public/sprites/<id>/, clips from CLIPS). `size`: square canvas in render px. `feet`: where
+   * the puppet's ground point lands, render px from the top left. `scale`: render px per rig px. `stringWidth`:
+   * bowstring thickness in rig px (the rigs' own is 4).
    */
-  async setup(o: { size: number; feet: [number, number]; scale: number; stringWidth: number }) {
+  async setup(o: { id?: string; size: number; feet: [number, number]; scale: number; stringWidth: number }) {
     if (!renderer) {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true });
       renderer.setPixelRatio(1);
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.setClearColor(0x000000, 0);
       document.body.appendChild(renderer.domElement);
-      assets = await loadPuppet('hero', renderer);
+    }
+    if (!assets || (o.id ?? 'hero') !== id) {
+      id = o.id ?? 'hero';
+      assets = await loadPuppet(id, renderer);
     }
     size = o.size;
     scaleK = o.scale;
@@ -187,6 +197,11 @@ const api = {
     puppet.setPose(current.pose(time));
     puppet.update(0);
     advance(0);
+  },
+
+  /** World transforms of some bones (after the last frame), to prove clips share a body frame for frame. */
+  bones(names: string[]): Record<string, number[]> {
+    return Object.fromEntries(names.map((n) => [n, [...puppet!.skeleton.world.get(n)!]]));
   },
 
   /** Steps to clip time `t` (never backwards), renders and returns the raw premultiplied RGBA as base64. */
