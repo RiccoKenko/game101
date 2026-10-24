@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { audio } from '../audio/audio';
 import { MAX_ENEMIES, PLAYER_BASE } from '../config/game';
 import { BOSSES, ENEMIES, ENEMY_SHOTS, type BossDef, type BossId, type EnemyDef, type EnemyId } from '../config/enemies';
+import { BURN_TIME, FREEZE_TIME, RUNE_POWER } from '../config/weapons';
 import { SpatialHash } from '../core/spatial';
 import { damageMultiplier, hpMultiplier, speedMultiplier } from '../core/waves';
 import { type GameCtx } from './context';
@@ -54,6 +55,12 @@ export class Enemy {
   small = false;
   /** Blew itself up (an exploder): no reward, and it doesn't count as a kill. */
   selfDestructed = false;
+  /** On fire: damage per second and seconds left (Ember Rune, Flame Crescent, Meteor). */
+  burnDps = 0;
+  burnLeft = 0;
+  burnTick = 0;
+  /** Frozen solid for this many seconds (Frost Rune): can't move or hurt. */
+  frozen = 0;
 
   constructor(scene: Phaser.Scene) {
     this.shadow = scene.add.image(0, 0, 'shadow').setDepth(4);
@@ -104,6 +111,7 @@ export class EnemyManager {
   private shots: Shot[] = [];
   private nextUid = 1;
   private regularCount = 0;
+  private blastsThisFrame = 0;
 
   constructor(private ctx: GameCtx) {}
 
@@ -119,6 +127,7 @@ export class EnemyManager {
     e.timer = e.timer2 = e.timer3 = e.state = e.slow = e.thresholds = 0;
     e.hitSquash = e.enter = e.lean = 0;
     e.small = e.selfDestructed = false;
+    e.burnDps = e.burnLeft = e.burnTick = e.frozen = 0;
     e.spawnT = 0;
     e.face = 1;
     e.phase = this.ctx.rng() * Math.PI * 2;
@@ -214,6 +223,52 @@ export class EnemyManager {
     audio.sfx('explosion');
   }
 
+  /** Sets an enemy on fire (the stronger burn wins; either way the timer restarts). */
+  ignite(e: Enemy, dps: number): void {
+    if (!e.active) return;
+    e.burnDps = Math.max(e.burnDps * (e.burnLeft > 0 ? 1 : 0), dps);
+    e.burnLeft = BURN_TIME;
+  }
+
+  /**
+   * What the hero's runes add to a weapon hit: fire, a freeze, a lightning arc. Secondary damage (burns, arcs,
+   * blasts, puddle ticks) never triggers runes, so nothing loops.
+   */
+  private runeProcs(e: Enemy, amount: number): void {
+    const r = this.ctx.runes;
+    const rng = this.ctx.rng;
+    if (r.burn) this.ignite(e, amount * RUNE_POWER.burn[r.burn - 1]);
+    if (r.freeze && rng() < RUNE_POWER.freeze[r.freeze - 1]) {
+      if (e.isBoss) e.slow = Math.max(e.slow, FREEZE_TIME);
+      else if (e.frozen <= 0) {
+        e.frozen = FREEZE_TIME;
+        this.ctx.fx.sparksAt(e.x, e.y, 4, 0xd4f4ff);
+      }
+    }
+    if (r.chain && rng() < RUNE_POWER.chain[r.chain - 1]) {
+      let from = e;
+      const hit = new Set<number>([e.uid]);
+      for (let k = 0; k < RUNE_POWER.chainTargets[r.chain - 1]; k++) {
+        let next: Enemy | null = null;
+        let best = 230 * 230;
+        this.forEachInRadius(from.x, from.y, 230, (o) => {
+          if (hit.has(o.uid)) return;
+          const d = (o.x - from.x) ** 2 + (o.y - from.y) ** 2;
+          if (d < best) {
+            best = d;
+            next = o;
+          }
+        });
+        if (!next) break;
+        const n: Enemy = next;
+        hit.add(n.uid);
+        this.ctx.fx.arc(from.x, from.y - 20, n.x, n.y - 20);
+        this.damage(n, amount * 0.5, from.x, from.y, 0.3, false);
+        from = n;
+      }
+    }
+  }
+
   /** Deals damage (sometimes a critical hit, unless `canCrit` is false); returns true if the enemy died. */
   damage(e: Enemy, amount: number, fromX: number, fromY: number, knockback = 1, canCrit = true): boolean {
     if (!e.active || e.enter > 0) return false;
@@ -236,6 +291,7 @@ export class EnemyManager {
       e.ky += (dy / d) * k;
     }
     audio.sfx('hit');
+    if (canCrit && e.hp > 0) this.runeProcs(e, amount);
     if (e.hp <= 0) {
       this.kill(e);
       return true;
@@ -263,6 +319,16 @@ export class EnemyManager {
     this.ctx.onEnemyKilled(e);
     if (e.def?.behavior === 'splitter' && !e.small && !e.selfDestructed) {
       for (const side of [-1, 1]) this.spawnSmall(e, e.x + side * 34, e.y + side * 10);
+    }
+    const r = this.ctx.runes;
+    if (r.leech && !e.selfDestructed) this.ctx.player.heal(RUNE_POWER.leech[r.leech - 1]);
+    // Blast Rune: the body bursts (a few per frame at most, so chain reactions stay cheap).
+    if (r.blast && !e.isBoss && !e.selfDestructed && this.blastsThisFrame < 6) {
+      this.blastsThisFrame++;
+      const radius = 70 + 15 * r.blast;
+      const dmg = Math.min(150, e.maxHp * RUNE_POWER.blast[r.blast - 1]);
+      this.ctx.fx.explosion(e.x, e.y, radius * 0.8);
+      this.forEachInRadius(e.x, e.y, radius, (o) => this.damage(o, dmg, e.x, e.y, 0.8, false));
     }
   }
 
@@ -403,6 +469,7 @@ export class EnemyManager {
     const view = this.ctx.view();
     const relocate = Math.hypot(view.width, view.height) * 0.75 + 300;
     let contact = 0;
+    this.blastsThisFrame = 0;
 
     for (let i = 0; i < this.alive.length; i++) {
       const e = this.alive[i];
@@ -417,6 +484,26 @@ export class EnemyManager {
       dx /= d;
       dy /= d;
       e.slow -= dt;
+      if (e.burnLeft > 0) {
+        e.burnLeft -= dt;
+        e.burnTick -= dt;
+        if (e.burnTick <= 0) {
+          e.burnTick = 0.5;
+          this.damage(e, e.burnDps * 0.5, e.x, e.y, 0, false);
+          if (Math.random() < 0.6) this.ctx.fx.sparksAt(e.x, e.y - 10, 2, 0xff8a3d);
+          if (!e.active) continue;
+        }
+      }
+      if (e.frozen > 0) {
+        // Frozen solid: no moving, no hurting, just the knockback it already had.
+        e.frozen -= dt;
+        e.x += e.kx * dt;
+        e.y += e.ky * dt;
+        e.kx *= Math.exp(-9 * dt);
+        e.ky *= Math.exp(-9 * dt);
+        this.animate(e, dt, 0, 0);
+        continue;
+      }
       const speed = e.speed * (e.slow > 0 ? 0.6 : 1);
       let vx = dx * speed;
       let vy = dy * speed;
@@ -648,6 +735,14 @@ export class EnemyManager {
       if (e.flash > 0) e.sprite.setTintFill(0xffffff);
       else if (e.elite) e.sprite.setTint(ELITE_TINT);
       else e.sprite.clearTint();
+    }
+    // Ice blue while frozen, a flickering orange while on fire, back to normal (or elite gold) after.
+    if (e.flash <= 0) {
+      if (e.frozen > 0) e.sprite.setTint(0x9fdcff);
+      else if (e.burnLeft > 0) e.sprite.setTint(Math.floor(e.timer * 10) % 2 ? 0xffb38a : 0xff8a5a);
+      else if (e.elite) {
+        if (e.sprite.tintTopLeft !== ELITE_TINT) e.sprite.setTint(ELITE_TINT);
+      } else if (e.sprite.isTinted) e.sprite.clearTint();
     }
     // A lit fuse blinks white and red.
     if (e.def?.behavior === 'exploder' && e.state === 1) e.sprite.setTintFill(Math.floor(e.timer2 * 14) % 2 ? 0xffffff : 0xff5a3c);

@@ -339,7 +339,7 @@ export function ribbon(scene: Phaser.Scene, x: number, y: number, w: number, h: 
 
 // ------------------------------------------------------------------ icons and slots
 
-export type SlotKind = 'weapon' | 'passive' | 'evolved';
+export type SlotKind = 'weapon' | 'passive' | 'evolved' | 'rune';
 
 /**
  * Square gold-framed slot in two layers: 'back' (shadow and dark socket) goes under the icon, 'frame' (gold ring
@@ -353,7 +353,8 @@ export function slotTexture(scene: Phaser.Scene, size: number, kind: SlotKind = 
     if (part === 'back') {
       paintRim(ctx, path, kind === 'evolved' ? 0xffd25a : undefined);
       path(1.5);
-      const [a, b] = kind === 'passive' ? ['#3a2d63', '#160f2c'] : kind === 'evolved' ? ['#5a3d1c', '#24160a'] : ['#2a416e', '#0e1730'];
+      const [a, b] =
+        kind === 'passive' ? ['#3a2d63', '#160f2c'] : kind === 'evolved' ? ['#5a3d1c', '#24160a'] : kind === 'rune' ? ['#1f4a3c', '#0b1f19'] : ['#2a416e', '#0e1730'];
       const g = ctx.createRadialGradient(P + size * 0.4, P + size * 0.3, 2, P + size / 2, P + size / 2, size * 0.75);
       g.addColorStop(0, a);
       g.addColorStop(1, b);

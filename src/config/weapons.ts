@@ -1,5 +1,9 @@
 export type WeaponId = 'bow' | 'daggers' | 'axes' | 'aura' | 'lightning' | 'bomb' | 'boomerang' | 'bolt' | 'frost' | 'slash' | 'flask';
-export type EvolutionId = 'stormbow' | 'blades' | 'titanaxes' | 'sanctuary' | 'starfall' | 'blizzard';
+export type EvolutionId =
+  | 'stormbow' | 'blades' | 'titanaxes' | 'sanctuary' | 'starfall' | 'blizzard'
+  | 'thunder' | 'meteor' | 'twinmoon' | 'flameslash' | 'plague';
+/** Runes change how every weapon's hits behave (set on fire, freeze, chain...). */
+export type RuneId = 'burn' | 'freeze' | 'chain' | 'ricochet' | 'blast' | 'leech';
 export type PassiveId = 'heart' | 'boots' | 'powergem' | 'hourglass' | 'quiver' | 'magnet' | 'tome';
 
 /** Absolute stats of a weapon at one level. Area is a multiplier on the weapon's base size. */
@@ -27,7 +31,8 @@ export interface WeaponDef {
   levels: WeaponStats[];
   /** Card text for reaching Lv2..Lv5 (index 0 = Lv2). */
   upgrades: string[];
-  evolution?: { into: EvolutionId; requires: PassiveId };
+  /** Evolves in a chest once at max level, while holding this passive or rune. */
+  evolution?: { into: EvolutionId; requires: PassiveId | RuneId };
 }
 
 export interface EvolutionDef {
@@ -151,6 +156,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     description: 'Lightning strikes random enemies on screen.',
     levels: [lit1, lit2, lit3, lit4, lit5],
     upgrades: ['+1 strike', 'Damage +10', '+1 strike, faster', 'Damage +12, +1 strike'],
+    evolution: { into: 'thunder', requires: 'chain' },
   },
   bomb: {
     id: 'bomb',
@@ -159,6 +165,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     description: 'Lobs a bomb that explodes in a wide area.',
     levels: [bomb1, bomb2, bomb3, bomb4, bomb5],
     upgrades: ['Area +20%', '+1 bomb', 'Damage +12, faster', '+1 bomb, area +20%'],
+    evolution: { into: 'meteor', requires: 'blast' },
   },
   boomerang: {
     id: 'boomerang',
@@ -167,6 +174,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     description: 'Flies out and comes back, hitting everything twice.',
     levels: [boo1, boo2, boo3, boo4, boo5],
     upgrades: ['Damage +4', '+1 boomerang', 'Bigger and faster', 'Damage +8, +1 boomerang'],
+    evolution: { into: 'twinmoon', requires: 'ricochet' },
   },
   bolt: {
     id: 'bolt',
@@ -193,6 +201,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     description: 'A wide sword swing in front of you that knocks enemies back.',
     levels: [slash1, slash2, slash3, slash4, slash5],
     upgrades: ['Damage +6', 'Also swings behind you', 'Area +25%, faster', 'Damage +10'],
+    evolution: { into: 'flameslash', requires: 'burn' },
   },
   flask: {
     id: 'flask',
@@ -201,6 +210,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     description: 'Throws a flask that leaves a puddle of poison.',
     levels: [flask1, flask2, flask3, flask4, flask5],
     upgrades: ['Area +20%', '+1 flask', 'Damage +3, lasts longer', '+1 flask, area +20%'],
+    evolution: { into: 'plague', requires: 'leech' },
   },
 };
 
@@ -253,7 +263,90 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDef> = {
     description: 'A howling snowstorm around you freezes and grinds down enemies.',
     stats: { damage: 10, cooldown: 0.3, amount: 1, pierce: 0, area: 1.5, speed: 0, duration: 0 },
   },
+  thunder: {
+    id: 'thunder',
+    base: 'lightning',
+    name: 'Thunderstorm',
+    icon: 'icon_thunder',
+    description: 'A storm of bolts; every strike jumps on to two more enemies.',
+    stats: { damage: 46, cooldown: 1.4, amount: 6, pierce: 0, area: 1.3, speed: 0, duration: 0 },
+  },
+  meteor: {
+    id: 'meteor',
+    base: 'bomb',
+    name: 'Meteor',
+    icon: 'icon_meteor',
+    description: 'Meteors crash from the sky in huge blasts that set enemies on fire.',
+    stats: { damage: 70, cooldown: 2.0, amount: 3, pierce: 0, area: 1.6, speed: 0, duration: 0 },
+  },
+  twinmoon: {
+    id: 'twinmoon',
+    base: 'boomerang',
+    name: 'Twin Moons',
+    icon: 'icon_twinmoon',
+    description: 'Huge silver boomerangs that fly out in pairs and cut through everything.',
+    stats: { damage: 34, cooldown: 1.2, amount: 4, pierce: 999, area: 1.5, speed: 1150, duration: 0 },
+  },
+  flameslash: {
+    id: 'flameslash',
+    base: 'slash',
+    name: 'Flame Crescent',
+    icon: 'icon_flameslash',
+    description: 'Blazing swings on both sides that set enemies on fire.',
+    stats: { damage: 44, cooldown: 0.9, amount: 2, pierce: 0, area: 1.5, speed: 0, duration: 0 },
+  },
+  plague: {
+    id: 'plague',
+    base: 'flask',
+    name: 'Plague Cloud',
+    icon: 'icon_plague',
+    description: 'Big, lasting poison pools that slow and melt enemies.',
+    stats: { damage: 12, cooldown: 1.8, amount: 3, pierce: 0, area: 1.6, speed: 0, duration: 6 },
+  },
 };
+
+export interface RuneDef {
+  id: RuneId;
+  name: string;
+  icon: string;
+  maxLevel: number;
+  /** Card text for each level (index 0 = Lv1). */
+  levels: string[];
+}
+
+/** Rune strength per level (index 0 = Lv1). */
+export const RUNE_POWER = {
+  /** Burn per second, as a share of the hit that lit it, for BURN_TIME seconds. */
+  burn: [0.2, 0.3, 0.4],
+  /** Chance a hit freezes for FREEZE_TIME seconds. */
+  freeze: [0.08, 0.13, 0.18],
+  /** Chance a hit arcs on, and to how many enemies (at half damage). */
+  chain: [0.15, 0.22, 0.3],
+  chainTargets: [2, 2, 3],
+  /** Extra enemies each projectile bounces on to. */
+  ricochet: [1, 2, 3],
+  /** A killed enemy blows up for this share of its max HP. */
+  blast: [0.3, 0.4, 0.5],
+  /** HP healed per kill. */
+  leech: [0.3, 0.5, 0.8],
+};
+export const BURN_TIME = 3;
+export const FREEZE_TIME = 1.2;
+
+export const RUNES: Record<RuneId, RuneDef> = {
+  burn: { id: 'burn', name: 'Ember Rune', icon: 'icon_rune_burn', maxLevel: 3, levels: ['Hits set enemies on fire', 'Fire burns hotter', 'Fire burns hottest'] },
+  freeze: { id: 'freeze', name: 'Frost Rune', icon: 'icon_rune_freeze', maxLevel: 3, levels: ['Hits may freeze enemies solid (8%)', 'Freeze chance 13%', 'Freeze chance 18%'] },
+  chain: { id: 'chain', name: 'Storm Rune', icon: 'icon_rune_chain', maxLevel: 3, levels: ['Hits may arc lightning to 2 more enemies', 'Arcs more often', 'Arcs to 3 enemies, even more often'] },
+  ricochet: { id: 'ricochet', name: 'Bounce Rune', icon: 'icon_rune_ricochet', maxLevel: 3, levels: ['Projectiles bounce on to 1 more enemy', 'Bounce 2 times', 'Bounce 3 times'] },
+  blast: { id: 'blast', name: 'Blast Rune', icon: 'icon_rune_blast', maxLevel: 3, levels: ['Defeated enemies explode', 'Bigger explosions', 'Biggest explosions'] },
+  leech: { id: 'leech', name: 'Leech Rune', icon: 'icon_rune_leech', maxLevel: 3, levels: ['Heal a little for every defeat', 'Heal more per defeat', 'Heal the most per defeat'] },
+};
+export const RUNE_IDS = Object.keys(RUNES) as RuneId[];
+
+/** The passive or rune a weapon needs to evolve, by name. */
+export function requirementName(id: PassiveId | RuneId): string {
+  return id in RUNES ? RUNES[id as RuneId].name : PASSIVES[id as PassiveId].name;
+}
 
 export interface PassiveDef {
   id: PassiveId;

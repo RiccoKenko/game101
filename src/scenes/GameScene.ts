@@ -3,17 +3,20 @@ import { audio } from '../audio/audio';
 import { CHARACTERS, characterDef, type CharacterDef, type CharacterId } from '../config/characters';
 import { BOSSES } from '../config/enemies';
 import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS } from '../config/game';
+import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
-import { EVOLUTIONS, MAX_WEAPON_LEVEL, WEAPONS, type EvolutionId, type WeaponId } from '../config/weapons';
+import { EVOLUTIONS, MAX_WEAPON_LEVEL, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
 import { DEBUG } from '../core/debug';
 import {
   applyChoice,
+  choiceKey,
   evolvableWeapons,
   evolve,
   newInventory,
   passiveLevels,
   rollChoices,
+  runeLevels,
   xpToNext,
   type Choice,
   type Inventory,
@@ -63,6 +66,9 @@ export interface RunState {
   bossesKilled: number;
   leadersSpawned: number;
   leadersKilled: number;
+  /** Level-up card rerolls and banishes left. */
+  rerolls: number;
+  banishes: number;
   swarmsSpawned: number;
   ringsSpawned: number;
   boss: Enemy | null;
@@ -153,6 +159,11 @@ export class GameScene extends Phaser.Scene {
     // Each hero's own weapon belongs to that hero: the others are never offered it.
     const inventory = newInventory(hero.start, CHARACTERS.filter((c) => c.start !== hero.start).map((c) => `weapon:${c.start}`));
     for (const g of DEBUG.give) {
+      const rune = g.replace(/\d+$/, '') as RuneId;
+      if (RUNES[rune]) {
+        inventory.runes.push({ id: rune, level: Math.min(RUNES[rune].maxLevel, Number(g.match(/\d+$/)?.[0] ?? 1)) });
+        continue;
+      }
       const evo = EVOLUTIONS[g as EvolutionId];
       const id = (evo ? evo.base : g.replace(/\d+$/, '')) as WeaponId;
       if (!WEAPONS[id]) continue;
@@ -180,6 +191,8 @@ export class GameScene extends Phaser.Scene {
       bossesKilled: 0,
       leadersSpawned: leadersDue(DEBUG.startTime),
       leadersKilled: 0,
+      rerolls: BASE_REROLLS + saveStore.data.shop.reroll,
+      banishes: BASE_BANISHES + saveStore.data.shop.banish,
       swarmsSpawned: 0,
       ringsSpawned: ringEventsDue(DEBUG.startTime),
       boss: null,
@@ -187,7 +200,7 @@ export class GameScene extends Phaser.Scene {
       unlockedMap: null,
     };
 
-    const ctx = { scene: this as Phaser.Scene, rng: this.rng, mapIndex: this.mapIndex } as GameCtx;
+    const ctx = { scene: this as Phaser.Scene, rng: this.rng, mapIndex: this.mapIndex, runes: runeLevels(inventory) } as GameCtx;
     Object.defineProperty(ctx, 'runTime', { get: () => this.run.time });
     ctx.onEnemyKilled = (e) => this.onEnemyKilled(e);
     ctx.hurtPlayer = (amount) => this.hurtPlayer(amount);
@@ -548,6 +561,7 @@ export class GameScene extends Phaser.Scene {
     const score = (c: Choice) => {
       if (c.kind === 'weapon') return this.run.inventory.weapons.some((w) => w.id === c.id) ? 4 : 3;
       if (c.kind === 'passive') return this.run.inventory.passives.some((p) => p.id === c.id) ? 2 : 1;
+      if (c.kind === 'rune') return 2.5;
       return 0;
     };
     return [...choices].sort((a, b) => score(b) - score(a))[0];
@@ -563,6 +577,7 @@ export class GameScene extends Phaser.Scene {
   private refreshStats(): void {
     const run = this.run;
     run.stats = computeStats(saveStore.data.shop, passiveLevels(run.inventory), this.hero);
+    this.ctx.runes = runeLevels(run.inventory);
     this.player.setStats(run.stats);
     this.weapons.sync(run.inventory.weapons, run.stats);
     this.events.emit('inventory');
@@ -594,13 +609,27 @@ export class GameScene extends Phaser.Scene {
       this.applyChoiceNow(this.botPick(choices));
       return;
     }
+    const run = this.run;
     this.openModal('LevelUp', {
       choices,
-      inventory: this.run.inventory,
-      level: this.run.level,
+      inventory: run.inventory,
+      level: run.level,
       onPick: (c: Choice) => {
         this.applyChoiceNow(c);
         this.closeModal('LevelUp');
+      },
+      counts: () => ({ rerolls: run.rerolls, banishes: run.banishes }),
+      reroll: (current: Choice[]) => {
+        if (run.rerolls <= 0) return null;
+        run.rerolls--;
+        return rollChoices(run.inventory, this.rng, 3, current);
+      },
+      banish: (c: Choice, current: Choice[]) => {
+        if (run.banishes <= 0) return null;
+        run.banishes--;
+        run.inventory.banned.push(choiceKey(c));
+        const fresh = rollChoices(run.inventory, this.rng, 1, current)[0];
+        return current.map((x) => (x === c ? fresh : x));
       },
     });
   }
@@ -616,7 +645,7 @@ export class GameScene extends Phaser.Scene {
     } else {
       const count = 1 + (this.rng() < 0.6 ? 1 : 0) + (this.rng() < 0.3 ? 1 : 0);
       const choices = rollChoices(inv, this.rng, 3)
-        .filter((c) => c.kind === 'weapon' || c.kind === 'passive')
+        .filter((c) => c.kind === 'weapon' || c.kind === 'passive' || c.kind === 'rune')
         .slice(0, count);
       choices.forEach((c) => applyChoice(inv, c));
       reward = { kind: 'upgrades', choices };

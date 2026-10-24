@@ -1,12 +1,15 @@
-import { MAX_PASSIVES, MAX_WEAPONS } from '../config/game';
+import { MAX_PASSIVES, MAX_RUNES, MAX_WEAPONS } from '../config/game';
 import {
   MAX_WEAPON_LEVEL,
   PASSIVES,
   PASSIVE_IDS,
+  RUNES,
+  RUNE_IDS,
   WEAPONS,
   WEAPON_IDS,
   type EvolutionId,
   type PassiveId,
+  type RuneId,
   type WeaponId,
 } from '../config/weapons';
 import { type Rng, weightedPick } from './rng';
@@ -22,18 +25,25 @@ export interface OwnedPassive {
   level: number;
 }
 
+export interface OwnedRune {
+  id: RuneId;
+  level: number;
+}
+
 export interface Inventory {
   weapons: OwnedWeapon[];
   passives: OwnedPassive[];
+  runes: OwnedRune[];
   /** Never offered this run: other heroes' own weapons, and anything banished (keys like 'weapon:bow'). */
   banned: string[];
 }
 
-export const choiceKey = (c: Choice): string => (c.kind === 'weapon' || c.kind === 'passive' ? `${c.kind}:${c.id}` : c.kind);
+export const choiceKey = (c: Choice): string => ('id' in c ? `${c.kind}:${c.id}` : c.kind);
 
 export type Choice =
   | { kind: 'weapon'; id: WeaponId; level: number }
   | { kind: 'passive'; id: PassiveId; level: number }
+  | { kind: 'rune'; id: RuneId; level: number }
   | { kind: 'gold'; amount: number }
   | { kind: 'heal'; amount: number };
 
@@ -46,12 +56,18 @@ export function xpToNext(level: number): number {
 
 /** A run's starting kit: the hero's own weapon at level 1. */
 export function newInventory(start: WeaponId = 'bow', banned: string[] = []): Inventory {
-  return { weapons: [{ id: start, level: 1, evolved: null }], passives: [], banned: [...banned] };
+  return { weapons: [{ id: start, level: 1, evolved: null }], passives: [], runes: [], banned: [...banned] };
 }
 
 export function passiveLevels(inv: Inventory): Partial<Record<PassiveId, number>> {
   const out: Partial<Record<PassiveId, number>> = {};
   for (const p of inv.passives) out[p.id] = p.level;
+  return out;
+}
+
+export function runeLevels(inv: Inventory): Partial<Record<RuneId, number>> {
+  const out: Partial<Record<RuneId, number>> = {};
+  for (const r of inv.runes) out[r.id] = r.level;
   return out;
 }
 
@@ -74,12 +90,24 @@ function upgradePool(inv: Inventory): { item: Choice; weight: number }[] {
       if (!inv.passives.some((p) => p.id === id)) pool.push({ item: { kind: 'passive', id, level: 1 }, weight: 0.8 });
     }
   }
+  for (const r of inv.runes) {
+    if (r.level < RUNES[r.id].maxLevel) pool.push({ item: { kind: 'rune', id: r.id, level: r.level + 1 }, weight: 1 });
+  }
+  if (inv.runes.length < MAX_RUNES) {
+    for (const id of RUNE_IDS) {
+      if (!inv.runes.some((r) => r.id === id)) pool.push({ item: { kind: 'rune', id, level: 1 }, weight: 0.7 });
+    }
+  }
   return pool.filter((p) => !inv.banned.includes(choiceKey(p.item)));
 }
 
-/** Picks up to `count` distinct level-up choices; tops up with gold/heal when everything is maxed. */
-export function rollChoices(inv: Inventory, rng: Rng, count = 3): Choice[] {
-  const pool = upgradePool(inv);
+/**
+ * Picks up to `count` distinct level-up choices (none of `avoid`, e.g. the cards being rerolled away); tops up
+ * with gold/heal when everything is maxed.
+ */
+export function rollChoices(inv: Inventory, rng: Rng, count = 3, avoid: Choice[] = []): Choice[] {
+  const skip = new Set(avoid.map(choiceKey));
+  const pool = upgradePool(inv).filter((p) => !skip.has(choiceKey(p.item)));
   const out: Choice[] = [];
   while (out.length < count && pool.length > 0) {
     const choice = weightedPick(rng, pool);
@@ -100,15 +128,20 @@ export function applyChoice(inv: Inventory, choice: Choice): void {
     const owned = inv.passives.find((p) => p.id === choice.id);
     if (owned) owned.level = Math.min(PASSIVES[owned.id].maxLevel, owned.level + 1);
     else if (inv.passives.length < MAX_PASSIVES) inv.passives.push({ id: choice.id, level: 1 });
+  } else if (choice.kind === 'rune') {
+    const owned = inv.runes.find((r) => r.id === choice.id);
+    if (owned) owned.level = Math.min(RUNES[owned.id].maxLevel, owned.level + 1);
+    else if (inv.runes.length < MAX_RUNES) inv.runes.push({ id: choice.id, level: 1 });
   }
 }
 
-/** Weapons that are max level, not evolved, and whose required passive is owned. */
+/** Weapons that are max level, not evolved, and whose required passive or rune is owned. */
 export function evolvableWeapons(inv: Inventory): WeaponId[] {
   return inv.weapons
     .filter((w) => {
       const evo = WEAPONS[w.id].evolution;
-      return !w.evolved && w.level >= MAX_WEAPON_LEVEL && !!evo && inv.passives.some((p) => p.id === evo.requires);
+      const has = !!evo && (inv.passives.some((p) => p.id === evo.requires) || inv.runes.some((r) => r.id === evo.requires));
+      return !w.evolved && w.level >= MAX_WEAPON_LEVEL && has;
     })
     .map((w) => w.id);
 }

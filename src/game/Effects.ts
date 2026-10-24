@@ -118,7 +118,7 @@ export class Effects {
     for (let i = 0; i < 40; i++) {
       this.glows.push({ img: scene.add.image(0, 0, 'glow').setDepth(42).setVisible(false).setBlendMode(Phaser.BlendModes.ADD), life: 0, dur: 1, from: 1, to: 1, alpha: 1 });
     }
-    for (let i = 0; i < 8; i++) this.bolts.push({ g: scene.add.graphics().setDepth(38).setVisible(false), life: 0 });
+    for (let i = 0; i < 16; i++) this.bolts.push({ g: scene.add.graphics().setDepth(38).setVisible(false), life: 0 });
   }
 
   damageNumber(x: number, y: number, amount: number, color = 0xffffff, crit = false): void {
@@ -280,6 +280,29 @@ export class Effects {
     this.glow(x, y, 60, 200, color, 0.18);
     this.sparksAt(x, y, 6, color);
     this.decal('scorch', x, y + 6, 100, 50, 0x1c2433, 0.25, 1.4);
+  }
+
+  /** A short jagged arc of lightning from one enemy to the next (Storm Rune, Thunderstorm). */
+  arc(x1: number, y1: number, x2: number, y2: number, color = 0xfff27a): void {
+    const b = this.bolts.find((o) => o.life <= 0);
+    if (!b) return;
+    b.life = BOLT_TIME;
+    const g = b.g.clear().setVisible(true).setAlpha(1);
+    const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const nx = -(y2 - y1) / len;
+    const ny = (x2 - x1) / len;
+    const n = 6;
+    const pts: { x: number; y: number }[] = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const j = i === 0 || i === n ? 0 : Phaser.Math.Between(-18, 18);
+      pts.push({ x: Phaser.Math.Linear(x1, x2, t) + nx * j, y: Phaser.Math.Linear(y1, y2, t) + ny * j });
+    }
+    for (const [width, c, a] of [[14, color, 0.3], [6, color, 0.75], [2.5, 0xffffff, 1]] as const) {
+      g.lineStyle(width, c, a);
+      g.strokePoints(pts);
+    }
+    this.sparksAt(x2, y2, 3, color);
   }
 
   update(dt: number): void {

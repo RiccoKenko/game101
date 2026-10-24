@@ -1,28 +1,39 @@
 import Phaser from 'phaser';
-import { PASSIVES, WEAPONS } from '../config/weapons';
+import { PASSIVES, requirementName, RUNES, WEAPONS } from '../config/weapons';
 import { type Choice, type Inventory } from '../core/progression';
 import { buildRows } from '../ui/build';
 import { safeInsets } from '../ui/safe';
 import { COLORS, CSS, hex, lighten, PARCHMENT, rgba, shade } from '../ui/theme';
-import { dimmer, gradientText, panel, panelTexture, ribbon, roundRect, slotIcon, text, uiTexture, vGradient } from '../ui/widgets';
+import { BUTTON } from '../ui/theme';
+import { Button, dimmer, gradientText, panel, panelTexture, ribbon, roundRect, slotIcon, text, uiTexture, vGradient } from '../ui/widgets';
 
 interface LevelUpData {
   choices: Choice[];
   inventory: Inventory;
   level: number;
   onPick: (c: Choice) => void;
+  /** Rerolls and banishes left this run. */
+  counts: () => { rerolls: number; banishes: number };
+  /** New cards in place of these, or null when none are left. */
+  reroll: (current: Choice[]) => Choice[] | null;
+  /** Removes `c` from the run's pool for good and deals a new card in its place, or null when none are left. */
+  banish: (c: Choice, current: Choice[]) => Choice[] | null;
 }
 
 export function describeChoice(c: Choice): { icon: string; name: string; tag: string; desc: string } {
   if (c.kind === 'weapon') {
     const def = WEAPONS[c.id];
     let desc = c.level === 1 ? def.description : def.upgrades[c.level - 2];
-    if (c.level === 5 && def.evolution) desc += `\nMax level! Evolves with ${PASSIVES[def.evolution.requires].name}.`;
+    if (c.level === 5 && def.evolution) desc += `\nMax level! Evolves with ${requirementName(def.evolution.requires)}.`;
     return { icon: def.icon, name: def.name, tag: c.level === 1 ? 'NEW!' : `LV ${c.level}`, desc };
   }
   if (c.kind === 'passive') {
     const def = PASSIVES[c.id];
     return { icon: def.icon, name: def.name, tag: c.level === 1 ? 'NEW!' : `LV ${c.level}`, desc: def.description };
+  }
+  if (c.kind === 'rune') {
+    const def = RUNES[c.id];
+    return { icon: def.icon, name: def.name, tag: c.level === 1 ? 'RUNE' : `LV ${c.level}`, desc: def.levels[c.level - 1] };
   }
   if (c.kind === 'gold') return { icon: 'icon_coin', name: 'Gold Pouch', tag: '', desc: `+${c.amount} gold` };
   return { icon: 'meat', name: 'Roast Meat', tag: '', desc: 'Restore 30% of your HP' };
@@ -35,7 +46,7 @@ export function choiceCard(scene: Phaser.Scene, x: number, y: number, w: number,
   const bg = scene.add.image(0, 0, panelTexture(scene, w, h, { style: 'parchment', radius: 24 }));
   const d = Math.min(150, h - 70);
   const ix = -w / 2 + 40 + d / 2;
-  const kind = c.kind === 'weapon' ? 'weapon' : c.kind === 'passive' ? 'passive' : 'evolved';
+  const kind = c.kind === 'weapon' ? 'weapon' : c.kind === 'passive' ? 'passive' : c.kind === 'rune' ? 'rune' : 'evolved';
   const slot = slotIcon(scene, ix, 0, d, info.icon, kind);
   const tx = ix + d / 2 + 36;
   const name = text(scene, tx, -h / 2 + 52, info.name, 50, { color: CSS.ink, stroke: false, originX: 0 });
@@ -55,7 +66,7 @@ export function choiceCard(scene: Phaser.Scene, x: number, y: number, w: number,
     const tw = isNew ? 132 : 112;
     const tagX = w / 2 - 30 - tw / 2;
     const tagY = -h / 2 + 50;
-    const pill = scene.add.image(tagX, tagY, tagTexture(scene, tw, 54, isNew ? COLORS.green : COLORS.blue));
+    const pill = scene.add.image(tagX, tagY, tagTexture(scene, tw, 54, isNew ? COLORS.green : info.tag === 'RUNE' ? 0x2fae8f : COLORS.blue));
     const tag = text(scene, tagX, tagY, info.tag, 30, { strokeColor: isNew ? '#174d14' : '#123a6b', shadow: false });
     card.add([pill, tag]);
   }
@@ -94,6 +105,8 @@ export class LevelUpScene extends Phaser.Scene {
   private data_!: LevelUpData;
   private ready = false;
   private picked = false;
+  /** Banish mode: the next card tapped is thrown out instead of picked. */
+  private banishing = false;
 
   constructor() {
     super('LevelUp');
@@ -103,6 +116,7 @@ export class LevelUpScene extends Phaser.Scene {
     this.data_ = data;
     this.ready = false;
     this.picked = false;
+    this.banishing = false;
   }
 
   create(): void {
@@ -140,6 +154,11 @@ export class LevelUpScene extends Phaser.Scene {
         if (pressed !== card) return;
         pressed = null;
         if (!this.ready || this.picked) return;
+        if (this.banishing) {
+          const next = this.data_.banish(c, this.data_.choices);
+          if (next) this.scene.restart({ ...this.data_, choices: next });
+          return;
+        }
         this.picked = true;
         this.data_.onPick(c);
       });
@@ -147,14 +166,50 @@ export class LevelUpScene extends Phaser.Scene {
       this.tweens.add({ targets: card, alpha: 1, scale: 1, delay: 80 + i * 90, duration: 260, ease: 'Back.easeOut' });
     });
 
-    // Current gear in a small window under the cards, when there is room.
+    // Reroll and banish, under the cards.
+    const counts = this.data_.counts();
+    const by = startY + 3 * (cardH + gap) - cardH / 2 - gap + 76;
+    const cards = this.children.list.filter((o) => o instanceof Phaser.GameObjects.Container && o.input) as Phaser.GameObjects.Container[];
+    new Button(this, width / 2 - 235, by, {
+      w: 440,
+      h: 104,
+      color: BUTTON.secondary,
+      icon: 'icon_retry',
+      iconSize: 62,
+      label: `Reroll (${counts.rerolls})`,
+      fontSize: 40,
+      onClick: () => {
+        if (!this.ready || this.picked) return;
+        const next = this.data_.reroll(this.data_.choices);
+        if (next) this.scene.restart({ ...this.data_, choices: next });
+      },
+    }).setEnabled(counts.rerolls > 0);
+    const banish = new Button(this, width / 2 + 235, by, {
+      w: 440,
+      h: 104,
+      color: BUTTON.danger,
+      icon: 'icon_banish',
+      iconSize: 62,
+      label: `Banish (${counts.banishes})`,
+      fontSize: 40,
+      onClick: () => {
+        if (!this.ready || this.picked) return;
+        this.banishing = !this.banishing;
+        banish.setLabel(this.banishing ? 'Cancel' : `Banish (${counts.banishes})`);
+        hint.setVisible(this.banishing);
+        cards.forEach((card) => (card.list[0] as Phaser.GameObjects.Image).setTint(this.banishing ? 0xffb0a8 : 0xffffff));
+      },
+    }).setEnabled(counts.banishes > 0);
+    const hint = text(this, width / 2, by - 76, 'Tap a card to banish it for this run', 34, { color: '#ffb0a8' }).setVisible(false);
+
+    // Current gear in a small window under the buttons, when there is room.
     const inv = this.data_.inventory;
     const size = 70;
-    const gearRows = inv.passives.length > 0 ? 2 : 1;
+    const gearRows = inv.passives.length + inv.runes.length > 0 ? 2 : 1;
     const gearH = 84 + gearRows * (size + 14);
-    const gearTop = startY + 3 * (cardH + gap) - cardH / 2 - gap + 30;
+    const gearTop = by + 80;
     if (gearTop + gearH < height - bottom - 20) {
-      const count = Math.max(inv.weapons.length, inv.passives.length);
+      const count = Math.max(inv.weapons.length, inv.passives.length + inv.runes.length);
       const rowW = count * (size + 10) - 10;
       panel(this, width / 2, gearTop + gearH / 2, Math.max(rowW + 120, 520), gearH, { header: 62 });
       text(this, width / 2, gearTop + 32, 'Your gear', 34, { color: CSS.gold });

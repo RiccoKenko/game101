@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import { type RuneId } from '../config/weapons';
 import { type Rng } from '../core/rng';
 import type { Effects } from './Effects';
 import type { Enemy, EnemyManager } from './Enemies';
@@ -14,6 +15,8 @@ export interface GameCtx {
   fx: Effects;
   rng: Rng;
   mapIndex: number;
+  /** Rune levels the hero holds (they change what every weapon hit does). */
+  runes: Partial<Record<RuneId, number>>;
   /** Seconds since the run started. */
   runTime: number;
   onEnemyKilled(e: Enemy): void;

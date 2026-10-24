@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS, characterDef } from '../../src/config/characters';
 import { BOSSES, ENEMIES } from '../../src/config/enemies';
 import { MAPS } from '../../src/config/maps';
-import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, WEAPONS, WEAPON_IDS } from '../../src/config/weapons';
+import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNES, WEAPONS, WEAPON_IDS } from '../../src/config/weapons';
 import { evolvableWeapons, evolve, newInventory } from '../../src/core/progression';
 import { defaultSave, sanitize } from '../../src/core/save';
 import { computeStats } from '../../src/core/stats';
@@ -20,7 +20,8 @@ describe('weapons', () => {
   it('evolutions point back at their weapon and need a real passive', () => {
     for (const evo of Object.values(EVOLUTIONS)) {
       expect(WEAPONS[evo.base].evolution?.into).toBe(evo.id);
-      expect(PASSIVES[WEAPONS[evo.base].evolution!.requires]).toBeDefined();
+      const req = WEAPONS[evo.base].evolution!.requires;
+      expect(req in PASSIVES || req in RUNES).toBe(true);
     }
   });
 

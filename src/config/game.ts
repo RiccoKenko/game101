@@ -19,6 +19,7 @@ export const PLAYER_BASE = {
 
 export const MAX_WEAPONS = 4;
 export const MAX_PASSIVES = 4;
+export const MAX_RUNES = 3;
 
 /** A boss appears every BOSS_INTERVAL seconds (5:00, 10:00, ...). */
 export const BOSS_INTERVAL = 300;

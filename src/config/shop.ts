@@ -1,4 +1,4 @@
-export type ShopId = 'maxhp' | 'might' | 'armor' | 'speed' | 'magnet' | 'greed' | 'growth' | 'revival';
+export type ShopId = 'maxhp' | 'might' | 'armor' | 'speed' | 'magnet' | 'greed' | 'growth' | 'revival' | 'reroll' | 'banish';
 
 export interface ShopDef {
   id: ShopId;
@@ -22,7 +22,13 @@ export const SHOP: ShopDef[] = [
   { id: 'greed', name: 'Greed', icon: 'icon_greed', maxLevel: 5, baseCost: 50, perLevel: 0.15, describe: (v) => `Gold gained +${pct(v)} per level` },
   { id: 'growth', name: 'Growth', icon: 'icon_growth', maxLevel: 5, baseCost: 60, perLevel: 0.06, describe: (v) => `XP gained +${pct(v)} per level` },
   { id: 'revival', name: 'Revival', icon: 'icon_revival', maxLevel: 1, baseCost: 400, perLevel: 1, describe: () => 'Come back to life once per run' },
+  { id: 'reroll', name: 'Fresh Cards', icon: 'icon_retry', maxLevel: 3, baseCost: 120, perLevel: 1, describe: () => '+1 card reroll per run, per level' },
+  { id: 'banish', name: 'Banisher', icon: 'icon_banish', maxLevel: 2, baseCost: 150, perLevel: 1, describe: () => '+1 card banish per run, per level' },
 ];
+
+/** Every run starts with this many card rerolls and banishes, plus the shop's. */
+export const BASE_REROLLS = 1;
+export const BASE_BANISHES = 1;
 
 export const SHOP_IDS = SHOP.map((d) => d.id);
 

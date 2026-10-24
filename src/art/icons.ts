@@ -929,4 +929,6 @@ export const ICONS_ART: ArtSet = {
   icon_check: svg(S, S, tube('M20 50L40 70L78 28', 15, '#5ad15a', 5) + ln('M24 49L39 63', '#c6ffb8', 4, 0.8)),
 
   icon_arrow: svg(S, S, tube('M36 16L68 48L36 80', 16, '#ffffff', 5) + ln('M38 21L62 45', WHITE_D, 4, 0.9)),
+
+  icon_banish: svg(S, S, tube(arc(48, 48, 30, 0, 359), 10, '#ff5a5a', 5) + tube('M27 69L69 27', 10, '#ff5a5a', 5)),
 };

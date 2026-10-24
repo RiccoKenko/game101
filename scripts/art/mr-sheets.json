@@ -547,5 +547,75 @@
       "bolt",
       "star_bolt"
     ]
+  },
+  "icons3": {
+    "grid": [
+      6,
+      2
+    ],
+    "keys": [
+      "icon_rune_burn",
+      "icon_rune_freeze",
+      "icon_rune_chain",
+      "icon_rune_ricochet",
+      "icon_rune_blast",
+      "icon_rune_leech",
+      "icon_thunder",
+      "icon_meteor",
+      "icon_twinmoon",
+      "icon_flameslash",
+      "icon_plague",
+      "meteor"
+    ],
+    "sizes": {
+      "icon_rune_burn": [
+        128,
+        128
+      ],
+      "icon_rune_freeze": [
+        128,
+        128
+      ],
+      "icon_rune_chain": [
+        128,
+        128
+      ],
+      "icon_rune_ricochet": [
+        128,
+        128
+      ],
+      "icon_rune_blast": [
+        128,
+        128
+      ],
+      "icon_rune_leech": [
+        128,
+        128
+      ],
+      "icon_thunder": [
+        128,
+        128
+      ],
+      "icon_meteor": [
+        128,
+        128
+      ],
+      "icon_twinmoon": [
+        128,
+        128
+      ],
+      "icon_flameslash": [
+        128,
+        128
+      ],
+      "icon_plague": [
+        128,
+        128
+      ],
+      "meteor": [
+        100,
+        60
+      ]
+    }
   }
 }

@@ -24,6 +24,7 @@ describe('level-up choices', () => {
     const inv: Inventory = {
       weapons: WEAPON_IDS.slice(0, MAX_WEAPONS).map((id) => ({ id, level: 1, evolved: null })),
       passives: PASSIVE_IDS.slice(0, MAX_PASSIVES).map((id) => ({ id, level: 1 })),
+      runes: [],
       banned: [],
     };
     for (let seed = 0; seed < 50; seed++) {
@@ -42,6 +43,11 @@ describe('level-up choices', () => {
         { id: 'heart', level: 5 },
         { id: 'boots', level: 5 },
         { id: 'tome', level: 5 },
+      ],
+      runes: [
+        { id: 'burn', level: 3 },
+        { id: 'chain', level: 3 },
+        { id: 'leech', level: 3 },
       ],
       banned: [],
     };
@@ -74,7 +80,7 @@ describe('evolutions', () => {
     expect(evolvableWeapons(inv)).toEqual([]);
   });
 
-  it('lightning, bomb and boomerang never evolve', () => {
+  it('lightning, bomb and boomerang need a rune to evolve', () => {
     const inv: Inventory = {
       weapons: [
         { id: 'lightning', level: 5, evolved: null },
@@ -82,8 +88,11 @@ describe('evolutions', () => {
         { id: 'boomerang', level: 5, evolved: null },
       ],
       passives: PASSIVE_IDS.slice(0, 4).map((id) => ({ id, level: 1 })),
+      runes: [],
       banned: [],
     };
     expect(evolvableWeapons(inv)).toEqual([]);
+    inv.runes.push({ id: 'chain', level: 1 }, { id: 'blast', level: 1 });
+    expect(evolvableWeapons(inv)).toEqual(['lightning', 'bomb']);
   });
 });

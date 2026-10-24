@@ -3,6 +3,7 @@ import { audio } from '../audio/audio';
 import {
   AMOUNT_BOOSTED,
   EVOLUTIONS,
+  RUNE_POWER,
   WEAPONS,
   type WeaponStats,
 } from '../config/weapons';
@@ -39,8 +40,13 @@ class Projectile {
   area = 1;
   /** Magic Bolt: the enemy it is homing on. */
   target: Enemy | null = null;
-  /** Poison Flask: how long its puddle lasts. */
+  /** Poison Flask: how long its puddle lasts; Plague Cloud's puddles also slow. */
   duration = 0;
+  plague = false;
+  /** Bounce Rune: enemies it can still bounce on to after its last pierce. */
+  bounces = 0;
+  /** A falling Meteor (bomb evolved) rather than a Starfall star. */
+  meteor = false;
   /** A motion streak behind arrows and daggers; the ground shadow under a bomb. */
   constructor(readonly sprite: Phaser.GameObjects.Image, readonly trail: Phaser.GameObjects.Image) {}
 }
@@ -54,6 +60,7 @@ const TRAILS: Record<string, [number, number, number]> = {
   bolt: [0x8fd8ff, 80, 16],
   star_bolt: [0xffe08a, 110, 14],
   ice_shard: [0xd4f4ff, 60, 8],
+  meteor: [0xff8a3d, 170, 30],
 };
 
 /** A Poison Flask puddle: hurts what stands in it every so often, then dries up. */
@@ -64,6 +71,7 @@ interface Zone {
   damage: number;
   left: number;
   tick: number;
+  slow: boolean;
   img: Phaser.GameObjects.Image;
 }
 
@@ -178,6 +186,9 @@ export class WeaponSystem {
     p.knockback = 1;
     p.hits.clear();
     p.target = null;
+    p.bounces = 0;
+    p.meteor = p.plague = false;
+    p.sprite.clearTint();
     p.sprite.setTexture(texture).setVisible(true).setScale(1).setRotation(0);
     if (kind === 'bomb' || kind === 'flask') {
       p.trail.setTexture('shadow').setOrigin(0.5).setBlendMode(Phaser.BlendModes.NORMAL).clearTint().setAlpha(1).setVisible(true);
@@ -304,7 +315,7 @@ export class WeaponSystem {
       case 'slash': {
         // In front first (the way the hero last moved), then behind.
         const dir = player.faceX < 0 ? -1 : 1;
-        for (let i = 0; i < s.amount; i++) this.swing(i % 2 ? -dir : dir, s, i * 0.12);
+        for (let i = 0; i < s.amount; i++) this.swing(i % 2 ? -dir : dir, s, i * 0.12, !!evolved);
         break;
       }
       case 'flask': {
@@ -320,7 +331,9 @@ export class WeaponSystem {
           p.damage = s.damage;
           p.area = s.area;
           p.duration = s.duration;
+          p.plague = !!evolved;
           p.life = 0.55 + i * 0.08;
+          if (evolved) p.sprite.setTint(0xb8f0a0);
         }
         break;
       }
@@ -344,15 +357,22 @@ export class WeaponSystem {
         const target = enemies.nearest(player.x, player.y, 800);
         const base = target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.atan2(player.faceY, player.faceX);
         for (let i = 0; i < s.amount; i++) {
-          const p = this.shoot('boomerang', 'boomerang', base + (i - (s.amount - 1) / 2) * 0.5, s, 30 * s.area);
-          p.outTime = 0.5;
+          // Twin Moons fly out evenly all around; the plain boomerang fans toward the nearest enemy.
+          const a = evolved ? base + (i / s.amount) * Math.PI * 2 : base + (i - (s.amount - 1) / 2) * 0.5;
+          const p = this.shoot('boomerang', 'boomerang', a, s, 30 * s.area);
+          p.outTime = evolved ? 0.6 : 0.5;
           p.life = 4;
-          p.sprite.setScale(s.area);
+          p.sprite.setScale(s.area * (evolved ? 1.15 : 1));
+          if (evolved) p.sprite.setTint(0xd8ecff);
         }
         audio.sfx('shoot', 0.8);
         break;
       }
       case 'bomb': {
+        if (evolved) {
+          this.meteors(s);
+          break;
+        }
         const view = this.ctx.view();
         const inView = enemies.inRect(view);
         const boss = inView.find((e) => e.isBoss);
@@ -387,6 +407,13 @@ export class WeaponSystem {
           const y = t.y;
           this.ctx.fx.lightning(x, y, evolved ? 0xc9a8ff : 0x9fdcff);
           enemies.forEachInRadius(x, y, BOLT_RADIUS * s.area, (e) => enemies.damage(e, s.damage, x, y, 0.5));
+          // Thunderstorm: each strike jumps on to the two nearest enemies.
+          if (evolved) {
+            for (const n of enemies.nearestN(x, y, 3, 320).filter((e) => e !== t).slice(0, 2)) {
+              this.ctx.fx.arc(x, y - 20, n.x, n.y - 20, 0xe2c8ff);
+              enemies.damage(n, s.damage * 0.6, x, y, 0.3, false);
+            }
+          }
         }
         if (targets.length) audio.sfx('zap');
         break;
@@ -407,8 +434,37 @@ export class WeaponSystem {
     return player.attackPoint(angle);
   }
 
-  /** Moon Slash: a crescent sweep on one side of the hero, hitting everything in a half circle. */
-  private swing(dir: number, s: WeaponStats, delay: number): void {
+  /** Meteor: flaming rocks drop on enemies on screen (the boss first), with a red ring where each will land. */
+  private meteors(s: WeaponStats): void {
+    const { enemies, player, fx } = this.ctx;
+    const inView = enemies.inRect(this.ctx.view());
+    Phaser.Utils.Array.Shuffle(inView);
+    const bossIdx = inView.findIndex((e) => e.isBoss);
+    if (bossIdx > 0) inView.unshift(...inView.splice(bossIdx, 1));
+    for (let i = 0; i < s.amount; i++) {
+      const t = inView[i];
+      const a = this.ctx.rng() * Math.PI * 2;
+      const p = this.obtain('star', 'meteor');
+      p.meteor = true;
+      p.tx = t ? t.x : player.x + Math.cos(a) * 300;
+      p.ty = t ? t.y : player.y + Math.sin(a) * 300;
+      p.sx = p.tx + 320;
+      p.sy = p.ty - 700;
+      p.vx = p.tx - p.sx;
+      p.vy = p.ty - p.sy;
+      p.x = p.sx;
+      p.y = p.sy;
+      p.damage = s.damage;
+      p.area = s.area;
+      p.life = 0.45 + i * 0.1;
+      p.sprite.setRotation(Math.atan2(p.vy, p.vx)).setScale(1.3 * s.area);
+      const r = BOMB_RADIUS * s.area;
+      fx.decal('shock', p.tx, p.ty, r * 2, r, 0xff5a3c, 0.55, p.life + 0.1);
+    }
+  }
+
+  /** Moon Slash: a crescent sweep on one side of the hero, hitting everything in a half circle. Flame Crescent burns. */
+  private swing(dir: number, s: WeaponStats, delay: number, flame = false): void {
     const scene = this.ctx.scene;
     scene.time.delayedCall(delay * 1000, () => {
       const { player, enemies, fx } = this.ctx;
@@ -416,13 +472,15 @@ export class WeaponSystem {
       const cx = player.x + dir * R * 0.55;
       const cy = player.y - 10;
       const img = scene.add.image(cx, cy, 'slash').setDepth(26);
+      if (flame) img.setTint(0xffa24a);
       const k = (R * 2) / img.height;
       img.setScale(dir * k * 0.75, k * 0.75);
       scene.tweens.add({ targets: img, scaleX: dir * k, scaleY: k, alpha: 0, x: cx + dir * 24, duration: 340, ease: 'Cubic.easeIn', onComplete: () => img.destroy() });
       enemies.forEachInRadius(cx, cy, R * 0.8, (e) => {
         if ((e.x - player.x) * dir < -20) return;
         enemies.damage(e, s.damage, player.x, player.y, 1.8);
-        fx.sparksAt(e.x, e.y, 3, 0xe8f4ff);
+        if (flame) enemies.ignite(e, s.damage * 0.3);
+        fx.sparksAt(e.x, e.y, 3, flame ? 0xff8a3d : 0xe8f4ff);
       });
       audio.sfx('shoot', 0.6);
     });
@@ -488,6 +546,7 @@ export class WeaponSystem {
         z.tick = 0.4;
         enemies.forEachInRadius(z.x, z.y, z.r, (e) => {
           enemies.damage(e, z.damage, z.x, z.y, 0, false);
+          if (z.slow) e.slow = Math.max(e.slow, 0.6);
           if (Math.random() < 0.3) fx.sparksAt(e.x, e.y, 1, 0x9be64a);
         });
       }
@@ -510,6 +569,8 @@ export class WeaponSystem {
     p.pierce = s.pierce;
     p.radius = radius;
     p.life = 1.4;
+    const ricochet = this.ctx.runes.ricochet;
+    if (ricochet && kind !== 'boomerang') p.bounces = RUNE_POWER.ricochet[ricochet - 1];
     // Attack area (Spell Tome, the mage's perk) makes projectiles bigger as well as hitting wider.
     p.area = s.area;
     p.sprite.setRotation(angle).setScale(Math.max(kind === 'arrow' ? 1 : 0.8, s.area * (kind === 'arrow' ? 0.9 : 1)));
@@ -610,7 +671,8 @@ export class WeaponSystem {
         if (u >= 1) {
           const r = PUDDLE_RADIUS * p.area;
           const img = this.ctx.scene.add.image(p.tx, p.ty, 'puddle').setDepth(2).setDisplaySize(r * 2, r * 1.05);
-          this.zones.push({ x: p.tx, y: p.ty, r, damage: p.damage, left: p.duration, tick: 0, img });
+          if (p.plague) img.setTint(0x7fb86a);
+          this.zones.push({ x: p.tx, y: p.ty, r, damage: p.damage, left: p.duration, tick: 0, slow: p.plague, img });
           this.ctx.fx.sparksAt(p.tx, p.ty, 6, 0xb6f26a);
           audio.sfx('hit', 0.6);
           this.release(p);
@@ -625,7 +687,18 @@ export class WeaponSystem {
         p.sprite.setPosition(p.x, p.y);
         p.trail.setPosition(p.x, p.y).setRotation(Math.atan2(p.vy, p.vx));
         p.trail.displayWidth = 110 * Math.min(1, p.age / 0.07);
-        if (u >= 1) {
+        if (u >= 1 && p.meteor) {
+          // A Meteor lands: a big blast that sets everything in it on fire.
+          const r = BOMB_RADIUS * p.area;
+          this.ctx.fx.explosion(p.tx, p.ty, r);
+          enemies.forEachInRadius(p.tx, p.ty, r, (e) => {
+            enemies.damage(e, p.damage, p.tx, p.ty, 1.8);
+            enemies.ignite(e, p.damage * 0.25);
+          });
+          audio.sfx('explosion');
+          this.ctx.shake(160, 0.006);
+          this.release(p);
+        } else if (u >= 1) {
           const r = STAR_RADIUS * p.area;
           this.ctx.fx.ring(p.tx, p.ty, r * 1.3, 0xffe08a);
           this.ctx.fx.sparkle(p.tx, p.ty, 4, 0xfff1b8);
@@ -700,10 +773,37 @@ export class WeaponSystem {
         if (p.kind === 'shard') e.slow = Math.max(e.slow, 1.6);
         if (p.kind !== 'boomerang') {
           p.pierce--;
-          if (p.pierce < 0) this.release(p);
+          if (p.pierce < 0 && !this.bounce(p)) this.release(p);
         }
       });
     }
+  }
+
+  /** Bounce Rune: a spent projectile turns toward the nearest enemy it hasn't hit yet. Returns false if none. */
+  private bounce(p: Projectile): boolean {
+    if (p.bounces <= 0) return false;
+    let next: Enemy | null = null;
+    let best = 380 * 380;
+    for (const e of this.ctx.enemies.alive) {
+      if (!e.active || p.hits.has(e.uid)) continue;
+      const d = (e.x - p.x) ** 2 + (e.y - p.y) ** 2;
+      if (d < best) {
+        best = d;
+        next = e;
+      }
+    }
+    if (!next) return false;
+    const sp = Math.hypot(p.vx, p.vy) || 800;
+    const a = Math.atan2(next.y - p.y, next.x - p.x);
+    p.vx = Math.cos(a) * sp;
+    p.vy = Math.sin(a) * sp;
+    p.sprite.setRotation(a);
+    p.target = next;
+    p.bounces--;
+    p.pierce = 0;
+    p.life = Math.max(p.life, 0.8);
+    this.ctx.fx.sparkle(p.x, p.y, 2, 0x9bf08a);
+    return true;
   }
 
   private release(p: Projectile): void {
