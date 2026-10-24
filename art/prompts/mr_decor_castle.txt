@@ -1,0 +1,19 @@
+You are the lead artist for "Little Archer: Monster Rush", a cute mobile survivor game seen from a high three-quarter top-down angle (the attached mock-up shows the look). Draw ONE sheet of map decorations for map 3, "Dark Castle".
+
+STYLE
+- Match the painting style of the attached mock-up screenshot exactly: cute early-2000s Korean fantasy MMORPG charm redrawn at modern quality, chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), pastel colours, light from the upper left.
+- Everything is an ORIGINAL design. Do not copy any existing game's characters, monsters, items, logos or interface.
+
+TECHNICAL
+- Background: a perfectly flat, solid magenta #FF00FF everywhere (no gradient, texture, floor, horizon, shadow or vignette). Never use magenta, pink or purple inside any of the drawings.
+- No text, numbers, labels, frames, borders, grid lines, signatures or watermarks.
+- No ground shadows, glows, auras, motion lines, sparkles or particles around the drawings.
+- Every drawing is complete (nothing cut off by the image edge), stands alone, and is separated from the others by at least 80 px of plain background.
+
+LAYOUT (landscape 1536 x 1024)
+- Four decorations side by side in one row, each centred in its own quarter of the width, standing on an invisible ground line at the same height, in this order from left to right:
+  1. A tall carved stone pillar with ivy (the tallest item, about 650 px tall, narrow).
+  2. A broken pillar stump with a cracked top (about 330 px tall).
+  3. An iron brazier on three legs with a bright orange fire (about 300 px tall).
+  4. A low pile of broken stone blocks and rubble (about 150 px tall).
+- Seen from the same high three-quarter top-down angle as the mock-up, so each one stands on the ground.

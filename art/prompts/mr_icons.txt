@@ -1,0 +1,17 @@
+You are the lead artist for "Little Archer: Monster Rush", a cute mobile survivor game seen from a high three-quarter top-down angle (the attached mock-up shows the look). Draw ONE sheet of square skill and item icons for the game's interface.
+
+STYLE
+- Match the painting style of the attached mock-up screenshot exactly: cute early-2000s Korean fantasy MMORPG charm redrawn at modern quality, chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), pastel colours, light from the upper left.
+- Everything is an ORIGINAL design. Do not copy any existing game's characters, monsters, items, logos or interface.
+
+TECHNICAL
+- Background between the icons: a perfectly flat, solid magenta #FF00FF.
+- No text, numbers or labels anywhere.
+
+LAYOUT (landscape 1536 x 1024)
+- A grid of 6 columns and 4 rows of square icon tiles, all the same size (about 210 px), evenly spaced with at least 40 px of magenta between tiles and around the edge.
+- Each tile is a complete square painting with slightly rounded corners: a rich, dark background (deep navy, teal, wine or forest green, with a soft radial glow behind the emblem) and one bold emblem in the centre, clear at small sizes. No frame or border around the tiles (the game adds its own gold frame).
+  Row 1 (weapons): a wooden bow with an arrow; three throwing daggers fanned out; two crossed battle axes; a ring of warm holy light; a lightning bolt from a small cloud; a round bomb with a lit fuse.
+  Row 2: a boomerang; a storm bow crackling with blue lightning (evolved bow); a fan of many golden blades (evolved daggers); two huge glowing golden axes (evolved axes); a radiant golden halo over a shrine of light (evolved aura); a red heart.
+  Row 3: winged boots; a glowing red power gem; an hourglass with golden sand; a quiver full of arrows; a red horseshoe magnet; an open spell book with a glowing rune.
+  Row 4: a flexed arm with a sword (strength); a steel breastplate with a shield (armour); a fat gold coin pouch (greed); a sprouting plant with a star (growth); a white angel feather with a soft glow (revival); (leave the last cell empty).

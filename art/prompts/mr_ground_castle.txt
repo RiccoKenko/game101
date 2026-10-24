@@ -1,0 +1,12 @@
+You are the lead artist for "Little Archer: Monster Rush", a cute mobile survivor game seen from a high three-quarter top-down angle (the attached mock-up shows the look). Paint ONE square ground texture for the game map, used as a repeating tile under the characters.
+
+STYLE
+- Match the painting style of the attached mock-up screenshot exactly: cute early-2000s Korean fantasy MMORPG charm redrawn at modern quality, chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), pastel colours, light from the upper left.
+- Everything is an ORIGINAL design. Do not copy any existing game's characters, monsters, items, logos or interface.
+
+CONTENT
+- Dark Castle: the worn floor of a ruined castle, irregular grey-violet stone flagstones with moss and weeds growing in the cracks, a few small chips of stone.
+- Seen from the game's high three-quarter top-down angle, at the same scale as the grass in the mock-up (a grass tuft is about 40 px).
+- Seamless and tileable: the left edge must continue naturally into the right edge, and the top edge into the bottom edge.
+- Even detail and lighting across the whole square: no large features, no paths, no objects, no shadows of trees or buildings, no vignette, no border.
+- No characters, no text.

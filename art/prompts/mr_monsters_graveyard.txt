@@ -1,0 +1,20 @@
+You are the lead artist for "Little Archer: Monster Rush", a cute mobile survivor game seen from a high three-quarter top-down angle (the attached mock-up shows the look). Draw ONE sprite sheet: the monsters of map 2, "Spooky Graveyard" (spooky-cute, never gory).
+
+STYLE
+- Match the painting style of the attached mock-up screenshot exactly: cute early-2000s Korean fantasy MMORPG charm redrawn at modern quality, chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), pastel colours, light from the upper left.
+- Everything is an ORIGINAL design. Do not copy any existing game's characters, monsters, items, logos or interface.
+
+TECHNICAL
+- Background: a perfectly flat, solid magenta #FF00FF everywhere (no gradient, texture, floor, horizon, shadow or vignette). Never use magenta, pink or purple inside any of the drawings.
+- No text, numbers, labels, frames, borders, grid lines, signatures or watermarks.
+- No ground shadows, glows, auras, motion lines, sparkles or particles around the drawings.
+- Every drawing is complete (nothing cut off by the image edge), stands alone, and is separated from the others by at least 80 px of plain background.
+
+LAYOUT (landscape 1536 x 1024)
+- Top row: three monsters side by side, each centred in its own third of the width, all about 300 px tall, in this order from left to right:
+  1. Skeleton: a chibi skeleton warrior with a dented little helmet, a small round wooden shield and a chipped short sword.
+  2. Ghost: a pale blue-white floating ghost with a wispy tail, round dark eyes and a playful grin.
+  3. Zombie: a green-skinned chibi zombie in torn brown peasant clothes with stitches, arms stretched forward, shambling.
+- Bottom row, centred: the boss, much bigger (about 520 px wide):
+  4. Lich: a tall floating skeletal sorcerer in a tattered dark teal and grey robe with a bone crown, holding a staff topped with a pale blue soul flame.
+- Every monster is shown in a three-quarter view turned toward the RIGHT side of the image, in a lively ready pose, full body, the way it will look walking around the game map.

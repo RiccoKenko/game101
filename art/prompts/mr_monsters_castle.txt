@@ -1,0 +1,20 @@
+You are the lead artist for "Little Archer: Monster Rush", a cute mobile survivor game seen from a high three-quarter top-down angle (the attached mock-up shows the look). Draw ONE sprite sheet: the monsters of map 3, "Dark Castle" (menacing but still cute).
+
+STYLE
+- Match the painting style of the attached mock-up screenshot exactly: cute early-2000s Korean fantasy MMORPG charm redrawn at modern quality, chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), pastel colours, light from the upper left.
+- Everything is an ORIGINAL design. Do not copy any existing game's characters, monsters, items, logos or interface.
+
+TECHNICAL
+- Background: a perfectly flat, solid magenta #FF00FF everywhere (no gradient, texture, floor, horizon, shadow or vignette). Never use magenta, pink or purple inside any of the drawings.
+- No text, numbers, labels, frames, borders, grid lines, signatures or watermarks.
+- No ground shadows, glows, auras, motion lines, sparkles or particles around the drawings.
+- Every drawing is complete (nothing cut off by the image edge), stands alone, and is separated from the others by at least 80 px of plain background.
+
+LAYOUT (landscape 1536 x 1024)
+- Top row: three monsters side by side, each centred in its own third of the width, all about 300 px tall, in this order from left to right:
+  1. Imp: a small red imp with tiny bat wings, little horns, a pointed tail and a three-pronged fork; it flies and throws fireballs.
+  2. Armored Knight: a sturdy chibi knight in full steel plate armour with a red plume, a shield with a gold cross emblem and a sword.
+  3. Gargoyle: a grey stone gargoyle with stubby wings, horns and cracks in the stone, crouched ready to pounce.
+- Bottom row, centred: the boss, much bigger (about 520 px wide):
+  4. Demon Lord: a huge horned demon lord in crimson and black armour with gold trim, glowing yellow eyes, a dark cape and a flaming sword.
+- Every monster is shown in a three-quarter view turned toward the RIGHT side of the image, in a lively ready pose, full body, the way it will look walking around the game map.

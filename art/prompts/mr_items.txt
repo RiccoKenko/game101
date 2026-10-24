@@ -1,0 +1,18 @@
+You are the lead artist for "Little Archer: Monster Rush", a cute mobile survivor game seen from a high three-quarter top-down angle (the attached mock-up shows the look). Draw ONE sheet of small game items and projectiles.
+
+STYLE
+- Match the painting style of the attached mock-up screenshot exactly: cute early-2000s Korean fantasy MMORPG charm redrawn at modern quality, chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), pastel colours, light from the upper left.
+- Everything is an ORIGINAL design. Do not copy any existing game's characters, monsters, items, logos or interface.
+
+TECHNICAL
+- Background: a perfectly flat, solid magenta #FF00FF everywhere (no gradient, texture, floor, horizon, shadow or vignette). Never use magenta, pink or purple inside any of the drawings.
+- No text, numbers, labels, frames, borders, grid lines, signatures or watermarks.
+- No ground shadows, glows, auras, motion lines, sparkles or particles around the drawings.
+- Every drawing is complete (nothing cut off by the image edge), stands alone, and is separated from the others by at least 80 px of plain background.
+
+LAYOUT (landscape 1536 x 1024)
+- A grid of 6 columns and 3 rows; each item centred in its own cell and filling about 70% of it.
+  Row 1: an arrow (wooden shaft, steel head, red-and-white feathers); a glowing storm arrow crackling with blue lightning; a silver throwing dagger; a golden throwing dagger with a gem; a small double-bladed battle axe; a huge golden titan axe with glowing runes.
+  Row 2: a wooden boomerang with painted stripes; a round black bomb with a lit fuse; a fireball; a pale blue spirit orb with wisps; a small blue crystal; a medium blue crystal.
+  Row 3: a large blue crystal; a gold coin seen from the front with a star stamp; a roasted meat drumstick on the bone; a red horseshoe magnet with silver tips; a small wooden treasure chest with gold trim, closed; (leave the last cell empty).
+- Arrows, daggers and the storm arrow point to the RIGHT, perfectly horizontal. Axes and the boomerang are seen flat, as if lying on the ground. Crystals stand upright.
