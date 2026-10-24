@@ -2,10 +2,29 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## สถานะ (24 ต.ค. 2026 หลังงานข้ามคืน)
+## 📍 จุดที่หยุดไว้ก่อน compact (24 ต.ค. 2026 บ่าย)
+- **งานถัดไปที่ตกลงกันแล้ว:** วาด**ภาพครึ่งตัว Talon** ด้วย OpenAI ซึ่งเป็นภาพสุดท้ายของ Chapter 1
+  - เจ้านายบอกให้ทำ handoff ก่อนแล้วค่อยทำต่อ หลัง compact รอให้เจ้านายพิมพ์สั่งก่อน
+  - คำสั่ง: `npm run art:openai -- art/incoming/talon/talon_portraits.png --prompt art/prompts/talon_portraits.txt --ref art/incoming/talon/talon_rigpose.webp --ref art/incoming/talon/talon_poses.webp --quality medium --transparent`
+    - สร้าง `art/prompts/talon_portraits.txt` จากกล่อง prompt หัวข้อ 14 ใน brief ก่อน
+    - ตัดส่วน "HOW TO DELIVER" และบรรทัด "Make the image now…" ออก (ดูตัวอย่างจาก `art/prompts/chapter1_map.txt`)
+    - เขียนบอกว่าภาพแนบแรกคือ rig pose และภาพที่สองคือท่าทาง
+  - ราคาประมาณ $0.15 (medium + ภาพอ้างอิง 2 ภาพ)
+  - ได้ภาพแล้ว: `npm run art -- talon` (มี entry portraits ชื่อ proud/cry/happy ใน `sheets.json` แล้ว) → เช็ก `.check.png` → `npm run art:publish -- talon`
+    - ⚠️ ระวัง publish ทับ sprites เดิมของ Talon ให้เทียบว่า part อื่นไม่เปลี่ยน
+    - เกมจะใช้ `sprites/talon/<mood>.png` อัตโนมัติ (`SPEAKERS.talon` ใน `story.ts`) แทนภาพที่ถ่ายจาก puppet
+  - ⚠️ commit `art/openai-log.jsonl` ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไปเท่าไร เหลือเท่าไร
+- **ตัวเลือกที่เสนอไว้ (รอเจ้านายสั่ง):** แผนที่เลือกด่านแบบ high (~$0.27), วาดแผ่นป้อม cannon/frost ใหม่ (~$0.25 ต่อแผ่น)
+- **งบ OpenAI:** ใช้ไปประมาณ $0.24 จาก $5 (นับแบบเผื่อสูง รวม $0.113 ของครั้งแรกที่ล้มเหลวซึ่งอาจไม่ได้ถูกคิดเงิน) ยอดในบัญชีเริ่มที่ $4.87
+- **Artifacts ล่าสุด:** ตัวเกม version 16 (มีป้อมจริง, แผนที่ 3 ด่าน, แผนที่เลือกด่าน) และหน้าโชว์ version 5
+- **Deploy ล่าสุด:** `dpl_26CfQ7Vc3pmZVufzNsfaytsNPnja` (commit c322235) READY แล้ว
+- **Test:** unit 159 ข้อ, e2e 5 ข้อ ผ่าน
+- **บทเรียน:** ถึงข้อ 41 แล้ว (ข้อต่อไปคือ 42)
+
+## สถานะ (24 ต.ค. 2026)
 - **โปรเจกต์:** Little Archer: Sky Pirates
   - เกม TD แบบ 2.5D สไตล์ Kingdom Rush บนมือถือแนวนอน ภาพ 2D แนวอนิเมะ
-  - เจ้านายวาดภาพด้วย Codex แล้ว Claude ตัดชิ้น ใส่กระดูก ทำท่า และใส่เกม
+  - เจ้านายวาดภาพด้วย Codex/Gemini (แอป) หรือ Claude สั่ง OpenAI API เอง แล้ว Claude ตัดชิ้น ใส่กระดูก ทำท่า และใส่เกม
   - เทคโนโลยี: Three.js กล้อง orthographic, TypeScript, Vite
 - **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (branch นี้ใช้ deploy ด้วย)
 - **ลิงก์จริง:** little-archer.vercel.app (deploy ล่าสุดดูใน Vercel; ครั้งแรกของ Chapter 1 คือ `dpl_6AZCwQdwFAx6K3FpVqfarzhbPqGD`)
@@ -34,17 +53,19 @@
 - **ตัวละคร 8 ตัวเป็น puppet ทั้งหมด**
   - ฮีโร่ไม่มีลูกบอลข้อต่อที่ศอก/เข่าแล้ว (slicer มีโหมด `heal`)
   - ภาพครึ่งตัวครบ: hero, first_mate, deckhand (greedy/angry/panicked), mochi (proud/cry/happy)
-- **ป้อม 4 แบบ + สายระดับ 4:** เป็นภาพจริงจาก Codex แล้ว (24 ต.ค.)
+- **ป้อม 4 แบบ + สายระดับ 4:** เป็นภาพจริงแล้ว (เจ้านายวาดด้วย Gemini 24 ต.ค.)
   - ภาพต้นฉบับ `art/incoming/towers/` → `npm run art -- towers` → `npm run art:publish -- towers` → `public/sprites/towers/<kind>-<1|2|3|4a|4b>.png`
   - `sheets.json` entry `towers` ใช้ `cut` (ลบของแปลกปลอม), `spill` (เปลี่ยนรัศมีชมพูเป็นสีเรือง), `despeck`
   - เกมโหลดภาพป้อมทีหลัง (ไม่รอ) และวัดตำแหน่งฐานหินจากภาพเอง (`measureFoundation` ใน `src/play/main.ts`), `FOUNDATION = 2.3` เท่ารัศมีจุด
-  - ยังมีร่องรอยเล็ก ๆ: เส้นแดงจาง ๆ เหนือปืนใหญ่ Lv1 และหมอกม่วงนิดหน่อยใต้เมฆ Blizzard ถ้าเจ้านายติ ให้ Codex วาดแผ่นนั้นใหม่
-- **Test:** unit 153 ข้อ และ e2e 5 ข้อ ผ่านทั้งหมด
+  - ยังมีร่องรอยเล็ก ๆ: เส้นแดงจาง ๆ เหนือปืนใหญ่ Lv1 และหมอกม่วงนิดหน่อยใต้เมฆ Blizzard ถ้าเจ้านายติ ให้วาดแผ่นนั้นใหม่
+  - slicer ตัดได้ทุก sheet ที่มีใน `sheets.json` (ไม่จำกัดแค่ชื่อ sheet ของตัวละคร)
+- **Test:** unit 159 ข้อ และ e2e 5 ข้อ ผ่านทั้งหมด
   - e2e ใหม่เล่นตั้งแต่แผนที่ → ฉาก → Hard → หยุด → ชนะ → กลับแผนที่ → รีโหลดแล้วข้อมูลยังอยู่
 
 ## Artifacts (ลิงก์คงที่)
-- **ตัวเกม Chapter 1** (version 12): https://claude.ai/artifact/MXkN26QoVLgRMQsmvjhD98 (publish จาก scratchpad/sky-pirates-play.html)
-  - สร้างใหม่ด้วย `node scripts/build-showcase.mjs <out.html> play` (ประมาณ 4.2 MB)
+- **ตัวเกม Chapter 1** (version 16): https://claude.ai/artifact/MXkN26QoVLgRMQsmvjhD98 (publish จาก scratchpad/sky-pirates-play.html)
+  - สร้างใหม่ด้วย `node scripts/build-showcase.mjs <out.html> play` (ประมาณ 5.8 MB รวมป้อม 20 ภาพ)
+  - หน้าโชว์ไม่รวมภาพป้อม (build ข้ามโฟลเดอร์ `towers`)
   - ใน artifact ไม่มีปุ่มไปหน้าอื่น และถ้า localStorage ใช้ไม่ได้ก็ยังเล่นได้ (แค่ไม่จำ)
 - **หน้าโชว์ตัวละคร** (version 5): https://claude.ai/artifact/PNawa631NQkzXEZbZAbFRh (publish จาก scratchpad/sky-pirates-cast.html)
   - สร้างใหม่ด้วย `node scripts/build-showcase.mjs <out.html> index` (ประมาณ 5.7 MB)
@@ -54,11 +75,11 @@
 ## รอเจ้านาย
 1. **ลองเล่น Chapter 1** แล้วบอกความเห็น เรื่องความยาก ความยาวด่าน 2-3 และบทเรื่อง
    - ด่าน 2 มีโจร 276 ตัว และด่าน 3 มี 355 ตัว (ด่าน 1 มี 128) ถ้ารู้สึกยาวไปให้ตัดเวฟได้
-2. **วาดภาพใน Codex ด้วย prompt หัวข้อ 11-14 ใน `docs/art/CHARACTER_BRIEF.md`**
-   - 11 ป้อม: เสร็จแล้ว
-   - 12 แผนที่ด่าน 2 และ 3: เสร็จแล้ว
+2. **ภาพตาม prompt หัวข้อ 11-14 ใน `docs/art/CHARACTER_BRIEF.md`**
+   - 11 ป้อม: เสร็จแล้ว (Gemini)
+   - 12 แผนที่ด่าน 2 และ 3: เสร็จแล้ว (Gemini)
    - 13 แผนที่เลือกด่าน: เสร็จแล้ว (OpenAI)
-   - 14 ภาพครึ่งตัว Talon (proud, cry, happy ตาม `sheets.json`)
+   - 14 ภาพครึ่งตัว Talon (proud, cry, happy ตาม `sheets.json`): งานถัดไป (OpenAI)
 3. **ชื่อด่าน 1** เปลี่ยนเป็น "The First Raid" แล้ว ถ้าไม่ชอบบอกได้
 4. **อารมณ์ภาพครึ่งตัว Mochi**: ใช้ชื่อ proud (ยิ้มอ้าปาก), cry (ขมวดคิ้ว), happy (หลับตายิ้ม) ตามบท แต่ brief เดิมเขียนว่า happy/determined/sleepy ถ้าอยากให้ตรง brief ให้เปลี่ยนชื่อใน `story.ts` + `sheets.json`
 
@@ -107,13 +128,10 @@
   - proxy ของ session ตัดคำขอที่นานเกิน ~30 วินาที (เจอ 502) สคริปต์จึงส่งงานแบบ background ผ่าน Responses API (`gpt-5.4-mini` + tool `image_generation`) แล้ววนเช็กผลจนเสร็จ
   - Node fetch ต้องตั้ง `NODE_USE_ENV_PROXY=1` (ใส่ไว้ใน npm script แล้ว) ไม่อย่างนั้นคำขอจะไม่ผ่าน proxy และ key จะไม่ถูกแนบ
   - ค่าภาพคิดแบบประมาณเผื่อสูง (เครื่องมือวาดภาพไม่ส่งจำนวน token มาให้) จึงนับเกินจริงเล็กน้อย ยอดจริงดูได้ที่หน้า Billing ของ OpenAI
-- **ขั้นแรกใน session ใหม่** (เดิม)
-  1. `npm run art:openai -- --spent` เช็กว่าสคริปต์อ่าน key ได้
-  2. ลองวาดแผนที่หน้าเลือกด่าน
-     - prompt หัวข้อ 13 ใน brief
-     - แนบ `art/maps/chapter1-sketch.png` + `public/maps/level1.webp` เป็นแบบสไตล์
-     - `--quality medium` ก่อน
-  3. ส่งให้เจ้านายดู ถ้าผ่านค่อยทำ high แล้วใส่เกม (`CHAPTER1_MAP.art`)
+- **วิธีที่ใช้แล้วได้ผล (แผนที่เลือกด่าน)**
+  - prompt อยู่ใน `art/prompts/chapter1_map.txt`
+  - แนบภาพร่าง + `public/maps/level1.webp` เป็นแบบสไตล์ ใช้ medium ใช้เวลาประมาณ 40 วินาที
+  - ตำแหน่งเกาะตรงกับภาพร่างจนไม่ต้องจูน
 - สคริปต์ `art:gemini` ยังเก็บไว้ เผื่อมีเครดิต Gemini ในอนาคต
 
 ## 🌙 แผนงานยาวข้ามคืน (23-24 ต.ค.): เสร็จครบ
@@ -129,11 +147,9 @@
 - [x] e2e + test ครบ, artifact ทั้งสอง, deploy
 
 ## งานถัดไปของ Claude
-- **พอได้ภาพจาก Codex**
-  - ป้อม: ตัดแล้วแทน `paintTower`
-  - แผนที่ด่าน 2-3: ใส่ `map.art` แล้วซ้อนกับภาพร่างเพื่อจูนจุด
-  - แผนที่เลือกด่าน: ใส่ `CHAPTER1_MAP.art`
-  - Talon portraits: `npm run art -- talon` แล้ว publish (ชื่อ proud/cry/happy ตรงกับ `story.ts` แล้ว)
+- **ภาพที่ใส่เกมแล้ว:** ป้อม, แผนที่ด่าน 2-3, แผนที่เลือกด่าน
+  - เหลือ Talon portraits: `npm run art -- talon` แล้ว publish (ชื่อ proud/cry/happy ตรงกับ `story.ts` แล้ว)
+- **เครื่องมือแผนที่:** `npx tsx scripts/tools/map_overlay.mts <map> <out.png> <level id>` และ `map_measure.mts <raw> <level id>` ใช้ซ้อนภาพวาดกับข้อมูลด่าน
 - **ไอเดียที่ยังไม่ได้ทำ (รอเจ้านายเลือก)**
   - เพลงประกอบ (มีไฟล์เพลงเดิมใน `public/audio/music_*.mp3` แต่ยังไม่ได้ใช้) + ปุ่มปิดเสียง
   - ฉาก Stormbeard ตัวจริง (ต้องวาดตัวละครใหม่)
@@ -226,7 +242,7 @@
   - ภาษาไทยปนศัพท์เทคนิค
   - ส่งงานก่อนแล้วค่อยอธิบาย
   - อธิบายแบบคนที่ไม่ใช่สาย dev
-  - มี "📚 บทเรียนที่ N" ซึ่งถึง **36** แล้ว (ข้อต่อไปคือ 37)
+  - มี "📚 บทเรียนที่ N" ซึ่งถึง **41** แล้ว (ข้อต่อไปคือ 42)
 - **checkpoint:** เมื่อถึงจุดที่หยุดได้ให้บอกก่อน เพราะเจ้านายจะสั่ง handoff แล้ว compact
 - **งานภาพ:** Codex เป็น account กลางที่**ไม่ได้เชื่อม GitHub** ใช้เป็นแชตธรรมดา
   - เจ้านายใช้แอป Gemini (account บริษัท) แทนได้ด้วย prompt เดิม ผลออกมาดี: ป้อมและแผนที่ด่าน 2-3 วาดด้วย Gemini
