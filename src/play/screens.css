@@ -250,6 +250,11 @@ button.primary {
   font-size: 19px;
 }
 
+.chapter-title .complete {
+  font-style: normal;
+  color: var(--leaf-deep);
+}
+
 .chapter-stars {
   display: flex;
   align-items: center;

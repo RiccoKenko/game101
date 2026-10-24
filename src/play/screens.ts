@@ -107,7 +107,8 @@ export class ChapterScreen {
     const open = unlockedCount(this.chapter, p);
     const total = chapterStars(this.chapter, p);
     this.top.replaceChildren();
-    const heading = el('div', 'chapter-title', `<small>Chapter ${this.title.number}</small><b>${this.title.name}</b>`);
+    const done = this.chapter.every((l) => p.levels[l.id]);
+    const heading = el('div', 'chapter-title', `<small>Chapter ${this.title.number}${done ? ' · <em class="complete">Complete!</em>' : ''}</small><b>${this.title.name}</b>`);
     const stars = el('div', 'chapter-stars', `<i class="star on"></i><b>${total}</b><span>/ ${this.chapter.length * 3}</span>`);
     const picker = el('div', 'diff');
     picker.setAttribute('role', 'radiogroup');
