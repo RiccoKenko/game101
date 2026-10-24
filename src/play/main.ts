@@ -637,13 +637,13 @@ $('speed').addEventListener('click', () => {
  * A close-up of a companion's face from its puppet (`zoom` frames tighter): the skill buttons' icons, and Talon's
  * story portrait until his portraits are drawn. Null while the puppet isn't drawn.
  */
-function faceOf(look: PuppetLook | null, clip: string, zoom: number, size: number): string | null {
+function faceOf(look: PuppetLook | null, clip: string, zoom: number, size: number, soften = false): string | null {
   if (!look) return null;
   const b = look.box;
   const r = Math.max(b.max.x - b.min.x, b.max.y - b.min.y) * 0.22 / zoom;
   // Mochi looks out from just behind his nose; Talon from just under the top of his head.
   const centre: [number, number] = look.nose ? [look.nose[0] - r * 0.85, look.nose[1] + r * 0.15] : [look.headTop[0], look.headTop[1] - r * 0.8];
-  return snapshotPuppet(renderer, look.assets, look.clips, { clip, t: 0, centre, radius: r, size }).toDataURL();
+  return snapshotPuppet(renderer, look.assets, look.clips, { clip, t: 0, centre, radius: r, size, soften }).toDataURL();
 }
 
 const SKILL_ICON: Record<SkillName, string> = {
@@ -1165,9 +1165,9 @@ async function leaveBattle(action: EndAction, won: boolean, next: LevelDef | und
 
 const app = document.querySelector('.app') as HTMLElement;
 const story = new StoryPlayer(app);
-const talonFace = faceOf(talonLook, 'idle', 0.75, 256);
+const talonFace = faceOf(talonLook, 'idle', 0.75, 256, true);
 if (talonFace) story.setStandIn('talon', talonFace);
-const mochiFace = faceOf(mochiLook, 'idle', 0.6, 256);
+const mochiFace = faceOf(mochiLook, 'idle', 0.6, 256, true);
 if (mochiFace) story.setStandIn('mochi', mochiFace);
 let paused = false;
 

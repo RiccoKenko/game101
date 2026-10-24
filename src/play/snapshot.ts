@@ -17,6 +17,8 @@ export interface SnapshotOptions {
   /** Output size in pixels. */
   size: number;
   facing?: 1 | -1;
+  /** Fade out towards the top and sides (a bust cut from a bigger picture), rather than a hard square edge. */
+  soften?: boolean;
 }
 
 /** Renders the puppet into a transparent square canvas. */
@@ -58,8 +60,12 @@ export function snapshotPuppet(renderer: THREE.WebGLRenderer, assets: PuppetAsse
   for (let row = 0; row < o.size; row++) {
     const from = (o.size - 1 - row) * o.size * 4;
     for (let i = 0; i < o.size * 4; i += 4) {
-      const a = pixels[from + i + 3];
-      const k = a ? 255 / a : 0;
+      const x = i / 4 / (o.size - 1);
+      const y = row / (o.size - 1);
+      // Within the outer 14% of the top and sides, fade to nothing.
+      const edge = o.soften ? Math.min(1, Math.min(x, 1 - x, y) / 0.14) : 1;
+      const a = Math.round(pixels[from + i + 3] * edge * edge * (3 - 2 * edge));
+      const k = pixels[from + i + 3] ? 255 / pixels[from + i + 3] : 0;
       const to = row * o.size * 4 + i;
       image.data[to] = Math.min(255, pixels[from + i] * k);
       image.data[to + 1] = Math.min(255, pixels[from + i + 1] * k);
