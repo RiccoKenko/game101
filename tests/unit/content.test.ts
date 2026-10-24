@@ -6,7 +6,10 @@ import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNES, WEAPONS, WEAPON_IDS } fr
 import { evolvableWeapons, evolve, newInventory } from '../../src/core/progression';
 import { defaultSave, sanitize } from '../../src/core/save';
 import { computeStats } from '../../src/core/stats';
-import { leadersDue, swarmSize } from '../../src/core/waves';
+import { bossesDue, leadersDue, swarmSize } from '../../src/core/waves';
+import { DIFFICULTIES, maxDifficulty } from '../../src/config/difficulty';
+import { RELICS, relicFor } from '../../src/config/relics';
+import { EVENT_GAP, EVENT_QUIET, FINAL_TIME, SHRINE_OFFERS } from '../../src/config/events';
 
 describe('weapons', () => {
   it('every weapon has five levels and a card line for each upgrade', () => {
@@ -73,5 +76,31 @@ describe('monsters', () => {
     expect(leadersDue(450)).toBe(2);
     expect(swarmSize(6, 0)).toBe(6);
     expect(swarmSize(6, 6)).toBe(8);
+  });
+});
+
+describe('depth: difficulty, relics, events', () => {
+  it('clearing opens the next difficulty and the save keeps picks within it', () => {
+    const s = sanitize({ clears: [1, 0, 0], difficulty: [2, 1, 0] });
+    expect(s.difficulty).toEqual([1, 0, 0]);
+    expect(maxDifficulty(0)).toBe(0);
+    expect(maxDifficulty(3)).toBe(DIFFICULTIES.length - 1);
+    for (let i = 1; i < DIFFICULTIES.length; i++) {
+      expect(DIFFICULTIES[i].hp).toBeGreaterThan(DIFFICULTIES[i - 1].hp);
+      expect(DIFFICULTIES[i].gold).toBeGreaterThan(DIFFICULTIES[i - 1].gold);
+    }
+  });
+
+  it('each relic is won by exactly one map clear, and only owned relics can be worn', () => {
+    for (const r of RELICS) expect(relicFor(r.map, r.difficulty)).toBe(r);
+    const s = sanitize({ relics: ['slime', 'ogre', 'nope'], equipped: ['ogre', 'demon', 'slime', 'slime'] });
+    expect(s.relics).toEqual(['slime', 'ogre']);
+    expect(s.equipped).toEqual(['ogre', 'slime']);
+  });
+
+  it('events are spaced out and the final boss comes with the third boss', () => {
+    expect(EVENT_GAP[0]).toBeGreaterThan(EVENT_QUIET * 2);
+    expect(bossesDue(FINAL_TIME)).toBe(3);
+    expect(SHRINE_OFFERS.some((o) => o.pact) && SHRINE_OFFERS.some((o) => !o.pact)).toBe(true);
   });
 });

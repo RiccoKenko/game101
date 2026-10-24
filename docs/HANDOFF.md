@@ -2,31 +2,29 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 สถานะล่าสุด (24 ต.ค. 2026 เย็น)
+## 📍 สถานะล่าสุด (24 ต.ค. 2026 ค่ำ)
 - **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุค "MMORPG เกาหลียุค 2000"
 - **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`)
-  - Test: typecheck, unit 51 ข้อ, e2e 4 ข้อ, build ผ่าน
-- **ลิงก์ทดสอบ (Artifact เดิม, v5 = เฟส 3 ครบ):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
+  - Test: typecheck, unit 54 ข้อ, e2e 4 ข้อ, build ผ่าน
+- **ลิงก์ทดสอบ (Artifact เดิม, v6 = ความลึกครบ):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
   - สร้างใหม่: `node scripts/build-artifact.mjs <scratchpad>/monster-rush.html` แล้ว publish ทับ path เดิม (หรือใส่ `url` ถ้า session ใหม่)
 - **ลิงก์หลัก little-archer.vercel.app ยังเป็น Monster Rush ภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`)
-  - ⚠️ ยังไม่ deploy: รอเจ้านายสั่ง (ถามไปแล้ว 2 รอบ ยังไม่ได้คำตอบ)
+  - ⚠️ ยังไม่ deploy: รอเจ้านายสั่ง (ถามไปหลายรอบ ยังไม่ได้คำตอบ)
   - วิธี deploy: Vercel MCP `create_deployment` (project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`) แล้วเช็กลิงก์จริง
-- **เฟส 3 เนื้อหาเล่นซ้ำ: ครบทั้ง 4 ข้อแล้ว** (เจ้านายสั่ง "ทำต่อได้เลยตัวละคร เพิ่มสายเวทไปก็ได้ ละก็เพิ่มอาวุธกับมอนใหม่ด้วย")
-  1. **ภารกิจรายวัน/ความสำเร็จ**: `src/config/quests.ts`, `src/core/quests.ts`, `QuestsScene`, ป้ายในเกม, เซฟ `daily`/`achievements`/`stats`
-  2. **ตัวละครให้เลือก**: `src/config/characters.ts` (archer ฟรี, mage 600 เหรียญ: เริ่มด้วย Magic Bolt, วง +15%, HP -10%)
-     - เมนู: ลูกศรซ้าย/ขวา + ป้ายชื่อ; ตัวที่ล็อกเป็นเงาดำ + กุญแจ, ปุ่ม PLAY กลายเป็น "Unlock 600"; เซฟ `character`, `characters`
-     - เกม: `Player` ใช้ sheet ตามตัวละคร (anim `<sheet>_<name>`), อาวุธเริ่มของตัวละคร = `player.primary` ยิงจาก `attackPoint()` (`muzzle` ใน config) และเล่นท่ายิง
-     - Little Mage: ภาพ `art/incoming/mr/mage_*.png` (พื้นเขียว #00FF00), puppet + bake โดย subagent ตาม `scripts/art/hero-bake/README.md` (ส่วน mage), ผล `art/baked/mage/`, เกมใช้ `public/art/hero/mage.webp/.json`, ภาพเมนู `mage_menu.webp` ตัดด้วย `scripts/art/menu-still.ts`
-  3. **อาวุธใหม่ 4 + ร่างวิวัฒนาการ 2**: Magic Bolt (ไล่ตาม) → Starfall (+Spell Tome), Frost Shards (ทำให้ช้า) → Blizzard (+Winged Boots), Moon Slash (ฟันวงพระจันทร์), Poison Flask (บ่อพิษ) — ภาพ `items2` (ไอคอน 6 + sprite 6)
-  4. **มอนใหม่ 6 + หัวหน้า 3**: Meadow: ฝูง Buzzbee, Puffball (แตก 2); Graveyard: Pumpkin Bomb (ระเบิด), Wraith (ยิง `spirit`); Castle: Mimic (แกล้งเป็นหีบ), ฝูง Flame Wisp; หัวหน้า Boar Chief / Bone Captain / Ogre Warden ที่ 2:30, 7:30... ดรอปหีบ
-     - config: `ENEMIES` (behavior ใหม่ swarm/splitter/exploder/ambush), `BOSSES` (`leader: true`), `MAPS[].extras/swarm/leader`, `waves.ts leadersDue/swarmSize`
+- **รอบล่าสุด (เจ้านายลองเล่น v5 แล้วติ 6 ข้อ + "เล่น 4-5 ตาก็เบื่อ อยากให้มีความลึก")** เจ้านายเลือก 3 ชุด: สกิลเปลี่ยนวิธียิง, แต่ละรอบไม่ซ้ำ, เป้าหมายระยะยาว (ไม่เลือก dash/ท่าไม้ตาย)
+  - **แก้ 6 ข้อ:** ลูกเวทกลับด้าน (ภาพวาดหันซ้าย → `flip` ใน `mr-sheets.json`), นักเวทได้การ์ด Bow (อาวุธประจำตัวละครเป็นของตัวนั้นเท่านั้น `Inventory.banned`), เอฟเฟกต์ร่ายเวท `fx.cast` + ประกายที่ลูกเวท, Spell Tome ทำให้กระสุนใหญ่ขึ้นจริง, กดการ์ดแล้วเลื่อนนิ้วออก = ยกเลิก, กระสุนมอนสีแดงชมพู + วงแสงแดง
+  - **รูน 6 แบบ** (`RUNES`, `RUNE_POWER` ใน `config/weapons.ts`; ทำงานใน `EnemyManager.runeProcs/kill`, ลูกเด้งใน `WeaponSystem.bounce`) ช่องรูน 3, ปุ่ม Reroll/Banish (shop `reroll`, `banish`), ร่างวิวัฒนาการใหม่ 5 แบบที่ต้องใช้รูน (thunder, meteor, twinmoon, flameslash, plague)
+  - **เหตุการณ์สุ่ม** `game/RunEvents.ts` + `config/events.ts` + `ShrineScene` (พร 3 แบบ, คำสาป 3 แบบ), ก็อบลิน behavior `flee`, ตัวนับเวลาและลูกศรใน HUD; **บอสนาที 15:00 = บอสสุดท้าย** ชนะแล้ว STAGE CLEAR
+  - **ความยาก** `config/difficulty.ts` (Normal/Hard/Nightmare, ปุ่มบนการ์ดแมพ, เซฟ `clears`, `difficulty`) และ **เครื่องราง 6 ชิ้น** `config/relics.ts` + `RelicsScene` (ใส่ได้ 2, เซฟ `relics`, `equipped`); ความสำเร็จ Champion
+  - ภาพใหม่: `icons3` (รูน 6 + ร่างวิวัฒนาการ 5 + อุกกาบาต), `relics` (เครื่องราง 6, เหรียญทอง, แท่นบูชา, ก็อบลิน, สัญลักษณ์ Hard/Nightmare)
+- **เฟสก่อนหน้า (เสร็จแล้ว):** ภารกิจรายวัน/ความสำเร็จ, ตัวละคร Little Mage (600 เหรียญ), อาวุธใหม่ 4 + วิวัฒนาการ 2, มอนใหม่ 6 + หัวหน้า 3
 - **สมดุล (บอท `?bot&speed=8`, ไม่มีอัปเกรด):** Meadow รอด 7 นาทีเหมือนเดิม; Castle ตาย ~30 วิ ทั้งเก่าและใหม่ (แมพนี้ต้องอัปเกรดก่อน); Graveyard ตอนแรกยากขึ้นมาก (ตาย 2:41-3:24 เทียบเดิม 6:35+) → ลดแรงระเบิดฟักทอง/ลูกวิญญาณ, ฟิวส์ 0.8 วิ, Wraith มาที่ 2:30 น้อยลงและยิงทุก 3.8 วิ → บอทรอดถึง 5:45 (ตายตอนบอส Lich; seed 21) ใกล้ของเดิมแล้ว
-- **สวิตช์ทดสอบใหม่:** `?give=slash5,flask3,starfall` และ `?hero=mage`
+- **สวิตช์ทดสอบใหม่:** `?give=slash5,flask3,starfall,burn2`, `?hero=mage`, `?event=shrine`, `?difficulty=1&relics=boar,demon`
 - **ข้อสังเกตจอมเวท (ไม่ร้ายแรง):** รองเท้าชี้ตรงทั้งคู่, แขนข้างร่ายถูกยืด ~16% ตอนพุ่ง, ท่า KO ไม้เท้าพาดตัว, ปลายหมวกแกว่งได้แค่ ~10°
-- **งบ OpenAI:** ใช้ไป **$3.22 จาก $5** (เหลือ $1.78) ตาม `art/openai-log.jsonl`
+- **งบ OpenAI:** ใช้ไป **$3.53 จาก $5** (เหลือ $1.47) ตาม `art/openai-log.jsonl`
   - ⚠️ commit log ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไป/เหลือเท่าไร
   - ห้ามเพิ่ม `OPENAI_BUDGET_USD` ถ้าเจ้านายไม่สั่ง
-- **บทเรียน:** ถึงข้อ 48 แล้ว (ข้อต่อไปคือ 49)
+- **บทเรียน:** ถึงข้อ 49 แล้ว (ข้อต่อไปคือ 50)
 - **ภาษา:** เจ้านายขอให้ตอบเป็น**ภาษาไทย** (ใช้ศัพท์อังกฤษให้น้อย)
 - **ตัวละครหลัก (ใหม่) ทำอย่างไร / แก้ต่ออย่างไร**
   - ภาพต้นฉบับ: `art/incoming/mr/hero_{concepts,master,rigpose,head_faces,parts_body,hands_props}.png`, prompt `art/prompts/mr_hero_*.txt`
