@@ -2,24 +2,19 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 จุดที่หยุดไว้ก่อน compact (24 ต.ค. 2026 บ่าย)
-- **งานถัดไปที่ตกลงกันแล้ว:** วาด**ภาพครึ่งตัว Talon** ด้วย OpenAI ซึ่งเป็นภาพสุดท้ายของ Chapter 1
-  - เจ้านายบอกให้ทำ handoff ก่อนแล้วค่อยทำต่อ หลัง compact รอให้เจ้านายพิมพ์สั่งก่อน
-  - คำสั่ง: `npm run art:openai -- art/incoming/talon/talon_portraits.png --prompt art/prompts/talon_portraits.txt --ref art/incoming/talon/talon_rigpose.webp --ref art/incoming/talon/talon_poses.webp --quality medium --transparent`
-    - สร้าง `art/prompts/talon_portraits.txt` จากกล่อง prompt หัวข้อ 14 ใน brief ก่อน
-    - ตัดส่วน "HOW TO DELIVER" และบรรทัด "Make the image now…" ออก (ดูตัวอย่างจาก `art/prompts/chapter1_map.txt`)
-    - เขียนบอกว่าภาพแนบแรกคือ rig pose และภาพที่สองคือท่าทาง
-  - ราคาประมาณ $0.15 (medium + ภาพอ้างอิง 2 ภาพ)
-  - ได้ภาพแล้ว: `npm run art -- talon` (มี entry portraits ชื่อ proud/cry/happy ใน `sheets.json` แล้ว) → เช็ก `.check.png` → `npm run art:publish -- talon`
-    - ⚠️ ระวัง publish ทับ sprites เดิมของ Talon ให้เทียบว่า part อื่นไม่เปลี่ยน
-    - เกมจะใช้ `sprites/talon/<mood>.png` อัตโนมัติ (`SPEAKERS.talon` ใน `story.ts`) แทนภาพที่ถ่ายจาก puppet
-  - ⚠️ commit `art/openai-log.jsonl` ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไปเท่าไร เหลือเท่าไร
+## 📍 จุดล่าสุด (24 ต.ค. 2026 บ่าย หลัง compact)
+- **ภาพครึ่งตัว Talon เสร็จแล้ว** (ภาพสุดท้ายของ Chapter 1): `art/incoming/talon/talon_portraits.png` → `public/sprites/talon/{proud,cry,happy}.png`
+  - วาดด้วย `npm run art:openai` (gpt-image-2 medium + ภาพอ้างอิง 2 ภาพ) ราคานับไว้ $0.122
+  - ⚠️ **gpt-image-2 ไม่รองรับพื้นโปร่งใส** (`--transparent` ถูกปฏิเสธตั้งแต่ตอนส่ง ไม่เสียเงิน) ให้สั่งพื้นชมพูบานเย็นเรียบ #FF00FF แล้วให้ slicer ลบพื้นแทน (ดู `art/prompts/talon_portraits.txt`)
+  - ตัดด้วย `boxes` ใน `sheets.json` (3 ช่องแนวตั้ง) part อื่นของ Talon ไม่เปลี่ยน
 - **ตัวเลือกที่เสนอไว้ (รอเจ้านายสั่ง):** แผนที่เลือกด่านแบบ high (~$0.27), วาดแผ่นป้อม cannon/frost ใหม่ (~$0.25 ต่อแผ่น)
-- **งบ OpenAI:** ใช้ไปประมาณ $0.24 จาก $5 (นับแบบเผื่อสูง รวม $0.113 ของครั้งแรกที่ล้มเหลวซึ่งอาจไม่ได้ถูกคิดเงิน) ยอดในบัญชีเริ่มที่ $4.87
-- **Artifacts ล่าสุด:** ตัวเกม version 16 (มีป้อมจริง, แผนที่ 3 ด่าน, แผนที่เลือกด่าน) และหน้าโชว์ version 5
-- **Deploy ล่าสุด:** `dpl_26CfQ7Vc3pmZVufzNsfaytsNPnja` (commit c322235) READY แล้ว
+- **งบ OpenAI:** ใช้ไปประมาณ **$0.37 จาก $5** (นับแบบเผื่อสูง รวม $0.113 ของครั้งแรกที่ล้มเหลวซึ่งอาจไม่ได้ถูกคิดเงิน) ยอดในบัญชีเริ่มที่ $4.87
+  - ⚠️ commit `art/openai-log.jsonl` ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไปเท่าไร เหลือเท่าไร
+- **Artifacts ล่าสุด:** ตัวเกม version 17 (มีภาพครึ่งตัว Talon) และหน้าโชว์ version 5
+- **Deploy ล่าสุด:** `dpl_Cugj9QMamv3vcVRvQ95tS8eYW3ZK` (commit de81b46)
 - **Test:** unit 159 ข้อ, e2e 5 ข้อ ผ่าน
-- **บทเรียน:** ถึงข้อ 41 แล้ว (ข้อต่อไปคือ 42)
+- **บทเรียน:** ถึงข้อ 42 แล้ว (ข้อต่อไปคือ 43)
+- ⚠️ อย่าใช้ `pkill -f <คำ>` ที่คำไปตรงกับคำสั่งของ shell ตัวเอง (shell ถูกฆ่า exit 144)
 
 ## สถานะ (24 ต.ค. 2026)
 - **โปรเจกต์:** Little Archer: Sky Pirates
@@ -48,7 +43,7 @@
     - ห่อ try/catch ทุกจุด
   - **ฉากเล่าเรื่อง:** บทร่างใน `src/play/story.ts` (`level<N>:before` / `level<N>:after`)
     - Stormbeard เป็นเงาดำ (ยังไม่มีภาพ)
-    - Talon ใช้ภาพที่ถ่ายจาก puppet จนกว่าภาพครึ่งตัวจะมา
+    - Talon มีภาพครึ่งตัวจริงแล้ว (OpenAI) ภาพที่ถ่ายจาก puppet เป็นแค่ตัวสำรองถ้าไฟล์หาย
   - **การ์ดจบด่าน, เมนูหยุด (II), `?debug`, รวม draw call (atlas)** ดู README
 - **ตัวละคร 8 ตัวเป็น puppet ทั้งหมด**
   - ฮีโร่ไม่มีลูกบอลข้อต่อที่ศอก/เข่าแล้ว (slicer มีโหมด `heal`)
@@ -79,7 +74,7 @@
    - 11 ป้อม: เสร็จแล้ว (Gemini)
    - 12 แผนที่ด่าน 2 และ 3: เสร็จแล้ว (Gemini)
    - 13 แผนที่เลือกด่าน: เสร็จแล้ว (OpenAI)
-   - 14 ภาพครึ่งตัว Talon (proud, cry, happy ตาม `sheets.json`): งานถัดไป (OpenAI)
+   - 14 ภาพครึ่งตัว Talon (proud, cry, happy ตาม `sheets.json`): เสร็จแล้ว (OpenAI, พื้นชมพู ไม่ใช่โปร่งใส)
 3. **ชื่อด่าน 1** เปลี่ยนเป็น "The First Raid" แล้ว ถ้าไม่ชอบบอกได้
 4. **อารมณ์ภาพครึ่งตัว Mochi**: ใช้ชื่อ proud (ยิ้มอ้าปาก), cry (ขมวดคิ้ว), happy (หลับตายิ้ม) ตามบท แต่ brief เดิมเขียนว่า happy/determined/sleepy ถ้าอยากให้ตรง brief ให้เปลี่ยนชื่อใน `story.ts` + `sheets.json`
 
@@ -102,7 +97,7 @@
 
 | งาน | วิธี | งบ |
 |---|---|---|
-| ปิด Chapter 1: แผนที่หน้าเลือกด่าน + ภาพครึ่งตัว Talon | ร่าง medium 2 ครั้ง + จริง high 1 ครั้ง ต่อภาพ (Talon ใช้ `--transparent`) | ~$0.75 |
+| ปิด Chapter 1: แผนที่หน้าเลือกด่าน + ภาพครึ่งตัว Talon | ร่าง medium 2 ครั้ง + จริง high 1 ครั้ง ต่อภาพ (gpt-image-2 ไม่รองรับ `--transparent` ใช้พื้นชมพูแทน) | ~$0.75 |
 | Chapter 2: แผนที่ 3 ด่าน + แผนที่เลือกด่าน | ภาพร่างจาก `map:sketch` + medium ร่าง + high จริง | ~$1.20 |
 | Chapter 3: แผนที่ 3 ด่าน + แผนที่เลือกด่าน | เหมือน Chapter 2 | ~$1.20 |
 | Captain Stormbeard (บอสใหญ่ ตัวละครใหม่ตัวเดียวของเกม) | medium ทั้งหมด วาดเฉพาะแผ่นที่ใช้จริง (master, rigpose, head_faces, parts_body, hands_props, portraits) ไม่วาด concept/poses | ~$0.75 |
@@ -148,7 +143,7 @@
 
 ## งานถัดไปของ Claude
 - **ภาพที่ใส่เกมแล้ว:** ป้อม, แผนที่ด่าน 2-3, แผนที่เลือกด่าน
-  - เหลือ Talon portraits: `npm run art -- talon` แล้ว publish (ชื่อ proud/cry/happy ตรงกับ `story.ts` แล้ว)
+  - Talon portraits เสร็จแล้ว (proud/cry/happy)
 - **เครื่องมือแผนที่:** `npx tsx scripts/tools/map_overlay.mts <map> <out.png> <level id>` และ `map_measure.mts <raw> <level id>` ใช้ซ้อนภาพวาดกับข้อมูลด่าน
 - **ไอเดียที่ยังไม่ได้ทำ (รอเจ้านายเลือก)**
   - เพลงประกอบ (มีไฟล์เพลงเดิมใน `public/audio/music_*.mp3` แต่ยังไม่ได้ใช้) + ปุ่มปิดเสียง
@@ -242,7 +237,7 @@
   - ภาษาไทยปนศัพท์เทคนิค
   - ส่งงานก่อนแล้วค่อยอธิบาย
   - อธิบายแบบคนที่ไม่ใช่สาย dev
-  - มี "📚 บทเรียนที่ N" ซึ่งถึง **41** แล้ว (ข้อต่อไปคือ 42)
+  - มี "📚 บทเรียนที่ N" ซึ่งถึง **42** แล้ว (ข้อต่อไปคือ 43)
 - **checkpoint:** เมื่อถึงจุดที่หยุดได้ให้บอกก่อน เพราะเจ้านายจะสั่ง handoff แล้ว compact
 - **งานภาพ:** Codex เป็น account กลางที่**ไม่ได้เชื่อม GitHub** ใช้เป็นแชตธรรมดา
   - เจ้านายใช้แอป Gemini (account บริษัท) แทนได้ด้วย prompt เดิม ผลออกมาดี: ป้อมและแผนที่ด่าน 2-3 วาดด้วย Gemini
