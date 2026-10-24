@@ -281,6 +281,7 @@ export class GameScene extends Phaser.Scene {
     this.fx.ring(x, y, 300, 0xffcc33);
     this.fx.sparkle(x, y - 20, 12, 0xffe9a3);
     this.slowMo(0.25, 0.4);
+    this.player.cheer();
     this.levelUpWait = 0.4;
     audio.sfx('levelup');
   }
@@ -364,6 +365,7 @@ export class GameScene extends Phaser.Scene {
       this.time.delayedCall(ms, () => this.fx.explosion(e.x + dx, e.y + dy, 170));
     }
     this.cameras.main.flash(260, 255, 244, 214);
+    this.player.cheer();
     this.shake(420, 0.012);
     this.hitStop(0.12);
     this.slowMo(0.3, 1.1);
@@ -560,8 +562,10 @@ export class GameScene extends Phaser.Scene {
     audio.stopMusic();
     if (!quit) {
       audio.sfx('gameover');
-      this.player.sprite.setTint(0xff6b6b);
-      this.tweens.add({ targets: this.player.sprite, angle: 90, alpha: 0.6, duration: 500, ease: 'Quad.easeIn' });
+      if (!this.player.knockOut()) {
+        this.player.sprite.setTint(0xff6b6b);
+        this.tweens.add({ targets: this.player.sprite, angle: 90, alpha: 0.6, duration: 500, ease: 'Quad.easeIn' });
+      }
     }
     this.time.delayedCall(quit ? 50 : 900, () => {
       this.scene.stop('Hud');

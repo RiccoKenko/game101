@@ -8,6 +8,53 @@ import { type ArtDef } from './types';
 
 export const ALL_ART: Record<string, ArtDef> = { ...CHARACTERS_ART, ...ITEMS_ART, ...ICONS_ART, ...ENVIRONMENT_ART };
 
+const ENEMIES = ['slime', 'bat', 'mushroom', 'skeleton', 'ghost', 'zombie', 'imp', 'knight', 'gargoyle'];
+
+/** Cache key of the hero sprite sheet's description (public/art/hero/hero.json). */
+export const HERO_META = 'hero_meta';
+
+export interface HeroMeta {
+  frameWidth: number;
+  frameHeight: number;
+  /** Where the feet are in each frame, in px. */
+  feet: [number, number];
+  animations: Record<string, { start: number; count: number; fps: number; loop: boolean }>;
+}
+
+/** Registers `hero_<name>` animations from the painted hero sheet, if it loaded. */
+export function heroAnimations(scene: Phaser.Scene): void {
+  const meta = scene.cache.json.get(HERO_META) as HeroMeta | undefined;
+  if (!meta || !scene.textures.exists('hero')) return;
+  for (const [name, a] of Object.entries(meta.animations)) {
+    const key = `hero_${name}`;
+    if (scene.anims.exists(key)) continue;
+    scene.anims.create({
+      key,
+      frames: scene.anims.generateFrameNumbers('hero', { start: a.start, end: a.start + a.count - 1 }),
+      frameRate: a.fps,
+      repeat: a.loop ? -1 : 0,
+    });
+  }
+}
+
+/**
+ * A painted enemy comes as one picture (`<id>_0`). Its second walking frame is the same picture a little squashed,
+ * so the two-frame flip reads as a step.
+ */
+function secondFrame(scene: Phaser.Scene, id: string): void {
+  const src = scene.textures.get(`${id}_0`).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+  const w = src.width;
+  const h = src.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  const sx = 1.04;
+  const sy = 0.95;
+  ctx.drawImage(src, (w - w * sx) / 2, h - h * sy, w * sx, h * sy);
+  scene.textures.addCanvas(`${id}_1`, canvas);
+}
+
 /** Every texture key gameplay code uses, with a fallback size if the art is missing. */
 const REQUIRED: Record<string, [number, number]> = {};
 const need = (keys: string[], w: number, h = w) => keys.forEach((k) => (REQUIRED[k] = [w, h]));
@@ -248,7 +295,9 @@ function effectTextures(scene: Phaser.Scene): void {
 
 /** Rasterizes all SVG art into textures, generating placeholders for anything missing. */
 export async function createTextures(scene: Phaser.Scene, onProgress?: (p: number) => void): Promise<void> {
-  const entries = Object.entries(ALL_ART);
+  for (const id of ENEMIES) if (scene.textures.exists(`${id}_0`) && !scene.textures.exists(`${id}_1`)) secondFrame(scene, id);
+  // Only draw the SVG art for what has no painted picture.
+  const entries = Object.entries(ALL_ART).filter(([key]) => !scene.textures.exists(key));
   let done = 0;
   await Promise.all(
     entries.map(async ([key, art]) => {

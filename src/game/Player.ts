@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
+import { HERO_META, type HeroMeta } from '../art/textures';
 import { PLAYER_BASE } from '../config/game';
 import { type PlayerStats } from '../core/stats';
+
+/** On-screen height of the painted hero, in game px. */
+const HERO_HEIGHT = 150;
 
 export class Player {
   x = 0;
@@ -26,12 +30,29 @@ export class Player {
   private wasMoving = false;
   /** Called at each footfall while running (for dust puffs). */
   onStep?: (x: number, y: number) => void;
+  /** True when the painted, animated hero sheet loaded (otherwise the two-frame SVG hero is used). */
+  private readonly painted: boolean;
+  private readonly baseScale: number;
+  /** A one-shot animation playing over the idle/run loop (shoot, hurt, cheer, ko). */
+  private action: string | null = null;
 
   constructor(scene: Phaser.Scene, public stats: PlayerStats) {
     this.hp = stats.maxHp;
     this.shadow = scene.add.image(0, 0, 'shadow').setDisplaySize(84, 26).setDepth(4);
     // Anchored at the feet so the run bounce and squash pivot on the ground.
-    this.sprite = scene.add.sprite(0, 0, 'hero_0').setDepth(20).setOrigin(0.5, 1);
+    const meta = scene.cache.json.get(HERO_META) as HeroMeta | undefined;
+    this.painted = !!meta && scene.anims.exists('hero_idle');
+    if (this.painted && meta) {
+      this.baseScale = HERO_HEIGHT / (meta.frameHeight * 0.82);
+      this.sprite = scene.add.sprite(0, 0, 'hero', 0).setDepth(20);
+      this.sprite.setOrigin(meta.feet[0] / meta.frameWidth, meta.feet[1] / meta.frameHeight).play('hero_idle');
+      this.sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim: Phaser.Animations.Animation) => {
+        if (anim.key !== 'hero_ko' && `hero_${this.action}` === anim.key) this.action = null;
+      });
+    } else {
+      this.baseScale = 1;
+      this.sprite = scene.add.sprite(0, 0, 'hero_0').setDepth(20).setOrigin(0.5, 1);
+    }
     this.hpBack = scene.add.image(0, 0, 'px').setTint(0x2a1f3d).setDisplaySize(92, 16).setDepth(21);
     this.hpFill = scene.add.image(0, 0, 'px').setTint(0xff4d5e).setOrigin(0, 0.5).setDepth(22);
   }
@@ -60,17 +81,45 @@ export class Player {
 
   hitFlash(): void {
     this.flash = 0.12;
+    this.playAction('hurt', true);
   }
 
-  /** A little kick when the bow fires. */
+  /** A little kick when the bow fires; standing still, the painted hero plays a full shot. */
   recoil(): void {
     this.squash = Math.max(this.squash, 0.5);
+    if (!this.moving) this.playAction('shoot', false);
+  }
+
+  /** Throws the bow up in joy (level-ups, boss kills). */
+  cheer(): void {
+    this.playAction('cheer', true);
+  }
+
+  /** Falls over at the end of a run. Returns false when there is no animation for it (the caller tips the sprite). */
+  knockOut(): boolean {
+    if (!this.painted) return false;
+    this.playAction('ko', true);
+    return true;
+  }
+
+  private playAction(name: string, force: boolean): void {
+    if (!this.painted || this.action === 'ko' || !this.sprite.scene.anims.exists(`hero_${name}`)) return;
+    if (this.action && !force) return;
+    this.action = name;
+    this.sprite.play(`hero_${name}`);
   }
 
   update(dt: number): void {
     this.iframes = Math.max(0, this.iframes - dt);
     this.anim += dt;
-    if (this.moving && this.anim > 0.16) {
+    if (this.painted) {
+      if (!this.action) this.sprite.play(this.moving ? 'hero_run' : 'hero_idle', true);
+      // A run started mid-shot cuts the shot short.
+      else if (this.moving && this.action === 'shoot') {
+        this.action = null;
+        this.sprite.play('hero_run', true);
+      }
+    } else if (this.moving && this.anim > 0.16) {
       this.anim = 0;
       this.frame ^= 1;
       this.sprite.setTexture(this.frame ? 'hero_1' : 'hero_0');
@@ -86,11 +135,12 @@ export class Player {
     this.squash *= Math.exp(-10 * dt);
     const lean = this.moving ? this.faceX * 0.13 : 0;
     this.lean += (lean - this.lean) * Math.min(1, dt * 12);
-    const stride = this.moving ? Math.abs(Math.sin((this.anim * Math.PI) / 0.16)) : 0;
+    // The painted run cycle bounces by itself.
+    const stride = this.moving && !this.painted ? Math.abs(Math.sin((this.anim * Math.PI) / 0.16)) : 0;
     const bob = stride * 6;
     const sx = 1 + 0.12 * this.squash - stride * 0.03;
     const sy = 1 - 0.1 * this.squash + stride * 0.05;
-    this.sprite.setScale(sx, sy).setRotation(this.lean);
+    this.sprite.setScale(sx * this.baseScale, sy * this.baseScale).setRotation(this.painted ? this.lean * 0.5 : this.lean);
     this.sprite.setPosition(this.x, this.y + 44 - bob);
     this.shadow.setPosition(this.x, this.y + 42).setDisplaySize(84 * (1 - bob / 40), 26 * (1 - bob / 40));
     if (this.moving) {

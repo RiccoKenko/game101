@@ -1,7 +1,7 @@
 /**
  * npm run art:cut [-- <sheet> ...]
  *
- * Cuts the painted sheets in art/incoming/mr/ into the game's textures: public/art/<key>.png, sized in game
+ * Cuts the painted sheets in art/incoming/mr/ into the game's textures: public/art/<key>.webp, sized in game
  * pixels, and lists every key in src/art/manifest.json (the boot scene loads those in place of the SVG art drawn
  * in code). Which parts each sheet holds, in reading order, and how big each one is in the game is set in
  * scripts/art/mr-sheets.json. A ground sheet (`tile`) becomes a seamless repeating tile instead.
@@ -61,9 +61,9 @@ async function cutSheet(name: string, cfg: SheetConfig): Promise<string[]> {
   const sheet = await load(file);
   if (cfg.tile) {
     const tile = seamless(sheet, Math.round(sheet.width / 8));
-    await toSharp(tile).resize(cfg.tile.size, cfg.tile.size, { kernel: 'lanczos3' }).png().toFile(join(OUT, `${cfg.tile.key}.png`));
+    const one = await toSharp(tile).resize(cfg.tile.size, cfg.tile.size, { kernel: 'lanczos3' }).png().toBuffer();
+    await sharp(one).webp({ quality: 86 }).toFile(join(OUT, `${cfg.tile.key}.webp`));
     // Check: the tile repeated 2 x 2, where a seam would show as a cross through the middle.
-    const one = await sharp(join(OUT, `${cfg.tile.key}.png`)).toBuffer();
     const s = cfg.tile.size;
     await sharp({ create: { width: s * 2, height: s * 2, channels: 4, background: '#000' } })
       .composite([0, 1, 2, 3].map((i) => ({ input: one, left: (i % 2) * s, top: Math.floor(i / 2) * s })))
@@ -102,9 +102,9 @@ async function cutSheet(name: string, cfg: SheetConfig): Promise<string[]> {
     const [w, h] = cfg.sizes?.[key] ?? [96, 96];
     const png = await toSharp(cropPiece(image, labels, part, 2))
       .resize(w, h, { fit: 'inside', kernel: 'lanczos3' })
-      .png({ compressionLevel: 9 })
+      .png()
       .toBuffer();
-    writeFileSync(join(OUT, `${key}.png`), png);
+    await sharp(png).webp({ quality: 92, alphaQuality: 100 }).toFile(join(OUT, `${key}.webp`));
     written.push(key);
     thumbs.push({ input: png, left: x, top: 16 });
     x += (await sharp(png).metadata()).width! + 24;
