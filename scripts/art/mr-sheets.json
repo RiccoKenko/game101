@@ -617,5 +617,69 @@
         60
       ]
     }
+  },
+  "relics": {
+    "keys": [
+      "relic_slime",
+      "relic_lich",
+      "relic_demon",
+      "relic_boar",
+      "relic_captain",
+      "relic_ogre",
+      "icon_golden",
+      "icon_hard",
+      "icon_nightmare",
+      "shrine",
+      "goblin_0",
+      null,
+      null
+    ],
+    "sizes": {
+      "relic_slime": [
+        128,
+        128
+      ],
+      "relic_lich": [
+        128,
+        128
+      ],
+      "relic_demon": [
+        128,
+        128
+      ],
+      "relic_boar": [
+        128,
+        128
+      ],
+      "relic_captain": [
+        128,
+        128
+      ],
+      "relic_ogre": [
+        128,
+        128
+      ],
+      "icon_golden": [
+        128,
+        128
+      ],
+      "icon_hard": [
+        128,
+        128
+      ],
+      "icon_nightmare": [
+        128,
+        128
+      ],
+      "shrine": [
+        170,
+        170
+      ],
+      "goblin_0": [
+        120,
+        120
+      ]
+    },
+    "despeck": 200
   }
 }

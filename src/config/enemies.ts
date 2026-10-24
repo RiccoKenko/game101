@@ -1,7 +1,8 @@
 export type EnemyId =
   | 'slime' | 'bat' | 'mushroom' | 'bee' | 'puff'
   | 'skeleton' | 'ghost' | 'zombie' | 'pumpkin' | 'wraith'
-  | 'imp' | 'knight' | 'gargoyle' | 'mimic' | 'wisp';
+  | 'imp' | 'knight' | 'gargoyle' | 'mimic' | 'wisp'
+  | 'goblin';
 /** The three map bosses (every 5:00) and the three leaders, smaller bosses that come at 2:30, 7:30... */
 export type BossId = 'boss_slime' | 'boss_lich' | 'boss_demon' | 'boss_boar' | 'boss_captain' | 'boss_ogre';
 
@@ -11,8 +12,9 @@ export type BossId = 'boss_slime' | 'boss_lich' | 'boss_demon' | 'boss_boar' | '
  * swarm: a fast wobbling flyer that comes in groups. splitter: bursts into two small copies when killed.
  * exploder: runs up, lights its fuse and blows up (hurting the hero and other monsters nearby).
  * ambush: sits still looking like loot until the hero comes close (or hits it), then chases fast.
+ * flee: runs away from the hero (the treasure goblin), and escapes after a while.
  */
-export type EnemyBehavior = 'chase' | 'bat' | 'ranged' | 'charge' | 'swarm' | 'splitter' | 'exploder' | 'ambush';
+export type EnemyBehavior = 'chase' | 'bat' | 'ranged' | 'charge' | 'swarm' | 'splitter' | 'exploder' | 'ambush' | 'flee';
 
 /**
  * How the sprite moves on top of its two-frame flip. hop: bounces along, squashing on landing. flap: hovers
@@ -62,6 +64,7 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
   pumpkin: { id: 'pumpkin', name: 'Pumpkin Bomb', texture: 'pumpkin', hp: 30, speed: 128, damage: 10, radius: 32, xp: 3, coinChance: 0.15, behavior: 'exploder', knockbackResist: 0.2, motion: 'walk', color: 0xff9a3d },
   wraith: { id: 'wraith', name: 'Wraith', texture: 'wraith', hp: 24, speed: 110, damage: 8, radius: 32, xp: 3, coinChance: 0.14, behavior: 'ranged', knockbackResist: 0.1, alpha: 0.92, motion: 'float', color: 0x7fd6c8, shot: 'spirit', shotEvery: 3.8 },
   mimic: { id: 'mimic', name: 'Mimic', texture: 'mimic', hp: 140, speed: 175, damage: 16, radius: 40, xp: 10, coinChance: 1, behavior: 'ambush', knockbackResist: 0.7, motion: 'heavy', color: 0xc89a4a },
+  goblin: { id: 'goblin', name: 'Treasure Goblin', texture: 'goblin', hp: 70, speed: 250, damage: 0, radius: 34, xp: 12, coinChance: 0, behavior: 'flee', knockbackResist: 0.5, motion: 'walk', color: 0x9fbf6a },
   wisp: { id: 'wisp', name: 'Flame Wisp', texture: 'wisp', hp: 18, speed: 195, damage: 9, radius: 28, xp: 2, coinChance: 0.1, behavior: 'swarm', knockbackResist: 0, motion: 'float', color: 0xff8a3d },
 };
 

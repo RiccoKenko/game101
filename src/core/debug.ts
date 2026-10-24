@@ -5,6 +5,7 @@
  * autostart: skip the menu. seed: RNG seed. level: start at this level (picks upgrades for you).
  * give: weapons to start with, e.g. `give=slash5,flask3,starfall` (an evolution gives its weapon, evolved).
  * hero: play as this character (archer, mage) without unlocking it.
+ * event: start this run event two seconds in (shrine, goblin, meteors, elites, golden).
  */
 const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
 const num = (key: string, fallback: number) => {
@@ -26,4 +27,5 @@ export const DEBUG = {
   level: num('level', 1),
   give: (params.get('give') ?? '').split(',').filter(Boolean),
   hero: params.get('hero') ?? '',
+  event: params.get('event') ?? '',
 };

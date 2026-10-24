@@ -13,6 +13,7 @@ import { LevelUpScene } from './scenes/LevelUpScene';
 import { MenuScene } from './scenes/MenuScene';
 import { PauseScene } from './scenes/PauseScene';
 import { QuestsScene } from './scenes/QuestsScene';
+import { ShrineScene } from './scenes/ShrineScene';
 import { ShopScene } from './scenes/ShopScene';
 
 /** Game height follows the phone's aspect ratio so portrait screens are filled edge to edge. */
@@ -41,7 +42,7 @@ async function start(): Promise<void> {
     },
     input: { activePointers: 3 },
     render: { antialias: true, powerPreference: 'high-performance' },
-    scene: [BootScene, MenuScene, ShopScene, QuestsScene, GameScene, HudScene, LevelUpScene, ChestScene, PauseScene, GameOverScene],
+    scene: [BootScene, MenuScene, ShopScene, QuestsScene, GameScene, HudScene, LevelUpScene, ChestScene, ShrineScene, PauseScene, GameOverScene],
   });
   (window as unknown as { __game: Phaser.Game }).__game = game;
 }

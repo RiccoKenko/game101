@@ -24,8 +24,8 @@ export class GameOverScene extends Phaser.Scene {
     const { top, bottom } = safeInsets(this);
     dimmer(this, 0.78);
     const cy = top + (height - top - bottom) * 0.46;
-    const title = s.quit ? 'RUN ENDED' : s.bossesKilled > 0 ? 'WELL FOUGHT!' : 'GAME OVER';
-    const good = s.quit || s.bossesKilled > 0;
+    const title = s.won ? 'STAGE CLEAR!' : s.quit ? 'RUN ENDED' : s.bossesKilled > 0 ? 'WELL FOUGHT!' : 'GAME OVER';
+    const good = s.won || s.quit || s.bossesKilled > 0;
     const t = gradientText(
       text(this, width / 2, cy - 640, title, 104, { strokeColor: good ? '#2a1606' : '#3a0610' }),
       good ? undefined : ['#fff0ea', '#ff9a8a', '#e0443e', '#a8202a'],
@@ -41,7 +41,7 @@ export class GameOverScene extends Phaser.Scene {
       ['Level reached', String(s.level)],
       ['Monsters defeated', String(s.kills)],
       ['Gold collected', String(s.collected)],
-      ['Survival bonus', `+${s.bonus}`],
+      s.won ? ['Survival + victory bonus', `+${s.bonus + s.victoryBonus}`] : ['Survival bonus', `+${s.bonus}`],
     ];
     rows.forEach(([label, value, note], i) => {
       const y = cy - 360 + i * 115;

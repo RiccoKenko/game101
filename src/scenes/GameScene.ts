@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { audio } from '../audio/audio';
 import { CHARACTERS, characterDef, type CharacterDef, type CharacterId } from '../config/characters';
 import { BOSSES } from '../config/enemies';
-import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS } from '../config/game';
+import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
+import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
@@ -43,6 +44,7 @@ import { type GameCtx } from '../game/context';
 import { Effects } from '../game/Effects';
 import { Enemy, EnemyManager } from '../game/Enemies';
 import { PickupManager } from '../game/Pickups';
+import { RunEvents } from '../game/RunEvents';
 import { Player } from '../game/Player';
 import { resetStick, stick } from '../game/stick';
 import { WeaponSystem } from '../game/Weapons';
@@ -69,6 +71,13 @@ export interface RunState {
   /** Level-up card rerolls and banishes left. */
   rerolls: number;
   banishes: number;
+  /** Shrine blessings taken this run (added to damage, move speed, max HP). */
+  blessings: { damage: number; speed: number; maxHp: number };
+  /** A Pact of Greed: monsters are tougher until this time, then it pays out. */
+  greedUntil: number;
+  /** The boss that came at 15:00; defeating it wins the run. */
+  finalBoss: Enemy | null;
+  won: boolean;
   swarmsSpawned: number;
   ringsSpawned: number;
   boss: Enemy | null;
@@ -89,6 +98,10 @@ export interface RunSummary {
   quit: boolean;
   unlockedMap: number | null;
   bossesKilled: number;
+  /** The final boss fell: the stage is cleared. */
+  won: boolean;
+  /** Gold for clearing the stage (included in total). */
+  victoryBonus: number;
   /** Daily quests this run finished, and achievement tiers it reached ("Monster Hunter II"). */
   quests: string[];
   achievements: string[];
@@ -120,6 +133,8 @@ export class GameScene extends Phaser.Scene {
   private fx!: Effects;
   private weapons!: WeaponSystem;
   private ambience!: Ambience;
+  /** Shrines, goblins, meteor showers... (see game/RunEvents.ts). */
+  runEvents!: RunEvents;
   private spawnAcc = 0;
   private pendingLevelUps = 0;
   private modalOpen = false;
@@ -193,6 +208,10 @@ export class GameScene extends Phaser.Scene {
       leadersKilled: 0,
       rerolls: BASE_REROLLS + saveStore.data.shop.reroll,
       banishes: BASE_BANISHES + saveStore.data.shop.banish,
+      blessings: { damage: 0, speed: 0, maxHp: 0 },
+      greedUntil: -1,
+      finalBoss: null,
+      won: false,
       swarmsSpawned: 0,
       ringsSpawned: ringEventsDue(DEBUG.startTime),
       boss: null,
@@ -209,6 +228,8 @@ export class GameScene extends Phaser.Scene {
     ctx.hitStop = (s) => this.hitStop(s);
     ctx.shake = (ms, k) => this.shake(ms, k);
     ctx.slowMo = (scale, s) => this.slowMo(scale, s);
+    ctx.monsterDamage = 1;
+    ctx.monsterHp = () => (this.run.time < this.run.greedUntil ? GREED_PACT.hp : 1);
     ctx.player = this.player = new Player(this, stats, hero);
     ctx.fx = this.fx = new Effects(this);
     this.player.onStep = (x, y) => this.fx.dust(x, y);
@@ -231,6 +252,22 @@ export class GameScene extends Phaser.Scene {
       onChest: () => this.openChest(),
     });
     this.ctx = ctx;
+    this.runEvents = new RunEvents({
+      ctx,
+      toast: (msg) => this.events.emit('toast', msg),
+      openShrine: () => this.openShrine(),
+      packDefeated: (x, y) => {
+        this.pickups.drop('chest', x, y);
+        this.events.emit('toast', 'Elite pack defeated! A chest!');
+      },
+      goblinCaught: (x, y) => {
+        this.pickups.burstCoins(x, y, 16, COIN_VALUE[this.mapIndex] * 3);
+        this.pickups.drop('chest', x + 30, y);
+        this.events.emit('toast', 'Goblin caught! Treasure!');
+        audio.sfx('victory');
+      },
+    });
+    if (DEBUG.event) this.runEvents.force(DEBUG.event as Parameters<RunEvents['force']>[0]);
     ensureDaily(saveStore.data);
     saveStore.save();
     this.tiersAtStart = tiersReached(lifetime(saveStore.data));
@@ -309,7 +346,9 @@ export class GameScene extends Phaser.Scene {
     this.world.update(dt);
     this.ambience.update();
 
-    this.spawn(dt);
+    if (!run.won) this.spawn(dt);
+    this.runEvents.update(dt);
+    if (run.greedUntil > 0 && run.time >= run.greedUntil) this.payGreed();
     this.enemies.update(dt);
     this.weapons.update(dt);
     this.pickups.update(dt, run.stats.magnet);
@@ -432,6 +471,11 @@ export class GameScene extends Phaser.Scene {
     this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, hp);
     audio.sfx('boss_warning');
     this.events.emit('boss', def.name);
+    // The boss at 15:00 is the last one: beat it and the stage is cleared.
+    if (this.run.time >= FINAL_TIME - 1 && !this.run.finalBoss) {
+      this.run.finalBoss = this.run.boss;
+      this.time.delayedCall(2600, () => this.events.emit('toast', 'The final battle! Win it to clear the stage!'));
+    }
   }
 
   // ---------------------------------------------------------------- events
@@ -440,6 +484,7 @@ export class GameScene extends Phaser.Scene {
     const run = this.run;
     // An exploder that blew itself up: no reward.
     if (e.selfDestructed) return;
+    this.runEvents.onKilled(e);
     run.kills++;
     if (e.elite) run.eliteKills++;
     if (e.boss?.leader) {
@@ -453,8 +498,10 @@ export class GameScene extends Phaser.Scene {
     // A mimic is a piñata.
     if (e.def?.behavior === 'ambush') this.pickups.burstCoins(e.x, e.y, 8, COIN_VALUE[this.mapIndex]);
     this.pickups.dropXp(e.x, e.y, e.xp);
-    const coinValue = COIN_VALUE[this.mapIndex];
-    if (this.rng() < e.coinChance) this.pickups.drop('coin', e.x + 24, e.y + 10, coinValue);
+    // A golden hour: coins drop more often and are worth more.
+    const golden = this.runEvents.golden;
+    const coinValue = COIN_VALUE[this.mapIndex] * (golden ? GOLDEN_HOUR.coinValue : 1);
+    if (this.rng() < e.coinChance * (golden ? GOLDEN_HOUR.coinChance : 1)) this.pickups.drop('coin', e.x + 24, e.y + 10, coinValue);
     if (e.elite) this.pickups.burstCoins(e.x, e.y, 3, coinValue);
     if (this.rng() < DROP_CHANCE.meat) this.pickups.drop('meat', e.x - 20, e.y);
     else if (this.rng() < DROP_CHANCE.magnet) this.pickups.drop('magnet', e.x - 20, e.y);
@@ -477,6 +524,11 @@ export class GameScene extends Phaser.Scene {
     this.hitStop(0.12);
     this.slowMo(0.3, 1.1);
     audio.sfx('victory');
+    if (e === run.finalBoss) {
+      run.won = true;
+      this.events.emit('toast', 'STAGE CLEAR!');
+      this.time.delayedCall(2600, () => this.endRun(false));
+    }
     const save = saveStore.data;
     save.bossKills[this.mapIndex]++;
     const next = this.mapIndex + 1;
@@ -577,6 +629,10 @@ export class GameScene extends Phaser.Scene {
   private refreshStats(): void {
     const run = this.run;
     run.stats = computeStats(saveStore.data.shop, passiveLevels(run.inventory), this.hero);
+    const b = run.blessings;
+    run.stats.damageMult *= 1 + b.damage;
+    run.stats.speed *= 1 + b.speed;
+    run.stats.maxHp = Math.round(run.stats.maxHp * (1 + b.maxHp));
     this.ctx.runes = runeLevels(run.inventory);
     this.player.setStats(run.stats);
     this.weapons.sync(run.inventory.weapons, run.stats);
@@ -658,6 +714,73 @@ export class GameScene extends Phaser.Scene {
     this.openModal('Chest', { reward, gold, onClose: () => this.closeModal('Chest') });
   }
 
+  // ---------------------------------------------------------------- shrine
+
+  /** Three offers: always at least one blessing and one pact. */
+  private openShrine(): void {
+    const shuffle = <T>(a: T[]) => [...a].sort(() => this.rng() - 0.5);
+    const bless = shuffle(SHRINE_OFFERS.filter((o) => !o.pact));
+    const pacts = shuffle(SHRINE_OFFERS.filter((o) => o.pact));
+    const offers = shuffle([bless[0], pacts[0], shuffle([...bless.slice(1), ...pacts.slice(1)])[0]]);
+    audio.sfx('levelup');
+    if (DEBUG.bot) {
+      this.takeOffer(offers[0]);
+      return;
+    }
+    this.openModal('Shrine', {
+      offers,
+      onPick: (o: ShrineOffer) => {
+        this.closeModal('Shrine');
+        this.takeOffer(o);
+      },
+      onLeave: () => this.closeModal('Shrine'),
+    });
+  }
+
+  private takeOffer(o: ShrineOffer): void {
+    const run = this.run;
+    const { x, y } = this.player;
+    this.fx.ring(x, y, 220, o.pact ? 0xff5a5a : 0x8fd8ff);
+    this.fx.sparkle(x, y - 20, 8, 0xffffff);
+    switch (o.id) {
+      case 'might':
+        run.blessings.damage += 0.15;
+        break;
+      case 'haste':
+        run.blessings.speed += 0.12;
+        break;
+      case 'life':
+        run.blessings.maxHp += 0.1;
+        break;
+      case 'greed':
+        run.greedUntil = run.time + GREED_PACT.seconds;
+        this.runEvents.timers.push({ label: 'Pact of Greed', until: run.greedUntil, color: '#ffb36b' });
+        break;
+      case 'trials':
+        this.runEvents.spawnPack();
+        break;
+      case 'blood':
+        this.player.hp = Math.max(1, this.player.hp - run.stats.maxHp * 0.35);
+        this.player.hitFlash();
+        this.pendingLevelUps += 2;
+        break;
+    }
+    this.refreshStats();
+    if (o.id === 'life') this.player.heal(run.stats.maxHp);
+    this.events.emit('toast', o.name);
+  }
+
+  /** The Pact of Greed is over: its gold rains down. */
+  private payGreed(): void {
+    const run = this.run;
+    run.greedUntil = -1;
+    const gold = GREED_PACT.goldPerMap * (this.mapIndex + 1);
+    run.gold += gold * run.stats.goldMult;
+    this.pickups.burstCoins(this.player.x, this.player.y - 40, 12, 0);
+    this.events.emit('toast', `Pact of Greed pays out: +${gold} gold!`);
+    audio.sfx('coin');
+  }
+
   openPause(): void {
     if (this.modalOpen || this.run.ended) return;
     this.openModal('Pause', {
@@ -718,12 +841,14 @@ export class GameScene extends Phaser.Scene {
     const save = saveStore.data;
     const collected = Math.floor(run.gold);
     const bonus = Math.floor((run.time * RUN_BONUS.perSecond + run.kills * RUN_BONUS.perKill) * run.stats.goldMult);
-    const total = collected + bonus;
+    const victoryBonus = run.won ? Math.floor(VICTORY_GOLD[this.mapIndex] * run.stats.goldMult) : 0;
+    const total = collected + bonus + victoryBonus;
+    if (run.won) save.clears[this.mapIndex] = Math.max(save.clears[this.mapIndex], 1);
     const prevBest = save.bestTimes[this.mapIndex];
     const newBest = run.time > prevBest;
     save.gold += total;
     if (newBest) save.bestTimes[this.mapIndex] = run.time;
-    const quests = applyRun(save, this.report(), bonus).map(describeQuest);
+    const quests = applyRun(save, this.report(), bonus + victoryBonus).map(describeQuest);
     const reached = tiersReached(lifetime(save));
     const achievements = ACHIEVEMENTS.flatMap((a) =>
       Array.from({ length: Math.max(0, reached[a.id] - this.tiersAtStart[a.id]) }, (_, k) => `${a.name} ${ROMAN[this.tiersAtStart[a.id] + k]}`),
@@ -745,9 +870,14 @@ export class GameScene extends Phaser.Scene {
       bossesKilled: run.bossesKilled,
       quests,
       achievements,
+      won: run.won,
+      victoryBonus,
     };
     audio.stopMusic();
-    if (!quit) {
+    if (run.won) {
+      audio.sfx('victory');
+      this.player.cheer();
+    } else if (!quit) {
       audio.sfx('gameover');
       if (!this.player.knockOut()) {
         this.player.sprite.setTint(0xff6b6b);

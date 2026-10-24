@@ -30,6 +30,10 @@ export class HudScene extends Phaser.Scene {
   private fpsText?: Phaser.GameObjects.Text;
   private rows?: Phaser.GameObjects.Container;
   private toastBox?: Phaser.GameObjects.Container;
+  /** Countdowns of running events (meteor shower, golden hour...), under the gold pill. */
+  private timerTexts: Phaser.GameObjects.Text[] = [];
+  /** Points at the treasure goblin while it is off screen. */
+  private goblinArrow!: Phaser.GameObjects.Image;
   /** Quest and achievement banners wait their turn here. */
   private notices: QuestNotice[] = [];
   private noticeBusy = false;
@@ -98,6 +102,8 @@ export class HudScene extends Phaser.Scene {
     const goldX = width - 20 - pillW / 2;
     this.goldText = pill(goldX, 'icon_coin', CSS.gold);
     this.killText = pill(goldX - pillW - 12, 'icon_skull', CSS.cream);
+    this.timerTexts = [0, 1].map((i) => text(this, width - 24, y1 + pillH + 30 + i * 46, '', 34, { originX: 1 }).setDepth(55));
+    this.goblinArrow = this.add.image(0, 0, 'icon_arrow').setTint(0xc8f08a).setDisplaySize(84, 84).setDepth(56).setVisible(false);
 
     // Boss name and HP, centred under the gear rows.
     const by = y1 + SLOT * 2 + 12 + 18;
@@ -228,6 +234,30 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
+  /** An arrow at the screen edge toward the treasure goblin while it is out of sight. */
+  private pointAtGoblin(): void {
+    const target = this.game_.runEvents?.goblinTarget;
+    const cam = this.game_.cameras.main;
+    const { width, height } = this.scale;
+    if (!target) {
+      this.goblinArrow.setVisible(false);
+      return;
+    }
+    const sx = (target.x - cam.worldView.x) * cam.zoom;
+    const sy = (target.y - cam.worldView.y) * cam.zoom;
+    const m = 70;
+    const onScreen = sx > m && sx < width - m && sy > m + 300 && sy < height - m;
+    this.goblinArrow.setVisible(!onScreen);
+    if (onScreen) return;
+    const cx = width / 2;
+    const cy = height / 2;
+    const a = Math.atan2(sy - cy, sx - cx);
+    // Push out from the centre to the screen edge (keeping clear of the top panel).
+    const k = Math.min(Math.abs((width / 2 - m) / Math.cos(a) || 1e9), Math.abs((height / 2 - m - 150) / Math.sin(a) || 1e9));
+    this.goblinArrow.setPosition(cx + Math.cos(a) * k, cy + 75 + Math.sin(a) * k).setRotation(a);
+    this.goblinArrow.setScale((84 / 96) * (1 + 0.12 * Math.sin(this.clock * 10)));
+  }
+
   private queueNotice(n: QuestNotice): void {
     this.notices.push(n);
     if (!this.noticeBusy) this.nextNotice();
@@ -306,6 +336,14 @@ export class HudScene extends Phaser.Scene {
       this.bossName.setText(boss.boss!.name);
       this.bossBar.set(boss.hp / boss.maxHp);
     }
+    // Event countdowns.
+    const timers = g.runEvents?.timers ?? [];
+    this.timerTexts.forEach((t, i) => {
+      const tm = timers[i];
+      t.setVisible(!!tm);
+      if (tm) t.setText(`${tm.label} ${Math.ceil(tm.until - run.time)}s`).setColor(tm.color);
+    });
+    this.pointAtGoblin();
     if (this.fpsText) this.fpsText.setText(`${Math.round(this.game.loop.actualFps)} fps · ${g.ctx.enemies.alive.length} foes`);
   }
 }

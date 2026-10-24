@@ -19,6 +19,9 @@ export interface GameCtx {
   runes: Partial<Record<RuneId, number>>;
   /** Seconds since the run started. */
   runTime: number;
+  /** Multipliers on monster HP and damage (the difficulty, a Pact of Greed). */
+  monsterHp(): number;
+  monsterDamage: number;
   onEnemyKilled(e: Enemy): void;
   hurtPlayer(amount: number): void;
   /** A random point just outside the visible area, where enemies appear. */

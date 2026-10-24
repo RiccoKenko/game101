@@ -55,6 +55,8 @@ export interface SaveData {
   daily: DailyState;
   /** Achievement tiers already claimed, per achievement. */
   achievements: Record<AchievementId, number>;
+  /** Per map, the hardest difficulty cleared (0 = never cleared, 1 = Normal, 2 = Hard, 3 = Nightmare). */
+  clears: number[];
   /** The hero picked in the menu, and the heroes unlocked (the archer always is). */
   character: CharacterId;
   characters: CharacterId[];
@@ -81,6 +83,7 @@ export function defaultSave(): SaveData {
     stats: { runs: 0, kills: 0, eliteKills: 0, chests: 0, evolutions: 0, gold: 0, bestLevel: 0 },
     daily: { day: '', quests: [], bonus: 0, bonusClaimed: false },
     achievements: Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, 0])) as Record<AchievementId, number>,
+    clears: MAPS.map(() => 0),
     character: 'archer',
     characters: ['archer'],
   };
@@ -100,6 +103,7 @@ export function sanitize(raw: unknown): SaveData {
     for (const d of SHOP) out.shop[d.id] = Math.floor(num(shop[d.id], 0, 0, d.maxLevel));
   }
   out.unlockedMaps = Math.floor(num(r.unlockedMaps, 1, 1, MAPS.length));
+  if (Array.isArray(r.clears)) out.clears = MAPS.map((_, i) => Math.floor(num((r.clears as unknown[])[i], 0, 0, 3)));
   for (const key of ['bestTimes', 'bossKills'] as const) {
     const arr = r[key];
     if (Array.isArray(arr)) out[key] = MAPS.map((_, i) => num(arr[i], 0));

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { audio } from '../audio/audio';
 import { MAX_ENEMIES, PLAYER_BASE } from '../config/game';
 import { BOSSES, ENEMIES, ENEMY_SHOTS, type BossDef, type BossId, type EnemyDef, type EnemyId } from '../config/enemies';
+import { GOBLIN_ESCAPE } from '../config/events';
 import { BURN_TIME, FREEZE_TIME, RUNE_POWER } from '../config/weapons';
 import { SpatialHash } from '../core/spatial';
 import { damageMultiplier, hpMultiplier, speedMultiplier } from '../core/waves';
@@ -148,9 +149,9 @@ export class EnemyManager {
     e.y = y;
     e.elite = elite;
     e.scale = elite ? 1.35 : 1;
-    e.maxHp = e.hp = def.hp * hpMultiplier(t) * (elite ? 5 : 1);
+    e.maxHp = e.hp = def.hp * hpMultiplier(t) * (elite ? 5 : 1) * this.ctx.monsterHp();
     e.speed = def.speed * speedMultiplier(t) * (0.92 + this.ctx.rng() * 0.16);
-    e.damage = def.damage * damageMultiplier(t) * (elite ? 1.3 : 1);
+    e.damage = def.damage * damageMultiplier(t) * (elite ? 1.3 : 1) * this.ctx.monsterDamage;
     e.radius = def.radius * e.scale;
     e.xp = def.xp * (elite ? 6 : 1);
     e.coinChance = elite ? 1 : def.coinChance;
@@ -193,9 +194,9 @@ export class EnemyManager {
     e.y = y;
     e.elite = false;
     e.scale = 1;
-    e.maxHp = e.hp = def.hp * hpMult;
+    e.maxHp = e.hp = def.hp * hpMult * this.ctx.monsterHp();
     e.speed = def.speed;
-    e.damage = def.damage * damageMultiplier(this.ctx.runTime);
+    e.damage = def.damage * damageMultiplier(this.ctx.runTime) * this.ctx.monsterDamage;
     e.radius = def.radius;
     e.xp = 0;
     e.coinChance = 0;
@@ -347,6 +348,18 @@ export class EnemyManager {
     this.kill(e);
   }
 
+  /** Called when a fleeing enemy gets away. */
+  onEscape?: (e: Enemy) => void;
+
+  /** Takes an enemy out of the world quietly: no death, no reward. */
+  remove(e: Enemy): void {
+    if (!e.active) return;
+    e.active = false;
+    e.sprite.setVisible(false);
+    e.shadow.setVisible(false);
+    if (!e.isBoss) this.regularCount--;
+  }
+
   /** Removes every enemy and shot without drops (used when a run ends). */
   clear(): void {
     for (const e of this.alive) {
@@ -396,7 +409,7 @@ export class EnemyManager {
     s.vx = Math.cos(angle) * def.speed;
     s.vy = Math.sin(angle) * def.speed;
     s.radius = def.radius;
-    s.damage = def.damage * damageMultiplier(this.ctx.runTime);
+    s.damage = def.damage * damageMultiplier(this.ctx.runTime) * this.ctx.monsterDamage;
     s.life = 4;
     s.spin = kind === 'fireball' ? 0 : 6;
   }
@@ -567,6 +580,20 @@ export class EnemyManager {
             }
             break;
           }
+          case 'flee': {
+            // Runs from the hero with a zig-zag, and slips away for good after a while.
+            const w = Math.sin(e.timer * 2.4 + e.phase) * 0.7;
+            vx = (-dx * Math.cos(w) + dy * Math.sin(w)) * speed;
+            vy = (-dy * Math.cos(w) - dx * Math.sin(w)) * speed;
+            faceX = -dx;
+            if (e.timer > GOBLIN_ESCAPE) {
+              this.ctx.fx.deathPuff(e.x, e.y, 1, 0xd8d0b0);
+              this.remove(e);
+              this.onEscape?.(e);
+              continue;
+            }
+            break;
+          }
           case 'ambush': {
             if (e.state === 0) {
               vx = vy = 0;
@@ -602,6 +629,12 @@ export class EnemyManager {
       const sleeping = e.def?.behavior === 'ambush' && e.state === 0;
       if (d < e.radius + player.radius * 0.85 && !sleeping) contact = Math.max(contact, e.damage);
 
+      if (!e.boss && d > relocate && e.def?.behavior === 'flee') {
+        // Ran clean off the screen: gone.
+        this.remove(e);
+        this.onEscape?.(e);
+        continue;
+      }
       if (!e.boss && d > relocate) {
         const p = this.ctx.spawnPoint();
         e.x = p.x;
