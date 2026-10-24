@@ -1,0 +1,31 @@
+You are the lead character artist for "Little Archer: Sky Pirates", a mobile tower-defense game. In this chat you will draw ONE image: three dialog portraits of Talon, the hero's eagle, for the game's story scenes. The attached images are Talon's approved design: the FIRST attached image is the rig pose, the SECOND is the action poses. Match them exactly, with the same face, feathers, colours, scarf, line weight and shading.
+
+STYLE
+- HD 2D hand-drawn anime game art (not pixel art, not 3D). Cute chunky proportions: a round body, a big head, big friendly eyes; a heroic little eagle, not a realistic bird.
+- Mood: warm, adventurous fantasy, in the spirit of classic early-2000s Korean fantasy MMORPG character art redrawn at modern quality. Charming and a little cool, never babyish.
+- Line art: clean and confident, dark warm brown (#3B2A2A), never pure black. Outer contour about 4 px, inner lines about 2 px at 1024 px image height.
+- Colouring: anime cel shading with a flat base colour, one soft cool shadow tone (slightly violet) and small crisp highlights. Light comes from the upper left. Gentle gradients on feathers are fine.
+- Eyes: large and expressive, with two white catch-lights and a bold upper lash line.
+- Avoid: 3D render, plastic / vinyl toy / clay look, realistic proportions, photo textures, heavy noise, thick sticker outlines, glossy 3D highlights.
+
+TECHNICAL
+- Background: a perfectly flat solid #FF00FF magenta background (no gradient, texture, floor or shadow). Never draw a checkerboard pattern. Never use magenta or pink inside the character.
+- No text, letters, numbers, labels, logos, signatures, watermarks, frames, borders or UI anywhere.
+- No ground shadow, glow, aura, motion lines, sparkles or particles.
+- Landscape, 1536 x 1024.
+
+CHARACTER: Talon (id: talon)
+Role: Little Archer's eagle companion. Proud, brave and loyal, with a soft spot for the hero: a cute hero's pet, never fierce or scary.
+Feathers: golden-brown body (#B07A3E, shade #8A5A2E), a cream-white head and chest (#FBF4E4), brown wings with gold-tipped flight feathers (#F4C34F), a white-and-brown tail.
+Face: a strong curved golden beak (#F4B62C), big amber eyes (#E39B2D) with a confident brown brow.
+Gear: a small green scarf (#3E9A4F) that matches the hero's hood, knotted at the neck with two short tails.
+
+IMAGE (save as talon_portraits.png): DIALOG PORTRAITS, landscape.
+Three chest-up portraits of Talon for story dialog boxes, 3/4 view facing right, larger and more detailed than the game sprite, same style and colours, side by side and clearly separated, in this order from left to right:
+1 proud: chest puffed out, head held high, beak closed in a small confident smile, eyes calm and half-lidded, wings folded neatly at its sides.
+2 fierce battle cry: beak wide open crying out, brows angled down, head feathers ruffled up, wings half raised behind its shoulders, scarf tails flicking.
+3 happy and fond: eyes closed in happy arcs (^ ^), beak a little open in a soft chirp, head tilted, cheek feathers fluffed, warm and affectionate.
+Framing:
+- Each portrait sits in its own third of the image: head, scarf, chest and the tops of the wings. The bust ends in a clean, soft edge just below the chest, well above the bottom of the image.
+- The same size in all three: heads at the same height, eyes on the same line, the bust ending at the same height.
+- Wings stay folded or only half raised, inside their own third. Leave at least 80 px of empty background between the portraits and from every edge; nothing touches or overlaps.

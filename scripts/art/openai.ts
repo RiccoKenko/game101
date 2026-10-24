@@ -5,7 +5,8 @@
  *
  * Asks OpenAI's image model (the same family Codex draws with, so it keeps the cast's style) for one picture,
  * with reference pictures attached (a layout sketch, a character's master art, a sheet drawn earlier), and saves
- * it as PNG. `--transparent` asks for a real transparent background (sprite sheets).
+ * it as PNG. `--transparent` asks for a real transparent background (gpt-image-1.5 only: gpt-image-2 refuses it, so
+ * sheets for it ask for a flat magenta background, which the slicer removes).
  *
  * The key is a network secret on the cloud environment for api.openai.com: the environment's proxy adds it to the
  * requests, so it never shows inside the session (OPENAI_API_KEY, if set, is used instead). It is never pasted
