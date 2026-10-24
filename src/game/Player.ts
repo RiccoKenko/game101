@@ -5,6 +5,8 @@ import { type PlayerStats } from '../core/stats';
 
 /** On-screen height of the painted hero, in game px. */
 const HERO_HEIGHT = 150;
+/** The running loops, which share their legs frame by frame. */
+const STRIDES = new Set(['hero_run', 'hero_runaim', 'hero_runrelease']);
 
 export class Player {
   x = 0;
@@ -37,6 +39,10 @@ export class Player {
   private action: string | null = null;
   /** Which way the last shot went (-1 left, 1 right): the hero faces it while shooting, even running the other way. */
   private aimFace = 1;
+  /** Seconds since the bow last fired: running soon after a shot keeps the bow drawn (runaim). */
+  private sinceShot = 99;
+  /** Seconds left of the just-released arms while running (runrelease), before drawing again. */
+  private release = 0;
 
   constructor(scene: Phaser.Scene, public stats: PlayerStats) {
     this.hp = stats.maxHp;
@@ -87,12 +93,31 @@ export class Player {
     this.playAction('hurt', true);
   }
 
-  /** The bow fires toward `angle`: a little kick, and the painted hero plays a shot (running or standing). */
+  /**
+   * The bow fires toward `angle`: a little kick, and the painted hero shows the shot. Standing, it plays the whole
+   * shot; running, the arms snap to the released pose for a moment while the legs keep their stride.
+   */
   shootAt(angle: number): void {
     this.squash = Math.max(this.squash, 0.5);
     this.aimFace = Math.cos(angle) < 0 ? -1 : 1;
-    if (this.moving && this.hasAnim('runshoot')) this.playAction('runshoot', true);
-    else if (!this.moving) this.playAction('shoot', this.action === 'shoot' || this.action === 'runshoot');
+    this.sinceShot = 0;
+    if (!this.moving) this.playAction('shoot', this.action === 'shoot');
+    else if (!this.action && this.hasAnim('runrelease')) {
+      this.release = 0.19;
+      this.playStride('hero_runrelease');
+    }
+  }
+
+  /**
+   * Plays one of the running loops (run, runaim, runrelease) from the frame the current one is on: they share
+   * the same legs frame by frame, so swapping them changes only the arms.
+   */
+  private playStride(key: string): void {
+    const anims = this.sprite.anims;
+    const current = anims.currentAnim?.key ?? '';
+    if (current === key && anims.isPlaying) return;
+    const i = STRIDES.has(current) && anims.currentFrame ? anims.currentFrame.index - 1 : 0;
+    this.sprite.play({ key, startFrame: i });
   }
 
   /** Where arrows leave the bow when shooting toward `angle` (in front of the chest, not the middle of the body). */
@@ -127,11 +152,20 @@ export class Player {
     this.iframes = Math.max(0, this.iframes - dt);
     this.anim += dt;
     if (this.painted) {
-      if (!this.action) this.sprite.play(this.moving ? 'hero_run' : 'hero_idle', true);
-      // Starting or stopping mid-shot cuts the shot short (the next shot plays the right one).
-      else if ((this.moving && this.action === 'shoot') || (!this.moving && this.action === 'runshoot')) {
-        this.action = null;
-        this.sprite.play(this.moving ? 'hero_run' : 'hero_idle', true);
+      this.sinceShot += dt;
+      // Starting to run mid-shot cuts the standing shot short.
+      if (this.moving && this.action === 'shoot') this.action = null;
+      if (!this.action) {
+        if (!this.moving) {
+          this.release = 0;
+          this.sprite.play('hero_idle', true);
+        } else if (this.release > 0) {
+          this.release -= dt;
+          if (this.release <= 0) this.playStride('hero_runaim');
+        } else {
+          // Fighting: run with the bow drawn; nothing to shoot for a while: run with it lowered.
+          this.playStride(this.sinceShot < 1.2 && this.hasAnim('runaim') ? 'hero_runaim' : 'hero_run');
+        }
       }
     } else if (this.moving && this.anim > 0.16) {
       this.anim = 0;
@@ -141,8 +175,9 @@ export class Player {
       this.frame = 0;
       this.sprite.setTexture('hero_0');
     }
-    const shooting = this.action === 'shoot' || this.action === 'runshoot';
-    if (shooting) this.sprite.setFlipX(this.aimFace < 0);
+    const key = this.sprite.anims.currentAnim?.key;
+    const aiming = this.action === 'shoot' || (!this.action && (key === 'hero_runaim' || key === 'hero_runrelease'));
+    if (aiming) this.sprite.setFlipX(this.aimFace < 0);
     else if (Math.abs(this.faceX) > 0.15) this.sprite.setFlipX(this.faceX < 0);
     if (this.moving !== this.wasMoving) {
       this.wasMoving = this.moving;
