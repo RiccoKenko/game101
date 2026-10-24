@@ -150,7 +150,100 @@ function generated(scene: Phaser.Scene): void {
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, 4, 4);
   });
+  effectTextures(scene);
   damageFont(scene);
+}
+
+/** Soft shapes the effects tint and stretch: glows, motion streaks, sparkles, ground marks, petals. */
+function effectTextures(scene: Phaser.Scene): void {
+  canvasTexture(scene, 'glow', 64, 64, (ctx) => {
+    const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.35, 'rgba(255,255,255,0.55)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+  });
+  // A motion streak: fades in from the tail (left) to a bright head (right).
+  canvasTexture(scene, 'streak', 128, 16, (ctx) => {
+    const g = ctx.createLinearGradient(0, 0, 128, 0);
+    g.addColorStop(0, 'rgba(255,255,255,0)');
+    g.addColorStop(0.75, 'rgba(255,255,255,0.55)');
+    g.addColorStop(1, 'rgba(255,255,255,0.95)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.quadraticCurveTo(64, 1, 120, 2);
+    ctx.arc(120, 8, 6, -Math.PI / 2, Math.PI / 2);
+    ctx.quadraticCurveTo(64, 15, 0, 8);
+    ctx.fill();
+  });
+  canvasTexture(scene, 'star', 48, 48, (ctx) => {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 ? 6 : 23;
+      ctx.lineTo(24 + Math.cos(a) * r, 24 + Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.fill();
+  });
+  // Ground marks are drawn flattened, as if seen from above at an angle.
+  canvasTexture(scene, 'scorch', 128, 64, (ctx) => {
+    const g = ctx.createRadialGradient(64, 32, 2, 64, 32, 62);
+    g.addColorStop(0, 'rgba(255,255,255,0.9)');
+    g.addColorStop(0.55, 'rgba(255,255,255,0.55)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.save();
+    ctx.scale(1, 0.5);
+    ctx.beginPath();
+    ctx.arc(64, 64, 62, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+  canvasTexture(scene, 'splat', 96, 48, (ctx) => {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(48, 24, 30, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2 + 0.4;
+      ctx.beginPath();
+      ctx.ellipse(48 + Math.cos(a) * 34, 24 + Math.sin(a) * 15, 6 + (i % 3) * 2, 4 + (i % 2) * 2, a, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  canvasTexture(scene, 'shock', 128, 128, (ctx) => {
+    const g = ctx.createRadialGradient(64, 64, 34, 64, 64, 62);
+    g.addColorStop(0, 'rgba(255,255,255,0)');
+    g.addColorStop(0.7, 'rgba(255,255,255,0.9)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+  });
+  canvasTexture(scene, 'petal', 22, 14, (ctx) => {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(11, 7, 10, 5, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  // Light rays turning slowly behind a treasure chest.
+  canvasTexture(scene, 'rays', 256, 256, (ctx) => {
+    const g = ctx.createRadialGradient(128, 128, 10, 128, 128, 128);
+    g.addColorStop(0, 'rgba(255,255,255,0.9)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(128, 128);
+      ctx.arc(128, 128, 128, a - 0.13, a + 0.13);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
 }
 
 /** Rasterizes all SVG art into textures, generating placeholders for anything missing. */

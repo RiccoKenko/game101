@@ -35,6 +35,11 @@ describe('save data', () => {
     expect(b.data.bestTimes[0]).toBe(301.5);
   });
 
+  it('keeps screen shake on unless it was turned off (older saves have no setting)', () => {
+    expect(sanitize({ settings: { music: false } }).settings).toEqual({ music: false, sfx: true, shake: true });
+    expect(sanitize({ settings: { shake: false } }).settings.shake).toBe(false);
+  });
+
   it('survives corrupt JSON and missing storage', () => {
     const storage = new MemoryStorage();
     storage.setItem('little-archer-save-v1', '{broken');

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
-import { MAX_ENEMIES } from '../config/game';
+import { MAX_ENEMIES, PLAYER_BASE } from '../config/game';
 import { BOSSES, ENEMIES, ENEMY_SHOTS, type BossDef, type BossId, type EnemyDef, type EnemyId } from '../config/enemies';
 import { SpatialHash } from '../core/spatial';
 import { damageMultiplier, hpMultiplier, speedMultiplier } from '../core/waves';
@@ -41,14 +41,29 @@ export class Enemy {
   phase = 0;
   slow = 0;
   thresholds = 0;
+  /** 1 right after a hit, easing back to 0: the sprite squashes from the blow. */
+  hitSquash = 0;
+  /** 0 -> 1 while popping into the world. */
+  spawnT = 1;
+  /** Seconds left of a boss's drop from the sky (it can't act or be hurt until it lands). */
+  enter = 0;
+  /** Facing (-1 left, 1 right); only flips on a clear change of direction so sprites don't jitter. */
+  face = 1;
+  lean = 0;
 
   constructor(scene: Phaser.Scene) {
     this.shadow = scene.add.image(0, 0, 'shadow').setDepth(4);
-    this.sprite = scene.add.sprite(0, 0, 'slime_0').setDepth(10);
+    // Anchored at the feet so squash, hops and waddles pivot on the ground.
+    this.sprite = scene.add.sprite(0, 0, 'slime_0').setDepth(10).setOrigin(0.5, 1);
   }
 
   get isBoss(): boolean {
     return this.boss !== null;
+  }
+
+  /** Colour of its sparks and splats. */
+  get color(): number {
+    return this.boss ? this.boss.color : (this.def?.color ?? 0xffffff);
   }
 }
 
@@ -66,6 +81,8 @@ interface Shot {
 }
 
 const ELITE_TINT = 0xffd36b;
+/** Seconds a boss takes to drop in from the sky. */
+const BOSS_DROP = 0.9;
 
 export class EnemyManager {
   readonly alive: Enemy[] = [];
@@ -87,9 +104,12 @@ export class EnemyManager {
     e.active = true;
     e.kx = e.ky = e.flash = e.anim = e.frame = 0;
     e.timer = e.timer2 = e.timer3 = e.state = e.slow = e.thresholds = 0;
+    e.hitSquash = e.enter = e.lean = 0;
+    e.spawnT = 0;
+    e.face = 1;
     e.phase = this.ctx.rng() * Math.PI * 2;
-    e.sprite.setVisible(true).setAlpha(1).clearTint().setFlipX(false).setScale(1);
-    e.shadow.setVisible(true);
+    e.sprite.setVisible(true).setAlpha(1).clearTint().setFlipX(false).setScale(1).setRotation(0);
+    e.shadow.setVisible(true).setAlpha(1);
     this.alive.push(e);
     return e;
   }
@@ -139,18 +159,41 @@ export class EnemyManager {
     e.coinChance = 0;
     e.kbResist = 0.97;
     e.tex = def.texture;
+    e.spawnT = 1;
+    e.enter = BOSS_DROP;
     e.sprite.setTexture(def.texture).setDepth(11);
     const sw = e.sprite.displayWidth * 0.75;
     e.shadow.setDisplaySize(sw, sw * 0.28);
     return e;
   }
 
-  /** Deals damage; returns true if the enemy died. */
-  damage(e: Enemy, amount: number, fromX: number, fromY: number, knockback = 1): boolean {
-    if (!e.active) return false;
+  /** The boss hits the ground: shock ring, dust, a jolt. */
+  private land(e: Enemy): void {
+    const fx = this.ctx.fx;
+    const feet = e.y + e.sprite.height * 0.42;
+    fx.shockwave(e.x, feet, e.radius * 3, e.boss!.color);
+    fx.ring(e.x, feet, e.radius * 2.2, 0xffffff, 'shock', 3, 520);
+    fx.dust(e.x - e.radius * 0.6, feet, 6);
+    fx.dust(e.x + e.radius * 0.6, feet, 6);
+    fx.decal('scorch', e.x, feet, e.radius * 3, e.radius * 1.4, 0x2a1f3d, 0.3, 3);
+    this.ctx.shake(280, 0.01);
+    this.ctx.hitStop(0.08);
+    audio.sfx('explosion');
+  }
+
+  /** Deals damage (sometimes a critical hit, unless `canCrit` is false); returns true if the enemy died. */
+  damage(e: Enemy, amount: number, fromX: number, fromY: number, knockback = 1, canCrit = true): boolean {
+    if (!e.active || e.enter > 0) return false;
+    const crit = canCrit && this.ctx.rng() < this.ctx.player.stats.critChance;
+    if (crit) {
+      amount *= PLAYER_BASE.critMult;
+      knockback *= 1.5;
+      this.ctx.fx.sparksAt(e.x, e.y, 5, 0xffd36b);
+    }
     e.hp -= amount;
     e.flash = 0.08;
-    this.ctx.fx.damageNumber(e.x, e.y - e.radius, amount);
+    e.hitSquash = crit ? 1.4 : 1;
+    this.ctx.fx.damageNumber(e.x, e.y - e.radius - 10, amount, 0xffffff, crit);
     if (knockback > 0) {
       const dx = e.x - fromX;
       const dy = e.y - fromY;
@@ -173,7 +216,16 @@ export class EnemyManager {
     e.sprite.setVisible(false);
     e.shadow.setVisible(false);
     if (!e.isBoss) this.regularCount--;
-    this.ctx.fx.deathPuff(e.x, e.y, e.isBoss ? 3 : e.scale);
+    const fx = this.ctx.fx;
+    const color = e.color;
+    fx.corpse(e.sprite.texture.key, e.sprite.x, e.sprite.y, e.sprite.scaleY, e.sprite.flipX, e.elite ? ELITE_TINT : 0);
+    fx.deathPuff(e.x, e.y, e.isBoss ? 3 : e.scale, color);
+    if (!e.isBoss) fx.decal('splat', e.x, e.y + e.radius * 0.7, e.radius * 2.2, e.radius * 1.1, color, 0.32, 1.8);
+    if (e.elite) {
+      fx.sparkle(e.x, e.y, 6, ELITE_TINT);
+      this.ctx.hitStop(0.05);
+      this.ctx.shake(90, 0.003);
+    }
     audio.sfx('enemy_die');
     this.ctx.onEnemyKilled(e);
   }
@@ -284,6 +336,10 @@ export class EnemyManager {
     for (let i = 0; i < this.alive.length; i++) {
       const e = this.alive[i];
       if (!e.active) continue;
+      if (e.enter > 0) {
+        this.dropIn(e, dt);
+        continue;
+      }
       let dx = px - e.x;
       let dy = py - e.y;
       const d = Math.hypot(dx, dy) || 1;
@@ -353,28 +409,7 @@ export class EnemyManager {
         e.y = p.y;
       }
 
-      // Animation.
-      e.anim += dt;
-      if (!e.boss && e.anim > 0.2) {
-        e.anim = 0;
-        e.frame ^= 1;
-        e.sprite.setTexture(`${e.tex}_${e.frame}`);
-      }
-      if (e.boss) {
-        const breathe = 1 + Math.sin(e.timer * 3) * 0.03;
-        const squash = e.state === 1 ? 0.9 : 1;
-        e.sprite.setScale((2 - breathe) * (2 - squash), breathe * squash);
-      }
-      e.sprite.setFlipX(faceX < 0);
-      if (e.flash > 0) {
-        e.flash -= dt;
-        if (e.flash > 0) e.sprite.setTintFill(0xffffff);
-        else if (e.elite) e.sprite.setTint(ELITE_TINT);
-        else e.sprite.clearTint();
-      }
-      const wind = e.state === 1 ? Math.sin(e.timer * 60) * 4 : 0;
-      e.sprite.setPosition(e.x + wind, e.y);
-      e.shadow.setPosition(e.x, e.y + e.sprite.displayHeight * 0.42);
+      this.animate(e, dt, vx, faceX);
     }
 
     // Rebuild the spatial hash, then push overlapping enemies apart.
@@ -393,6 +428,121 @@ export class EnemyManager {
     for (let i = 0; i < this.alive.length; i++) {
       const e = this.alive[i];
       if (!e.isBoss) this.hash.insert(i, e.x, e.y);
+    }
+  }
+
+  /** Two-frame flip plus procedural motion on top: hops, wingbeats, waddles, lean, hit squash, pop-in. */
+  private animate(e: Enemy, dt: number, vx: number, faceX: number): void {
+    e.anim += dt;
+    if (!e.boss && e.anim > 0.2) {
+      e.anim = 0;
+      e.frame ^= 1;
+      e.sprite.setTexture(`${e.tex}_${e.frame}`);
+    }
+    if (Math.abs(faceX) > 0.25) e.face = faceX < 0 ? -1 : 1;
+    e.sprite.setFlipX(e.face < 0);
+    e.hitSquash *= Math.exp(-12 * dt);
+    const leanTarget = Phaser.Math.Clamp(vx / Math.max(1, e.speed), -1, 1) * 0.1;
+    e.lean += (leanTarget - e.lean) * Math.min(1, dt * 10);
+
+    const t = e.timer + e.phase;
+    let lift = 0;
+    let sx = 1;
+    let sy = 1;
+    let rot = 0;
+    if (e.boss) {
+      const breathe = 1 + Math.sin(e.timer * 3) * 0.03;
+      const squash = e.state === 1 ? 0.9 : 1;
+      sx = (2 - breathe) * (2 - squash);
+      sy = breathe * squash;
+      rot = e.lean * 0.5;
+      if (e.state === 2 && Math.random() < dt * 30) this.ctx.fx.dust(e.x, e.y + e.radius * 0.8, 2);
+    } else {
+      switch (e.def!.motion) {
+        case 'hop': {
+          const u = (t * 1.8) % 1;
+          if (u < 0.7) {
+            lift = Math.sin((u / 0.7) * Math.PI) * 22;
+            sx = 0.92;
+            sy = 1.1;
+          } else {
+            const k = Math.sin(((u - 0.7) / 0.3) * Math.PI);
+            sx = 1 + 0.2 * k;
+            sy = 1 - 0.17 * k;
+          }
+          break;
+        }
+        case 'flap':
+          lift = 18 + Math.sin(t * 10) * 7;
+          rot = Math.sin(t * 10) * 0.06;
+          break;
+        case 'float':
+          lift = 18 + Math.sin(t * 3) * 9;
+          rot = Math.sin(t * 2.2) * 0.08;
+          break;
+        case 'walk': {
+          const w = Math.sin(t * 9);
+          lift = Math.abs(w) * 6;
+          rot = w * 0.09;
+          sx = 1 - Math.abs(w) * 0.03;
+          sy = 1 + Math.abs(w) * 0.04;
+          break;
+        }
+        case 'heavy': {
+          const w = Math.sin(t * 5.5);
+          lift = Math.abs(w) * 4;
+          rot = w * 0.06;
+          sx = 1 + (1 - Math.abs(w)) * 0.05;
+          sy = 1 - (1 - Math.abs(w)) * 0.05;
+          break;
+        }
+      }
+      rot += e.lean;
+      if (e.state === 1) {
+        // Winding up a charge: crouch.
+        sx *= 1.12;
+        sy *= 0.86;
+      } else if (e.state === 2 && e.def!.behavior === 'charge') {
+        // Dashing: stretch out and kick up dust.
+        sx *= 1.2;
+        sy *= 0.86;
+        rot = 0;
+        if (Math.random() < dt * 30) this.ctx.fx.dust(e.x, e.y + e.radius * 0.8);
+      }
+    }
+    sx *= 1 + 0.22 * e.hitSquash;
+    sy *= 1 - 0.18 * e.hitSquash;
+    if (e.spawnT < 1) {
+      e.spawnT = Math.min(1, e.spawnT + dt / 0.3);
+      const k = Phaser.Math.Easing.Back.Out(e.spawnT);
+      sx *= k;
+      sy *= k;
+    }
+    e.sprite.setScale(e.scale * sx, e.scale * sy).setRotation(rot);
+    if (e.flash > 0) {
+      e.flash -= dt;
+      if (e.flash > 0) e.sprite.setTintFill(0xffffff);
+      else if (e.elite) e.sprite.setTint(ELITE_TINT);
+      else e.sprite.clearTint();
+    }
+    const halfH = e.sprite.height * e.scale * 0.5;
+    const wind = e.state === 1 ? Math.sin(e.timer * 60) * 4 : 0;
+    e.sprite.setPosition(e.x + wind, e.y + halfH - lift);
+    e.shadow.setPosition(e.x, e.y + halfH * 0.84).setAlpha(Phaser.Math.Clamp(1 - lift / 70, 0.4, 1));
+  }
+
+  /** A boss falling from the sky onto its spot, its shadow growing beneath it. */
+  private dropIn(e: Enemy, dt: number): void {
+    e.enter -= dt;
+    const u = 1 - Math.max(0, e.enter) / BOSS_DROP;
+    const halfH = e.sprite.height * 0.5;
+    const fall = (1 - u) * (1 - u) * 1100;
+    e.sprite.setScale(1 - 0.12 * (1 - u), 1 + 0.12 * (1 - u)).setRotation(0);
+    e.sprite.setPosition(e.x, e.y + halfH - fall);
+    e.shadow.setPosition(e.x, e.y + halfH * 0.84).setAlpha(0.2 + 0.8 * u);
+    if (e.enter <= 0) {
+      e.enter = 0;
+      this.land(e);
     }
   }
 

@@ -4,6 +4,8 @@ import { SHOP, type ShopId } from '../config/shop';
 export interface Settings {
   music: boolean;
   sfx: boolean;
+  /** Screen shake on hits and explosions. */
+  shake: boolean;
 }
 
 export interface SaveData {
@@ -36,7 +38,7 @@ export function defaultSave(): SaveData {
     unlockedMaps: 1,
     bestTimes: MAPS.map(() => 0),
     bossKills: MAPS.map(() => 0),
-    settings: { music: true, sfx: true },
+    settings: { music: true, sfx: true, shake: true },
     stats: { runs: 0, kills: 0 },
   };
 }
@@ -63,6 +65,7 @@ export function sanitize(raw: unknown): SaveData {
     const s = r.settings as Record<string, unknown>;
     out.settings.music = s.music !== false;
     out.settings.sfx = s.sfx !== false;
+    out.settings.shake = s.shake !== false;
   }
   if (r.stats && typeof r.stats === 'object') {
     const s = r.stats as Record<string, unknown>;

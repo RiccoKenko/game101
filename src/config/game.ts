@@ -12,6 +12,9 @@ export const PLAYER_BASE = {
   radius: 32,
   /** Seconds of invulnerability after taking a hit. */
   iframes: 0.45,
+  /** Chance that a hit is critical, and how much more a critical hit deals. */
+  critChance: 0.06,
+  critMult: 2,
 };
 
 export const MAX_WEAPONS = 4;

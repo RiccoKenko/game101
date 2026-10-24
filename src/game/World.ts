@@ -3,12 +3,15 @@ import { type MapDef } from '../config/maps';
 import { mulberry32 } from '../core/rng';
 
 const CHUNK = 640;
+/** Decorations that sway in the wind (pivoting at their base). */
+const SWAYS = new Set(['tree', 'bush', 'dead_tree', 'flowers']);
 
 /** Infinite scrolling ground plus deterministic scattered decorations. */
 export class World {
   private ground: Phaser.GameObjects.TileSprite;
   private chunks = new Map<string, Phaser.GameObjects.Image[]>();
   private timer = 0;
+  private clock = 0;
 
   constructor(private scene: Phaser.Scene, private map: MapDef) {
     const { width, height } = scene.scale;
@@ -18,6 +21,12 @@ export class World {
   update(dt: number): void {
     const cam = this.scene.cameras.main;
     this.ground.setTilePosition(cam.scrollX, cam.scrollY);
+    this.clock += dt;
+    for (const imgs of this.chunks.values()) {
+      for (const img of imgs) {
+        if (SWAYS.has(img.texture.key)) img.setRotation(Math.sin(this.clock * 1.3 + img.x * 0.013) * 0.03);
+      }
+    }
     this.timer -= dt;
     if (this.timer > 0) return;
     this.timer = 0.25;

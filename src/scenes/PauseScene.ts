@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { audio } from '../audio/audio';
 import { MAPS } from '../config/maps';
 import { formatTime } from '../core/format';
+import { saveStore } from '../core/save';
 import { buildRows } from '../ui/build';
 import { safeInsets } from '../ui/safe';
 import { COLORS, CSS } from '../ui/theme';
@@ -46,8 +47,8 @@ export class PauseScene extends Phaser.Scene {
 
     new Button(this, width / 2, cy - 20, { w: 600, h: 140, color: COLORS.green, label: 'Resume', icon: 'icon_play', onClick: () => this.data_.onResume() });
 
-    const music = new Button(this, width / 2 - 150, cy + 160, {
-      w: 260,
+    const music = new Button(this, width / 2 - 270, cy + 160, {
+      w: 230,
       h: 130,
       color: COLORS.blue,
       icon: audio.musicOn ? 'icon_music' : 'icon_music_off',
@@ -57,8 +58,8 @@ export class PauseScene extends Phaser.Scene {
         music.setIcon(audio.musicOn ? 'icon_music' : 'icon_music_off');
       },
     });
-    const sfx = new Button(this, width / 2 + 150, cy + 160, {
-      w: 260,
+    const sfx = new Button(this, width / 2, cy + 160, {
+      w: 230,
       h: 130,
       color: COLORS.blue,
       icon: audio.sfxOn ? 'icon_sfx' : 'icon_sfx_off',
@@ -66,6 +67,20 @@ export class PauseScene extends Phaser.Scene {
       onClick: () => {
         audio.setSfxEnabled(!audio.sfxOn);
         sfx.setIcon(audio.sfxOn ? 'icon_sfx' : 'icon_sfx_off');
+      },
+    });
+    const settings = saveStore.data.settings;
+    const shakeLabel = () => (settings.shake ? 'Shake: On' : 'Shake: Off');
+    const shake: Button = new Button(this, width / 2 + 270, cy + 160, {
+      w: 230,
+      h: 130,
+      color: COLORS.blue,
+      label: shakeLabel(),
+      fontSize: 38,
+      onClick: () => {
+        settings.shake = !settings.shake;
+        saveStore.save();
+        shake.setLabel(shakeLabel());
       },
     });
 

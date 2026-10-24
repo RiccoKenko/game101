@@ -37,8 +37,17 @@ class Projectile {
   tx = 0;
   ty = 0;
   area = 1;
-  constructor(readonly sprite: Phaser.GameObjects.Image) {}
+  /** A motion streak behind arrows and daggers; the ground shadow under a bomb. */
+  constructor(readonly sprite: Phaser.GameObjects.Image, readonly trail: Phaser.GameObjects.Image) {}
 }
+
+/** Streak colour, length and thickness per projectile texture. */
+const TRAILS: Record<string, [number, number, number]> = {
+  arrow: [0xffffff, 90, 10],
+  arrow_storm: [0x9fdcff, 140, 16],
+  dagger: [0xd8e8ff, 70, 8],
+  dagger_gold: [0xffd36b, 84, 10],
+};
 
 interface WeaponRuntime {
   owned: OwnedWeapon;
@@ -49,8 +58,13 @@ interface WeaponRuntime {
   axeAngle: number;
   axeActive: boolean;
   axeHits: Map<number, number>;
+  // Afterimages trailing each axe.
+  ghosts: Phaser.GameObjects.Image[];
   // Aura
   aura?: Phaser.GameObjects.Image;
+  auraSize: number;
+  /** 1 on each damage tick, easing back to 0 (the aura swells). */
+  pulse: number;
 }
 
 const AXE_RADIUS = 175;
@@ -72,7 +86,7 @@ export class WeaponSystem {
     for (const owned of weapons) {
       let rt = this.runtimes.find((r) => r.owned.id === owned.id);
       if (!rt) {
-        rt = { owned, stats: WEAPONS[owned.id].levels[0], timer: 0.3, axes: [], axeAngle: 0, axeActive: false, axeHits: new Map() };
+        rt = { owned, stats: WEAPONS[owned.id].levels[0], timer: 0.3, axes: [], axeAngle: 0, axeActive: false, axeHits: new Map(), ghosts: [], auraSize: 0, pulse: 0 };
         this.runtimes.push(rt);
       }
       rt.owned = owned;
@@ -96,7 +110,10 @@ export class WeaponSystem {
       const tex = rt.owned.evolved ? 'axe_titan' : 'axe';
       while (rt.axes.length < rt.stats.amount) rt.axes.push(scene.add.image(0, 0, tex).setDepth(25));
       while (rt.axes.length > rt.stats.amount) rt.axes.pop()!.destroy();
-      for (const a of rt.axes) a.setTexture(tex).setScale(rt.owned.evolved ? 1 : 0.9 + (rt.stats.area - 1) * 0.5);
+      while (rt.ghosts.length < rt.axes.length * 2) rt.ghosts.push(scene.add.image(0, 0, tex).setDepth(24).setTintFill(0xfff4d6));
+      while (rt.ghosts.length > rt.axes.length * 2) rt.ghosts.pop()!.destroy();
+      const scale = rt.owned.evolved ? 1 : 0.9 + (rt.stats.area - 1) * 0.5;
+      for (const a of [...rt.axes, ...rt.ghosts]) a.setTexture(tex).setScale(scale);
       if (rt.owned.evolved) rt.axeActive = true;
     }
     if (id === 'aura') {
@@ -105,14 +122,16 @@ export class WeaponSystem {
         rt.aura = scene.add.image(0, 0, tex).setDepth(3);
         scene.tweens.add({ targets: rt.aura, alpha: { from: 0.75, to: 1 }, duration: 700, yoyo: true, repeat: -1 });
       }
-      rt.aura.setTexture(tex).setDisplaySize(AURA_RADIUS * rt.stats.area * 2, AURA_RADIUS * rt.stats.area * 2);
+      rt.auraSize = AURA_RADIUS * rt.stats.area * 2;
+      rt.aura.setTexture(tex).setDisplaySize(rt.auraSize, rt.auraSize);
     }
   }
 
   private obtain(kind: ProjKind, texture: string): Projectile {
     let p = this.projectiles.find((o) => !o.active);
     if (!p) {
-      p = new Projectile(this.ctx.scene.add.image(0, 0, texture).setDepth(28));
+      const scene = this.ctx.scene;
+      p = new Projectile(scene.add.image(0, 0, texture).setDepth(28), scene.add.image(0, 0, 'streak').setDepth(27));
       this.projectiles.push(p);
     }
     p.active = true;
@@ -122,6 +141,16 @@ export class WeaponSystem {
     p.knockback = 1;
     p.hits.clear();
     p.sprite.setTexture(texture).setVisible(true).setScale(1).setRotation(0);
+    if (kind === 'bomb') {
+      p.trail.setTexture('shadow').setOrigin(0.5).setBlendMode(Phaser.BlendModes.NORMAL).clearTint().setAlpha(1).setVisible(true);
+    } else if (kind === 'boomerang') {
+      // It spins, so a straight streak would look wrong.
+      p.trail.setVisible(false);
+    } else {
+      const [color, , thick] = TRAILS[texture] ?? TRAILS.arrow;
+      p.trail.setTexture('streak').setOrigin(1, 0.5).setBlendMode(Phaser.BlendModes.NORMAL).setTint(color).setAlpha(0.6);
+      p.trail.setDisplaySize(1, thick).setVisible(true);
+    }
     return p;
   }
 
@@ -135,7 +164,17 @@ export class WeaponSystem {
           this.updateAxes(rt, dt);
           break;
         case 'aura':
-          rt.aura?.setPosition(player.x, player.y + 10);
+          rt.pulse *= Math.exp(-8 * dt);
+          if (rt.aura) {
+            const size = rt.auraSize * (1 + 0.07 * rt.pulse);
+            rt.aura.setPosition(player.x, player.y + 10).setDisplaySize(size, size);
+            rt.aura.rotation += dt * 0.5;
+            if (rt.owned.evolved && Math.random() < dt * 6) {
+              const a = Math.random() * Math.PI * 2;
+              const r = Math.random() * rt.auraSize * 0.45;
+              this.ctx.fx.sparkle(player.x + Math.cos(a) * r, player.y + 10 + Math.sin(a) * r, 1, 0xffe9a3);
+            }
+          }
           rt.timer -= dt;
           if (rt.timer <= 0) {
             rt.timer = s.cooldown;
@@ -173,6 +212,8 @@ export class WeaponSystem {
           const a = base + (i - (s.amount - 1) / 2) * spread;
           this.shoot('arrow', evolved ? 'arrow_storm' : 'arrow', a, s, 22 * s.area);
         }
+        this.ctx.fx.muzzle(player.x + Math.cos(base) * 44, player.y - 10 + Math.sin(base) * 44, evolved ? 0x9fdcff : 0xfff1b8);
+        player.recoil();
         audio.sfx('shoot');
         break;
       }
@@ -221,6 +262,9 @@ export class WeaponSystem {
           p.damage = s.damage;
           p.area = s.area;
           p.life = 0.6 + i * 0.08;
+          // Where it will land: a red circle on the ground.
+          const r = BOMB_RADIUS * s.area;
+          this.ctx.fx.decal('shock', tx, ty, r * 2, r, 0xff5a3c, 0.55, 0.75);
         }
         break;
       }
@@ -234,7 +278,7 @@ export class WeaponSystem {
         for (const t of targets) {
           const x = t.x;
           const y = t.y;
-          this.ctx.fx.bolt(x, y);
+          this.ctx.fx.lightning(x, y, evolved ? 0xc9a8ff : 0x9fdcff);
           enemies.forEachInRadius(x, y, BOLT_RADIUS * s.area, (e) => enemies.damage(e, s.damage, x, y, 0.5));
         }
         if (targets.length) audio.sfx('zap');
@@ -271,6 +315,7 @@ export class WeaponSystem {
       if (rt.axeActive) for (const a of rt.axes) a.setAlpha(0).setVisible(true);
     }
     for (const a of rt.axes) a.setVisible(rt.axeActive);
+    for (const g of rt.ghosts) g.setVisible(rt.axeActive);
     if (!rt.axeActive) return;
     rt.axeAngle += s.speed * dt;
     const R = AXE_RADIUS * s.area;
@@ -283,12 +328,20 @@ export class WeaponSystem {
       const img = rt.axes[i];
       img.setPosition(x, y).setRotation(this.clock * 14);
       if (img.alpha < 1) img.setAlpha(Math.min(1, img.alpha + dt * 6));
+      // Two fading afterimages lag behind each axe along its circle.
+      for (let k = 1; k <= 2; k++) {
+        const g = rt.ghosts[i * 2 + k - 1];
+        const ga = ang - k * 0.2 * Math.sign(s.speed || 1);
+        g.setPosition(player.x + Math.cos(ga) * R, player.y + Math.sin(ga) * R)
+          .setRotation(this.clock * 14 - k * 0.5)
+          .setAlpha(img.alpha * (k === 1 ? 0.3 : 0.13));
+      }
       enemies.forEachInRadius(x, y, hitR, (e) => {
         const next = rt.axeHits.get(e.uid) ?? 0;
         if (this.clock < next) return;
         rt.axeHits.set(e.uid, this.clock + 0.45);
         enemies.damage(e, s.damage, player.x, player.y, evolved ? 2.2 : 1.2);
-        this.ctx.fx.sparksAt(e.x, e.y, 2);
+        this.ctx.fx.sparksAt(e.x, e.y, 3, e.color);
       });
     }
     if (rt.axeHits.size > 600) rt.axeHits.clear();
@@ -298,6 +351,7 @@ export class WeaponSystem {
     const s = rt.stats;
     const { player, enemies } = this.ctx;
     const evolved = !!rt.owned.evolved;
+    rt.pulse = 1;
     enemies.forEachInRadius(player.x, player.y, AURA_RADIUS * s.area, (e) => {
       enemies.damage(e, s.damage, player.x, player.y, 0.35);
       if (evolved) e.slow = 0.6;
@@ -317,12 +371,16 @@ export class WeaponSystem {
         p.x = Phaser.Math.Linear(p.sx, p.tx, u);
         p.y = Phaser.Math.Linear(p.sy, p.ty, u) - Math.sin(u * Math.PI) * 170;
         p.sprite.setPosition(p.x, p.y).setRotation(p.age * 10);
+        const gx = Phaser.Math.Linear(p.sx, p.tx, u);
+        const gy = Phaser.Math.Linear(p.sy, p.ty, u);
+        const sw = 30 + 30 * (1 - Math.sin(u * Math.PI));
+        p.trail.setPosition(gx, gy + 18).setDisplaySize(sw, sw * 0.32);
         if (u >= 1) {
           const r = BOMB_RADIUS * p.area;
           this.ctx.fx.explosion(p.tx, p.ty, r);
           enemies.forEachInRadius(p.tx, p.ty, r, (e) => enemies.damage(e, p.damage, p.tx, p.ty, 1.6));
           audio.sfx('explosion');
-          this.ctx.scene.cameras.main.shake(90, 0.003);
+          this.ctx.shake(110, 0.004);
           this.release(p);
         }
         continue;
@@ -352,6 +410,9 @@ export class WeaponSystem {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.sprite.setPosition(p.x, p.y);
+      const len = (TRAILS[p.sprite.texture.key] ?? TRAILS.arrow)[1] * Math.min(1, p.age / 0.07);
+      p.trail.setPosition(p.x, p.y).setRotation(Math.atan2(p.vy, p.vx));
+      p.trail.displayWidth = Math.max(1, len);
       if (p.life <= 0) {
         this.release(p);
         continue;
@@ -363,7 +424,7 @@ export class WeaponSystem {
         if (until !== undefined && this.clock < until) return;
         p.hits.set(e.uid, p.kind === 'boomerang' ? this.clock + 0.35 : Infinity);
         enemies.damage(e, p.damage, p.x - p.vx * 0.05, p.y - p.vy * 0.05, p.kind === 'boomerang' ? 0.6 : 1);
-        this.ctx.fx.sparksAt(p.x, p.y, 2);
+        this.ctx.fx.sparksAt(p.x, p.y, 3, e.color);
         if (p.kind !== 'boomerang') {
           p.pierce--;
           if (p.pierce < 0) this.release(p);
@@ -375,11 +436,13 @@ export class WeaponSystem {
   private release(p: Projectile): void {
     p.active = false;
     p.sprite.setVisible(false);
+    p.trail.setVisible(false);
   }
 
   destroy(): void {
     for (const rt of this.runtimes) {
       rt.axes.forEach((a) => a.destroy());
+      rt.ghosts.forEach((g) => g.destroy());
       rt.aura?.destroy();
     }
     this.runtimes = [];

@@ -29,6 +29,7 @@ import {
   ringSize,
   spawnRate,
 } from '../core/waves';
+import { Ambience } from '../game/Ambience';
 import { botSteer } from '../game/Bot';
 import { type GameCtx } from '../game/context';
 import { Effects } from '../game/Effects';
@@ -89,9 +90,17 @@ export class GameScene extends Phaser.Scene {
   private pickups!: PickupManager;
   private fx!: Effects;
   private weapons!: WeaponSystem;
+  private ambience!: Ambience;
   private spawnAcc = 0;
   private pendingLevelUps = 0;
   private modalOpen = false;
+  /** Real seconds the action stays frozen (hit-stop). */
+  private freeze = 0;
+  /** Real seconds of slow motion left, and how slow. */
+  private slowLeft = 0;
+  private slowScale = 1;
+  /** Real seconds left of the level-up burst before the upgrade cards open. */
+  private levelUpWait = 0;
   private keys?: Record<string, Phaser.Input.Keyboard.Key>;
 
   constructor() {
@@ -103,6 +112,7 @@ export class GameScene extends Phaser.Scene {
     this.spawnAcc = 0;
     this.pendingLevelUps = 0;
     this.modalOpen = false;
+    this.freeze = this.slowLeft = this.levelUpWait = 0;
   }
 
   create(): void {
@@ -136,8 +146,12 @@ export class GameScene extends Phaser.Scene {
     ctx.hurtPlayer = (amount) => this.hurtPlayer(amount);
     ctx.spawnPoint = () => this.spawnPoint();
     ctx.view = () => this.cameras.main.worldView;
+    ctx.hitStop = (s) => this.hitStop(s);
+    ctx.shake = (ms, k) => this.shake(ms, k);
+    ctx.slowMo = (scale, s) => this.slowMo(scale, s);
     ctx.player = this.player = new Player(this, stats);
     ctx.fx = this.fx = new Effects(this);
+    this.player.onStep = (x, y) => this.fx.dust(x, y);
     ctx.enemies = this.enemies = new EnemyManager(ctx);
     ctx.pickups = this.pickups = new PickupManager(ctx, {
       onXp: (v) => this.addXp(v),
@@ -160,6 +174,7 @@ export class GameScene extends Phaser.Scene {
     this.weapons = new WeaponSystem(ctx);
     this.weapons.sync(inventory.weapons, stats);
     this.cameras.main.centerOn(0, 0);
+    this.ambience = new Ambience(this, this.mapIndex);
 
     for (let i = 1; i < DEBUG.level; i++) {
       this.run.level++;
@@ -182,7 +197,23 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     if (this.run.ended) return;
-    const dt = Math.min(delta, 50) / 1000;
+    const real = Math.min(delta, 50) / 1000;
+    if (this.freeze > 0) {
+      this.freeze -= real;
+      return;
+    }
+    let dt = real;
+    if (this.slowLeft > 0) {
+      this.slowLeft -= real;
+      dt *= this.slowScale;
+    }
+    if (this.levelUpWait > 0) {
+      this.levelUpWait -= real;
+      if (this.levelUpWait <= 0 && !this.modalOpen) {
+        this.openLevelUp();
+        return;
+      }
+    }
     for (let i = 0; i < DEBUG.speed; i++) {
       this.step(dt);
       if (this.modalOpen || this.run.ended) break;
@@ -212,6 +243,7 @@ export class GameScene extends Phaser.Scene {
     this.player.update(dt);
     this.cameras.main.centerOn(this.player.x, this.player.y);
     this.world.update(dt);
+    this.ambience.update();
 
     this.spawn(dt);
     this.enemies.update(dt);
@@ -219,7 +251,38 @@ export class GameScene extends Phaser.Scene {
     this.pickups.update(dt, run.stats.magnet);
     this.fx.update(dt);
 
-    if (this.pendingLevelUps > 0 && !this.modalOpen && !run.ended) this.openLevelUp();
+    if (this.pendingLevelUps > 0 && !this.modalOpen && !run.ended && this.levelUpWait <= 0) {
+      if (DEBUG.bot) this.openLevelUp();
+      else this.levelUpBurst();
+    }
+  }
+
+  // ---------------------------------------------------------------- game feel
+
+  hitStop(seconds: number): void {
+    if (DEBUG.bot) return;
+    this.freeze = Math.max(this.freeze, seconds);
+  }
+
+  slowMo(scale: number, seconds: number): void {
+    if (DEBUG.bot) return;
+    this.slowScale = scale;
+    this.slowLeft = Math.max(this.slowLeft, seconds);
+  }
+
+  shake(ms: number, intensity: number): void {
+    if (saveStore.data.settings.shake) this.cameras.main.shake(ms, intensity);
+  }
+
+  /** A golden burst and a breath of slow motion before the upgrade cards open. */
+  private levelUpBurst(): void {
+    const { x, y } = this.player;
+    this.fx.glow(x, y, 80, 420, 0xffd36b, 0.4);
+    this.fx.ring(x, y, 300, 0xffcc33);
+    this.fx.sparkle(x, y - 20, 12, 0xffe9a3);
+    this.slowMo(0.25, 0.4);
+    this.levelUpWait = 0.4;
+    audio.sfx('levelup');
   }
 
   // ---------------------------------------------------------------- spawning
@@ -265,8 +328,9 @@ export class GameScene extends Phaser.Scene {
   private spawnBoss(k: number): void {
     const def = BOSSES[this.map.boss];
     const hp = (1 + 0.35 * (hpMultiplier(this.run.time) - 1)) * bossHpMultiplier(k);
-    const a = -Math.PI / 2 + (this.rng() - 0.5);
-    this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 850, this.player.y + Math.sin(a) * 850, hp);
+    // It drops from the sky into the upper half of the screen, where the hero can watch it land.
+    const a = -Math.PI / 2 + (this.rng() - 0.5) * 0.6;
+    this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 640, this.player.y + Math.sin(a) * 640, hp);
     audio.sfx('boss_warning');
     this.events.emit('boss', def.name);
   }
@@ -296,7 +360,13 @@ export class GameScene extends Phaser.Scene {
     this.pickups.burstCoins(e.x, e.y, 12, Math.ceil(BOSS_GOLD[this.mapIndex] / 12));
     this.fx.explosion(e.x, e.y, 260);
     this.fx.ring(e.x, e.y, 500, 0xffcc33);
-    this.cameras.main.shake(320, 0.008);
+    for (const [ms, dx, dy] of [[150, -90, -40], [300, 80, 30], [450, -20, 70]]) {
+      this.time.delayedCall(ms, () => this.fx.explosion(e.x + dx, e.y + dy, 170));
+    }
+    this.cameras.main.flash(260, 255, 244, 214);
+    this.shake(420, 0.012);
+    this.hitStop(0.12);
+    this.slowMo(0.3, 1.1);
     audio.sfx('victory');
     const save = saveStore.data;
     save.bossKills[this.mapIndex]++;
@@ -331,7 +401,8 @@ export class GameScene extends Phaser.Scene {
     this.player.iframes = PLAYER_BASE.iframes;
     this.player.hitFlash();
     this.fx.damageNumber(this.player.x, this.player.y - 70, dmg, 0xff6b6b);
-    this.cameras.main.shake(90, 0.004);
+    this.shake(90, 0.004);
+    this.events.emit('hurt');
     audio.sfx('hurt');
     if (this.player.hp <= 0) this.onPlayerDown();
   }
@@ -410,7 +481,6 @@ export class GameScene extends Phaser.Scene {
       this.applyChoiceNow(this.botPick(choices));
       return;
     }
-    audio.sfx('levelup');
     this.openModal('LevelUp', {
       choices,
       inventory: this.run.inventory,

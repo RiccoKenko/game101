@@ -14,6 +14,7 @@ export interface PlayerStats {
   xpMult: number;
   goldMult: number;
   revivals: number;
+  critChance: number;
 }
 
 export function computeStats(
@@ -34,5 +35,6 @@ export function computeStats(
     xpMult: 1 + sh('growth'),
     goldMult: 1 + sh('greed'),
     revivals: sh('revival'),
+    critChance: PLAYER_BASE.critChance,
   };
 }

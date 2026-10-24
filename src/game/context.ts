@@ -21,4 +21,10 @@ export interface GameCtx {
   /** A random point just outside the visible area, where enemies appear. */
   spawnPoint(): { x: number; y: number };
   view(): Phaser.Geom.Rectangle;
+  /** Freezes the action for a moment so a big hit lands with weight. */
+  hitStop(seconds: number): void;
+  /** Camera shake (skipped when the player turned shaking off). */
+  shake(ms: number, intensity: number): void;
+  /** Runs the game at `scale` speed for `seconds` of real time. */
+  slowMo(scale: number, seconds: number): void;
 }

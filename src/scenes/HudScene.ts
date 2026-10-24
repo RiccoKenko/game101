@@ -27,6 +27,10 @@ export class HudScene extends Phaser.Scene {
   private joyPointer: number | null = null;
   private y0 = 0;
   private last = { time: -1, kills: -1, gold: -1, level: -1 };
+  /** Dark edges for depth, and a red one that flashes on hits and pulses at low HP. */
+  private redEdge!: Phaser.GameObjects.Image;
+  private hurt = 0;
+  private clock = 0;
 
   constructor() {
     super('Hud');
@@ -36,8 +40,12 @@ export class HudScene extends Phaser.Scene {
     this.game_ = this.scene.get('Game') as GameScene;
     this.last = { time: -1, kills: -1, gold: -1, level: -1 };
     this.joyPointer = null;
-    const { width } = this.scale;
+    const { width, height } = this.scale;
     const y0 = (this.y0 = safeInsets(this).top + 18);
+    this.hurt = 0;
+    vignetteTexture(this, width, height);
+    this.add.image(0, 0, 'vignette').setOrigin(0).setTint(0x140a28).setAlpha(0.5);
+    this.redEdge = this.add.image(0, 0, 'vignette').setOrigin(0).setTint(0xff1f3d).setAlpha(0);
 
     this.xpBar = new Bar(this, 24, y0, width - 48, 36, COLORS.xp);
     this.levelText = text(this, width - 44, y0 + 18, 'LV 1', 32, { originX: 1 });
@@ -73,13 +81,16 @@ export class HudScene extends Phaser.Scene {
     const onBoss = (name: string) => this.warning(name);
     const onToast = (msg: string) => this.toast(msg);
     const onInv = () => this.rebuildRows();
+    const onHurt = () => (this.hurt = 1);
     ev.on('boss', onBoss);
     ev.on('toast', onToast);
     ev.on('inventory', onInv);
+    ev.on('hurt', onHurt);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       ev.off('boss', onBoss);
       ev.off('toast', onToast);
       ev.off('inventory', onInv);
+      ev.off('hurt', onHurt);
       resetStick();
     });
   }
@@ -147,6 +158,12 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
+  /** A quick pop to draw the eye to a number that changed. */
+  private bump(t: Phaser.GameObjects.Text, scale: number): void {
+    if (this.tweens.isTweening(t)) return;
+    this.tweens.add({ targets: t, scale, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
+  }
+
   private toast(msg: string): void {
     const { width, height } = this.scale;
     this.toastText?.destroy();
@@ -163,10 +180,16 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
     const g = this.game_;
     const run = g.run;
     if (!run) return;
+    const dt = Math.min(delta, 50) / 1000;
+    this.clock += dt;
+    this.hurt = Math.max(0, this.hurt - dt * 3);
+    const hp = g.player.hp / run.stats.maxHp;
+    const low = hp < 0.3 && !run.ended ? 0.22 + 0.16 * Math.sin(this.clock * 6) : 0;
+    this.redEdge.setAlpha(Math.max(this.hurt * 0.75, low));
     if (!stick.active && this.joyPointer !== null) this.releaseStick();
 
     this.xpBar.set(run.xp / run.xpNext);
@@ -181,10 +204,12 @@ export class HudScene extends Phaser.Scene {
     }
     const gold = Math.floor(run.gold);
     if (gold !== this.last.gold) {
+      if (this.last.gold >= 0) this.bump(this.goldText, 1.25);
       this.last.gold = gold;
       this.goldText.setText(String(gold));
     }
     if (run.level !== this.last.level) {
+      if (this.last.level >= 0) this.bump(this.levelText, 1.5);
       this.last.level = run.level;
       this.levelText.setText(`LV ${run.level}`);
     }
@@ -198,4 +223,25 @@ export class HudScene extends Phaser.Scene {
     }
     if (this.fpsText) this.fpsText.setText(`${Math.round(this.game.loop.actualFps)} fps · ${g.ctx.enemies.alive.length} foes`);
   }
+}
+
+/** White, transparent in the middle and solid at the edges, so tinting gives any colour of vignette. */
+function vignetteTexture(scene: Phaser.Scene, w: number, h: number): void {
+  if (scene.textures.exists('vignette')) {
+    const src = scene.textures.get('vignette').getSourceImage();
+    if (src.width === w && src.height === h) return;
+    scene.textures.remove('vignette');
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  const r = Math.hypot(w, h) / 2;
+  const g = ctx.createRadialGradient(w / 2, h / 2, r * 0.45, w / 2, h / 2, r);
+  g.addColorStop(0, 'rgba(255,255,255,0)');
+  g.addColorStop(0.6, 'rgba(255,255,255,0.35)');
+  g.addColorStop(1, 'rgba(255,255,255,1)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  scene.textures.addCanvas('vignette', canvas);
 }
