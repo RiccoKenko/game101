@@ -217,7 +217,10 @@
     },
     "hands_props": { "names": ["crystal", "foot-near-open", "foot-near-grip", "foot-far-open", "foot-far-grip"] },
     "poses": { "names": ["perch", "hover", "dive", "swoop", "carry", "glide", "chirp", "land"] },
-    "portraits": { "names": ["proud", "cry", "happy"] }
+    "portraits": {
+      "names": ["proud", "cry", "happy"],
+      "boxes": { "proud": [0, 0, 508, 1024], "cry": [508, 0, 550, 1024], "happy": [1058, 0, 478, 1024] }
+    }
   },
   "mochi": {
     "head_faces": {

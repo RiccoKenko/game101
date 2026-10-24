@@ -37,7 +37,7 @@ export const SPEAKERS: Record<Speaker, SpeakerDef> = {
   talon: {
     name: 'Talon',
     side: 'left',
-    // Talon's portraits are still to be drawn; the game snapshots his puppet's head until then.
+    // Drawn by OpenAI's gpt-image-2; the game falls back to a snapshot of the puppet's head if a picture is missing.
     portraits: { proud: 'sprites/talon/proud.png', cry: 'sprites/talon/cry.png', happy: 'sprites/talon/happy.png' },
     colour: '#b0702c',
   },
