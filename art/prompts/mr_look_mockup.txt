@@ -1,0 +1,27 @@
+You are the art director for "Little Archer: Monster Rush", a cute mobile survivor game: the hero walks around an open field, shoots arrows by itself and fights endless waves of monsters. Paint ONE mock-up gameplay screenshot of a portrait phone screen that sets the game's new look.
+
+LOOK
+- The charm of classic early-2000s Korean fantasy MMORPGs, redrawn at modern quality: small chibi 2D characters (about 2.5 heads tall, big heads, big anime eyes, soft cel shading, clean dark-brown outlines) standing on a softly textured, hand-painted world seen from a high three-quarter top-down angle, like a pre-rendered 3D field.
+- Pastel, sunny, cosy palette: fresh spring-green grass with small white and yellow flowers, warm sandy dirt patches, a few round trees and mossy rocks near the edges, soft round shadows under every character.
+- Everything is original: do not copy any existing game's characters, monsters, logos or interface.
+
+HERO
+- Little Archer exactly as in the attached image (green hood with a little gold bell, brown hair, teal eyes, brown vest, navy shorts, golden bow, quiver of red-and-white arrows), drawn as a small chibi game sprite in the middle of the screen, about one ninth of the screen height, drawing the bow toward the upper right.
+
+MONSTERS (original designs, cute and a little silly, each the hero's size or smaller)
+- round pink jelly blobs with a shiny highlight and a tiny leaf on top, hopping
+- chubby purple bats with tiny wings
+- red-capped walking mushrooms with grumpy faces
+- fluffy green caterpillars
+- About 14 monsters spread around the hero, more of them toward the edges of the screen.
+
+ACTION
+- Two arrows in flight with soft white light trails, one jelly blob hit with a white flash and a small bouncing damage number above it, a few small blue gems and gold coins lying on the grass.
+
+INTERFACE (simple and original)
+- Along the top: a semi-transparent rounded panel in soft navy blue with a thin pale-gold border, holding a green HP bar, a blue XP bar, the text "Lv 12" and a timer "04:32".
+- Below it on the left: four small square skill icons in the same frame style. Top right: a round pause button.
+- No other text anywhere.
+
+FORMAT
+- Portrait, full-bleed game screenshot. No device frame, no border, no watermark, no caption.
