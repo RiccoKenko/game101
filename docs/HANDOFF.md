@@ -32,7 +32,11 @@
 - **ตัวละคร 8 ตัวเป็น puppet ทั้งหมด**
   - ฮีโร่ไม่มีลูกบอลข้อต่อที่ศอก/เข่าแล้ว (slicer มีโหมด `heal`)
   - ภาพครึ่งตัวครบ: hero, first_mate, deckhand (greedy/angry/panicked), mochi (proud/cry/happy)
-- **ป้อม 4 แบบ + สายระดับ 4:** ยังเป็นภาพวาดด้วยโค้ด (`paintTower` ใน `src/play/art.ts`)
+- **ป้อม 4 แบบ + สายระดับ 4:** เป็นภาพจริงจาก Codex แล้ว (24 ต.ค.)
+  - ภาพต้นฉบับ `art/incoming/towers/` → `npm run art -- towers` → `npm run art:publish -- towers` → `public/sprites/towers/<kind>-<1|2|3|4a|4b>.png`
+  - `sheets.json` entry `towers` ใช้ `cut` (ลบของแปลกปลอม), `spill` (เปลี่ยนรัศมีชมพูเป็นสีเรือง), `despeck`
+  - เกมโหลดภาพป้อมทีหลัง (ไม่รอ) และวัดตำแหน่งฐานหินจากภาพเอง (`measureFoundation` ใน `src/play/main.ts`), `FOUNDATION = 2.3` เท่ารัศมีจุด
+  - ยังมีร่องรอยเล็ก ๆ: เส้นแดงจาง ๆ เหนือปืนใหญ่ Lv1 และหมอกม่วงนิดหน่อยใต้เมฆ Blizzard ถ้าเจ้านายติ ให้ Codex วาดแผ่นนั้นใหม่
 - **Test:** unit 153 ข้อ และ e2e 5 ข้อ ผ่านทั้งหมด
   - e2e ใหม่เล่นตั้งแต่แผนที่ → ฉาก → Hard → หยุด → ชนะ → กลับแผนที่ → รีโหลดแล้วข้อมูลยังอยู่
 
@@ -49,7 +53,7 @@
 1. **ลองเล่น Chapter 1** แล้วบอกความเห็น เรื่องความยาก ความยาวด่าน 2-3 และบทเรื่อง
    - ด่าน 2 มีโจร 276 ตัว และด่าน 3 มี 355 ตัว (ด่าน 1 มี 128) ถ้ารู้สึกยาวไปให้ตัดเวฟได้
 2. **วาดภาพใน Codex ด้วย prompt หัวข้อ 11-14 ใน `docs/art/CHARACTER_BRIEF.md`**
-   - 11 ป้อม 4 แผ่น (`towers_<kind>.png`) ต้องเพิ่ม entry ใน `sheets.json` ตอนรับภาพ
+   - 11 ป้อม: เสร็จแล้ว
    - 12 แผนที่ด่าน 2 และ 3 (แนบ `art/maps/level2-sketch.png`, `level3-sketch.png`)
    - 13 แผนที่เลือกด่าน (แนบ `art/maps/chapter1-sketch.png`)
    - 14 ภาพครึ่งตัว Talon (proud, cry, happy ตาม `sheets.json`)
