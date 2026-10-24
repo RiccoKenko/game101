@@ -14,7 +14,7 @@
 - **Chapter 1 "Pirates on the Horizon" เล่นได้ครบทั้งบท**
   - **หน้าเลือกด่าน:** `ChapterScreen` ใน `src/play/screens.ts`
     - ตำแหน่งปุ่มอยู่ใน `src/play/chapterMap.ts`
-    - พื้นหลังยังเป็นภาพร่าง `public/maps/chapter1-sketch.png` จนกว่า Codex จะวาด
+    - พื้นหลังเป็นภาพจริงที่วาดด้วย OpenAI (gpt-image-2 คุณภาพกลาง ~$0.12) `public/maps/chapter1.webp`
   - **3 ด่าน** (`src/td/levels.ts` `CHAPTER1`)
     - level1 "The First Raid" (เปลี่ยนชื่อจาก "Pirates on the Horizon" ให้ไม่ซ้ำกับชื่อบท, กติกาเหมือนเดิม)
     - level2 "Windmill Terraces"
@@ -57,7 +57,7 @@
 2. **วาดภาพใน Codex ด้วย prompt หัวข้อ 11-14 ใน `docs/art/CHARACTER_BRIEF.md`**
    - 11 ป้อม: เสร็จแล้ว
    - 12 แผนที่ด่าน 2 และ 3: เสร็จแล้ว
-   - 13 แผนที่เลือกด่าน (แนบ `art/maps/chapter1-sketch.png`)
+   - 13 แผนที่เลือกด่าน: เสร็จแล้ว (OpenAI)
    - 14 ภาพครึ่งตัว Talon (proud, cry, happy ตาม `sheets.json`)
 3. **ชื่อด่าน 1** เปลี่ยนเป็น "The First Raid" แล้ว ถ้าไม่ชอบบอกได้
 4. **อารมณ์ภาพครึ่งตัว Mochi**: ใช้ชื่อ proud (ยิ้มอ้าปาก), cry (ขมวดคิ้ว), happy (หลับตายิ้ม) ตามบท แต่ brief เดิมเขียนว่า happy/determined/sleepy ถ้าอยากให้ตรง brief ให้เปลี่ยนชื่อใน `story.ts` + `sheets.json`
@@ -103,7 +103,11 @@
      - header `Authorization` prefix `Bearer` แล้ววาง key
      - proxy จะแนบ key ให้เอง สคริปต์ไม่ต้องรู้ค่า key
   5. ทดสอบด้วย `curl -s -o /dev/null -w '%{http_code}' https://api.openai.com/v1/models` (ต้องได้ 200)
-- **ขั้นแรกใน session ใหม่**
+- **ใช้งานจริงแล้ว (24 ต.ค.):** key ใส่เป็น network secret แล้ว และวาดแผนที่หน้าเลือกด่านเสร็จแล้ว
+  - proxy ของ session ตัดคำขอที่นานเกิน ~30 วินาที (เจอ 502) สคริปต์จึงส่งงานแบบ background ผ่าน Responses API (`gpt-5.4-mini` + tool `image_generation`) แล้ววนเช็กผลจนเสร็จ
+  - Node fetch ต้องตั้ง `NODE_USE_ENV_PROXY=1` (ใส่ไว้ใน npm script แล้ว) ไม่อย่างนั้นคำขอจะไม่ผ่าน proxy และ key จะไม่ถูกแนบ
+  - ค่าภาพคิดแบบประมาณเผื่อสูง (เครื่องมือวาดภาพไม่ส่งจำนวน token มาให้) จึงนับเกินจริงเล็กน้อย ยอดจริงดูได้ที่หน้า Billing ของ OpenAI
+- **ขั้นแรกใน session ใหม่** (เดิม)
   1. `npm run art:openai -- --spent` เช็กว่าสคริปต์อ่าน key ได้
   2. ลองวาดแผนที่หน้าเลือกด่าน
      - prompt หัวข้อ 13 ใน brief

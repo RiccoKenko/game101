@@ -15,7 +15,7 @@
  * auto-recharge) is the second, hard stop.
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
@@ -96,33 +96,62 @@ function spent(): number {
     .reduce((sum, l) => sum + ((JSON.parse(l) as { usd?: number }).usd ?? 0), 0);
 }
 
-async function generate(o: Options): Promise<{ png: Buffer; usage: Usage }> {
-  const common = { model: o.model, prompt: o.prompt, size: o.size, quality: o.quality, n: 1, output_format: 'png', ...(o.transparent ? { background: 'transparent' } : {}) };
-  let res: Response;
-  if (o.refs.length) {
-    // Reference pictures go up as PNG no larger than 2048 px (WebP and huge sheets are converted).
-    const form = new FormData();
-    for (const [k, v] of Object.entries(common)) form.append(k, String(v));
-    for (const ref of o.refs) {
-      const png = await sharp(join(ROOT, ref)).resize(2048, 2048, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
-      form.append('image[]', new Blob([new Uint8Array(png)], { type: 'image/png' }), basename(ref).replace(/\.\w+$/, '.png'));
-    }
-    res = await fetch(`${API}/images/edits`, { method: 'POST', headers: auth(), body: form });
-  } else {
-    res = await fetch(`${API}/images/generations`, {
-      method: 'POST',
-      headers: { ...auth(), 'Content-Type': 'application/json' },
-      body: JSON.stringify(common),
-    });
-  }
+/** The chat model that hands the prompt and reference pictures to the image tool (a small, cheap one). */
+const MAINLINE = process.env.OPENAI_MAINLINE_MODEL ?? 'gpt-5.4-mini';
+/** Its price per 1M tokens, rounded up (it only reads the prompt and the pictures and writes a line or two). */
+const MAINLINE_RATES = { in: 1, out: 5 };
+
+async function call(path: string, body?: unknown): Promise<Record<string, unknown>> {
+  const res = await fetch(`${API}/${path}`, {
+    method: body ? 'POST' : 'GET',
+    headers: { ...auth(), 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
   const text = await res.text();
   if (res.status === 401)
     throw new Error('OpenAI 401: no key reached it. Add the key as a network secret for api.openai.com in the cloud environment settings (or set OPENAI_API_KEY).');
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${text.slice(0, 600)}`);
-  const body = JSON.parse(text) as { data?: { b64_json?: string }[]; usage?: Usage };
-  const b64 = body.data?.[0]?.b64_json;
-  if (!b64) throw new Error('OpenAI answered without a picture (maybe refused the prompt). Nothing was saved.');
-  return { png: Buffer.from(b64, 'base64'), usage: body.usage ?? {} };
+  return JSON.parse(text) as Record<string, unknown>;
+}
+
+/**
+ * Pictures take a minute or more, longer than the session's network proxy keeps a request open, so the job runs
+ * in the background on OpenAI's side (Responses API, `background: true`) and is polled until it is done.
+ */
+async function generate(o: Options): Promise<{ png: Buffer; mainline: Usage }> {
+  const images = await Promise.all(
+    o.refs.map(async (ref) => {
+      // Reference pictures go up as PNG no larger than 2048 px (WebP and huge sheets are converted).
+      const png = await sharp(join(ROOT, ref)).resize(2048, 2048, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+      return { type: 'input_image', image_url: `data:image/png;base64,${png.toString('base64')}`, detail: 'high' };
+    }),
+  );
+  const tool = {
+    type: 'image_generation',
+    model: o.model,
+    quality: o.quality,
+    size: o.size,
+    output_format: 'png',
+    background: o.transparent ? 'transparent' : 'opaque',
+  };
+  let job = await call('responses', {
+    model: MAINLINE,
+    background: true,
+    input: [{ role: 'user', content: [{ type: 'input_text', text: o.prompt }, ...images] }],
+    tools: [tool],
+    tool_choice: { type: 'image_generation' },
+  });
+  const started = Date.now();
+  while (job.status === 'queued' || job.status === 'in_progress') {
+    if (Date.now() - started > 10 * 60_000) throw new Error(`OpenAI job ${job.id} took over 10 minutes; check it later with GET /v1/responses/${job.id}.`);
+    await new Promise((r) => setTimeout(r, 5000));
+    job = await call(`responses/${job.id}`);
+  }
+  const output = (job.output ?? []) as { type: string; result?: string }[];
+  const b64 = output.find((item) => item.type === 'image_generation_call' && item.result)?.result;
+  if (job.status !== 'completed' || !b64)
+    throw new Error(`OpenAI job ${job.id} ended "${job.status}" without a picture: ${JSON.stringify(job.error ?? job.incomplete_details ?? output.map((i) => i.type)).slice(0, 400)}`);
+  return { png: Buffer.from(b64, 'base64'), mainline: (job.usage ?? {}) as Usage };
 }
 
 async function main() {
@@ -137,10 +166,12 @@ async function main() {
   if (before + guess > budget)
     throw new Error(`Budget: $${before.toFixed(2)} spent of $${budget}; this picture could cost up to about $${guess.toFixed(2)}. Ask the owner before raising OPENAI_BUDGET_USD.`);
   mkdirSync(dirname(join(ROOT, o.out)), { recursive: true });
-  const { png, usage } = await generate(o);
+  const { png, mainline } = await generate(o);
   writeFileSync(join(ROOT, o.out), await sharp(png).png().toBuffer());
-  const usd = costOf(o.model, usage) || guess;
-  appendFileSync(LOG, JSON.stringify({ at: new Date().toISOString(), model: o.model, quality: o.quality, size: o.size, out: o.out, refs: o.refs, usage, usd }) + '\n');
+  // The picture itself is billed by the image tool, which reports no token counts here: count it at the cautious
+  // guess, plus what the chat model really used.
+  const usd = guess + ((mainline.input_tokens ?? 0) * MAINLINE_RATES.in + (mainline.output_tokens ?? 0) * MAINLINE_RATES.out) / 1e6;
+  appendFileSync(LOG, JSON.stringify({ at: new Date().toISOString(), model: o.model, quality: o.quality, size: o.size, out: o.out, refs: o.refs, mainline, usd }) + '\n');
   console.log(`Saved ${o.out} for $${usd.toFixed(3)}. Spent $${spent().toFixed(2)} of the $${budget} budget.`);
 }
 

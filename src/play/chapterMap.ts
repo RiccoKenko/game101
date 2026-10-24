@@ -22,6 +22,8 @@ export interface ChapterMapDef {
 export const CHAPTER1_MAP: ChapterMapDef = {
   w: 1536,
   h: 1024,
+  // Painted by OpenAI's gpt-image-2 over the sketch (medium quality).
+  art: 'maps/chapter1.webp',
   sketch: 'maps/chapter1-sketch.png',
   nodes: [
     [330, 650],
