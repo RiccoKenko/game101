@@ -422,7 +422,7 @@ export class EnemyManager {
               vy = -dx * side * speed * 0.5;
             }
             e.timer2 += dt;
-            if (e.timer2 > 2.6 && d < 760) {
+            if (e.timer2 > (e.def!.shotEvery ?? 2.6) && d < 760) {
               e.timer2 = 0;
               this.fireShot(e.def!.shot ?? 'fireball', e.x, e.y, Math.atan2(dy, dx));
             }

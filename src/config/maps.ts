@@ -44,7 +44,7 @@ export const MAPS: MapDef[] = [
     leader: 'boss_captain',
     extras: [
       { id: 'pumpkin', from: 75, weight: 0.13 },
-      { id: 'wraith', from: 120, weight: 0.12 },
+      { id: 'wraith', from: 150, weight: 0.07 },
     ],
     color: 0x7a8a7a,
   },

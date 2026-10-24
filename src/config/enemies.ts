@@ -40,8 +40,9 @@ export interface EnemyDef {
   motion: EnemyMotion;
   /** Colour of its hit sparks, death burst and ground splat. */
   color: number;
-  /** What a ranged enemy shoots (default fireball). */
+  /** What a ranged enemy shoots (default fireball), and every how many seconds (default 2.6). */
   shot?: keyof typeof ENEMY_SHOTS;
+  shotEvery?: number;
 }
 
 export const ENEMIES: Record<EnemyId, EnemyDef> = {
@@ -59,7 +60,7 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
   bee: { id: 'bee', name: 'Buzzbee', texture: 'bee', hp: 5, speed: 215, damage: 4, radius: 26, xp: 1, coinChance: 0.05, behavior: 'swarm', knockbackResist: 0, motion: 'flap', color: 0xffd23f },
   puff: { id: 'puff', name: 'Puffball', texture: 'puff', hp: 26, speed: 88, damage: 8, radius: 32, xp: 3, coinChance: 0.14, behavior: 'splitter', knockbackResist: 0.2, motion: 'walk', color: 0xfff4d6 },
   pumpkin: { id: 'pumpkin', name: 'Pumpkin Bomb', texture: 'pumpkin', hp: 30, speed: 128, damage: 10, radius: 32, xp: 3, coinChance: 0.15, behavior: 'exploder', knockbackResist: 0.2, motion: 'walk', color: 0xff9a3d },
-  wraith: { id: 'wraith', name: 'Wraith', texture: 'wraith', hp: 24, speed: 110, damage: 8, radius: 32, xp: 3, coinChance: 0.14, behavior: 'ranged', knockbackResist: 0.1, alpha: 0.92, motion: 'float', color: 0x7fd6c8, shot: 'spirit' },
+  wraith: { id: 'wraith', name: 'Wraith', texture: 'wraith', hp: 24, speed: 110, damage: 8, radius: 32, xp: 3, coinChance: 0.14, behavior: 'ranged', knockbackResist: 0.1, alpha: 0.92, motion: 'float', color: 0x7fd6c8, shot: 'spirit', shotEvery: 3.8 },
   mimic: { id: 'mimic', name: 'Mimic', texture: 'mimic', hp: 140, speed: 175, damage: 16, radius: 40, xp: 10, coinChance: 1, behavior: 'ambush', knockbackResist: 0.7, motion: 'heavy', color: 0xc89a4a },
   wisp: { id: 'wisp', name: 'Flame Wisp', texture: 'wisp', hp: 18, speed: 195, damage: 9, radius: 28, xp: 2, coinChance: 0.1, behavior: 'swarm', knockbackResist: 0, motion: 'float', color: 0xff8a3d },
 };
