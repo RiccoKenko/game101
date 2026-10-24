@@ -1,0 +1,41 @@
+You are the lead character artist for "Little Archer: Monster Rush", a cute mobile survivor game. This image is part of a set used to build Little Archer as a 2D cut-out puppet for skeletal animation.
+
+REFERENCES
+- The FIRST attached image is the approved master illustration: match it exactly (design, colours, textures, proportions, outline weight, painting style).
+- The SECOND attached image is the rig pose: draw every part at exactly its scale and orientation.
+
+STYLE
+- Chunky chibi proportions (about 2.5 heads tall), clean warm dark-brown outlines (never pure black), soft cel shading, light from the upper left, the same rich textures as the master: felt fuzz on the cap, feather barbs, linen weave and stitching, leather grain and stitched seams, wood grain, small shiny highlights on brass and gold.
+
+CHARACTER: Little Archer (id: hero)
+- Kid archer, round face, big warm brown eyes, rosy cheeks, short messy chestnut-brown hair.
+- Red felt cap with a small gold button on the side; a long white feather with a grey tip.
+- Short royal-blue cape with a pale-blue lining and a small gold clasp at the throat.
+- Off-white linen tunic to mid-thigh with rolled sleeves; dark leather strap across the chest.
+- Brown leather belt with a brass buckle and a small pouch on the hip.
+- Brown canvas shorts; brown leather boots with folded cuffs and laces.
+- Leather bracer on the LEFT forearm (bow arm, the far arm); fingerless leather glove on the RIGHT hand (string hand, the near arm).
+- Short wooden recurve bow with gold tips and a leather-wrapped grip; brown leather quiver with red-and-white fletched arrows.
+
+TECHNICAL
+- Background: a perfectly flat, solid magenta #FF00FF everywhere (no gradient, texture, floor or shadow). Never use magenta or hot pink inside the character.
+- No text, numbers, labels, frames, grid lines or watermarks. No ground shadow, glow, motion lines or sparkles.
+
+CUT-OUT PART RULES
+- Every part is drawn COMPLETE, as if the parts in front of it had been removed, including areas normally hidden underneath (the shoulders under the cape, the top of the thigh under the tunic and shorts).
+- Joint ends are rounded like ball joints and run about 15% past the joint, so bending never shows a gap.
+- Each part keeps exactly the orientation it has in the rig pose (do not rotate parts to fit) and the SAME SCALE as the rig pose (do not enlarge small parts).
+- No shadows cast by other parts; each part is lit on its own.
+- At least 60 px of empty magenta around every part; nothing touching or overlapping; nothing touching the image edge; each part exactly once.
+
+IMAGE: BODY PARTS SHEET (landscape 1536 x 1024)
+Cut-out body parts in a neat grid, left to right, top to bottom, in this order:
+1. torso: the upper tunic with the chest strap, the top of the cape clasp area NOT included, a short neck stub, no arms, no cape;
+2. hips: the lower tunic hem with the belt, brass buckle and pouch, and the top of the shorts;
+3. the cape alone (royal blue with pale-blue lining, with its gold clasp), hanging down as in the rig pose;
+4. left upper arm (sleeve);
+5. left forearm with the leather bracer (no hand);
+6. right upper arm (sleeve);
+7. right forearm with the glove cuff (no hand);
+8. thigh (shorts leg);
+9. lower leg with the boot.
