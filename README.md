@@ -20,10 +20,20 @@
 | ความสำเร็จ | แท็บ Achievements: เป้าหมายระยะยาว 9 อย่าง แต่ละอย่างมีหลายขั้น (I, II, III...) รับเหรียญได้ทุกขั้น |
 | หยุดเกม | ปุ่มม่วงมุมขวาบน (เกมจะหยุดเองด้วยถ้าสลับไปแอปอื่น) |
 
+### ตัวละคร
+เลือกที่ลูกศรซ้าย/ขวาข้างตัวละครในเมนู ตัวที่ยังล็อกอยู่ ปุ่ม PLAY จะกลายเป็นปุ่ม Unlock (จ่ายด้วยเหรียญ)
+
+| ตัวละคร | อาวุธเริ่มต้น | จุดเด่น | ราคา |
+|---|---|---|---|
+| Little Archer | Bow | สมดุล | ฟรี |
+| Little Mage | Magic Bolt | วงโจมตีกว้างขึ้น 15% แต่เลือดน้อยลง 10% | 600 เหรียญ |
+
 ### แมพ
-1. **Sunny Meadow** ทุ่งหญ้า: Slime, Bat, Mushroom / บอส King Slime
-2. **Spooky Graveyard** สุสาน: Skeleton, Ghost, Zombie / บอส Lich
-3. **Dark Castle** ปราสาทมืด: Imp (ยิงไฟ), Armored Knight, Gargoyle (พุ่งชาร์จ) / บอส Demon Lord
+1. **Sunny Meadow** ทุ่งหญ้า: Slime, Bat, Mushroom, Puffball (ตายแล้วแตกเป็น 2 ตัวเล็ก), ฝูง Buzzbee / หัวหน้า Boar Chief (พุ่งชน) / บอส King Slime
+2. **Spooky Graveyard** สุสาน: Skeleton, Ghost, Zombie, Pumpkin Bomb (วิ่งมาระเบิด), Wraith (ยิงลูกวิญญาณ) / หัวหน้า Bone Captain (พุ่งชน + เรียกโครงกระดูก) / บอส Lich
+3. **Dark Castle** ปราสาทมืด: Imp (ยิงไฟ), Armored Knight, Gargoyle (พุ่งชาร์จ), Mimic (แกล้งเป็นหีบสมบัติ ตีแตกได้เหรียญเยอะ), ฝูง Flame Wisp / หัวหน้า Ogre Warden (ทุบพื้นเป็นวง) / บอส Demon Lord
+
+หัวหน้าโผล่นาที 2:30, 7:30, 12:30 ... ล้มได้หีบสมบัติ (อัปเกรด หรืออาวุธวิวัฒนาการ) ส่วนบอสยังมาทุก 5 นาทีเหมือนเดิม
 
 ### อาวุธและการวิวัฒนาการ
 ถืออาวุธได้ 4 ชิ้น และไอเทมเสริมได้ 4 ชิ้น อัปได้สูงสุด Lv5 ถ้าอาวุธถึง Lv5 และมีไอเทมคู่กัน เปิดหีบบอสครั้งถัดไปอาวุธจะวิวัฒนาการ
@@ -37,6 +47,10 @@
 | Lightning | ฟ้าผ่าศัตรูบนจอ | - | - |
 | Fire Bomb | ระเบิดวงกว้าง | - | - |
 | Boomerang | ขว้างออกไปแล้วกลับมา | - | - |
+| Magic Bolt | ลูกเวทวิ่งไล่ตามศัตรูเอง (อาวุธเริ่มของ Mage) | Spell Tome | Starfall (ดาวตกใส่ศัตรูทั้งจอ) |
+| Frost Shards | ยิงเศษน้ำแข็งเป็นพัด ศัตรูที่โดนเดินช้าลง | Winged Boots | Blizzard (พายุหิมะรอบตัว) |
+| Moon Slash | ฟันเป็นวงพระจันทร์ด้านหน้า (Lv3 ฟันด้านหลังด้วย) ผลักศัตรูกระเด็น | - | - |
+| Poison Flask | ขว้างขวดยาพิษ เกิดบ่อพิษทำดาเมจต่อเนื่อง | - | - |
 
 ---
 
@@ -67,6 +81,8 @@
 | `src/config/weapons.ts` | ดาเมจ/คูลดาวน์ของอาวุธแต่ละเลเวล, ไอเทมเสริม, การวิวัฒนาการ |
 | `src/config/enemies.ts` | เลือด/ความเร็ว/ดาเมจของศัตรูและบอส |
 | `src/config/shop.ts` | อัปเกรดถาวรและราคา |
+| `src/config/characters.ts` | ตัวละครให้เลือก: อาวุธเริ่ม, ราคา, ตัวคูณเลือด/วงโจมตี |
+| `src/config/maps.ts` | มอนแต่ละแมพ, มอนเสริม (`extras`), ฝูง (`swarm`), หัวหน้า (`leader`) |
 | `src/config/quests.ts` | ภารกิจรายวัน (เป้าหมาย/รางวัลตามจำนวนแมพที่ปลดล็อก) และความสำเร็จ (ขั้นและรางวัล) |
 | `src/core/waves.ts` | ความยากที่เพิ่มขึ้นตามเวลา (เลือดศัตรู, อัตราเกิด, ช่วง "คลั่ง" หลังนาทีที่ 8) |
 | `src/core/progression.ts` | XP ที่ต้องใช้ต่อเลเวล และการสุ่มการ์ดอัปเกรด |
@@ -98,6 +114,8 @@ PW_CHROMIUM=/path/to/chromium npm run test:e2e   # smoke test บนจอ iPhon
 | `?level=15` | เริ่มที่เลเวล 15 (สุ่มอัปเกรดให้) |
 | `?gold=1000&unlock` | ตั้งเงิน และปลดล็อกทุกแมพ |
 | `?debug` | แสดง FPS และจำนวนศัตรู |
+| `?give=slash5,flask3,starfall` | เริ่มพร้อมอาวุธที่ระบุ (เลขท้าย = เลเวล; ชื่อร่างวิวัฒนาการ = ได้ร่างนั้นเลย) |
+| `?hero=mage` | เล่นเป็นตัวละครนี้โดยไม่ต้องปลดล็อก |
 
 สคริปต์ช่วย:
 - `scripts/sim.mjs` ให้บอทเล่นแล้วรายงานเวลารอด/เลเวล/บอส (ใช้ปรับความยาก)
@@ -110,7 +128,7 @@ PW_CHROMIUM=/path/to/chromium npm run test:e2e   # smoke test บนจอ iPhon
 - `npm run art:openai -- <out.png> --prompt <file> --ref <ภาพ>` สั่ง OpenAI วาด 1 ภาพ (key เก็บเป็น network secret ของ environment; มีเพดานงบใน `art/openai-log.jsonl`)
 - prompt อยู่ใน `art/prompts/mr_*.txt`, ภาพต้นฉบับใน `art/incoming/mr/`, ภาพต้นแบบลุค `art/incoming/mr/look_mockup.png`
 - `npm run art:cut` ตัดแผ่นภาพเป็น texture ขนาดเกม ตาม `scripts/art/mr-sheets.json` → `public/art/<key>.webp` + `src/art/manifest.json`
-- ฮีโร่เป็น sprite sheet ที่ bake จาก puppet ของโปรเจกต์ Sky Pirates (`scripts/art/hero-bake/`)
+- ฮีโร่เป็น sprite sheet ที่ bake จาก puppet ของโปรเจกต์ Sky Pirates (`scripts/art/hero-bake/`); ภาพตัวละครในเมนูตัดจากภาพ master ด้วย `npx tsx scripts/art/menu-still.ts <master.png> <out.webp>`
 
 ---
 
