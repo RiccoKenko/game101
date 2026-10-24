@@ -1,5 +1,5 @@
 /**
- * Bakes a puppet (the archer, or the old hero) into sprite frames: /dev/bake.html, driven by scripts/bake-hero.mjs.
+ * Bakes a puppet (the archer, the mage, or the old hero) into sprite frames: /dev/bake.html, driven by scripts/bake-hero.mjs.
  * Renders ONLY the puppet on a fully transparent canvas (premultiplied alpha, cleared to 0), facing right,
  * through an orthographic camera whose origin is the puppet's feet, so every frame has the same scale and
  * baseline. Time is stepped in small fixed substeps (springy hood and capelet stay deterministic) and a frame is
@@ -156,7 +156,7 @@ const api = {
   /**
    * `id`: the character (public/sprites/<id>/, clips from CLIPS). `size`: square canvas in render px. `feet`: where
    * the puppet's ground point lands, render px from the top left. `scale`: render px per rig px. `stringWidth`:
-   * bowstring thickness in rig px (the rigs' own is 4).
+   * bowstring thickness in rig px (the rigs' own is 4; ignored by rigs without a bowstring).
    */
   async setup(o: { id?: string; size: number; feet: [number, number]; scale: number; stringWidth: number }) {
     if (!renderer) {
@@ -175,7 +175,7 @@ const api = {
     renderer.setSize(size, size);
     camera = new THREE.OrthographicCamera(-o.feet[0], size - o.feet[0], o.feet[1], o.feet[1] - size, 0.1, 2000);
     camera.position.set(0, 0, 1000);
-    assets.rig.string!.width = o.stringWidth;
+    if (assets.rig.string) assets.rig.string.width = o.stringWidth;
     pixels = new Uint8Array(size * size * 4);
   },
 
@@ -202,6 +202,11 @@ const api = {
   /** World transforms of some bones (after the last frame), to prove clips share a body frame for frame. */
   bones(names: string[]): Record<string, number[]> {
     return Object.fromEntries(names.map((n) => [n, [...puppet!.skeleton.world.get(n)!]]));
+  },
+
+  /** Named rig points (RigDef.points, e.g. the mage's palm and crystal) in character space (rig px, y up, origin at the feet). */
+  points(names: string[]): Record<string, [number, number]> {
+    return Object.fromEntries(names.map((n) => [n, puppet!.point(n)]));
   },
 
   /** Steps to clip time `t` (never backwards), renders and returns the raw premultiplied RGBA as base64. */

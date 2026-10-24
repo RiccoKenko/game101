@@ -506,6 +506,66 @@ export function unmixSpill(img: RgbaImage, bg: Rgb, colour: Rgb, near = 48, ever
   return { data: out, width: w, height: h };
 }
 
+/**
+ * Key-colour spill on the edges (green screen): the AI blends a flat #00FF00 background into the outlines, and the
+ * edge pixels `removeBackground` could not un-mix stay opaque and green. Within `band` px of transparency, a pixel's
+ * excess of the key's dominant channel over the other two is taken as background: it comes off the alpha and the
+ * colour is un-mixed, so a green rim becomes a soft edge of the art's own colour; deeper inside, only strongly green
+ * specks (trapped background) are un-mixed. A no-op unless one channel
+ * dominates the background (green or pure red/blue; magenta has two).
+ */
+export function despillKey(img: RgbaImage, bg: Rgb, band = 3): RgbaImage {
+  const { data, width: w, height: h } = img;
+  const k = bg.indexOf(Math.max(...bg));
+  const [o1, o2] = [0, 1, 2].filter((c) => c !== k);
+  const bgExcess = bg[k] - Math.max(bg[o1], bg[o2]);
+  if (bgExcess < 128) return img;
+  // Distance (in steps, up to `band`) of every pixel from a transparent one.
+  const dist = new Uint8Array(w * h).fill(255);
+  let front: number[] = [];
+  for (let p = 0; p < w * h; p++)
+    if (data[p * 4 + 3] === 0) {
+      dist[p] = 0;
+      front.push(p);
+    }
+  for (let d = 1; d <= band && front.length; d++) {
+    const next: number[] = [];
+    for (const p of front) {
+      const x = p % w;
+      const y = (p - x) / w;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          const yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+          const q = yy * w + xx;
+          if (dist[q] > d) {
+            dist[q] = d;
+            next.push(q);
+          }
+        }
+    }
+    front = next;
+  }
+  const out = new Uint8Array(data);
+  for (let p = 0; p < w * h; p++) {
+    const i = p * 4;
+    if (dist[p] === 0) continue;
+    const excess = data[i + k] - Math.max(data[i + o1], data[i + o2]);
+    if (excess <= 0) continue;
+    const f = Math.min(1, excess / bgExcess);
+    // Inside the art only strong key colour counts as spill (specks trapped in hair), never a faint tint.
+    if (dist[p] > band && f < 0.3) continue;
+    if (f > 0.94) {
+      out.fill(0, i, i + 4);
+      continue;
+    }
+    for (let c = 0; c < 3; c++) out[i + c] = Math.round(Math.min(255, Math.max(0, (data[i + c] - f * bg[c]) / (1 - f))));
+    out[i + 3] = Math.round(data[i + 3] * (1 - f));
+  }
+  return { data: out, width: w, height: h };
+}
+
 /** Clears blobs smaller than `minArea` pixels (left-over specks after cutting strays away). */
 export function despeck(img: RgbaImage, minArea: number, alphaMin = 24): RgbaImage {
   const { pieces, labels } = findPieces(img, alphaMin);

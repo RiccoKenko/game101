@@ -1,10 +1,11 @@
-"""Fits sliced archer parts onto the trimmed rig pose (similarity transform sheet -> rig, optional mirror).
+"""Fits sliced parts (of $CHAR, default archer) onto the trimmed rig pose (similarity transform sheet -> rig, optional mirror).
 fit(name, cx, cy, s0, th0, mirror, spread, region) ; region = (x0,y0,x1,y1) in SHEET px limiting the samples."""
 import json, math, os, sys
 import numpy as np
 from PIL import Image
 SP = os.environ.get('SP', os.getcwd())  # the sky-pirates-td checkout (run from its root)
-D = f'{SP}/art/sliced/archer'
+CHAR = os.environ.get('CHAR', 'archer')  # whose sliced parts to fit (art/sliced/<CHAR>/)
+D = f'{SP}/art/sliced/{CHAR}'
 man = json.load(open(f'{D}/manifest.json'))
 rigimg = np.asarray(Image.open(f'{D}/rigpose.png').convert('RGBA')).astype(np.int16)
 rig = rigimg[..., :3]

@@ -4,9 +4,11 @@
 // then packs the frames into an 8-column grid PNG plus a JSON of the animations.
 //
 // Usage (from the sky-pirates-td worktree root):
-//   node scripts/bake-hero.mjs <outDir> [--char archer|hero] [--contact <dir>]
+//   node scripts/bake-hero.mjs <outDir> [--char archer|mage|hero] [--contact <dir>]
 //   writes <outDir>/hero.png and hero.json (and hero_menu.png for the old hero); with --contact, check images on
-//   mid grey (contact.png, plus run_strip.png for the archer: run, runaim and runrelease frame by frame).
+//   mid grey (contact.png, plus run_strip.png for the archer and the mage: run, runaim and runrelease frame by
+//   frame). For a rig with named points to report (the mage's palm and crystal), it also prints where they are in
+//   every frame, from the feet (x forward, y up) in 256 px frames and in the game's 192 px frames.
 //   Env: PROBE=1 renders on 512 px frames to measure true extents (per-frame boxes relative to the feet).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -31,7 +33,9 @@ const range = (n, step, from = 0) => Array.from({ length: n }, (_, i) => +(from 
 // K: frame px per rig px. FEET: where the rig's ground point lands in the 256 px frame. STRING_PX: bowstring
 // thickness in frame px (the rigs' own 4 rig px would be a 0.6 px hairline). ANIMS: `clip` is a clip of the
 // character (src/puppet/clips/<id>.ts; the old hero also has bake-only mixes in src/dev/bake.ts), `times` the clip
-// seconds to capture (one-shots are re-timed by picking their key moments), `fps` the playback rate.
+// seconds to capture (one-shots are re-timed by picking their key moments), `fps` the playback rate. SHARED: loops
+// that must share their body bones frame for frame; BODY: those bones (default: the archer's). POINTS: named rig
+// points to report per frame (rigs without a bowstring leave STRING_PX out).
 const CHARS = {
   // The Feather Cap archer (art/rigs/archer.json, clips in src/puppet/clips/archer.ts).
   archer: {
@@ -54,6 +58,30 @@ const CHARS = {
       { name: 'cheer', clip: 'cheer', times: [0.05, 0.12, 0.2, 0.28, 0.36, 0.44, 0.52, 0.6, 0.68, 0.76, 0.88, 1.05], fps: 12, loop: false },
     ],
     SHARED: ['run', 'runaim', 'runrelease'],
+  },
+  // Little Mage (art/rigs/mage.json, clips in src/puppet/clips/mage.ts): the archer's animation table, so the game
+  // swaps the sheets with no code change. Her braid and hat tip swing where the archer's feather and quiver were.
+  mage: {
+    K: 0.144,
+    FEET: [128, 236],
+    ANIMS: [
+      // Ready loop: staff upright in the far hand, near hand palm-up at the chest, breathing (one breath per 16 frames).
+      { name: 'idle', clip: 'ready', times: range(16, 1 / 12), fps: 12, loop: true },
+      // One full 0.5 s stride, staff carried slanted, near arm swinging.
+      { name: 'run', clip: 'run', times: range(8, 1 / 16), fps: 16, loop: true },
+      // The same stride charging a spell (palm out, staff forward) / casting (arm thrust out): run's body frame for frame.
+      { name: 'runaim', clip: 'runCharge', times: range(8, 1 / 16), fps: 16, loop: true },
+      { name: 'runrelease', clip: 'runCast', times: range(8, 1 / 16), fps: 16, loop: true },
+      // The cast: thrust on frame 0 (the bolt flies), overshoot, settle; ends on idle frame 0.
+      { name: 'shoot', clip: 'cast', times: range(8, 1 / 16), fps: 16, loop: false },
+      { name: 'hurt', clip: 'hit', times: [0.03, 0.07, 0.13, 0.2, 0.27, 0.38], fps: 12, loop: false },
+      { name: 'ko', clip: 'ko', times: [0.06, 0.16, 0.28, 0.38, 0.46, 0.53, 0.6, 0.68, 0.8, 1.2], fps: 12, loop: false },
+      { name: 'cheer', clip: 'cheer', times: [0.05, 0.12, 0.2, 0.28, 0.36, 0.44, 0.52, 0.6, 0.68, 0.76, 0.88, 1.05], fps: 12, loop: false },
+    ],
+    SHARED: ['run', 'runaim', 'runrelease'],
+    BODY: ['hips', 'torso', 'head', 'braid', 'hatTip', 'capelet', 'thigh.r', 'shin.r', 'thigh.l', 'shin.l'],
+    // Where a bolt can leave: the near hand's palm (open hand), the pointing fingertip and the staff's crystal.
+    POINTS: ['palm', 'fingertip', 'crystal'],
   },
   // The old anime hero (public/sprites/hero), as baked first: idle/shoot are bake-only mixes of its clips.
   hero: {
@@ -81,8 +109,8 @@ const FEET = PROBE ? [256, 400] : C.FEET;
 const { K, STRING_PX } = C;
 // ONLY=ko,cheer limits a (probe) run to some animations.
 const ANIMS = process.env.ONLY ? C.ANIMS.filter((a) => process.env.ONLY.split(',').includes(a.name)) : C.ANIMS;
-/** Bones whose transforms must match frame for frame across C.SHARED (everything but the arms and the bow). */
-const BODY = ['hips', 'torso', 'head', 'hoodTip', 'capelet', 'quiver', 'thigh.r', 'shin.r', 'thigh.l', 'shin.l'];
+/** Bones whose transforms must match frame for frame across C.SHARED (everything but the arms and the bow / staff). */
+const BODY = C.BODY ?? ['hips', 'torso', 'head', 'hoodTip', 'capelet', 'quiver', 'thigh.r', 'shin.r', 'thigh.l', 'shin.l'];
 
 // --- Helpers ----------------------------------------------------------------------------------------------
 /** Raw premultiplied RGBA (rows bottom-up, `n * ss` square) → straight RGBA `n` square, rows top-down. */
@@ -202,7 +230,7 @@ await page.evaluate((o) => window.__bake.setup(o), {
   size: FRAME * SS,
   feet: [FEET[0] * SS, FEET[1] * SS],
   scale: K * SS,
-  stringWidth: STRING_PX / K,
+  stringWidth: (STRING_PX ?? 1) / K,
 });
 
 const frames = [];
@@ -216,6 +244,7 @@ for (const a of ANIMS) {
   for (const [i, t] of a.times.entries()) {
     own.push({ anim: a.name, i, t, px: await capture(FRAME, SS, t) });
     bodies[a.name].push(await page.evaluate((names) => window.__bake.bones(names), BODY));
+    if (C.POINTS) own.at(-1).points = await page.evaluate((names) => window.__bake.points(names), C.POINTS);
   }
   frames.push(...own);
   let note = '';
@@ -282,6 +311,17 @@ let mb;
 if (menu) {
   mb = bbox(menu.px, menu.n);
   if (mb.x0 < 1 || mb.y0 < 1 || mb.x1 > menu.n - 2 || mb.y1 > menu.n - 2) problems.push(`menu still touches its canvas edge: ${JSON.stringify(mb)}`);
+}
+// Named points (e.g. where the mage's bolt leaves), from the feet with y up: 256 px frame and 192 px game frame.
+if (C.POINTS && !PROBE) {
+  console.log(`points from the feet (x forward, y up), frame px @256 | game px @192:`);
+  for (const f of frames) {
+    const cells = C.POINTS.map((n) => {
+      const [x, y] = f.points[n];
+      return `${n} ${(x * K).toFixed(1)},${(y * K).toFixed(1)} | ${(x * K * 0.75).toFixed(1)},${(y * K * 0.75).toFixed(1)}`;
+    });
+    console.log(`  ${f.anim}[${f.i}]  ${cells.join('   ')}`);
+  }
 }
 for (const p of problems) console.log('PROBLEM', p);
 

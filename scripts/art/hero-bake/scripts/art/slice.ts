@@ -16,6 +16,7 @@ import {
   keepPolygon,
   cutPolygons,
   despeck,
+  despillKey,
   eraseEllipses,
   findPieces,
   groupByBoxes,
@@ -49,6 +50,8 @@ interface SheetConfig {
   spill?: [number, number, number];
   /** Clean spill trapped inside the art too, not only where it touches the surroundings. */
   spillEverywhere?: boolean;
+  /** Green-screen sheets: un-mix the key colour left on the parts' edges, within this many px of transparency (`despillKey`). */
+  despill?: number;
   /** Clear left-over blobs smaller than this many pixels from every part. */
   despeck?: number;
   /** A polygon (sheet pixels) per part outside which everything is cleared, e.g. a forearm lifted from the rig pose. */
@@ -176,6 +179,7 @@ async function main() {
         if (cfg.cut?.[name]) cut = cutPolygons(cut, part.x - 8, part.y - 8, cfg.cut[name]);
         if (cfg.keep?.[name]) cut = keepPolygon(cut, part.x - 8, part.y - 8, cfg.keep[name]);
         if (cfg.spill && background) cut = unmixSpill(cut, background, cfg.spill, 48, cfg.spillEverywhere);
+        if (cfg.despill && background) cut = despillKey(cut, background, cfg.despill);
         for (const c of cfg.clearColour ?? [])
           if (c.parts.includes(name)) cut = clearColourBlobs(cut, c.colour, c.tolerance, c.minArea, c.grow ?? 1);
         if (cfg.despeck) cut = despeck(cut, cfg.despeck);
