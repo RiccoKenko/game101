@@ -1,9 +1,9 @@
 /**
- * Playable test level: the level 1 battle on the layout sketch, with stand-in pirates and towers (archer, cannon,
- * storm crystal, frost cloud) and the real
- * Little Archer. Tap a stone spot to build, tap the ground to move the hero (he shoots by himself when he
- * stands still), drag to look around and pinch to zoom. The rules live in src/td/battle.ts; this file only
- * draws them and turns battle events into animation, sound and effects.
+ * The battle page: Chapter 1's map of levels, the story scenes, and the battles themselves (stand-in towers for
+ * now; the pirates, the hero and his companions are the drawn puppets). Tap a stone spot to build, tap the ground
+ * to move the hero (he shoots by himself when he stands still), drag to look around and pinch to zoom. The rules
+ * live in src/td/battle.ts; this file only draws them and turns battle events into animation, sound and effects.
+ * `?level=<id>` goes straight into a battle (`&difficulty=hard`, `&story=1` to play its opening scene first).
  */
 import '@fontsource/fredoka/500.css';
 import '@fontsource/fredoka/600.css';
@@ -29,11 +29,17 @@ import { Shadow } from '../stage/shadow';
 import { createStage2D } from '../stage/stage2d';
 import { Battle, TOWER_TOP, type BattleEvent, type Enemy, type Shot } from '../td/battle';
 import type { CardDef } from '../td/cards';
-import { LEVEL1 } from '../td/levels';
+import { DIFFICULTIES, DIFFICULTY, type Difficulty } from '../td/difficulty';
+import { CHAPTER1, LEVEL1, LEVELS, type LevelDef } from '../td/levels';
 import type { Pt } from '../td/path';
 import type { TargetMode } from '../td/targeting';
 import { ENEMIES, MAX_LEVEL, SKILLS, TOWER_KINDS, TOWERS, towerSpec, type Branch, type EnemyKind, type SkillName, type TowerKind } from '../td/units';
 import { paintBall, paintCrystal, paintEagle, paintFrostWave, paintPirate, paintRing, paintShard, paintTower, paintWhale } from './art';
+import { CHAPTER1_MAP } from './chapterMap';
+import { deviceStore, loadProgress, markSeen, recordWin, saveProgress, unlockedCount } from './progress';
+import { ChapterScreen, showEnd, showPause, StoryPlayer, type EndAction } from './screens';
+import { snapshotPuppet } from './snapshot';
+import { sceneKey, STORY, type StoryLine } from './story';
 import { clampView, pan, toMap, toScreen, zoomAt, type Bounds, type View } from './view';
 
 declare global {
@@ -51,9 +57,11 @@ const MARKUP = `
     <div class="stat" id="crystal-stat" aria-label="Crystals left"><i class="gem"></i><b id="crystals">20</b></div>
     <div class="stat" id="gold-stat" aria-label="Gold"><i class="coin"></i><b id="gold">0</b></div>
     <div class="stat wave" aria-label="Wave"><span>Wave</span><b id="wave">0/6</b></div>
+    <span class="diff-tag" id="diff-tag"></span>
     <div class="picked" id="picked" aria-label="Captain's orders in force"></div>
     <span class="spacer"></span>
     <button type="button" class="pill" id="speed" aria-label="Game speed">×1</button>
+    <button type="button" class="pill pause-btn" id="pause-btn" aria-label="Pause"><i></i><i></i></button>
   </header>
   <div class="boss" id="boss" hidden><span id="boss-name">First Mate</span><div class="boss-bar"><i id="boss-hp"></i></div></div>
   <div class="skills">
@@ -71,22 +79,22 @@ const MARKUP = `
       <div class="order-row" id="order-row"></div>
     </div>
   </div>
-  <div class="end" id="end" hidden>
-    <div class="end-card">
-      <h1 id="end-title"></h1>
-      <p class="stars" id="end-stars"></p>
-      <p id="end-note"></p>
-      <button type="button" id="again">Play again</button>
-    </div>
-  </div>
+  <div class="end" id="end" hidden></div>
+  <div class="pause" id="pause" hidden></div>
   <div class="loading" id="loading"><div class="bar"><i id="bar"></i></div><span>Sailing to Sky Haven…</span></div>
 </div>`;
 document.body.insertAdjacentHTML('afterbegin', MARKUP);
 const $ = (id: string) => document.getElementById(id)!;
 
-const level = LEVEL1;
 const params = new URLSearchParams(location.search);
 const SEED = Number(params.get('seed') ?? 1 + Math.floor(Math.random() * 1e6));
+/** Opened on a level (tests, shared links) rather than on the chapter map. */
+const DIRECT = params.get('level') && LEVELS[params.get('level')!] ? LEVELS[params.get('level')!] : null;
+const store = deviceStore();
+const progress = loadProgress(store);
+const asked = params.get('difficulty') as Difficulty | null;
+let difficulty: Difficulty = asked && DIFFICULTIES.includes(asked) ? asked : progress.difficulty;
+let level: LevelDef = DIRECT ?? LEVEL1;
 
 // Draw order: the map, then shadows and rings, then everything standing on the map sorted by its feet
 // (lower on screen draws on top), then arrows and effects.
@@ -107,7 +115,9 @@ const bar = $('bar') as HTMLElement;
 bar.style.width = '20%';
 
 const bounds = (): Bounds => ({ screenW: stage.width, screenH: stage.height, mapW: level.map.w, mapH: level.map.h, maxZoom: 1.6 });
-let view: View = clampView({ cx: 820, cy: 540, zoom: Math.max(0.62, stage.height / 820) }, bounds());
+/** The opening view of a level: zoomed to fit the island's height on the screen, a little right of centre. */
+const startView = (): View => clampView({ cx: level.map.w * 0.53, cy: level.map.h * 0.53, zoom: Math.max(0.62, stage.height / 820) }, bounds());
+let view: View = startView();
 
 function applyView(): void {
   view = clampView(view, bounds());
@@ -146,6 +156,8 @@ interface PuppetLook {
   box: THREE.Box3;
   /** The rig's `nose` point at rest, if it has one (Mochi's hit line). */
   nose: [number, number] | null;
+  /** The top of the head at rest. */
+  headTop: [number, number];
 }
 
 /**
@@ -161,15 +173,24 @@ async function puppetLook(id: string, fit: { height: number } | { width: number 
   probe.update(0);
   probe.root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(probe.root);
-  const top = assets.rig.points?.['head.top'] ? probe.point('head.top')[1] : box.max.y;
+  const headTop: [number, number] = assets.rig.points?.['head.top'] ? probe.point('head.top') : [(box.min.x + box.max.x) / 2, box.max.y];
   const nose = assets.rig.points?.nose ? probe.point('nose') : null;
   probe.dispose();
+  const top = headTop[1];
   const size = 'height' in fit ? fit.height / top : fit.width / (box.max.x - box.min.x);
-  return { assets, clips, size, height: top * size, box, nose };
+  return { assets, clips, size, height: top * size, box, nose, headTop };
 }
 
-const [mapTexture, heroAssets, pirateLooks, talonLook, mochiLook] = await Promise.all([
-  loadTexture(level.map.art ?? level.map.sketch, renderer),
+/** Each level's map picture, loaded the first time it's needed. */
+const mapTextures = new Map<string, Promise<THREE.Texture>>();
+const mapTexture = (def: LevelDef) => {
+  const path = def.map.art ?? def.map.sketch;
+  if (!mapTextures.has(path)) mapTextures.set(path, loadTexture(path, renderer));
+  return mapTextures.get(path)!;
+};
+
+const [firstMap, heroAssets, pirateLooks, talonLook, mochiLook] = await Promise.all([
+  mapTexture(level),
   loadPuppet('hero', renderer),
   Promise.all((Object.keys(PIRATE_PUPPETS) as EnemyKind[]).map(async (k) => [k, await puppetLook(PIRATE_PUPPETS[k].id, { height: PIRATE_PUPPETS[k].height })] as const)),
   puppetLook('talon', { width: 125 }),
@@ -178,7 +199,7 @@ const [mapTexture, heroAssets, pirateLooks, talonLook, mochiLook] = await Promis
 /** Pirates without a drawn puppet yet use a painted stand-in. */
 const PIRATE_LOOK = Object.fromEntries(pirateLooks.filter(([, look]) => look)) as Partial<Record<EnemyKind, PuppetLook>>;
 bar.style.width = '90%';
-const map = new THREE.Mesh(spriteGeometry(level.map.w, level.map.h), spriteMaterial(mapTexture, flash0));
+const map = new THREE.Mesh(spriteGeometry(level.map.w, level.map.h), spriteMaterial(firstMap, flash0));
 map.renderOrder = 0;
 scene.add(map);
 
@@ -532,13 +553,16 @@ function newBattle(): void {
   endTalon();
   endWhale();
   mochiUsed = false;
-  battle = new Battle(level, SEED + Math.floor(Math.random() * 1000));
+  battle = new Battle(level, SEED + Math.floor(Math.random() * 1000), difficulty);
   anim.play('idle', { fade: 0.2 });
   closeMenu();
   ($('end') as HTMLElement).hidden = true;
   ($('orders') as HTMLElement).hidden = true;
   $('picked').replaceChildren();
   $('hint').classList.remove('gone');
+  const tag = $('diff-tag');
+  tag.textContent = DIFFICULTY[difficulty].name;
+  tag.className = `diff-tag diff-${difficulty}`;
   hudDirty = true;
 }
 
@@ -602,10 +626,26 @@ $('speed').addEventListener('click', () => {
   $('speed').textContent = `×${speed}`;
   $('speed').classList.toggle('on', speed === 2);
 });
-const SKILL_ICON: Record<SkillName, Painted> = { talon: EAGLE_ART, mochi: WHALE_ART };
+/**
+ * A close-up of a companion's face from its puppet (`zoom` frames tighter): the skill buttons' icons, and Talon's
+ * story portrait until his portraits are drawn. Null while the puppet isn't drawn.
+ */
+function faceOf(look: PuppetLook | null, clip: string, zoom: number, size: number): string | null {
+  if (!look) return null;
+  const b = look.box;
+  const r = Math.max(b.max.x - b.min.x, b.max.y - b.min.y) * 0.22 / zoom;
+  // Mochi looks out from just behind his nose; Talon from just under the top of his head.
+  const centre: [number, number] = look.nose ? [look.nose[0] - r * 0.85, look.nose[1] + r * 0.15] : [look.headTop[0], look.headTop[1] - r * 0.8];
+  return snapshotPuppet(renderer, look.assets, look.clips, { clip, t: 0, centre, radius: r, size }).toDataURL();
+}
+
+const SKILL_ICON: Record<SkillName, string> = {
+  talon: faceOf(talonLook, 'idle', 1, 128) ?? (EAGLE_ART.texture.image as HTMLCanvasElement).toDataURL(),
+  mochi: faceOf(mochiLook, 'idle', 1, 160) ?? (WHALE_ART.texture.image as HTMLCanvasElement).toDataURL(),
+};
 for (const name of ['talon', 'mochi'] as SkillName[]) {
   const button = $(`skill-${name}`) as HTMLButtonElement;
-  (button.querySelector('img') as HTMLImageElement).src = (SKILL_ICON[name].texture.image as HTMLCanvasElement).toDataURL();
+  (button.querySelector('img') as HTMLImageElement).src = SKILL_ICON[name];
   button.addEventListener('click', () => {
     void sfx.unlock();
     if (name === 'talon' ? battle.useTalon() : battle.useMochi()) sfx.play('click', 0.3, 0);
@@ -629,11 +669,6 @@ function updateSkills(): void {
     if (cd.textContent !== text) cd.textContent = text;
   }
 }
-
-$('again').addEventListener('click', () => {
-  sfx.play('click', 0.35, 0);
-  newBattle();
-});
 
 // ---------- tower menu
 
@@ -1033,12 +1068,12 @@ function onEvent(ev: BattleEvent): void {
       break;
     }
     case 'win':
-      endScreen(true, ev.stars);
+      void endScreen(true, ev.stars);
       break;
     case 'lose':
       // The pirates celebrate.
       for (const v of pirates.values()) if (v.anim && v.leaving < 0) v.anim.play('cheer', { once: true });
-      endScreen(false, 0);
+      void endScreen(false, 0);
       break;
   }
 }
@@ -1071,18 +1106,143 @@ function recoil(slot: number): void {
   if (tv) tv.recoil = 1;
 }
 
-function endScreen(won: boolean, stars: number): void {
+/** Advice on the defeat card: what usually goes wrong. */
+const TIPS = [
+  'Cannons can’t hit Parrot Raiders in the air. Archer Towers and Storm Crystals can.',
+  'Ironclads shrug off arrows. A Storm Crystal’s lightning goes straight through armour.',
+  'Frost Clouds slow every pirate in range, so your other towers get more shots in.',
+  'Tap a tower and set its target to Thieves to shoot the crystal carriers first.',
+  'Talon snatches crystals back from a thief. Save him for when one is about to escape!',
+  'A tower at level 3 can specialise: two very different level-4 upgrades.',
+  'Calling the next wave early pays bonus gold.',
+];
+
+async function endScreen(won: boolean, stars: number): Promise<void> {
   closeMenu();
   anim.play(won ? 'cheer' : 'ko', { fade: 0.15, once: true });
   sfx.play(won ? 'levelup' : 'explosion', 0.5);
   if (won) time.slowMo(0.4, 0.8);
-  setTimeout(() => {
-    $('end-title').textContent = won ? 'Victory!' : 'The crystals are gone…';
-    $('end-stars').textContent = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '';
-    $('end-note').textContent = `${battle.vault.remaining} of ${battle.vault.total} crystals saved`;
-    ($('end') as HTMLElement).hidden = false;
-  }, 1200);
+  const opened = unlockedCount(CHAPTER1, progress);
+  const best = won && recordWin(progress, level.id, stars, difficulty);
+  if (won) saveProgress(store, progress);
+  const fresh = unlockedCount(CHAPTER1, progress) > opened ? CHAPTER1[opened].id : null;
+  const next = CHAPTER1[CHAPTER1.indexOf(level) + 1];
+  const played = battle;
+  await new Promise((r) => setTimeout(r, 1200));
+  if (battle !== played) return;
+  const action = await showEnd($('end'), {
+    won,
+    stars,
+    saved: battle.vault.remaining,
+    total: battle.vault.total,
+    difficulty,
+    best,
+    hasNext: !!next,
+    tip: won ? undefined : TIPS[Math.floor(Math.random() * TIPS.length)],
+  });
+  await leaveBattle(action, won, next, fresh);
 }
+
+/** After the end card: play again, or (after a win, through its closing scene) on to the next level or the map. */
+async function leaveBattle(action: EndAction, won: boolean, next: LevelDef | undefined, fresh: string | null): Promise<void> {
+  if (action === 'again') {
+    newBattle();
+    return;
+  }
+  if (won) await playScene(sceneKey(level.id, 'after'));
+  if (action === 'next' && next) await startLevel(next);
+  else showChapter(fresh);
+}
+
+// ---------- levels, story scenes and the chapter map
+
+const app = document.querySelector('.app') as HTMLElement;
+const story = new StoryPlayer(app);
+const talonFace = faceOf(talonLook, 'idle', 0.75, 256);
+if (talonFace) story.setStandIn('talon', talonFace);
+const mochiFace = faceOf(mochiLook, 'idle', 0.6, 256);
+if (mochiFace) story.setStandIn('mochi', mochiFace);
+let paused = false;
+
+/** Switches the battlefield to another level: its map picture, its opening view and a fresh battle. */
+async function enterLevel(def: LevelDef): Promise<void> {
+  level = def;
+  const texture = await mapTexture(def);
+  map.geometry.dispose();
+  map.geometry = spriteGeometry(def.map.w, def.map.h);
+  (map.material as THREE.ShaderMaterial).uniforms.map.value = texture;
+  view = startView();
+  applyView();
+  newBattle();
+}
+
+/** Little Archer acts out his lines on the map. */
+function heroLine(line: StoryLine): void {
+  if (line.who === 'archer' && line.move) anim.oneShot(line.move, 'idle', { fade: 0.08 });
+}
+
+/** Plays a story scene over the battlefield (the battle's buttons step aside), unless already seen and not forced. */
+async function playScene(key: string, force = false): Promise<void> {
+  const lines = STORY[key];
+  if (!lines || (!force && progress.seen.includes(key))) return;
+  closeMenu();
+  app.classList.add('cutscene');
+  await story.play(lines, heroLine);
+  app.classList.remove('cutscene');
+  markSeen(progress, key);
+  saveProgress(store, progress);
+}
+
+async function startLevel(def: LevelDef): Promise<void> {
+  chapter.hide();
+  await enterLevel(def);
+  await playScene(sceneKey(def.id, 'before'));
+}
+
+/** The level card's Story button: its scenes again over its map, then back to the chapter. */
+async function replayStory(def: LevelDef): Promise<void> {
+  chapter.hide();
+  await enterLevel(def);
+  await playScene(sceneKey(def.id, 'before'), true);
+  if (progress.levels[def.id]) await playScene(sceneKey(def.id, 'after'), true);
+  showChapter();
+}
+
+function showChapter(fresh: string | null = null): void {
+  closeMenu();
+  paused = false;
+  ($('pause') as HTMLElement).hidden = true;
+  chapter.show(fresh);
+}
+
+const chapter = new ChapterScreen(app, { number: 1, name: 'Pirates on the Horizon' }, CHAPTER1, CHAPTER1_MAP, () => progress, {
+  play: (def) => void startLevel(def),
+  story: (def) => void replayStory(def),
+  difficulty: (d) => {
+    difficulty = progress.difficulty = d;
+    saveProgress(store, progress);
+  },
+});
+
+async function pause(): Promise<void> {
+  if (paused || battle.over || story.playing || chapter.visible) return;
+  paused = true;
+  closeMenu();
+  const action = await showPause($('pause'), level.name, difficulty);
+  paused = false;
+  if (action === 'restart') newBattle();
+  else if (action === 'map') showChapter();
+}
+
+$('pause-btn').addEventListener('click', () => {
+  void sfx.unlock();
+  sfx.play('click', 0.3, 0);
+  void pause();
+});
+// Leaving the app mid-battle pauses it.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && battle.state === 'playing') void pause();
+});
 
 // ---------- frame
 
@@ -1337,6 +1497,13 @@ let clock = 0;
 function frame(now: number): void {
   const realDt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
+  requestAnimationFrame(frame);
+  // The chapter map covers everything; while paused the field holds still.
+  if (chapter.visible) return;
+  if (paused) {
+    stage.render();
+    return;
+  }
   const dt = time.step(realDt);
   clock += dt;
   battle.step(dt * speed);
@@ -1361,11 +1528,13 @@ function frame(now: number): void {
   shake.apply(camera);
   stage.render();
   shake.restore(camera);
-  requestAnimationFrame(frame);
 }
 
 newBattle();
 applyView();
+if (DIRECT) {
+  if (params.get('story') === '1') void playScene(sceneKey(DIRECT.id, 'before'), true);
+} else showChapter();
 $('loading').classList.add('done');
 requestAnimationFrame(frame);
 window.__ready = true;
@@ -1380,7 +1549,16 @@ window.__play = {
   get companions() {
     return { talon: talonView, whale };
   },
+  get level() {
+    return level;
+  },
+  get difficulty() {
+    return difficulty;
+  },
+  progress,
   toScreen: (p: Pt) => toScreen(view, bounds(), p),
   setSpeed: (s: number) => (speed = s),
   newBattle,
+  startLevel: (id: string) => startLevel(LEVELS[id]),
+  showChapter,
 };

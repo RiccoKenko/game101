@@ -27,7 +27,7 @@ async function tapSlot(page: Page, i: number): Promise<void> {
 test('test battle: build towers, start the waves, pirates walk the road and get shot down', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto('/play.html?seed=3');
+  await page.goto('/play.html?level=level1&seed=3');
   await page.waitForFunction(() => (window as unknown as { __ready?: boolean }).__ready === true, null, { timeout: 90_000 });
 
   await tapSlot(page, 5);
@@ -61,5 +61,74 @@ test('test battle: build towers, start the waves, pirates walk the road and get 
   await page.locator('.order').first().click({ force: true });
   await expect(page.locator('#orders')).toBeHidden();
   expect(await play(page)(() => (window as unknown as { __play: PlayHandle }).__play.battle.orders.length)).toBe(1);
+  expect(errors).toEqual([]);
+});
+
+test('chapter: pick a level on the map, watch its story, win, and find it saved with the next level open', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/play.html?seed=5');
+  await page.waitForFunction(() => (window as unknown as { __ready?: boolean }).__ready === true, null, { timeout: 90_000 });
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.waitForFunction(() => (window as unknown as { __ready?: boolean }).__ready === true, null, { timeout: 90_000 });
+
+  // Only level 1 is open; the others are locked.
+  await expect(page.locator('.chapter')).toBeVisible();
+  const nodes = page.locator('.chapter .node');
+  const count = await nodes.count();
+  expect(count).toBeGreaterThanOrEqual(1);
+  await expect(page.locator('.chapter .node.locked')).toHaveCount(count - 1);
+
+  // Hard mode, then level 1: its card, Play, and the opening scene (skipped after one line).
+  await page.locator('.diff button', { hasText: 'Hard' }).click();
+  await nodes.first().click();
+  await expect(page.locator('.level-card')).toBeVisible();
+  await page.locator('#play-level').click();
+  await expect(page.locator('.chapter')).toBeHidden();
+  await expect(page.locator('.story')).toBeVisible();
+  await expect(page.locator('.speaker')).toHaveText('Little Archer');
+  await page.locator('.story').click();
+  await page.locator('#story-skip').click();
+  await expect(page.locator('.story')).toBeHidden();
+  expect(await page.evaluate(() => (window as unknown as { __play: { difficulty: string } }).__play.difficulty)).toBe('hard');
+  await expect(page.locator('#diff-tag')).toHaveText('Hard');
+
+  // Pause and resume.
+  await page.locator('#pause-btn').click({ force: true });
+  await expect(page.locator('.pause-card')).toBeVisible();
+  await page.locator('#resume').click();
+  await expect(page.locator('.pause-card')).toBeHidden();
+
+  // Win at once: every wave arrived, nobody left on the road.
+  await page.evaluate(() => {
+    const b = (window as unknown as { __play: { battle: { callWave(): void; waves: { wave: number; waves: unknown[]; queue: unknown[] }; enemies: unknown[] } } }).__play.battle;
+    b.callWave();
+    b.waves.wave = b.waves.waves.length - 1;
+    b.waves.queue = [];
+    b.enemies = [];
+  });
+  await expect(page.locator('.end-card.won')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.big-star.on')).toHaveCount(3, { timeout: 5_000 });
+  await expect(page.locator('.best-tag')).toBeVisible();
+
+  // To the map, through the closing scene.
+  await page.locator('.end-buttons button', { hasText: 'Map' }).click();
+  await expect(page.locator('.story')).toBeVisible();
+  await page.locator('#story-skip').click();
+  await expect(page.locator('.chapter')).toBeVisible();
+  await expect(nodes.first().locator('.star.on')).toHaveCount(3);
+  await expect(nodes.first().locator('.hard-badge')).toBeVisible();
+  await expect(page.locator('.chapter .node.locked')).toHaveCount(Math.max(0, count - 2));
+
+  // Saved on the device: still there after a reload, and the opening scene isn't shown twice.
+  await page.reload();
+  await page.waitForFunction(() => (window as unknown as { __ready?: boolean }).__ready === true, null, { timeout: 90_000 });
+  await expect(nodes.first().locator('.star.on')).toHaveCount(3);
+  await nodes.first().click();
+  await page.locator('#play-level').click();
+  await expect(page.locator('.chapter')).toBeHidden();
+  await page.waitForTimeout(500);
+  await expect(page.locator('.story')).toBeHidden();
   expect(errors).toEqual([]);
 });
