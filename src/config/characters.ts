@@ -44,7 +44,7 @@ export const CHARACTERS: CharacterDef[] = [
     menu: 'mage_menu',
     maxHp: 0.9,
     area: 1.15,
-    muzzle: [44, 92],
+    muzzle: [38, 96],
   },
 ];
 
