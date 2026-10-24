@@ -7,7 +7,8 @@
  * character's master art, a sheet drawn earlier) so the result keeps the game's style, and saves it as PNG.
  * The key comes from the GEMINI_API_KEY environment secret (set in the cloud environment's settings; never pasted
  * into the chat). Image output has no free tier, so every call is logged to art/gemini-log.jsonl with its price,
- * and a run that would take the logged total over GEMINI_BUDGET_USD (default 5) is refused.
+ * and a run that would take this month's total over GEMINI_BUDGET_USD is refused. The default, $9, stays inside
+ * the $10 of Google Cloud credit a Google AI Pro subscription brings each month.
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
@@ -113,9 +114,16 @@ async function generate(o: Options): Promise<string[]> {
   }
 }
 
+/** Dollars logged this calendar month. */
 function spent(): number {
   if (!existsSync(LOG)) return 0;
-  return readFileSync(LOG, 'utf8').split('\n').filter(Boolean).reduce((sum, l) => sum + (JSON.parse(l).usd ?? 0), 0);
+  const month = new Date().toISOString().slice(0, 7);
+  return readFileSync(LOG, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => JSON.parse(l) as { at: string; usd?: number })
+    .filter((e) => e.at.startsWith(month))
+    .reduce((sum, e) => sum + (e.usd ?? 0), 0);
 }
 
 async function main() {
@@ -125,11 +133,11 @@ async function main() {
     for (const m of res.models ?? []) if (/image|banana/i.test(m.name)) console.log(m.name.replace('models/', ''), '·', m.displayName ?? '');
     return;
   }
-  const budget = Number(process.env.GEMINI_BUDGET_USD ?? 5);
+  const budget = Number(process.env.GEMINI_BUDGET_USD ?? 9);
   const cost = price(o.model, o.size) * o.count;
   const before = spent();
   if (before + cost > budget)
-    throw new Error(`Budget: $${before.toFixed(2)} spent of $${budget}; this run would cost about $${cost.toFixed(2)}. Raise GEMINI_BUDGET_USD to go on.`);
+    throw new Error(`Budget: $${before.toFixed(2)} spent this month of $${budget}; this run would cost about $${cost.toFixed(2)}. Raise GEMINI_BUDGET_USD to go on.`);
   mkdirSync(dirname(join(ROOT, o.out)), { recursive: true });
   const saved: string[] = [];
   for (let i = 0; i < o.count; i++) {
@@ -140,7 +148,7 @@ async function main() {
     saved.push(file);
     appendFileSync(LOG, JSON.stringify({ at: new Date().toISOString(), model: o.model, size: o.size, out: file, refs: o.refs, usd: price(o.model, o.size) }) + '\n');
   }
-  console.log(`Saved ${saved.join(', ')}. Spent so far about $${spent().toFixed(2)} of the $${budget} budget.`);
+  console.log(`Saved ${saved.join(', ')}. Spent this month about $${spent().toFixed(2)} of the $${budget} budget.`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url))

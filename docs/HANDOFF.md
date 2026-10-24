@@ -72,7 +72,10 @@
 - **สคริปต์พร้อมแล้ว แต่ยังไม่เคยเรียกจริง:** `npm run art:gemini -- <out.png> --prompt <ไฟล์หรือข้อความ> --ref <ภาพอ้างอิง> ... [--aspect 16:9] [--size 2K] [--count n]`
   - ใช้ endpoint `v1beta/interactions` ตาม docs ปัจจุบัน ถ้าได้ 404 จะลอง `generateContent` แทน
   - `--list` แสดงโมเดลภาพที่ key ใช้ได้
-  - ทุกครั้งที่เรียกจะบันทึกลง `art/gemini-log.jsonl` พร้อมราคา และไม่ยอมให้ยอดรวมเกิน `GEMINI_BUDGET_USD` (ค่าเริ่มต้น $5)
+  - ทุกครั้งที่เรียกจะบันทึกลง `art/gemini-log.jsonl` พร้อมราคา และไม่ยอมให้ยอดของเดือนนั้นเกิน `GEMINI_BUDGET_USD` (ค่าเริ่มต้น $9)
+- **เครดิตฟรี:** ถ้าเป็น Google AI Pro ส่วนตัวจะได้ Google Cloud credit เดือนละ $10 (ประมาณ 200 ภาพ 2K)
+  - เปิดใช้ที่ developers.google.com/program/my-benefits แล้วผูกกับ billing account
+  - ถ้าเป็น Gemini ของ Workspace บริษัท ยังไม่ชัดว่าได้สิทธิ์นี้ไหม
 - **ขั้นแรกใน session ใหม่**
   1. `npm run art:gemini -- --list` เช็กว่า key ใช้ได้
   2. ลองวาดภาพครึ่งตัว Talon (prompt หัวข้อ 14) โดยแนบ `art/incoming/talon/talon_rigpose.webp` และ `talon_poses.webp`
