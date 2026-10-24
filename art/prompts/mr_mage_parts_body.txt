@@ -1,0 +1,41 @@
+You are the lead character artist for "Little Archer: Monster Rush", a cute mobile survivor game. This image is part of a set used to build Little Mage, a second playable hero, as a 2D cut-out puppet for skeletal animation.
+
+REFERENCES
+- The FIRST attached image is the approved master illustration: match it exactly (design, colours, textures, proportions, outline weight, painting style).
+- The SECOND attached image is the rig pose: draw every part at exactly its scale and orientation.
+
+STYLE
+- Chunky chibi proportions (about 2.5 heads tall), clean warm dark-brown outlines (never pure black), soft cel shading, light from the upper left, the same rich textures as the master: soft felt on the hat, fabric weave and gold embroidery on the robe, leather grain and stitched seams, wood grain on the staff, facets and a bright highlight on the crystal, small shiny highlights on gold.
+
+CHARACTER: Little Mage (id: mage)
+- Kid mage, a girl of about 11: round face, big violet eyes, rosy cheeks, shoulder-length wavy honey-blonde hair with one short side braid tied with a small sky-blue ribbon.
+- Wide-brimmed pointed wizard hat of deep indigo felt with a gold band and a small gold crescent-moon pin; the soft tip bends back and ends in a tiny brass star charm.
+- Short teal capelet with a cream lining, fastened at the throat with a round gold clasp set with a blue gem.
+- Sky-blue tunic-robe to mid-thigh with a gold-embroidered hem; sleeves ending in gold-trimmed cuffs at the wrists.
+- Brown leather belt with a small gold buckle and a little book-shaped leather pouch on the hip.
+- Dark navy leggings; brown leather boots with folded cuffs.
+- Bare hands; a thin gold bracelet with a blue bead on the RIGHT wrist (the casting hand, the near arm). The LEFT hand (the far arm) holds the staff.
+- Wooden staff about as tall as she is; its top curls around a round blue crystal orb.
+
+TECHNICAL
+- Background: a perfectly flat, solid pure green #00FF00 everywhere (no gradient, texture, floor or shadow). Never use bright green anywhere in the character.
+- No text, numbers, labels, frames, grid lines or watermarks. No ground shadow, glow, magic effects, motion lines or sparkles.
+
+CUT-OUT PART RULES
+- Every part is drawn COMPLETE, as if the parts in front of it had been removed, including areas normally hidden underneath (the shoulders under the capelet, the top of the thigh under the robe).
+- Joint ends are rounded like ball joints and run about 15% past the joint, so bending never shows a gap.
+- Each part keeps exactly the orientation it has in the rig pose (do not rotate parts to fit) and the SAME SCALE as the rig pose (do not enlarge small parts).
+- No shadows cast by other parts; each part is lit on its own.
+- At least 60 px of empty green around every part; nothing touching or overlapping; nothing touching the image edge; each part exactly once.
+
+IMAGE: BODY PARTS SHEET (landscape 1536 x 1024)
+Cut-out body parts in a neat grid, left to right, top to bottom, in this order:
+1. torso: the upper robe with its collar, a short neck stub, no arms, no capelet;
+2. hips: the lower robe with the gold-embroidered hem, the belt with its buckle and the book-shaped pouch, and the tops of the leggings;
+3. the capelet alone (teal with the cream lining, with its gold clasp), hanging down as in the rig pose;
+4. left upper arm (sleeve);
+5. left forearm with its gold-trimmed cuff (no hand);
+6. right upper arm (sleeve);
+7. right forearm with its gold-trimmed cuff and the gold bracelet (no hand);
+8. thigh (legging);
+9. lower leg with the boot.
