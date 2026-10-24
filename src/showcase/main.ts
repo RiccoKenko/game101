@@ -39,6 +39,8 @@ const MARKUP = `
   <div id="fx" class="fx-layer" aria-hidden="true"></div>
   <header class="top">
     <div class="brand"><span class="brand-kicker">Little Archer</span><span class="brand-name">Sky Pirates</span></div>
+    <span class="spacer"></span>
+    <a class="play-link" id="play-link" href="play.html">Play Chapter 1 ▸</a>
     <div class="purse" id="purse" aria-label="Coins collected"><i class="coin"></i><b id="coins">0</b></div>
   </header>
   <section class="card" aria-live="polite">
@@ -67,6 +69,8 @@ const MARKUP = `
 </div>`;
 document.body.insertAdjacentHTML('afterbegin', MARKUP);
 const $ = (id: string) => document.getElementById(id)!;
+// The single-file copy (an artifact) has no battle page next to it.
+if (window.__ASSETS__) $('play-link').remove();
 
 type Tab = 'hero' | 'story' | 'battle' | 'crew';
 const MOVES: [label: string, clip: string, loop: boolean][] = [

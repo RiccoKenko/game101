@@ -84,6 +84,29 @@ body {
   color: var(--ink);
 }
 
+.top .spacer {
+  flex: 1;
+}
+
+.play-link {
+  pointer-events: auto;
+  padding: 7px 16px;
+  border-radius: 12px;
+  background: var(--leaf);
+  border: 2px solid var(--leaf-deep, #2b6e38);
+  box-shadow: 0 4px 0 var(--leaf-deep, #2b6e38);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.play-link:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--leaf-deep, #2b6e38);
+}
+
 .purse {
   display: flex;
   align-items: center;
