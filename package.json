@@ -15,6 +15,7 @@
     "map:sketch": "tsx scripts/art/map-sketch.ts",
     "map:chapter": "tsx scripts/art/chapter-sketch.ts",
     "art:gemini": "tsx scripts/art/gemini.ts",
+    "art:openai": "tsx scripts/art/openai.ts",
     "showcase:artifact": "node scripts/build-showcase.mjs",
     "play:artifact": "node scripts/build-showcase.mjs sky-pirates-play.html play"
   },
