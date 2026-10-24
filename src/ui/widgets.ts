@@ -112,7 +112,7 @@ function paintRim(ctx: Ctx, path: ShapePath, glow?: number): void {
   ctx.restore();
 }
 
-export type PanelStyle = 'window' | 'selected' | 'locked' | 'parchment' | 'danger';
+export type PanelStyle = 'window' | 'selected' | 'locked' | 'parchment' | 'danger' | 'inset';
 
 export interface PanelOpts {
   style?: PanelStyle;
@@ -158,6 +158,29 @@ function paintWindow(ctx: Ctx, x: number, y: number, w: number, h: number, r: nu
   ctx.lineWidth = bw;
   ctx.stroke();
   if (o.gem) gem(ctx, x + w / 2, y + 1, 13);
+}
+
+/** Recessed dark box inside a window (e.g. the gear area of the pause window). */
+function paintInset(ctx: Ctx, x: number, y: number, w: number, h: number, r: number): void {
+  const path = rectShape(ctx, x, y, w, h, r);
+  path(0);
+  ctx.fillStyle = 'rgba(2,5,16,0.45)';
+  ctx.fill();
+  ctx.save();
+  path(0);
+  ctx.clip();
+  path(-6);
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 4;
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+  ctx.lineWidth = 8;
+  ctx.stroke();
+  ctx.restore();
+  path(0.75);
+  ctx.strokeStyle = rgba(WINDOW.gold, 0.35);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 }
 
 function paintParchment(ctx: Ctx, x: number, y: number, w: number, h: number, r: number): void {
@@ -239,6 +262,7 @@ export function panelTexture(scene: Phaser.Scene, w: number, h: number, opts: Pa
   const key = `panel_${style}_${w}x${h}_r${r}_h${opts.header ?? 0}${opts.gem ? '_gem' : ''}`;
   return uiTexture(scene, key, w + PANEL_PAD * 2, h + PANEL_PAD * 2, (ctx) => {
     if (style === 'parchment') paintParchment(ctx, PANEL_PAD, PANEL_PAD, w, h, r);
+    else if (style === 'inset') paintInset(ctx, PANEL_PAD, PANEL_PAD, w, h, r);
     else paintWindow(ctx, PANEL_PAD, PANEL_PAD, w, h, r, opts);
   });
 }
@@ -402,40 +426,6 @@ export function heartTexture(scene: Phaser.Scene, size: number, color = 0xff4a5e
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.fill();
     ctx.restore();
-  });
-}
-
-/** Round gold-ringed medallion with a glossy coloured face. */
-export function medalTexture(scene: Phaser.Scene, d: number, color: number): string {
-  const P = 12;
-  return uiTexture(scene, `medal_${d}_${color.toString(16)}`, d + P * 2, d + P * 2, (ctx) => {
-    const c = P + d / 2;
-    const path = roundShape(ctx, P, P, d, d);
-    ctx.save();
-    ctx.shadowColor = 'rgba(40,20,0,0.45)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 4;
-    path(-2);
-    ctx.fillStyle = rgba(PARCHMENT.rim, 1);
-    ctx.fill();
-    ctx.restore();
-    path(1);
-    ctx.fillStyle = goldStroke(ctx, P, d);
-    ctx.fill();
-    path(8);
-    const g = ctx.createRadialGradient(c - d * 0.12, c - d * 0.18, d * 0.05, c, c, d / 2);
-    g.addColorStop(0, hex(lighten(color, 0.45)));
-    g.addColorStop(0.6, hex(color));
-    g.addColorStop(1, hex(shade(color, 0.6)));
-    ctx.fillStyle = g;
-    ctx.fill();
-    ctx.strokeStyle = rgba(WINDOW.rim, 0.6);
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.ellipse(c, P + d * 0.3, d * 0.3, d * 0.14, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.28)';
-    ctx.fill();
   });
 }
 

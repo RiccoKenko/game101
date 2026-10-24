@@ -33,17 +33,22 @@ export class PauseScene extends Phaser.Scene {
     dimmer(this, 0.72);
     const cy = top + (height - top - bottom) / 2;
     panel(this, width / 2, cy - 50, 920, 1160, { header: 124, gem: true });
-    gradientText(text(this, width / 2, cy - 618, 'PAUSED', 84, { strokeColor: '#2a1606' }));
+    gradientText(text(this, width / 2, cy - 568, 'PAUSED', 84, { strokeColor: '#2a1606' }));
     text(this, width / 2, cy - 452, MAPS[run.mapIndex].name, 46, { color: CSS.gold });
-    text(this, width / 2, cy - 394, `${formatTime(run.time)}   ·   Level ${run.level}   ·   ${run.kills} defeated`, 34, {
+    text(this, width / 2, cy - 396, `${formatTime(run.time)}   ·   Level ${run.level}   ·   ${run.kills} defeated`, 34, {
       color: CSS.soft,
       weight: '600',
       shadow: false,
     });
+    // Gear sits in a recessed box sized for two rows, so the layout doesn't jump as the build grows.
     const size = 84;
-    const count = Math.max(run.inventory.weapons.length, run.inventory.passives.length, 1);
+    const gearY = cy - 242;
+    panel(this, width / 2, gearY, 780, 212, { style: 'inset', radius: 18 });
+    const inv = run.inventory;
+    const count = Math.max(inv.weapons.length, inv.passives.length, 1);
     const rowW = count * (size + 12) - 12;
-    buildRows(this, width / 2 - rowW / 2, cy - 346, run.inventory, size, 12);
+    const rowsH = inv.passives.length > 0 ? size * 2 + 16 : size;
+    buildRows(this, width / 2 - rowW / 2, gearY - rowsH / 2, inv, size, 12);
 
     new Button(this, width / 2, cy - 20, { w: 600, h: 140, color: COLORS.green, label: 'Resume', icon: 'icon_play', onClick: () => this.data_.onResume() });
 

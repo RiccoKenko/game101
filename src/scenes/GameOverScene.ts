@@ -33,7 +33,7 @@ export class GameOverScene extends Phaser.Scene {
     t.setScale(0.4);
     this.tweens.add({ targets: t, scale: 1, duration: 420, ease: 'Back.easeOut' });
 
-    panel(this, width / 2, cy - 40, 900, 1000, { header: 112, gem: true });
+    panel(this, width / 2, cy - 60, 900, 960, { header: 112, gem: true });
     text(this, width / 2, cy - 484, MAPS[s.mapIndex].name, 48, { color: CSS.gold });
 
     const rows: [string, string, string?][] = [
@@ -53,8 +53,11 @@ export class GameOverScene extends Phaser.Scene {
       }
     });
     this.add.image(width / 2, cy + 220, dividerTexture(this, 800));
-    this.add.image(width / 2 - 200, cy + 300, 'icon_coin').setDisplaySize(84, 84);
-    const total = text(this, width / 2 - 140, cy + 300, '+0', 76, { color: CSS.gold, originX: 0 });
+    // Centre coin + amount on the final value; the counter then grows to the right.
+    const total = text(this, 0, cy + 306, `+${s.total}`, 76, { color: CSS.gold, originX: 0 });
+    const groupW = 84 + 20 + total.width;
+    this.add.image(width / 2 - groupW / 2 + 42, cy + 306, 'icon_coin').setDisplaySize(84, 84);
+    total.setX(width / 2 - groupW / 2 + 104).setText('+0');
     this.tweens.addCounter({
       from: 0,
       to: s.total,

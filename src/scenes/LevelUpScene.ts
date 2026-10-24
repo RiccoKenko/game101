@@ -4,7 +4,7 @@ import { type Choice, type Inventory } from '../core/progression';
 import { buildRows } from '../ui/build';
 import { safeInsets } from '../ui/safe';
 import { COLORS, CSS, hex, lighten, PARCHMENT, rgba, shade } from '../ui/theme';
-import { dimmer, gradientText, medalTexture, panel, panelTexture, ribbon, roundRect, text, uiTexture, vGradient } from '../ui/widgets';
+import { dimmer, gradientText, panel, panelTexture, ribbon, roundRect, slotIcon, text, uiTexture, vGradient } from '../ui/widgets';
 
 interface LevelUpData {
   choices: Choice[];
@@ -28,16 +28,16 @@ export function describeChoice(c: Choice): { icon: string; name: string; tag: st
   return { icon: 'meat', name: 'Roast Meat', tag: '', desc: 'Restore 30% of your HP', color: COLORS.red };
 }
 
-/** A tappable upgrade card on parchment: medallion icon on the left, name + tag + description on the right. */
+/** A tappable upgrade card on parchment: framed icon on the left, name + tag + description on the right. */
 export function choiceCard(scene: Phaser.Scene, x: number, y: number, w: number, h: number, c: Choice): Phaser.GameObjects.Container {
   const info = describeChoice(c);
   const card = scene.add.container(x, y);
   const bg = scene.add.image(0, 0, panelTexture(scene, w, h, { style: 'parchment', radius: 24 }));
-  const d = Math.min(176, h - 64);
-  const ix = -w / 2 + 34 + d / 2;
-  const medal = scene.add.image(ix, 0, medalTexture(scene, d, info.color));
-  const icon = scene.add.image(ix, -2, info.icon).setDisplaySize(d * 0.72, d * 0.72);
-  const tx = ix + d / 2 + 34;
+  const d = Math.min(150, h - 70);
+  const ix = -w / 2 + 40 + d / 2;
+  const kind = c.kind === 'weapon' ? 'weapon' : c.kind === 'passive' ? 'passive' : 'evolved';
+  const slot = slotIcon(scene, ix, 0, d, info.icon, kind);
+  const tx = ix + d / 2 + 36;
   const name = text(scene, tx, -h / 2 + 52, info.name, 50, { color: CSS.ink, stroke: false, originX: 0 });
   const rule = scene.add.image(tx - 4, -h / 2 + 88, ruleTexture(scene, w / 2 - tx - 30)).setOrigin(0, 0.5);
   const desc = text(scene, tx, -h / 2 + 100, info.desc, 34, {
@@ -49,7 +49,7 @@ export function choiceCard(scene: Phaser.Scene, x: number, y: number, w: number,
     align: 'left',
     wrap: w / 2 - tx - 30,
   });
-  card.add([bg, medal, icon, name, rule, desc]);
+  card.add([bg, ...slot, name, rule, desc]);
   if (info.tag) {
     const isNew = info.tag === 'NEW!';
     const tw = isNew ? 132 : 112;
