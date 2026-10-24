@@ -1,0 +1,27 @@
+You are the lead character artist for "Little Archer: Monster Rush", a cute mobile survivor game. Paint ONE polished master illustration of a new playable character, Little Mage.
+
+REFERENCES
+- The FIRST attached image is the master illustration of the game's first hero, Little Archer: match its proportions, head size, outline weight, painting style, level of detail and textures exactly, so the two heroes look like they come from the same game. Do NOT copy the archer's design or colours.
+- The SECOND attached image is a monster sheet from the same game, for the world's overall look.
+
+STYLE
+- Chunky chibi proportions (about 2.5 heads tall, big head, big friendly eyes), clean warm dark-brown outlines (never pure black), soft cel shading with gentle gradients, light from the upper left.
+- Rich detail and texture, still clean and readable at small size: soft felt on the hat, fine fabric weave and gold embroidery on the robe, leather grain and stitched seams on the belt, pouch and boots, wood grain on the staff, facets and a bright highlight on the crystal, small shiny highlights on gold.
+- Everything is an ORIGINAL design. Do not imitate any famous game or anime character.
+
+CHARACTER: Little Mage (id: mage)
+- A cheerful, clever kid mage, a girl of about 11. Round face, big violet eyes, rosy cheeks, shoulder-length wavy honey-blonde hair with one short side braid tied with a small sky-blue ribbon.
+- Hat: a wide-brimmed pointed wizard hat of deep indigo felt with a gold band and a small gold crescent-moon pin on the band; the soft tip bends back and ends in a tiny brass star charm.
+- Capelet: a short teal capelet over the shoulders with a cream lining, fastened at the throat with a round gold clasp set with a blue gem.
+- Robe: a sky-blue tunic-robe to mid-thigh with a gold-embroidered hem and fitted sleeves ending in gold-trimmed cuffs at the wrists.
+- Belt: a brown leather belt with a small gold buckle and a little leather pouch shaped like a book on the hip.
+- Legs: dark navy leggings; brown leather boots with folded cuffs.
+- Hands: bare hands; a thin gold bracelet with a blue bead on the RIGHT wrist (the casting hand, the near arm).
+- Weapon: a wooden staff about as tall as she is, held in the LEFT hand (the far arm); its top curls around a round blue crystal orb.
+
+POSE
+- Full body, three-quarter front view turned toward the RIGHT, standing ready: the staff held upright in the left hand, the right hand raised beside her chest, palm up, fingers spread as if about to cast, a confident happy smile, the hat tip and the braid swaying a little.
+
+TECHNICAL
+- Portrait. Background: a perfectly flat, solid pure green #00FF00 everywhere. Never use bright green anywhere in the character.
+- No ground shadow, glow, sparkles, magic effects, text, letters, frame or watermark.
