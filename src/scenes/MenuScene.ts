@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { audio, AUDIO_ENABLED, MUSIC_KEYS } from '../audio/audio';
+import { CHARACTERS } from '../config/characters';
 import { BOSSES } from '../config/enemies';
 import { MAPS } from '../config/maps';
 import { DEBUG } from '../core/debug';
@@ -13,6 +14,8 @@ import { badge, Button, gradientText, panel, panelTexture, ribbon, slotTexture, 
 const CARD_W = 960;
 const CARD_H = 152;
 const THUMB = 118;
+/** Tallest the hero picture in the menu gets. */
+const HERO_H = 620;
 
 interface MapCard {
   bg: Phaser.GameObjects.Image;
@@ -23,6 +26,15 @@ interface MapCard {
 export class MenuScene extends Phaser.Scene {
   private selected = 0;
   private cards: MapCard[] = [];
+  /** The hero shown between the title and the map cards (one of CHARACTERS). */
+  private heroIndex = 0;
+  private heroImg?: Phaser.GameObjects.Image;
+  private heroName!: Phaser.GameObjects.Text;
+  private heroPerk!: Phaser.GameObjects.Text;
+  private heroLock!: Phaser.GameObjects.Image;
+  private heroBox = { x: 0, top: 0, bottom: 0 };
+  private playButton!: Button;
+  private goldText!: Phaser.GameObjects.Text;
 
   constructor() {
     super('Menu');
@@ -36,6 +48,7 @@ export class MenuScene extends Phaser.Scene {
     ensureDaily(save);
     saveStore.save();
     this.selected = save.unlockedMaps - 1;
+    this.heroIndex = Math.max(0, CHARACTERS.findIndex((c) => c.id === save.character));
 
     const { width, height } = this.scale;
     const { top, bottom } = safeInsets(this);
@@ -59,7 +72,7 @@ export class MenuScene extends Phaser.Scene {
     const pillX = width - 24 - 120;
     panel(this, pillX, top + 56, 240, 72, { radius: 36 });
     this.add.image(pillX - 120 + 40, top + 56, 'icon_coin').setDisplaySize(54, 54);
-    text(this, pillX - 120 + 78, top + 57, String(save.gold), 44, { color: CSS.gold, originX: 0 });
+    this.goldText = text(this, pillX - 120 + 78, top + 57, String(save.gold), 44, { color: CSS.gold, originX: 0 });
     const music = new Button(this, 78, top + 52, {
       w: 104,
       h: 88,
@@ -91,7 +104,8 @@ export class MenuScene extends Phaser.Scene {
     });
     this.highlight();
 
-    new Button(this, width / 2, playY, { w: 640, h: 150, color: BUTTON.primary, label: 'PLAY', fontSize: 76, onClick: () => this.play() });
+    this.playButton = new Button(this, width / 2, playY, { w: 640, h: 150, color: BUTTON.primary, label: 'PLAY', fontSize: 76, onClick: () => this.play() });
+    this.showHero();
     const by = height - bottom - 120;
     new Button(this, width / 2 - 245, by, {
       w: 470,
@@ -127,16 +141,38 @@ export class MenuScene extends Phaser.Scene {
     }
   }
 
-  /** The hero standing between the title and the map cards: the painted `hero_menu` art when it exists. */
+  /**
+   * The hero standing between the title and the map cards, with arrows to switch heroes and a plate with the
+   * hero's name and perk under it. Falls back to the drawn two-frame hero when there is no painted art.
+   */
   private hero(x: number, areaTop: number, areaBottom: number): void {
-    const avail = areaBottom - areaTop;
-    const shadow = this.add.ellipse(x, areaBottom - 14, 300, 46, 0x050a18, 0.35);
+    const plateH = 92;
+    const bottom = areaBottom - plateH - 6;
+    this.heroBox = { x, top: areaTop, bottom };
     if (this.textures.exists('hero_menu')) {
-      const img = this.add.image(x, areaBottom - 6, 'hero_menu').setOrigin(0.5, 1);
-      img.setScale(Math.min(520, avail - 6) / img.height);
-      this.tweens.add({ targets: img, y: img.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.add.ellipse(x, bottom - 14, 300, 46, 0x050a18, 0.35);
+      const py = areaBottom - plateH / 2;
+      panel(this, x, py, 720, plateH, { radius: 28 });
+      this.heroName = text(this, x, py - 18, '', 40, { color: CSS.gold });
+      this.heroPerk = text(this, x, py + 22, '', 27, { color: CSS.soft, weight: '600', shadow: false });
+      const ay = bottom - Math.min(HERO_H, bottom - areaTop - 6) / 2;
+      this.heroLock = this.add.image(x, ay, 'icon_lock').setDisplaySize(120, 120).setDepth(2);
+      for (const dir of [-1, 1]) {
+        const b = new Button(this, x + dir * 410, ay, {
+          w: 104,
+          h: 104,
+          shape: 'round',
+          color: BUTTON.system,
+          icon: 'icon_arrow',
+          iconSize: 56,
+          onClick: () => this.switchHero(dir),
+        });
+        b.iconImage?.setFlipX(dir < 0);
+      }
       return;
     }
+    const avail = areaBottom - areaTop;
+    const shadow = this.add.ellipse(x, areaBottom - 14, 300, 46, 0x050a18, 0.35);
     const heroY = areaTop + avail * 0.48;
     shadow.setY(heroY + 104).setSize(220, 36);
     const hero = this.add.image(x, heroY, 'hero_0').setScale(1.9);
@@ -209,8 +245,59 @@ export class MenuScene extends Phaser.Scene {
     });
   }
 
+  private switchHero(dir: number): void {
+    this.heroIndex = (this.heroIndex + dir + CHARACTERS.length) % CHARACTERS.length;
+    const c = CHARACTERS[this.heroIndex];
+    const save = saveStore.data;
+    if (save.characters.includes(c.id)) {
+      save.character = c.id;
+      saveStore.save();
+    }
+    this.showHero(dir);
+  }
+
+  /** Shows the selected hero; a locked one is a dark silhouette with a padlock, and PLAY becomes "Unlock". */
+  private showHero(dir = 0): void {
+    if (!this.heroName) return;
+    const c = CHARACTERS[this.heroIndex];
+    const locked = !saveStore.data.characters.includes(c.id);
+    const { x, top, bottom } = this.heroBox;
+    this.heroImg?.destroy();
+    const key = this.textures.exists(c.menu) ? c.menu : 'hero_menu';
+    const img = (this.heroImg = this.add.image(x + dir * 120, bottom - 6, key).setOrigin(0.5, 1).setAlpha(dir ? 0 : 1));
+    img.setScale(Math.min(HERO_H, bottom - top - 6) / img.height);
+    if (locked) img.setTint(0x262a40);
+    this.tweens.add({ targets: img, x, alpha: 1, duration: 220, ease: 'Quad.easeOut' });
+    this.tweens.add({ targets: img, y: img.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.heroLock.setVisible(locked).setDepth(img.depth + 1);
+    this.heroName.setText(c.name);
+    this.heroPerk.setText(c.perk);
+    if (locked) this.playButton.setLabel(`Unlock ${c.price}`).setColor(BUTTON.warning);
+    else this.playButton.setLabel('PLAY').setColor(BUTTON.primary);
+  }
+
   private play(): void {
-    this.scene.start('Game', { map: this.selected });
+    const c = CHARACTERS[this.heroIndex];
+    const save = saveStore.data;
+    if (save.characters.includes(c.id)) {
+      save.character = c.id;
+      saveStore.save();
+      this.scene.start('Game', { map: this.selected });
+      return;
+    }
+    if (save.gold < c.price) {
+      this.tweens.add({ targets: this.playButton, x: this.playButton.x + 14, duration: 50, yoyo: true, repeat: 3 });
+      this.heroPerk.setText(`Not enough gold: you need ${c.price}.`);
+      return;
+    }
+    save.gold -= c.price;
+    save.characters.push(c.id);
+    save.character = c.id;
+    saveStore.save();
+    audio.sfx('victory');
+    this.goldText.setText(String(save.gold));
+    this.cameras.main.flash(250, 255, 244, 214);
+    this.showHero();
   }
 }
 

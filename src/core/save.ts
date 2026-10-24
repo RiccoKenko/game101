@@ -1,3 +1,4 @@
+import { CHARACTER_IDS, type CharacterId } from '../config/characters';
 import { MAPS } from '../config/maps';
 import { ACHIEVEMENTS, DAILY_COUNT, QUESTS, type AchievementId, type QuestId } from '../config/quests';
 import { SHOP, type ShopId } from '../config/shop';
@@ -54,6 +55,9 @@ export interface SaveData {
   daily: DailyState;
   /** Achievement tiers already claimed, per achievement. */
   achievements: Record<AchievementId, number>;
+  /** The hero picked in the menu, and the heroes unlocked (the archer always is). */
+  character: CharacterId;
+  characters: CharacterId[];
 }
 
 export interface KeyValueStorage {
@@ -77,6 +81,8 @@ export function defaultSave(): SaveData {
     stats: { runs: 0, kills: 0, eliteKills: 0, chests: 0, evolutions: 0, gold: 0, bestLevel: 0 },
     daily: { day: '', quests: [], bonus: 0, bonusClaimed: false },
     achievements: Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, 0])) as Record<AchievementId, number>,
+    character: 'archer',
+    characters: ['archer'],
   };
 }
 
@@ -113,6 +119,10 @@ export function sanitize(raw: unknown): SaveData {
     const a = r.achievements as Record<string, unknown>;
     for (const def of ACHIEVEMENTS) out.achievements[def.id] = Math.floor(num(a[def.id], 0, 0, def.tiers.length));
   }
+  if (Array.isArray(r.characters)) {
+    out.characters = CHARACTER_IDS.filter((id) => id === 'archer' || (r.characters as unknown[]).includes(id));
+  }
+  if (out.characters.includes(r.character as CharacterId)) out.character = r.character as CharacterId;
   return out;
 }
 

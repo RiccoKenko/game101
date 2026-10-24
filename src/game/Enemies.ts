@@ -50,6 +50,10 @@ export class Enemy {
   /** Facing (-1 left, 1 right); only flips on a clear change of direction so sprites don't jitter. */
   face = 1;
   lean = 0;
+  /** A small copy left behind by a splitter (it doesn't split again). */
+  small = false;
+  /** Blew itself up (an exploder): no reward, and it doesn't count as a kill. */
+  selfDestructed = false;
 
   constructor(scene: Phaser.Scene) {
     this.shadow = scene.add.image(0, 0, 'shadow').setDepth(4);
@@ -81,6 +85,9 @@ interface Shot {
 }
 
 const ELITE_TINT = 0xffd36b;
+/** An exploder's blast radius, and how long its fuse burns once lit. */
+const EXPLODE_RADIUS = 130;
+const FUSE = 0.7;
 /** Seconds a boss takes to drop in from the sky. */
 const BOSS_DROP = 0.9;
 
@@ -105,6 +112,7 @@ export class EnemyManager {
     e.kx = e.ky = e.flash = e.anim = e.frame = 0;
     e.timer = e.timer2 = e.timer3 = e.state = e.slow = e.thresholds = 0;
     e.hitSquash = e.enter = e.lean = 0;
+    e.small = e.selfDestructed = false;
     e.spawnT = 0;
     e.face = 1;
     e.phase = this.ctx.rng() * Math.PI * 2;
@@ -140,6 +148,25 @@ export class EnemyManager {
     e.shadow.setDisplaySize(sw, sw * 0.3);
     this.regularCount++;
     return e;
+  }
+
+  /** A splitter's half: smaller, weaker, worth little, and it won't split again. */
+  private spawnSmall(parent: Enemy, x: number, y: number): void {
+    const e = this.spawn(parent.def!.id, x, y);
+    if (!e) return;
+    e.small = true;
+    e.scale = 0.62;
+    e.maxHp = e.hp = parent.maxHp * 0.3;
+    e.radius = parent.def!.radius * e.scale;
+    e.xp = 1;
+    e.coinChance = 0.03;
+    e.speed *= 1.25;
+    e.sprite.setScale(e.scale);
+    const sw = e.sprite.displayWidth * 0.8;
+    e.shadow.setDisplaySize(sw, sw * 0.3);
+    // Thrown out of the burst.
+    e.kx = (x - parent.x) * 6;
+    e.ky = (y - parent.y) * 6;
   }
 
   spawnBoss(id: BossId, x: number, y: number, hpMult: number): Enemy {
@@ -228,6 +255,24 @@ export class EnemyManager {
     }
     audio.sfx('enemy_die');
     this.ctx.onEnemyKilled(e);
+    if (e.def?.behavior === 'splitter' && !e.small && !e.selfDestructed) {
+      for (const side of [-1, 1]) this.spawnSmall(e, e.x + side * 34, e.y + side * 10);
+    }
+  }
+
+  /** An exploder's fuse runs out: a blast that hurts the hero and the monsters around it. */
+  private explode(e: Enemy): void {
+    const r = EXPLODE_RADIUS;
+    const { player, fx } = this.ctx;
+    fx.explosion(e.x, e.y, r);
+    this.ctx.shake(160, 0.006);
+    audio.sfx('explosion');
+    if (Math.hypot(player.x - e.x, player.y - e.y) < r + player.radius) this.ctx.hurtPlayer(e.damage * 2.2);
+    e.selfDestructed = true;
+    this.forEachInRadius(e.x, e.y, r, (o) => {
+      if (o !== e) this.damage(o, 25, e.x, e.y, 1.4, false);
+    });
+    this.kill(e);
   }
 
   /** Removes every enemy and shot without drops (used when a run ends). */
@@ -379,7 +424,47 @@ export class EnemyManager {
             e.timer2 += dt;
             if (e.timer2 > 2.6 && d < 760) {
               e.timer2 = 0;
-              this.fireShot('fireball', e.x, e.y, Math.atan2(dy, dx));
+              this.fireShot(e.def!.shot ?? 'fireball', e.x, e.y, Math.atan2(dy, dx));
+            }
+            break;
+          }
+          case 'swarm': {
+            // Faster, tighter weave than a bat, so a flock reads as a buzzing cloud.
+            const w = Math.sin(e.timer * 5 + e.phase) * 0.55;
+            const c = Math.cos(w);
+            const s = Math.sin(w);
+            vx = (dx * c - dy * s) * speed;
+            vy = (dx * s + dy * c) * speed;
+            break;
+          }
+          case 'exploder': {
+            if (e.state === 0 && d < 125) {
+              // Fuse lit: it stops, flashes and swells, and a red ring shows the blast.
+              e.state = 1;
+              e.timer2 = 0;
+              this.ctx.fx.decal('shock', e.x, e.y, EXPLODE_RADIUS * 2, EXPLODE_RADIUS, 0xff5a3c, 0.5, FUSE + 0.1);
+            }
+            if (e.state === 1) {
+              vx = vy = 0;
+              e.timer2 += dt;
+              if (e.timer2 >= FUSE) {
+                this.explode(e);
+                continue;
+              }
+            }
+            break;
+          }
+          case 'ambush': {
+            if (e.state === 0) {
+              vx = vy = 0;
+              if (d < 270 || e.hp < e.maxHp) {
+                // Wakes up: a jump, a snap of the jaws, then it runs at the hero.
+                e.state = 1;
+                e.spawnT = 0.4;
+                this.ctx.fx.sparksAt(e.x, e.y - 20, 6, 0xffd36b);
+                this.ctx.shake(120, 0.004);
+                audio.sfx('hit');
+              }
             }
             break;
           }
@@ -401,7 +486,8 @@ export class EnemyManager {
       e.kx *= decay;
       e.ky *= decay;
 
-      if (d < e.radius + player.radius * 0.85) contact = Math.max(contact, e.damage);
+      const sleeping = e.def?.behavior === 'ambush' && e.state === 0;
+      if (d < e.radius + player.radius * 0.85 && !sleeping) contact = Math.max(contact, e.damage);
 
       if (!e.boss && d > relocate) {
         const p = this.ctx.spawnPoint();
@@ -434,7 +520,8 @@ export class EnemyManager {
   /** Two-frame flip plus procedural motion on top: hops, wingbeats, waddles, lean, hit squash, pop-in. */
   private animate(e: Enemy, dt: number, vx: number, faceX: number): void {
     e.anim += dt;
-    if (!e.boss && e.anim > 0.2) {
+    const sleeping = e.def?.behavior === 'ambush' && e.state === 0;
+    if (!e.boss && e.anim > 0.2 && !sleeping) {
       e.anim = 0;
       e.frame ^= 1;
       e.sprite.setTexture(`${e.tex}_${e.frame}`);
@@ -498,7 +585,18 @@ export class EnemyManager {
         }
       }
       rot += e.lean;
-      if (e.state === 1) {
+      if (sleeping) {
+        // Playing dead as treasure: still, with a tiny rattle of the lid every few seconds.
+        lift = 0;
+        sx = sy = 1;
+        rot = (e.timer + e.phase) % 3 < 0.3 ? Math.sin(e.timer * 40) * 0.04 : 0;
+      } else if (e.def!.behavior === 'exploder' && e.state === 1) {
+        const k = e.timer2 / FUSE;
+        sx = sy = 1 + 0.25 * k;
+        rot = Math.sin(e.timer * 50) * 0.05;
+      } else if (e.def!.behavior === 'ambush') {
+        // Awake: no charge wind-up, just the heavy stomp.
+      } else if (e.state === 1) {
         // Winding up a charge: crouch.
         sx *= 1.12;
         sy *= 0.86;
@@ -525,6 +623,8 @@ export class EnemyManager {
       else if (e.elite) e.sprite.setTint(ELITE_TINT);
       else e.sprite.clearTint();
     }
+    // A lit fuse blinks white and red.
+    if (e.def?.behavior === 'exploder' && e.state === 1) e.sprite.setTintFill(Math.floor(e.timer2 * 14) % 2 ? 0xffffff : 0xff5a3c);
     const halfH = e.sprite.height * e.scale * 0.5;
     const wind = e.state === 1 ? Math.sin(e.timer * 60) * 4 : 0;
     e.sprite.setPosition(e.x + wind, e.y + halfH - lift);
@@ -610,6 +710,36 @@ export class EnemyManager {
     return { x: e.dirX * dashSpeed, y: e.dirY * dashSpeed, charging: true };
   }
 
+  /**
+   * The Ogre Warden: plods after the hero, then stops, raises its club (a red ring marks the ground) and slams,
+   * hurting the hero if still inside the ring.
+   */
+  private updateSlam(e: Enemy, dt: number, d: number, dx: number, dy: number, speed: number): { x: number; y: number } {
+    const R = 250;
+    e.timer2 += dt;
+    if (e.state === 0) {
+      if (e.timer2 > 3.4 && d < R + 140) {
+        e.state = 1;
+        e.timer2 = 0;
+        this.ctx.fx.decal('shock', e.x, e.y + e.radius * 0.6, R * 2, R, 0xff5a3c, 0.5, 0.95);
+      }
+      return { x: dx * speed, y: dy * speed };
+    }
+    if (e.timer2 > 0.85) {
+      e.state = 0;
+      e.timer2 = 0;
+      const { player, fx } = this.ctx;
+      const feet = e.y + e.radius * 0.6;
+      fx.shockwave(e.x, feet, R * 1.1, e.boss!.color);
+      fx.dust(e.x - 60, feet, 6);
+      fx.dust(e.x + 60, feet, 6);
+      this.ctx.shake(260, 0.01);
+      audio.sfx('explosion');
+      if (Math.hypot(player.x - e.x, player.y - feet) < R + player.radius) this.ctx.hurtPlayer(e.damage * 1.4);
+    }
+    return { x: 0, y: 0 };
+  }
+
   private summonAround(id: EnemyId, cx: number, cy: number, n: number, r: number): void {
     for (let k = 0; k < n; k++) {
       const a = (k / n) * Math.PI * 2 + this.ctx.rng();
@@ -620,6 +750,22 @@ export class EnemyManager {
   private updateBoss(e: Enemy, dt: number, d: number, dx: number, dy: number, speed: number): { x: number; y: number } {
     const id = e.boss!.id;
     const ratio = e.hp / e.maxHp;
+    if (id === 'boss_boar') {
+      // Charges again and again, faster when hurt.
+      const v = this.updateCharge(e, dt, d, dx, dy, 680, 0.5, ratio < 0.5 ? 2 : 2.8);
+      return v.charging ? { x: v.x, y: v.y } : { x: v.x * speed, y: v.y * speed };
+    }
+    if (id === 'boss_captain') {
+      e.timer3 += dt;
+      if (e.timer3 > 8) {
+        e.timer3 = 0;
+        this.summonAround('skeleton', e.x, e.y, 3, 150);
+        this.ctx.fx.ring(e.x, e.y, 220, 0xf2ead3);
+      }
+      const v = this.updateCharge(e, dt, d, dx, dy, 600, 0.55, 4);
+      return v.charging ? { x: v.x, y: v.y } : { x: v.x * speed, y: v.y * speed };
+    }
+    if (id === 'boss_ogre') return this.updateSlam(e, dt, d, dx, dy, speed);
     if (id === 'boss_slime') {
       e.timer2 += dt;
       if (e.timer2 > 4.5) {

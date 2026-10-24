@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
-import { HERO_META, type HeroMeta } from '../art/textures';
+import { heroMetaKey, type HeroMeta } from '../art/textures';
+import { type CharacterDef } from '../config/characters';
 import { PLAYER_BASE } from '../config/game';
+import { type WeaponId } from '../config/weapons';
 import { type PlayerStats } from '../core/stats';
 
 /** On-screen height of the painted hero, in game px. */
 const HERO_HEIGHT = 150;
 /** The running loops, which share their legs frame by frame. */
-const STRIDES = new Set(['hero_run', 'hero_runaim', 'hero_runrelease']);
+const STRIDES = ['run', 'runaim', 'runrelease'];
 
 export class Player {
   x = 0;
@@ -43,19 +45,31 @@ export class Player {
   private sinceShot = 99;
   /** Seconds left of the just-released arms while running (runrelease), before drawing again. */
   private release = 0;
+  /** The hero's own weapon: its shots come from the bow or hand and play the shooting animation. */
+  readonly primary: WeaponId;
+  /** Animation keys are `<sheet>_<name>` (hero_run, mage_run...). */
+  private readonly sheet: string;
+  private readonly strides: Set<string>;
+  private readonly muzzle: [number, number];
 
-  constructor(scene: Phaser.Scene, public stats: PlayerStats) {
+  constructor(scene: Phaser.Scene, public stats: PlayerStats, character: CharacterDef) {
     this.hp = stats.maxHp;
+    this.primary = character.start;
+    this.muzzle = character.muzzle;
     this.shadow = scene.add.image(0, 0, 'shadow').setDisplaySize(84, 26).setDepth(4);
-    // Anchored at the feet so the run bounce and squash pivot on the ground.
-    const meta = scene.cache.json.get(HERO_META) as HeroMeta | undefined;
-    this.painted = !!meta && scene.anims.exists('hero_idle');
+    // Anchored at the feet so the run bounce and squash pivot on the ground. A character whose sheet didn't load
+    // falls back to the archer's.
+    const sheet = scene.anims.exists(`${character.sheet}_idle`) ? character.sheet : 'hero';
+    this.sheet = sheet;
+    this.strides = new Set(STRIDES.map((s) => `${sheet}_${s}`));
+    const meta = scene.cache.json.get(heroMetaKey(sheet)) as HeroMeta | undefined;
+    this.painted = !!meta && scene.anims.exists(`${sheet}_idle`);
     if (this.painted && meta) {
       this.baseScale = HERO_HEIGHT / (meta.frameHeight * 0.82);
-      this.sprite = scene.add.sprite(0, 0, 'hero', 0).setDepth(20);
-      this.sprite.setOrigin(meta.feet[0] / meta.frameWidth, meta.feet[1] / meta.frameHeight).play('hero_idle');
+      this.sprite = scene.add.sprite(0, 0, sheet, 0).setDepth(20);
+      this.sprite.setOrigin(meta.feet[0] / meta.frameWidth, meta.feet[1] / meta.frameHeight).play(`${sheet}_idle`);
       this.sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim: Phaser.Animations.Animation) => {
-        if (anim.key !== 'hero_ko' && `hero_${this.action}` === anim.key) this.action = null;
+        if (anim.key !== `${sheet}_ko` && `${sheet}_${this.action}` === anim.key) this.action = null;
       });
     } else {
       this.baseScale = 1;
@@ -104,7 +118,7 @@ export class Player {
     if (!this.moving) this.playAction('shoot', this.action === 'shoot');
     else if (!this.action && this.hasAnim('runrelease')) {
       this.release = 0.19;
-      this.playStride('hero_runrelease');
+      this.playStride('runrelease');
     }
   }
 
@@ -112,21 +126,26 @@ export class Player {
    * Plays one of the running loops (run, runaim, runrelease) from the frame the current one is on: they share
    * the same legs frame by frame, so swapping them changes only the arms.
    */
-  private playStride(key: string): void {
+  private playStride(name: string): void {
+    const key = `${this.sheet}_${name}`;
     const anims = this.sprite.anims;
     const current = anims.currentAnim?.key ?? '';
     if (current === key && anims.isPlaying) return;
-    const i = STRIDES.has(current) && anims.currentFrame ? anims.currentFrame.index - 1 : 0;
+    const i = this.strides.has(current) && anims.currentFrame ? anims.currentFrame.index - 1 : 0;
     this.sprite.play({ key, startFrame: i });
   }
 
-  /** Where arrows leave the bow when shooting toward `angle` (in front of the chest, not the middle of the body). */
-  bowPoint(angle: number): { x: number; y: number } {
-    return { x: this.x + Math.cos(angle) * 40, y: this.y - 40 + Math.sin(angle) * 22 };
+  /**
+   * Where the hero's shots leave the bow (or the casting hand) when shooting toward `angle`: in front of the chest,
+   * not the middle of the body.
+   */
+  attackPoint(angle: number): { x: number; y: number } {
+    const [fx, fy] = this.muzzle;
+    return { x: this.x + Math.cos(angle) * fx, y: this.y + 44 - fy + Math.sin(angle) * 22 };
   }
 
   private hasAnim(name: string): boolean {
-    return this.painted && this.sprite.scene.anims.exists(`hero_${name}`);
+    return this.painted && this.sprite.scene.anims.exists(`${this.sheet}_${name}`);
   }
 
   /** Throws the bow up in joy (level-ups, boss kills). */
@@ -142,10 +161,10 @@ export class Player {
   }
 
   private playAction(name: string, force: boolean): void {
-    if (!this.painted || this.action === 'ko' || !this.sprite.scene.anims.exists(`hero_${name}`)) return;
+    if (!this.painted || this.action === 'ko' || !this.hasAnim(name)) return;
     if (this.action && !force) return;
     this.action = name;
-    this.sprite.play(`hero_${name}`);
+    this.sprite.play(`${this.sheet}_${name}`);
   }
 
   update(dt: number): void {
@@ -158,13 +177,13 @@ export class Player {
       if (!this.action) {
         if (!this.moving) {
           this.release = 0;
-          this.sprite.play('hero_idle', true);
+          this.sprite.play(`${this.sheet}_idle`, true);
         } else if (this.release > 0) {
           this.release -= dt;
-          if (this.release <= 0) this.playStride('hero_runaim');
+          if (this.release <= 0) this.playStride('runaim');
         } else {
           // Fighting: run with the bow drawn; nothing to shoot for a while: run with it lowered.
-          this.playStride(this.sinceShot < 1.2 && this.hasAnim('runaim') ? 'hero_runaim' : 'hero_run');
+          this.playStride(this.sinceShot < 1.2 && this.hasAnim('runaim') ? 'runaim' : 'run');
         }
       }
     } else if (this.moving && this.anim > 0.16) {
@@ -176,7 +195,7 @@ export class Player {
       this.sprite.setTexture('hero_0');
     }
     const key = this.sprite.anims.currentAnim?.key;
-    const aiming = this.action === 'shoot' || (!this.action && (key === 'hero_runaim' || key === 'hero_runrelease'));
+    const aiming = this.action === 'shoot' || (!this.action && (key === `${this.sheet}_runaim` || key === `${this.sheet}_runrelease`));
     if (aiming) this.sprite.setFlipX(this.aimFace < 0);
     else if (Math.abs(this.faceX) > 0.15) this.sprite.setFlipX(this.faceX < 0);
     if (this.moving !== this.wasMoving) {

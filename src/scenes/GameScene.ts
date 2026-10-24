@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
+import { characterDef, type CharacterDef, type CharacterId } from '../config/characters';
 import { BOSSES } from '../config/enemies';
 import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS } from '../config/game';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
-import { type EvolutionId } from '../config/weapons';
+import { EVOLUTIONS, MAX_WEAPON_LEVEL, WEAPONS, type EvolutionId, type WeaponId } from '../config/weapons';
 import { DEBUG } from '../core/debug';
 import {
   applyChoice,
@@ -27,9 +28,11 @@ import {
   eliteChance,
   enemyWeights,
   hpMultiplier,
+  leadersDue,
   ringEventsDue,
   ringSize,
   spawnRate,
+  swarmSize,
 } from '../core/waves';
 import { Ambience } from '../game/Ambience';
 import { botSteer } from '../game/Bot';
@@ -58,6 +61,9 @@ export interface RunState {
   revivesLeft: number;
   bossesSpawned: number;
   bossesKilled: number;
+  leadersSpawned: number;
+  leadersKilled: number;
+  swarmsSpawned: number;
   ringsSpawned: number;
   boss: Enemy | null;
   ended: boolean;
@@ -99,6 +105,8 @@ export class GameScene extends Phaser.Scene {
   ctx!: GameCtx;
   private map!: MapDef;
   private mapIndex = 0;
+  /** The hero being played (the menu's choice). */
+  private hero!: CharacterDef;
   private rng!: Rng;
   private world!: World;
   private enemies!: EnemyManager;
@@ -141,8 +149,18 @@ export class GameScene extends Phaser.Scene {
     this.map = MAPS[this.mapIndex];
     this.rng = mulberry32(DEBUG.seed || Date.now() >>> 0);
     this.world = new World(this, this.map);
-    const inventory = newInventory();
-    const stats = computeStats(saveStore.data.shop, {});
+    const hero = (this.hero = characterDef((DEBUG.hero || saveStore.data.character) as CharacterId));
+    const inventory = newInventory(hero.start);
+    for (const g of DEBUG.give) {
+      const evo = EVOLUTIONS[g as EvolutionId];
+      const id = (evo ? evo.base : g.replace(/\d+$/, '')) as WeaponId;
+      if (!WEAPONS[id]) continue;
+      const level = evo ? MAX_WEAPON_LEVEL : Math.min(MAX_WEAPON_LEVEL, Number(g.match(/\d+$/)?.[0] ?? 1));
+      const owned = inventory.weapons.find((w) => w.id === id) ?? inventory.weapons[inventory.weapons.push({ id, level, evolved: null }) - 1];
+      owned.level = level;
+      if (evo) owned.evolved = evo.id;
+    }
+    const stats = computeStats(saveStore.data.shop, {}, hero);
     this.run = {
       mapIndex: this.mapIndex,
       time: DEBUG.startTime,
@@ -159,6 +177,9 @@ export class GameScene extends Phaser.Scene {
       revivesLeft: stats.revivals,
       bossesSpawned: bossesDue(DEBUG.startTime),
       bossesKilled: 0,
+      leadersSpawned: leadersDue(DEBUG.startTime),
+      leadersKilled: 0,
+      swarmsSpawned: 0,
       ringsSpawned: ringEventsDue(DEBUG.startTime),
       boss: null,
       ended: false,
@@ -174,7 +195,7 @@ export class GameScene extends Phaser.Scene {
     ctx.hitStop = (s) => this.hitStop(s);
     ctx.shake = (ms, k) => this.shake(ms, k);
     ctx.slowMo = (scale, s) => this.slowMo(scale, s);
-    ctx.player = this.player = new Player(this, stats);
+    ctx.player = this.player = new Player(this, stats, hero);
     ctx.fx = this.fx = new Effects(this);
     this.player.onStep = (x, y) => this.fx.dust(x, y);
     ctx.enemies = this.enemies = new EnemyManager(ctx);
@@ -340,6 +361,17 @@ export class GameScene extends Phaser.Scene {
       run.bossesSpawned++;
       this.spawnBoss(run.bossesSpawned - 1);
     }
+    if (leadersDue(t) > run.leadersSpawned) {
+      run.leadersSpawned++;
+      this.spawnLeader(run.leadersSpawned - 1);
+    }
+    const swarm = this.map.swarm;
+    if (swarm && t >= swarm.from && 1 + Math.floor((t - swarm.from) / swarm.every) > run.swarmsSpawned) {
+      const k = run.swarmsSpawned++;
+      const p = this.spawnPoint();
+      const n = swarmSize(swarm.size, k);
+      for (let i = 0; i < n; i++) this.enemies.spawn(swarm.id, p.x + (this.rng() - 0.5) * 140, p.y + (this.rng() - 0.5) * 140);
+    }
     if (ringEventsDue(t) > run.ringsSpawned) {
       const k = run.ringsSpawned++;
       const id = this.map.enemies[k % 2];
@@ -352,12 +384,29 @@ export class GameScene extends Phaser.Scene {
     }
     this.spawnAcc += spawnRate(t) * (run.boss ? 0.25 : 1) * dt;
     const weights = enemyWeights(t);
+    const table = this.map.enemies.map((item, i) => ({ item, weight: weights[i] }));
+    for (const x of this.map.extras) {
+      if (t < x.from) continue;
+      if (x.max !== undefined && this.enemies.alive.filter((e) => e.active && e.def?.id === x.id).length >= x.max) continue;
+      table.push({ item: x.id, weight: x.weight });
+    }
     while (this.spawnAcc >= 1) {
       this.spawnAcc -= 1;
       const p = this.spawnPoint();
-      const id = weightedPick(this.rng, this.map.enemies.map((item, i) => ({ item, weight: weights[i] })));
+      const id = weightedPick(this.rng, table);
       this.enemies.spawn(id, p.x, p.y, this.rng() < eliteChance(t));
     }
+  }
+
+  /** The map's leader drops in like a boss (smaller, at 2:30, 7:30...), unless a boss is already fighting. */
+  private spawnLeader(k: number): void {
+    if (this.run.boss) return;
+    const def = BOSSES[this.map.leader];
+    const hp = (1 + 0.35 * (hpMultiplier(this.run.time) - 1)) * bossHpMultiplier(k);
+    const a = Math.PI / 2 + (this.rng() - 0.5) * 0.6;
+    this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, hp);
+    audio.sfx('boss_warning');
+    this.events.emit('boss', def.name);
   }
 
   private spawnBoss(k: number): void {
@@ -375,12 +424,20 @@ export class GameScene extends Phaser.Scene {
 
   private onEnemyKilled(e: Enemy): void {
     const run = this.run;
+    // An exploder that blew itself up: no reward.
+    if (e.selfDestructed) return;
     run.kills++;
     if (e.elite) run.eliteKills++;
+    if (e.boss?.leader) {
+      this.onLeaderDefeated(e);
+      return;
+    }
     if (e.isBoss) {
       this.onBossDefeated(e);
       return;
     }
+    // A mimic is a piñata.
+    if (e.def?.behavior === 'ambush') this.pickups.burstCoins(e.x, e.y, 8, COIN_VALUE[this.mapIndex]);
     this.pickups.dropXp(e.x, e.y, e.xp);
     const coinValue = COIN_VALUE[this.mapIndex];
     if (this.rng() < e.coinChance) this.pickups.drop('coin', e.x + 24, e.y + 10, coinValue);
@@ -417,6 +474,23 @@ export class GameScene extends Phaser.Scene {
       this.events.emit('toast', `${e.boss!.name} defeated!`);
     }
     saveStore.save();
+  }
+
+  /** A leader falls: a chest (upgrades, maybe an evolution), a spray of coins, a short celebration. */
+  private onLeaderDefeated(e: Enemy): void {
+    const run = this.run;
+    if (run.boss === e) run.boss = null;
+    run.leadersKilled++;
+    this.pickups.drop('chest', e.x, e.y);
+    this.pickups.burstCoins(e.x, e.y, 8, Math.ceil(BOSS_GOLD[this.mapIndex] / 24));
+    this.fx.explosion(e.x, e.y, 180);
+    this.fx.ring(e.x, e.y, 360, 0xffcc33);
+    this.player.cheer();
+    this.shake(260, 0.008);
+    this.hitStop(0.08);
+    this.slowMo(0.4, 0.6);
+    audio.sfx('victory');
+    this.events.emit('toast', `${e.boss!.name} defeated!`);
   }
 
   private addXp(value: number): void {
@@ -487,7 +561,7 @@ export class GameScene extends Phaser.Scene {
 
   private refreshStats(): void {
     const run = this.run;
-    run.stats = computeStats(saveStore.data.shop, passiveLevels(run.inventory));
+    run.stats = computeStats(saveStore.data.shop, passiveLevels(run.inventory), this.hero);
     this.player.setStats(run.stats);
     this.weapons.sync(run.inventory.weapons, run.stats);
     this.events.emit('inventory');

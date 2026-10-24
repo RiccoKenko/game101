@@ -1,5 +1,5 @@
-export type WeaponId = 'bow' | 'daggers' | 'axes' | 'aura' | 'lightning' | 'bomb' | 'boomerang';
-export type EvolutionId = 'stormbow' | 'blades' | 'titanaxes' | 'sanctuary';
+export type WeaponId = 'bow' | 'daggers' | 'axes' | 'aura' | 'lightning' | 'bomb' | 'boomerang' | 'bolt' | 'frost' | 'slash' | 'flask';
+export type EvolutionId = 'stormbow' | 'blades' | 'titanaxes' | 'sanctuary' | 'starfall' | 'blizzard';
 export type PassiveId = 'heart' | 'boots' | 'powergem' | 'hourglass' | 'quiver' | 'magnet' | 'tome';
 
 /** Absolute stats of a weapon at one level. Area is a multiplier on the weapon's base size. */
@@ -14,7 +14,7 @@ export interface WeaponStats {
   area: number;
   /** Projectile speed in px/s (Axes: radians per second). */
   speed: number;
-  /** Seconds the attack lasts (Axes spin time). 0 = not used. */
+  /** Seconds the attack lasts (Axes spin time, a Poison Flask puddle). 0 = not used. */
   duration: number;
 }
 
@@ -83,6 +83,30 @@ const boo3 = s({ amount: 2 }, boo2);
 const boo4 = s({ area: 1.25, speed: 1050 }, boo3);
 const boo5 = s({ damage: 26, amount: 3 }, boo4);
 
+const bolt1: WeaponStats = { damage: 9, cooldown: 0.8, amount: 1, pierce: 0, area: 1, speed: 620, duration: 0 };
+const bolt2 = s({ amount: 2 }, bolt1);
+const bolt3 = s({ damage: 13 }, bolt2);
+const bolt4 = s({ amount: 3, cooldown: 0.68 }, bolt3);
+const bolt5 = s({ damage: 18, amount: 4 }, bolt4);
+
+const frost1: WeaponStats = { damage: 7, cooldown: 1.4, amount: 3, pierce: 1, area: 1, speed: 800, duration: 0 };
+const frost2 = s({ amount: 4 }, frost1);
+const frost3 = s({ damage: 11 }, frost2);
+const frost4 = s({ amount: 6, pierce: 2 }, frost3);
+const frost5 = s({ damage: 15, cooldown: 1.1 }, frost4);
+
+const slash1: WeaponStats = { damage: 16, cooldown: 1.3, amount: 1, pierce: 0, area: 1, speed: 0, duration: 0 };
+const slash2 = s({ damage: 22 }, slash1);
+const slash3 = s({ amount: 2 }, slash2);
+const slash4 = s({ area: 1.25, cooldown: 1.1 }, slash3);
+const slash5 = s({ damage: 32 }, slash4);
+
+const flask1: WeaponStats = { damage: 5, cooldown: 2.6, amount: 1, pierce: 0, area: 1, speed: 0, duration: 3 };
+const flask2 = s({ area: 1.2 }, flask1);
+const flask3 = s({ amount: 2 }, flask2);
+const flask4 = s({ damage: 8, duration: 4 }, flask3);
+const flask5 = s({ amount: 3, area: 1.4 }, flask4);
+
 export const WEAPONS: Record<WeaponId, WeaponDef> = {
   bow: {
     id: 'bow',
@@ -144,6 +168,40 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     levels: [boo1, boo2, boo3, boo4, boo5],
     upgrades: ['Damage +4', '+1 boomerang', 'Bigger and faster', 'Damage +8, +1 boomerang'],
   },
+  bolt: {
+    id: 'bolt',
+    name: 'Magic Bolt',
+    icon: 'icon_bolt',
+    description: 'Fires magic bolts that chase down enemies.',
+    levels: [bolt1, bolt2, bolt3, bolt4, bolt5],
+    upgrades: ['+1 bolt', 'Damage +4', '+1 bolt, faster', 'Damage +5, +1 bolt'],
+    evolution: { into: 'starfall', requires: 'tome' },
+  },
+  frost: {
+    id: 'frost',
+    name: 'Frost Shards',
+    icon: 'icon_frost',
+    description: 'A fan of ice shards that slows what it hits.',
+    levels: [frost1, frost2, frost3, frost4, frost5],
+    upgrades: ['+1 shard', 'Damage +4', '+2 shards, pierce +1', 'Damage +4, faster'],
+    evolution: { into: 'blizzard', requires: 'boots' },
+  },
+  slash: {
+    id: 'slash',
+    name: 'Moon Slash',
+    icon: 'icon_slash',
+    description: 'A wide sword swing in front of you that knocks enemies back.',
+    levels: [slash1, slash2, slash3, slash4, slash5],
+    upgrades: ['Damage +6', 'Also swings behind you', 'Area +25%, faster', 'Damage +10'],
+  },
+  flask: {
+    id: 'flask',
+    name: 'Poison Flask',
+    icon: 'icon_flask',
+    description: 'Throws a flask that leaves a puddle of poison.',
+    levels: [flask1, flask2, flask3, flask4, flask5],
+    upgrades: ['Area +20%', '+1 flask', 'Damage +3, lasts longer', '+1 flask, area +20%'],
+  },
 };
 
 export const EVOLUTIONS: Record<EvolutionId, EvolutionDef> = {
@@ -179,6 +237,22 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDef> = {
     description: 'Huge healing light: slows enemies and restores your HP.',
     stats: { damage: 16, cooldown: 0.35, amount: 1, pierce: 0, area: 2.0, speed: 0, duration: 0 },
   },
+  starfall: {
+    id: 'starfall',
+    base: 'bolt',
+    name: 'Starfall',
+    icon: 'icon_starfall',
+    description: 'Shooting stars rain down on every enemy in sight.',
+    stats: { damage: 26, cooldown: 0.45, amount: 3, pierce: 0, area: 1.2, speed: 0, duration: 0 },
+  },
+  blizzard: {
+    id: 'blizzard',
+    base: 'frost',
+    name: 'Blizzard',
+    icon: 'icon_blizzard',
+    description: 'A howling snowstorm around you freezes and grinds down enemies.',
+    stats: { damage: 10, cooldown: 0.3, amount: 1, pierce: 0, area: 1.5, speed: 0, duration: 0 },
+  },
 };
 
 export interface PassiveDef {
@@ -206,4 +280,4 @@ export const PASSIVE_IDS = Object.keys(PASSIVES) as PassiveId[];
 export const MAX_WEAPON_LEVEL = 5;
 
 /** Weapons whose attack count is boosted by the Quiver passive. */
-export const AMOUNT_BOOSTED: ReadonlySet<WeaponId> = new Set<WeaponId>(['bow', 'daggers', 'axes', 'lightning', 'bomb', 'boomerang']);
+export const AMOUNT_BOOSTED: ReadonlySet<WeaponId> = new Set<WeaponId>(['bow', 'daggers', 'axes', 'lightning', 'bomb', 'boomerang', 'bolt', 'frost', 'flask']);

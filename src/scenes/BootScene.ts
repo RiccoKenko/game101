@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { assetUrl, inlinedJson } from '../art/assets';
 import manifest from '../art/manifest.json';
-import { createTextures, heroAnimations, HERO_META, type HeroMeta } from '../art/textures';
+import { createTextures, heroAnimations, heroMetaKey, type HeroMeta } from '../art/textures';
 import { audio, AUDIO_ENABLED, SFX_KEYS } from '../audio/audio';
+import { CHARACTERS } from '../config/characters';
 import { MAPS } from '../config/maps';
 import { DEBUG } from '../core/debug';
 import { COLORS } from '../ui/theme';
@@ -28,17 +29,20 @@ export class BootScene extends Phaser.Scene {
     }
     // Painted art (public/art/); anything missing falls back to the SVG art drawn in code.
     for (const key of manifest.keys) this.load.image(key, assetUrl(`art/${key}.webp`));
-    const loadHero = (meta: HeroMeta) => {
-      this.load.spritesheet('hero', assetUrl('art/hero/hero.webp'), { frameWidth: meta.frameWidth, frameHeight: meta.frameHeight });
-      this.load.image('hero_menu', assetUrl('art/hero/hero_menu.webp'));
-    };
-    const heroMeta = inlinedJson<HeroMeta>('art/hero/hero.json');
-    if (heroMeta) {
-      this.cache.json.add(HERO_META, heroMeta);
-      loadHero(heroMeta);
-    } else {
-      this.load.json(HERO_META, 'art/hero/hero.json');
-      this.load.once(`filecomplete-json-${HERO_META}`, (_key: string, _type: string, meta: HeroMeta) => loadHero(meta));
+    // Each playable hero: an animated sheet described by a JSON file, and a still for the menu.
+    for (const c of CHARACTERS) {
+      const key = heroMetaKey(c.sheet);
+      this.load.image(c.menu, assetUrl(`art/hero/${c.menu}.webp`));
+      const loadHero = (meta: HeroMeta) =>
+        this.load.spritesheet(c.sheet, assetUrl(`art/hero/${c.sheet}.webp`), { frameWidth: meta.frameWidth, frameHeight: meta.frameHeight });
+      const meta = inlinedJson<HeroMeta>(`art/hero/${c.sheet}.json`);
+      if (meta) {
+        this.cache.json.add(key, meta);
+        loadHero(meta);
+      } else {
+        this.load.json(key, `art/hero/${c.sheet}.json`);
+        this.load.once(`filecomplete-json-${key}`, (_key: string, _type: string, m: HeroMeta) => loadHero(m));
+      }
     }
     this.load.on('progress', (p: number) => {
       this.progress.files = p;
@@ -64,7 +68,7 @@ export class BootScene extends Phaser.Scene {
       this.progress.art = p;
       this.drawBar();
     }).then(() => {
-      heroAnimations(this);
+      for (const c of CHARACTERS) heroAnimations(this, c.sheet);
       if (DEBUG.autostart) {
         this.scene.start('Game', { map: Phaser.Math.Clamp(DEBUG.map - 1, 0, MAPS.length - 1) });
       } else {

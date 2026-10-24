@@ -11,7 +11,7 @@ import { type PlayerStats } from '../core/stats';
 import { type GameCtx } from './context';
 import { type Enemy } from './Enemies';
 
-type ProjKind = 'arrow' | 'dagger' | 'boomerang' | 'bomb';
+type ProjKind = 'arrow' | 'dagger' | 'boomerang' | 'bomb' | 'bolt' | 'star' | 'shard' | 'flask';
 
 class Projectile {
   active = false;
@@ -37,6 +37,10 @@ class Projectile {
   tx = 0;
   ty = 0;
   area = 1;
+  /** Magic Bolt: the enemy it is homing on. */
+  target: Enemy | null = null;
+  /** Poison Flask: how long its puddle lasts. */
+  duration = 0;
   /** A motion streak behind arrows and daggers; the ground shadow under a bomb. */
   constructor(readonly sprite: Phaser.GameObjects.Image, readonly trail: Phaser.GameObjects.Image) {}
 }
@@ -47,7 +51,21 @@ const TRAILS: Record<string, [number, number, number]> = {
   arrow_storm: [0x9fdcff, 140, 16],
   dagger: [0xd8e8ff, 70, 8],
   dagger_gold: [0xffd36b, 84, 10],
+  bolt: [0x8fd8ff, 80, 16],
+  star_bolt: [0xffe08a, 110, 14],
+  ice_shard: [0xd4f4ff, 60, 8],
 };
+
+/** A Poison Flask puddle: hurts what stands in it every so often, then dries up. */
+interface Zone {
+  x: number;
+  y: number;
+  r: number;
+  damage: number;
+  left: number;
+  tick: number;
+  img: Phaser.GameObjects.Image;
+}
 
 interface WeaponRuntime {
   owned: OwnedWeapon;
@@ -60,8 +78,9 @@ interface WeaponRuntime {
   axeHits: Map<number, number>;
   // Afterimages trailing each axe.
   ghosts: Phaser.GameObjects.Image[];
-  // Aura
+  // Aura (and Blizzard's frosty disc, with `ring` as its edge)
   aura?: Phaser.GameObjects.Image;
+  ring?: Phaser.GameObjects.Image;
   auraSize: number;
   /** 1 on each damage tick, easing back to 0 (the aura swells). */
   pulse: number;
@@ -71,10 +90,17 @@ const AXE_RADIUS = 175;
 const AURA_RADIUS = 135;
 const BOMB_RADIUS = 150;
 const BOLT_RADIUS = 75;
+const SLASH_RADIUS = 150;
+const PUDDLE_RADIUS = 95;
+const BLIZZARD_RADIUS = 190;
+const STAR_RADIUS = 80;
+/** How fast a Magic Bolt turns toward its target (radians per second). */
+const BOLT_TURN = 7;
 
 export class WeaponSystem {
   private runtimes: WeaponRuntime[] = [];
   private projectiles: Projectile[] = [];
+  private zones: Zone[] = [];
   private clock = 0;
   /** HP per second healed by Sanctuary. */
   regen = 0;
@@ -116,6 +142,17 @@ export class WeaponSystem {
       for (const a of [...rt.axes, ...rt.ghosts]) a.setTexture(tex).setScale(scale);
       if (rt.owned.evolved) rt.axeActive = true;
     }
+    if (id === 'frost' && rt.owned.evolved) {
+      // Blizzard: a pale frosty disc around the hero with an icy edge.
+      if (!rt.aura) {
+        rt.aura = scene.add.image(0, 0, 'glow').setDepth(3).setTint(0x9fd8ff).setAlpha(0.3);
+        rt.ring = scene.add.image(0, 0, 'ring').setDepth(3).setTint(0xd8f4ff).setAlpha(0.5);
+        scene.tweens.add({ targets: rt.ring, alpha: { from: 0.35, to: 0.6 }, duration: 600, yoyo: true, repeat: -1 });
+      }
+      rt.auraSize = BLIZZARD_RADIUS * rt.stats.area * 2;
+      rt.aura.setDisplaySize(rt.auraSize * 1.1, rt.auraSize * 1.1);
+      rt.ring?.setDisplaySize(rt.auraSize, rt.auraSize);
+    }
     if (id === 'aura') {
       const tex = rt.owned.evolved ? 'aura_holy' : 'aura';
       if (!rt.aura) {
@@ -140,8 +177,9 @@ export class WeaponSystem {
     p.returning = false;
     p.knockback = 1;
     p.hits.clear();
+    p.target = null;
     p.sprite.setTexture(texture).setVisible(true).setScale(1).setRotation(0);
-    if (kind === 'bomb') {
+    if (kind === 'bomb' || kind === 'flask') {
       p.trail.setTexture('shadow').setOrigin(0.5).setBlendMode(Phaser.BlendModes.NORMAL).clearTint().setAlpha(1).setVisible(true);
     } else if (kind === 'boomerang') {
       // It spins, so a straight streak would look wrong.
@@ -162,6 +200,17 @@ export class WeaponSystem {
       switch (rt.owned.id) {
         case 'axes':
           this.updateAxes(rt, dt);
+          break;
+        case 'frost':
+          if (!rt.owned.evolved) {
+            rt.timer -= dt;
+            if (rt.timer <= 0) {
+              rt.timer = s.cooldown;
+              this.fire(rt);
+            }
+            break;
+          }
+          this.updateBlizzard(rt, dt);
           break;
         case 'aura':
           rt.pulse *= Math.exp(-8 * dt);
@@ -190,6 +239,7 @@ export class WeaponSystem {
       }
     }
     this.updateProjectiles(dt);
+    this.updateZones(dt);
   }
 
   /** The active boss if it's within range of the hero (weapons focus it so crowds can't shield it). */
@@ -208,14 +258,69 @@ export class WeaponSystem {
         const target = this.bossInRange(950) ?? enemies.nearest(player.x, player.y, 950);
         const base = target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.atan2(player.faceY, player.faceX);
         const spread = evolved ? 0.22 : 0.16;
-        const bow = player.bowPoint(base);
+        const bow = this.launchPoint(rt, base);
         for (let i = 0; i < s.amount; i++) {
           const a = base + (i - (s.amount - 1) / 2) * spread;
           this.shoot('arrow', evolved ? 'arrow_storm' : 'arrow', a, s, 22 * s.area, bow);
         }
         this.ctx.fx.muzzle(bow.x, bow.y, evolved ? 0x9fdcff : 0xfff1b8);
-        player.shootAt(base);
         audio.sfx('shoot');
+        break;
+      }
+      case 'bolt': {
+        if (evolved) {
+          this.starfall(s);
+          break;
+        }
+        // Each bolt picks its own target (the boss first), flies out in a fan and curves in on it.
+        const targets = enemies.nearestN(player.x, player.y, s.amount, 900);
+        const boss = this.bossInRange(900);
+        if (boss) targets.unshift(boss);
+        const first = targets[0];
+        const base = first ? Math.atan2(first.y - player.y, first.x - player.x) : Math.atan2(player.faceY, player.faceX);
+        const from = this.launchPoint(rt, base);
+        for (let i = 0; i < s.amount; i++) {
+          const a = base + (i - (s.amount - 1) / 2) * 0.55;
+          const p = this.shoot('bolt', 'bolt', a, s, 24 * s.area, from);
+          p.target = targets.length ? targets[i % targets.length] : null;
+          p.life = 2;
+        }
+        this.ctx.fx.muzzle(from.x, from.y, 0x8fd8ff);
+        audio.sfx('zap', 0.6);
+        break;
+      }
+      case 'frost': {
+        const target = this.bossInRange(850) ?? enemies.nearest(player.x, player.y, 850);
+        const base = target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.atan2(player.faceY, player.faceX);
+        const from = this.launchPoint(rt, base);
+        for (let i = 0; i < s.amount; i++) {
+          const a = base + (i - (s.amount - 1) / 2) * 0.17;
+          this.shoot('shard', 'ice_shard', a, s, 18 * s.area, from);
+        }
+        audio.sfx('shoot', 0.7);
+        break;
+      }
+      case 'slash': {
+        // In front first (the way the hero last moved), then behind.
+        const dir = player.faceX < 0 ? -1 : 1;
+        for (let i = 0; i < s.amount; i++) this.swing(i % 2 ? -dir : dir, s, i * 0.12);
+        break;
+      }
+      case 'flask': {
+        const inView = enemies.inRect(this.ctx.view());
+        for (let i = 0; i < s.amount; i++) {
+          const target: Enemy | undefined = inView.length ? inView[Math.floor(this.ctx.rng() * inView.length)] : undefined;
+          const a = this.ctx.rng() * Math.PI * 2;
+          const p = this.obtain('flask', 'flask');
+          p.sx = p.x = player.x;
+          p.sy = p.y = player.y - 30;
+          p.tx = target ? target.x : player.x + Math.cos(a) * 260;
+          p.ty = target ? target.y : player.y + Math.sin(a) * 260;
+          p.damage = s.damage;
+          p.area = s.area;
+          p.duration = s.duration;
+          p.life = 0.55 + i * 0.08;
+        }
         break;
       }
       case 'daggers': {
@@ -287,6 +392,108 @@ export class WeaponSystem {
       }
       default:
         break;
+    }
+  }
+
+  /**
+   * Where the hero's own weapon (the Bow for the archer, Magic Bolt for the mage) shoots from: the bow or the
+   * casting hand, and the hero plays the shot. Any other weapon fires from the body without an animation.
+   */
+  private launchPoint(rt: WeaponRuntime, angle: number): { x: number; y: number } {
+    const { player } = this.ctx;
+    if (player.primary !== rt.owned.id) return { x: player.x + Math.cos(angle) * 30, y: player.y - 10 + Math.sin(angle) * 30 };
+    player.shootAt(angle);
+    return player.attackPoint(angle);
+  }
+
+  /** Moon Slash: a crescent sweep on one side of the hero, hitting everything in a half circle. */
+  private swing(dir: number, s: WeaponStats, delay: number): void {
+    const scene = this.ctx.scene;
+    scene.time.delayedCall(delay * 1000, () => {
+      const { player, enemies, fx } = this.ctx;
+      const R = SLASH_RADIUS * s.area;
+      const cx = player.x + dir * R * 0.55;
+      const cy = player.y - 10;
+      const img = scene.add.image(cx, cy, 'slash').setDepth(26);
+      const k = (R * 2) / img.height;
+      img.setScale(dir * k * 0.75, k * 0.75);
+      scene.tweens.add({ targets: img, scaleX: dir * k, scaleY: k, alpha: 0, x: cx + dir * 24, duration: 340, ease: 'Cubic.easeIn', onComplete: () => img.destroy() });
+      enemies.forEachInRadius(cx, cy, R * 0.8, (e) => {
+        if ((e.x - player.x) * dir < -20) return;
+        enemies.damage(e, s.damage, player.x, player.y, 1.8);
+        fx.sparksAt(e.x, e.y, 3, 0xe8f4ff);
+      });
+      audio.sfx('shoot', 0.6);
+    });
+  }
+
+  /** Starfall: stars streak down from the sky onto enemies on screen (the boss first) and burst. */
+  private starfall(s: WeaponStats): void {
+    const { enemies, player } = this.ctx;
+    const inView = enemies.inRect(this.ctx.view());
+    Phaser.Utils.Array.Shuffle(inView);
+    const bossIdx = inView.findIndex((e) => e.isBoss);
+    if (bossIdx > 0) inView.unshift(...inView.splice(bossIdx, 1));
+    for (let i = 0; i < s.amount; i++) {
+      const t = inView[i];
+      const a = this.ctx.rng() * Math.PI * 2;
+      const tx = t ? t.x : player.x + Math.cos(a) * 280;
+      const ty = t ? t.y : player.y + Math.sin(a) * 280;
+      const p = this.obtain('star', 'star_bolt');
+      p.sx = tx + 260;
+      p.sy = ty - 620;
+      p.tx = tx;
+      p.ty = ty;
+      p.vx = p.tx - p.sx;
+      p.vy = p.ty - p.sy;
+      p.x = p.sx;
+      p.y = p.sy;
+      p.damage = s.damage;
+      p.area = s.area;
+      p.life = 0.32 + i * 0.07;
+      p.sprite.setRotation(Math.atan2(p.vy, p.vx)).setScale(1.2);
+    }
+  }
+
+  /** Blizzard: a storm around the hero that damages and slows everything in it, with snow whirling about. */
+  private updateBlizzard(rt: WeaponRuntime, dt: number): void {
+    const s = rt.stats;
+    const { player, enemies, fx } = this.ctx;
+    const R = BLIZZARD_RADIUS * s.area;
+    rt.aura?.setPosition(player.x, player.y + 10);
+    rt.ring?.setPosition(player.x, player.y + 10);
+    if (Math.random() < dt * 22) {
+      const a = Math.random() * Math.PI * 2;
+      const r = R * (0.3 + Math.random() * 0.65);
+      fx.sparkle(player.x + Math.cos(a) * r, player.y + 10 + Math.sin(a) * r, 1, Math.random() < 0.5 ? 0xffffff : 0xbfe8ff);
+    }
+    rt.timer -= dt;
+    if (rt.timer > 0) return;
+    rt.timer = s.cooldown;
+    enemies.forEachInRadius(player.x, player.y, R, (e) => {
+      enemies.damage(e, s.damage, player.x, player.y, 0.2);
+      e.slow = Math.max(e.slow, 0.8);
+    });
+  }
+
+  private updateZones(dt: number): void {
+    const { enemies, fx } = this.ctx;
+    for (let i = this.zones.length - 1; i >= 0; i--) {
+      const z = this.zones[i];
+      z.left -= dt;
+      z.tick -= dt;
+      z.img.setAlpha(Math.min(0.6, z.left / 0.4));
+      if (z.tick <= 0) {
+        z.tick = 0.4;
+        enemies.forEachInRadius(z.x, z.y, z.r, (e) => {
+          enemies.damage(e, z.damage, z.x, z.y, 0, false);
+          if (Math.random() < 0.3) fx.sparksAt(e.x, e.y, 1, 0x9be64a);
+        });
+      }
+      if (z.left <= 0) {
+        z.img.destroy();
+        this.zones.splice(i, 1);
+      }
     }
   }
 
@@ -388,6 +595,58 @@ export class WeaponSystem {
         continue;
       }
 
+      if (p.kind === 'flask') {
+        const dur = 0.55;
+        const u = Math.min(1, p.age / dur);
+        p.x = Phaser.Math.Linear(p.sx, p.tx, u);
+        p.y = Phaser.Math.Linear(p.sy, p.ty, u) - Math.sin(u * Math.PI) * 150;
+        p.sprite.setPosition(p.x, p.y).setRotation(p.age * 12);
+        const sw = 24 + 24 * (1 - Math.sin(u * Math.PI));
+        p.trail.setPosition(Phaser.Math.Linear(p.sx, p.tx, u), Phaser.Math.Linear(p.sy, p.ty, u) + 18).setDisplaySize(sw, sw * 0.32);
+        if (u >= 1) {
+          const r = PUDDLE_RADIUS * p.area;
+          const img = this.ctx.scene.add.image(p.tx, p.ty, 'puddle').setDepth(2).setDisplaySize(r * 2, r * 1.05);
+          this.zones.push({ x: p.tx, y: p.ty, r, damage: p.damage, left: p.duration, tick: 0, img });
+          this.ctx.fx.sparksAt(p.tx, p.ty, 6, 0xb6f26a);
+          audio.sfx('hit', 0.6);
+          this.release(p);
+        }
+        continue;
+      }
+
+      if (p.kind === 'star') {
+        const u = Math.min(1, p.age / p.life);
+        p.x = Phaser.Math.Linear(p.sx, p.tx, u);
+        p.y = Phaser.Math.Linear(p.sy, p.ty, u);
+        p.sprite.setPosition(p.x, p.y);
+        p.trail.setPosition(p.x, p.y).setRotation(Math.atan2(p.vy, p.vx));
+        p.trail.displayWidth = 110 * Math.min(1, p.age / 0.07);
+        if (u >= 1) {
+          const r = STAR_RADIUS * p.area;
+          this.ctx.fx.ring(p.tx, p.ty, r * 1.3, 0xffe08a);
+          this.ctx.fx.sparkle(p.tx, p.ty, 4, 0xfff1b8);
+          enemies.forEachInRadius(p.tx, p.ty, r, (e) => enemies.damage(e, p.damage, p.tx, p.ty, 0.8));
+          audio.sfx('zap', 0.5);
+          this.release(p);
+        }
+        continue;
+      }
+
+      if (p.kind === 'bolt') {
+        // Steer toward the target; if it died, find the next one nearby.
+        if (!p.target || !p.target.active) p.target = enemies.nearest(p.x, p.y, 600);
+        if (p.target) {
+          const want = Math.atan2(p.target.y - p.y, p.target.x - p.x);
+          const cur = Math.atan2(p.vy, p.vx);
+          const turn = Phaser.Math.Angle.Wrap(want - cur);
+          const a = cur + Phaser.Math.Clamp(turn, -BOLT_TURN * dt, BOLT_TURN * dt);
+          const sp = Math.hypot(p.vx, p.vy);
+          p.vx = Math.cos(a) * sp;
+          p.vy = Math.sin(a) * sp;
+          p.sprite.setRotation(a);
+        }
+      }
+
       if (p.kind === 'boomerang') {
         if (!p.returning && p.age >= p.outTime) p.returning = true;
         if (!p.returning) {
@@ -425,8 +684,9 @@ export class WeaponSystem {
         const until = p.hits.get(e.uid);
         if (until !== undefined && this.clock < until) return;
         p.hits.set(e.uid, p.kind === 'boomerang' ? this.clock + 0.35 : Infinity);
-        enemies.damage(e, p.damage, p.x - p.vx * 0.05, p.y - p.vy * 0.05, p.kind === 'boomerang' ? 0.6 : 1);
-        this.ctx.fx.sparksAt(p.x, p.y, 3, e.color);
+        enemies.damage(e, p.damage, p.x - p.vx * 0.05, p.y - p.vy * 0.05, p.kind === 'boomerang' ? 0.6 : p.kind === 'shard' ? 0.4 : 1);
+        this.ctx.fx.sparksAt(p.x, p.y, 3, p.kind === 'shard' ? 0xd4f4ff : p.kind === 'bolt' ? 0x8fd8ff : e.color);
+        if (p.kind === 'shard') e.slow = Math.max(e.slow, 1.6);
         if (p.kind !== 'boomerang') {
           p.pierce--;
           if (p.pierce < 0) this.release(p);
@@ -446,7 +706,10 @@ export class WeaponSystem {
       rt.axes.forEach((a) => a.destroy());
       rt.ghosts.forEach((g) => g.destroy());
       rt.aura?.destroy();
+      rt.ring?.destroy();
     }
     this.runtimes = [];
+    this.zones.forEach((z) => z.img.destroy());
+    this.zones = [];
   }
 }

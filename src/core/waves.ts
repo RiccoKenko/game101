@@ -50,6 +50,16 @@ export function bossesDue(t: number): number {
   return Math.floor(t / BOSS_INTERVAL);
 }
 
+/** How many leaders (the smaller bosses) should have appeared by time t: one at 2:30, 7:30, 12:30... */
+export function leadersDue(t: number): number {
+  return t < BOSS_INTERVAL / 2 ? 0 : 1 + Math.floor((t - BOSS_INTERVAL / 2) / BOSS_INTERVAL);
+}
+
+/** How many monsters fly in with the k-th swarm (0-based). */
+export function swarmSize(base: number, k: number): number {
+  return base + Math.floor(k / 3);
+}
+
 /** HP multiplier for the k-th boss appearance (0-based), on top of hpMultiplier. */
 export function bossHpMultiplier(k: number): number {
   return 1 + 0.8 * k;

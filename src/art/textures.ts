@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ENEMIES as ENEMY_DEFS } from '../config/enemies';
 import { FONT } from '../ui/theme';
 import { CHARACTERS_ART } from './characters';
 import { ENVIRONMENT_ART } from './environment';
@@ -8,10 +9,10 @@ import { type ArtDef } from './types';
 
 export const ALL_ART: Record<string, ArtDef> = { ...CHARACTERS_ART, ...ITEMS_ART, ...ICONS_ART, ...ENVIRONMENT_ART };
 
-const ENEMIES = ['slime', 'bat', 'mushroom', 'skeleton', 'ghost', 'zombie', 'imp', 'knight', 'gargoyle'];
+const ENEMIES = [...new Set(Object.values(ENEMY_DEFS).map((d) => d.texture))];
 
-/** Cache key of the hero sprite sheet's description (public/art/hero/hero.json). */
-export const HERO_META = 'hero_meta';
+/** Cache key of a hero sprite sheet's description (public/art/hero/<sheet>.json). */
+export const heroMetaKey = (sheet: string) => `${sheet}_meta`;
 
 export interface HeroMeta {
   frameWidth: number;
@@ -21,16 +22,16 @@ export interface HeroMeta {
   animations: Record<string, { start: number; count: number; fps: number; loop: boolean }>;
 }
 
-/** Registers `hero_<name>` animations from the painted hero sheet, if it loaded. */
-export function heroAnimations(scene: Phaser.Scene): void {
-  const meta = scene.cache.json.get(HERO_META) as HeroMeta | undefined;
-  if (!meta || !scene.textures.exists('hero')) return;
+/** Registers `<sheet>_<name>` animations (hero_run, mage_run...) from a painted hero sheet, if it loaded. */
+export function heroAnimations(scene: Phaser.Scene, sheet: string): void {
+  const meta = scene.cache.json.get(heroMetaKey(sheet)) as HeroMeta | undefined;
+  if (!meta || !scene.textures.exists(sheet)) return;
   for (const [name, a] of Object.entries(meta.animations)) {
-    const key = `hero_${name}`;
+    const key = `${sheet}_${name}`;
     if (scene.anims.exists(key)) continue;
     scene.anims.create({
       key,
-      frames: scene.anims.generateFrameNumbers('hero', { start: a.start, end: a.start + a.count - 1 }),
+      frames: scene.anims.generateFrameNumbers(sheet, { start: a.start, end: a.start + a.count - 1 }),
       frameRate: a.fps,
       repeat: a.loop ? -1 : 0,
     });

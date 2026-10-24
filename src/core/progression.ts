@@ -40,8 +40,9 @@ export function xpToNext(level: number): number {
   return 720 + (level - 40) * 30;
 }
 
-export function newInventory(): Inventory {
-  return { weapons: [{ id: 'bow', level: 1, evolved: null }], passives: [] };
+/** A run's starting kit: the hero's own weapon at level 1. */
+export function newInventory(start: WeaponId = 'bow'): Inventory {
+  return { weapons: [{ id: start, level: 1, evolved: null }], passives: [] };
 }
 
 export function passiveLevels(inv: Inventory): Partial<Record<PassiveId, number>> {
