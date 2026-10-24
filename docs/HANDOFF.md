@@ -2,85 +2,87 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## สถานะ (23 ต.ค. 2026)
+## สถานะ (24 ต.ค. 2026 หลังงานข้ามคืน)
 - **โปรเจกต์:** Little Archer: Sky Pirates
   - เกม TD แบบ 2.5D สไตล์ Kingdom Rush บนมือถือแนวนอน ภาพ 2D แนวอนิเมะ
   - เจ้านายวาดภาพด้วย Codex แล้ว Claude ตัดชิ้น ใส่กระดูก ทำท่า และใส่เกม
   - เทคโนโลยี: Three.js กล้อง orthographic, TypeScript, Vite
 - **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (branch นี้ใช้ deploy ด้วย)
-- **ลิงก์จริง:** little-archer.vercel.app
-  - ยังเป็นหน้าโชว์ 2D จาก commit 78a23e3 (`dpl_51k13bQFB8tERqLttXwhxpXQoWrA`)
-  - **`/play.html` ยังไม่ deploy** และหน้าโชว์บนเว็บยังเป็นเวอร์ชันเก่า (มีแค่ฮีโร่กับเป้าซ้อม)
-- **เฟส 2D-3 (First Battle): กติกาเสร็จ และตัวละครทุกตัวเป็นภาพจริงที่ขยับได้แล้ว**
-  - **แผนที่:** ภาพวาดจริงจาก Codex
-  - **ตัวละคร 8 ตัวเป็น puppet ทั้งหมด:** Little Archer, Deckhand, Powder Monkey, Ironclad, Parrot Raider, First Mate (บอส), Talon, Mochi
-  - **ป้อม 4 แบบ + สายระดับ 4:** ยังเป็นภาพวาดด้วยโค้ดชั่วคราว (`paintTower` ใน `src/play/art.ts`)
-  - **สกิลคู่หู:** Talon ดิ่งลงจากฟ้าเหนือโจรแล้วแย่งคริสตัลคืน, Mochi ว่ายกวาดทั้งเกาะ
-  - **คำสั่งกัปตัน:** หลังเวฟ 2, 4, 6 ให้เลือกการ์ด 1 ใบจาก 3 ใบ (มี 13 ใบ)
-  - **หน้าโชว์มีแท็บ Crew:** เลือกตัวละครทีละตัวแล้วเล่นได้ทุกท่า (`?crew=<id>` เปิดตรงไปที่ตัวนั้น)
-- **Test:** unit 132 ข้อ และ e2e 4 ข้อ ผ่านทั้งหมด
-  - e2e ของ play: สร้างป้อม, เรียกเวฟ, กด Talon, เลือกการ์ด
-  - e2e ของ Crew: กดทุกตัว ทุกท่า ต้องไม่มี error
+- **ลิงก์จริง:** little-archer.vercel.app (deploy ล่าสุดดูใน Vercel; ครั้งแรกของ Chapter 1 คือ `dpl_6AZCwQdwFAx6K3FpVqfarzhbPqGD`)
+  - `/` หน้าโชว์ตัวละคร มีปุ่ม "Play Chapter 1" ไปที่ `/play.html`
+  - `/play.html` ตัวเกม Chapter 1
+- **Chapter 1 "Pirates on the Horizon" เล่นได้ครบทั้งบท**
+  - **หน้าเลือกด่าน:** `ChapterScreen` ใน `src/play/screens.ts`
+    - ตำแหน่งปุ่มอยู่ใน `src/play/chapterMap.ts`
+    - พื้นหลังยังเป็นภาพร่าง `public/maps/chapter1-sketch.png` จนกว่า Codex จะวาด
+  - **3 ด่าน** (`src/td/levels.ts` `CHAPTER1`)
+    - level1 "The First Raid" (เปลี่ยนชื่อจาก "Pirates on the Horizon" ให้ไม่ซ้ำกับชื่อบท, กติกาเหมือนเดิม)
+    - level2 "Windmill Terraces"
+    - level3 "Lighthouse Point"
+    - ด่าน 2-3 ใช้ภาพร่างเป็นแผนที่ไปก่อน
+  - **ความยาก** `src/td/difficulty.ts`: Easy/Normal/Hard ตัวคูณเลือด 0.8/1/1.2, เงินเริ่ม 1.2/1/0.95, จำนวนโจร 0.85/1/1.1 (บอสมาตัวเดียวเสมอ)
+  - **บันทึกความคืบหน้า** `src/play/progress.ts`
+    - localStorage key `sky-pirates.progress.v1`
+    - เก็บดาวดีสุด ความยากสูงสุดที่ชนะ ความยากที่เลือก และฉากที่ดูแล้ว
+    - ห่อ try/catch ทุกจุด
+  - **ฉากเล่าเรื่อง:** บทร่างใน `src/play/story.ts` (`level<N>:before` / `level<N>:after`)
+    - Stormbeard เป็นเงาดำ (ยังไม่มีภาพ)
+    - Talon ใช้ภาพที่ถ่ายจาก puppet จนกว่าภาพครึ่งตัวจะมา
+  - **การ์ดจบด่าน, เมนูหยุด (II), `?debug`, รวม draw call (atlas)** ดู README
+- **ตัวละคร 8 ตัวเป็น puppet ทั้งหมด**
+  - ฮีโร่ไม่มีลูกบอลข้อต่อที่ศอก/เข่าแล้ว (slicer มีโหมด `heal`)
+  - ภาพครึ่งตัวครบ: hero, first_mate, deckhand (greedy/angry/panicked), mochi (proud/cry/happy)
+- **ป้อม 4 แบบ + สายระดับ 4:** ยังเป็นภาพวาดด้วยโค้ด (`paintTower` ใน `src/play/art.ts`)
+- **Test:** unit 153 ข้อ และ e2e 5 ข้อ ผ่านทั้งหมด
+  - e2e ใหม่เล่นตั้งแต่แผนที่ → ฉาก → Hard → หยุด → ชนะ → กลับแผนที่ → รีโหลดแล้วข้อมูลยังอยู่
 
 ## Artifacts (ลิงก์คงที่)
-- **ด่านทดลอง** (version 11): https://claude.ai/artifact/MXkN26QoVLgRMQsmvjhD98 (publish จาก scratchpad/sky-pirates-play.html)
-  - สร้างใหม่ด้วย `node scripts/build-showcase.mjs <out.html> play` (ประมาณ 3.9 MB)
-- **หน้าโชว์ตัวละคร** (version 4, มีแท็บ Crew): https://claude.ai/artifact/PNawa631NQkzXEZbZAbFRh (publish จาก scratchpad/sky-pirates-cast.html)
+- **ตัวเกม Chapter 1** (version 12): https://claude.ai/artifact/MXkN26QoVLgRMQsmvjhD98 (publish จาก scratchpad/sky-pirates-play.html)
+  - สร้างใหม่ด้วย `node scripts/build-showcase.mjs <out.html> play` (ประมาณ 4.2 MB)
+  - ใน artifact ไม่มีปุ่มไปหน้าอื่น และถ้า localStorage ใช้ไม่ได้ก็ยังเล่นได้ (แค่ไม่จำ)
+- **หน้าโชว์ตัวละคร** (version 5): https://claude.ai/artifact/PNawa631NQkzXEZbZAbFRh (publish จาก scratchpad/sky-pirates-cast.html)
   - สร้างใหม่ด้วย `node scripts/build-showcase.mjs <out.html> index` (ประมาณ 5.7 MB)
-- **วิธี publish ทับลิงก์เดิม:** ต้องใส่ `url` ของลิงก์เดิมเสมอ
-  - หลัง compact เครื่องมือจำไม่ได้ว่าไฟล์ไหนเคย publish ไปที่ลิงก์ไหน
-  - ถ้าไม่ใส่ `url` จะได้ลิงก์ใหม่ (เคยเผลอได้ลิงก์ซ้ำ 2 อัน ลบไปแล้ว)
-- **หน้า prompt วาดภาพ (เก่า):** https://claude.ai/artifact/MhaaL8qZeM38uGnb3wBw2z ไม่ได้ใช้แล้ว (prompt อยู่ใน `docs/art/CHARACTER_BRIEF.md`)
+- **วิธี publish ทับลิงก์เดิม:** ต้องใส่ `url` ของลิงก์เดิมเสมอ (หลัง compact ถ้าไม่ใส่จะได้ลิงก์ใหม่)
+- **หน้า prompt วาดภาพ (เก่า):** https://claude.ai/artifact/MhaaL8qZeM38uGnb3wBw2z ไม่ได้ใช้แล้ว
 
 ## รอเจ้านาย
-1. **ลองเล่นด่านทดลองและดูแท็บ Crew แล้วให้ความเห็น** เรื่องความยาก ขนาดตัว ท่าทาง
-2. **ไม่บังคับ:** ภาพครึ่งตัวของ Talon ยังไม่ได้ส่งมา (prompt จะเตรียมไว้ในงานคืนนี้)
-- ลิงก์ซ้ำ 2 อันลบแล้วตามที่เจ้านายสั่ง
+1. **ลองเล่น Chapter 1** แล้วบอกความเห็น เรื่องความยาก ความยาวด่าน 2-3 และบทเรื่อง
+   - ด่าน 2 มีโจร 276 ตัว และด่าน 3 มี 355 ตัว (ด่าน 1 มี 128) ถ้ารู้สึกยาวไปให้ตัดเวฟได้
+2. **วาดภาพใน Codex ด้วย prompt หัวข้อ 11-14 ใน `docs/art/CHARACTER_BRIEF.md`**
+   - 11 ป้อม 4 แผ่น (`towers_<kind>.png`) ต้องเพิ่ม entry ใน `sheets.json` ตอนรับภาพ
+   - 12 แผนที่ด่าน 2 และ 3 (แนบ `art/maps/level2-sketch.png`, `level3-sketch.png`)
+   - 13 แผนที่เลือกด่าน (แนบ `art/maps/chapter1-sketch.png`)
+   - 14 ภาพครึ่งตัว Talon (proud, cry, happy ตาม `sheets.json`)
+3. **ชื่อด่าน 1** เปลี่ยนเป็น "The First Raid" แล้ว ถ้าไม่ชอบบอกได้
+4. **อารมณ์ภาพครึ่งตัว Mochi**: ใช้ชื่อ proud (ยิ้มอ้าปาก), cry (ขมวดคิ้ว), happy (หลับตายิ้ม) ตามบท แต่ brief เดิมเขียนว่า happy/determined/sleepy ถ้าอยากให้ตรง brief ให้เปลี่ยนชื่อใน `story.ts` + `sheets.json`
 
-## 🌙 แผนงานยาวข้ามคืน (เจ้านายอนุมัติแล้ว 23 ต.ค. ก่อนนอน)
-เจ้านายจะปล่อยให้รันทั้งคืนแล้วตื่นมาดูทีเดียว: **ทำต่อเนื่องโดยไม่ต้องถาม** อะไรที่ต้องรอเจ้านายตัดสินใจให้ข้ามไว้ แล้วจดลงสรุปตอนเช้า
-- **คำตอบของเจ้านาย**
-  - **Deploy:** deploy ขึ้น little-archer.vercel.app **ตอนจบงานคืนนี้** หลังทดสอบผ่านครบ แล้วเปิดลิงก์จริงตรวจ (ทั้ง `/` และ `/play.html`)
-  - **บทเรื่องราว Chapter 1:** Claude เขียนร่างเองได้เลย ตามเรื่องเดิม (Sky Haven, Sky Crystal, Captain Stormbeard, Talon, Mochi) เจ้านายแก้ทีหลัง
-  - **Subagent:** ใช้ได้เต็มที่ (เครดิตฟรีหมดอายุ 5 พ.ย.) แบ่งงานที่แยกไฟล์กันได้ให้ทำพร้อมกัน
-- **ลำดับงาน** (ติ๊กเมื่อเสร็จ, commit + push ทุกงาน)
-  - **A. Prompt ภาพให้ Codex** (เก็บใน `docs/art/CHARACTER_BRIEF.md` หัวข้อใหม่ และสรุปเป็นกล่องข้อความในข้อความตอนเช้า)
-    - [ ] A1 ป้อม 4 แบบ: ระดับ 1-3 + สายระดับ 4 อีก 2 สาย (แบบละ 5 ภาพ) สไตล์เดียวกับแผนที่
-    - [ ] A2 แผนที่ด่าน 2 และ 3 (แนบภาพร่างจาก B1)
-    - [ ] A3 แผนที่เลือกด่านของ Chapter 1
-    - [ ] A4 ภาพครึ่งตัวของ Talon
-  - **B. Chapter 1**
-    - [ ] B1 ออกแบบด่าน 2 และ 3: เส้นทาง จุดป้อม เวฟ (ศัตรูใหม่ค่อย ๆ เพิ่ม, บอสท้าย Chapter) + ภาพร่างด้วย `npm run map:sketch` + bot ปรับความยาก ด่านใช้ภาพร่างไปก่อน
-    - [ ] B2 หน้าเลือกด่าน (แผนที่ Chapter 1) แสดงดาว ปลดล็อกทีละด่าน ภาพชั่วคราวไปก่อน
-    - [ ] B3 บันทึกความคืบหน้าลงเครื่อง (localStorage, ห่อ try/catch): ด่านที่ผ่าน ดาว ความยากที่เลือก
-    - [ ] B4 ความยาก Easy/Normal/Hard (ตัวคูณเลือด/เงิน/จำนวนศัตรู ตั้งค่าเริ่มต้นเอง) + bot ยืนยันว่าแต่ละระดับเล่นผ่านได้
-    - [ ] B5 ระบบฉากเล่าเรื่อง (กล่องบทสนทนา + ภาพครึ่งตัว: hero, First Mate มีแล้ว) + บทร่าง Chapter 1 ก่อน/หลังแต่ละด่าน
-    - [ ] B6 ฉากชนะ/แพ้ที่สวยขึ้น: ดาวเด้งทีละดวง ปุ่มด่านถัดไป/เล่นใหม่/กลับหน้าเลือกด่าน
-  - **C. ขัดเกลา**
-    - [ ] C1 ไอคอนปุ่มสกิล Talon/Mochi เป็นภาพจริง (ครอปหัวจาก sprite)
-    - [ ] C2 แก้ลูกบอลข้อต่อฮีโร่ที่ศอก/เข่า (เช่น `erase` หรือลำดับการวาด)
-    - [ ] C3 ความลื่นบนมือถือตอนศัตรูเยอะ: นับ draw call/FPS แล้วปรับถ้าจำเป็น
-    - [ ] C4 ตัดภาพครึ่งตัว Mochi (3 ภาพติดกัน) และ Deckhand (ได้ 2 จาก 3) ให้ครบด้วย `boxes`
-  - **ปิดงาน**
-    - [ ] e2e เพิ่มสำหรับหน้าใหม่ (เลือกด่าน, ฉากเล่าเรื่อง) + ทดสอบครบทุกอย่าง
-    - [ ] Artifact ทั้งสองลิงก์ (ใส่ `url` เดิมเสมอ) + deploy Vercel + เปิดลิงก์จริงตรวจ
-    - [ ] อัปเดต handoff + ข้อความสรุปตอนเช้า (ภาษาไทย, ส่งของก่อน, มีบทเรียน) รวม prompt ภาพเป็นกล่องข้อความพร้อมก๊อป
-- **ข้ามไว้รอเจ้านาย:** ปรับตามความเห็นหลังลองเล่น, ใส่ภาพป้อม/แผนที่จริงที่ Codex ยังไม่วาด
-- **หมายเหตุการทำงานยาว:** stop hook บังคับ commit ทุกครั้งที่จบ turn ให้ทำงานต่อเนื่องใน turn ยาว ๆ และ commit/push เป็นระยะ
+## 🌙 แผนงานยาวข้ามคืน (23-24 ต.ค.): เสร็จครบ
+- [x] A1-A4 prompt ภาพ: หัวข้อ 11-14 ใน `docs/art/CHARACTER_BRIEF.md` และภาพร่างแผนที่เลือกด่าน (`npm run map:chapter`)
+- [x] B1 ด่าน 2-3 + ภาพร่าง + bot (`npx tsx scripts/tools/balance_bot.mts all all`)
+- [x] B2 หน้าเลือกด่าน, B3 บันทึกความคืบหน้า, B4 ความยาก 3 ระดับ, B5 ฉากเล่าเรื่อง + บทร่าง, B6 การ์ดจบด่าน
+- [x] C1 ไอคอนสกิลถ่ายจาก puppet (`src/play/snapshot.ts`)
+- [x] C2 ข้อต่อฮีโร่ (`erase` + `heal` ใน `sheets.json`, draw order แขนไกล)
+- [x] C3 รวมชิ้นส่วนเป็น draw call เดียวต่อตัว (`src/puppet/atlas.ts` + batched mode ใน `puppet.ts`) และจำกัดความละเอียดไว้ 2 เท่า
+  - วัดผล: โจร 60 ตัว ลดจากประมาณ 1,230 เหลือประมาณ 150 draw call
+  - ยังไม่ได้วัดบน iPhone จริง ให้เจ้านายเปิด `/play.html?debug` ดู
+- [x] C4 ภาพครึ่งตัว Deckhand/Mochi
+- [x] e2e + test ครบ, artifact ทั้งสอง, deploy
 
-## งานถัดไปของ Claude (หลังแผนข้ามคืน)
-- **A. Deploy `/play.html`** (ใช้ Vercel MCP `create_deployment`; เจ้านายอนุมัติให้ deploy ตอนจบงานคืนนี้)
+## งานถัดไปของ Claude
+- **พอได้ภาพจาก Codex**
+  - ป้อม: ตัดแล้วแทน `paintTower`
+  - แผนที่ด่าน 2-3: ใส่ `map.art` แล้วซ้อนกับภาพร่างเพื่อจูนจุด
+  - แผนที่เลือกด่าน: ใส่ `CHAPTER1_MAP.art`
+  - Talon portraits: `npm run art -- talon` แล้ว publish (ชื่อ proud/cry/happy ตรงกับ `story.ts` แล้ว)
+- **ไอเดียที่ยังไม่ได้ทำ (รอเจ้านายเลือก)**
+  - เพลงประกอบ (มีไฟล์เพลงเดิมใน `public/audio/music_*.mp3` แต่ยังไม่ได้ใช้) + ปุ่มปิดเสียง
+  - ฉาก Stormbeard ตัวจริง (ต้องวาดตัวละครใหม่)
+  - เฟสถัดไปตามแผนเดิม: เกาะ Sky Haven (Idle) + Hunt
+- **Deploy ครั้งถัดไป:** Vercel MCP `create_deployment`
   - `project`: `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`
-  - teamId/slug: `cat-team5`
+  - slug: `cat-team5`
   - `target`: `production`
   - `gitSource`: `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`
-  - รอ READY แล้วเปิด `little-archer.vercel.app/play.html` และหน้าแรกเพื่อยืนยัน
-- **B. ตัวเลือกที่เสนอเจ้านายไว้ (ยังไม่ได้สั่ง)**
-  - Prompt ภาพป้อม 4 แบบพร้อมสายระดับ 4 (ส่งเป็นกล่องข้อความในแชตให้ก๊อปไป Codex)
-  - เฟส 2: Chapter 1
-    - ฉากเล่าเรื่อง, แผนที่เลือกด่าน, ด่าน 2-3, ความยาก 3 ระดับ
-    - ต้องทำภาพร่างแผนที่ด่าน 2-3 ด้วย `npm run map:sketch` แล้วให้ Codex วาด
-  - ไอคอนปุ่มสกิล Talon/Mochi ยังเป็นภาพวาดด้วยโค้ด เปลี่ยนเป็นภาพจริงได้
 
 ### ขั้นตอนทำตัวละครใหม่ (ใช้กับ 7 ตัวแล้ว)
 1. **รับภาพ**
@@ -125,20 +127,26 @@
   - ศัตรู/ป้อม/ฮีโร่/สกิล อยู่ใน `src/td/units.ts`; ด่านใน `src/td/levels.ts`; การ์ดใน `src/td/cards.ts`
   - ศัตรู: deckhand hp 65, powderMonkey 35, ironclad 140 (เกราะ 50%), parrot 42 (บิน), firstMate 1000 (เกราะ 30%)
   - Talon คูลดาวน์ 20 วินาที; Mochi รอครั้งแรก 25 วินาที คูลดาวน์ 60 วินาที ดาเมจ 50
-  - ด่าน 1: เงิน 220, คริสตัล 20, 8 เวฟ, `ordersAfter: [2, 4, 6]`
-- **ความยาก** (`scripts/tools/balance_bot.mts` 6 seed): 8 ป้อมได้ 3 ดาวเกือบทุกรอบ, 4 ป้อม 1-3 ดาว, ปืนใหญ่ล้วน 1 ดาว, ฮีโร่คนเดียวแพ้
+  - ด่าน 1: เงิน 220, 8 เวฟ; ด่าน 2: เงิน 260, 8 เวฟ; ด่าน 3: เงิน 340, 10 เวฟ (คริสตัล 20 ทุกด่าน)
+- **ผล bot** (6 seed, bot ไม่ขยับฮีโร่และไม่ใช้สกิล)
+  - Normal: ป้อมผสม + อัปเกรด ได้ 3 ดาวทุกด่าน; ป้อมชนิดเดียวลำบากตั้งแต่ด่าน 2; ฮีโร่คนเดียวแพ้
+  - Hard: ป้อมผสมชนะทุกด่าน ส่วนใหญ่ 2 ดาว
+  - Easy: สร้างครึ่งเดียวอัปเกรดครั้งเดียวก็ชนะ
 - **build ไฟล์เดียว:** `scripts/build-showcase.mjs <out> [index|play]`
   - แปลงภาพเป็น WebP; หน้า play ย่อภาพลงครึ่งหนึ่ง (เกมวาดตัวละครเล็ก) จากเดิม 9.7 MB เหลือ 3.9 MB ทั้งที่มีตัวละครครบ
   - ไฟล์ PNG ใน `public/sprites/` (ที่ Vercel ใช้) ไม่ถูกแตะ
 - **การทดสอบ**
   - คำสั่ง: `npm run typecheck`, `npx vitest run`, `PW_CHROMIUM=/opt/pw-browsers/chromium npx playwright test`, `npm run build`
+  - หน้า play เปิดที่แผนที่เลือกด่าน; test/ภาพหน้าจอที่อยากเข้าด่านตรง ๆ ใช้ `?level=level1` (`&story=1`, `&difficulty=hard`)
+  - `__play` มี `startLevel(id)`, `showChapter()`, `progress`, `perf`, `level`, `difficulty`
+  - ชนะทันทีเพื่อทดสอบ: `b.callWave(); b.waves.wave = b.waves.waves.length-1; b.waves.queue=[]; b.enemies=[]`
   - ปุ่ม `#call` เต้นอยู่ ใน Playwright ต้องใช้ `click({force:true})`
   - ภาพหน้าจอด่านทดลอง: `node scripts/tools/playshot.mjs <prefix> "<query>" "<js>" <ms,...>`
     - ใน js ใช้ `__play.battle` ได้ เช่น `callWave()`, `spawn('ironclad')` (private ใน TS แต่เรียกได้), `useTalon()`
     - `__play.companions` ดู Talon/Mochi บนจอ
   - เครื่องมือถ่ายภาพปิด live reload แล้ว (เดิมหน้าเว็บรีโหลดกลางคันเวลามีคนแก้ไฟล์)
 - **ข้อจำกัดที่รู้แล้ว**
-  - ลูกบอลข้อต่อของฮีโร่ที่ศอกและเข่ายังเห็นนิดหน่อย
+  - ฮีโร่: ต้นขากว้างกว่าเข่านิดหน่อย มีรอยหยักเล็ก ๆ ตรงเข่า
   - แต่ละตัวมีข้อบกพร่องเล็กน้อยตามรายงานของ subagent (เช่น รอยต่อหางวาฬตอนสะบัดแรง, ขาบอสเหยียดตรงชั่วครู่ตอนล้ม) มองแทบไม่เห็นที่ขนาดในเกม
   - มีไฟล์ `/ov_far.png` ที่ subagent เผลอสร้างไว้ที่ root ของเครื่องชั่วคราว ระบบไม่ให้ลบเอง ไม่มีผลกับโปรเจกต์
 
@@ -148,7 +156,7 @@
   - ภาษาไทยปนศัพท์เทคนิค
   - ส่งงานก่อนแล้วค่อยอธิบาย
   - อธิบายแบบคนที่ไม่ใช่สาย dev
-  - มี "📚 บทเรียนที่ N" ซึ่งถึง **34** แล้ว (ข้อต่อไปคือ 35)
+  - มี "📚 บทเรียนที่ N" ซึ่งถึง **36** แล้ว (ข้อต่อไปคือ 37)
 - **checkpoint:** เมื่อถึงจุดที่หยุดได้ให้บอกก่อน เพราะเจ้านายจะสั่ง handoff แล้ว compact
 - **งานภาพ:** Codex เป็น account กลางที่**ไม่ได้เชื่อม GitHub** ใช้เป็นแชตธรรมดา
   - ส่ง prompt เป็นกล่องข้อความในแชตให้ก๊อปวาง (ไม่ต้องใช้ Artifact)

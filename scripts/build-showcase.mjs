@@ -9,7 +9,7 @@ import { join } from 'node:path';
 
 const out = process.argv[2] ?? 'sky-pirates-cast.html';
 const pageName = process.argv[3] ?? 'index';
-const TITLES = { index: 'Sky Pirates Cast', play: 'Sky Pirates Test Battle' };
+const TITLES = { index: 'Sky Pirates Cast', play: 'Sky Pirates Chapter 1' };
 const outDir = mkdtempSync(join(tmpdir(), 'showcase-'));
 await build({
   configFile: false,
