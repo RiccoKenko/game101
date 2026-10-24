@@ -3,8 +3,8 @@ import { PASSIVES, WEAPONS } from '../config/weapons';
 import { type Choice, type Inventory } from '../core/progression';
 import { buildRows } from '../ui/build';
 import { safeInsets } from '../ui/safe';
-import { COLORS, CSS } from '../ui/theme';
-import { dimmer, drawPanel, text } from '../ui/widgets';
+import { COLORS, CSS, hex, lighten, PARCHMENT, rgba, shade } from '../ui/theme';
+import { dimmer, gradientText, medalTexture, panel, panelTexture, ribbon, roundRect, text, uiTexture, vGradient } from '../ui/widgets';
 
 interface LevelUpData {
   choices: Choice[];
@@ -28,24 +28,20 @@ export function describeChoice(c: Choice): { icon: string; name: string; tag: st
   return { icon: 'meat', name: 'Roast Meat', tag: '', desc: 'Restore 30% of your HP', color: COLORS.red };
 }
 
-/** A tappable upgrade card: icon on the left, name + tag + description on the right. */
+/** A tappable upgrade card on parchment: medallion icon on the left, name + tag + description on the right. */
 export function choiceCard(scene: Phaser.Scene, x: number, y: number, w: number, h: number, c: Choice): Phaser.GameObjects.Container {
   const info = describeChoice(c);
   const card = scene.add.container(x, y);
-  const g = scene.add.graphics();
-  drawPanel(g, -w / 2, -h / 2, w, h, COLORS.cream, 30);
-  const ix = -w / 2 + 120;
-  g.fillStyle(COLORS.outline, 1);
-  g.fillCircle(ix, -4, 92);
-  g.fillStyle(info.color, 1);
-  g.fillCircle(ix, -4, 84);
-  g.fillStyle(0xffffff, 0.25);
-  g.fillCircle(ix - 20, -30, 34);
-  const icon = scene.add.image(ix, -4, info.icon).setDisplaySize(130, 130);
-  const tx = ix + 120;
-  const name = text(scene, tx, -h / 2 + 50, info.name, 50, { color: CSS.dark, stroke: false, originX: 0 });
-  const desc = text(scene, tx, -h / 2 + 92, info.desc, 34, {
-    color: '#5a4a6e',
+  const bg = scene.add.image(0, 0, panelTexture(scene, w, h, { style: 'parchment', radius: 24 }));
+  const d = Math.min(176, h - 64);
+  const ix = -w / 2 + 34 + d / 2;
+  const medal = scene.add.image(ix, 0, medalTexture(scene, d, info.color));
+  const icon = scene.add.image(ix, -2, info.icon).setDisplaySize(d * 0.72, d * 0.72);
+  const tx = ix + d / 2 + 34;
+  const name = text(scene, tx, -h / 2 + 52, info.name, 50, { color: CSS.ink, stroke: false, originX: 0 });
+  const rule = scene.add.image(tx - 4, -h / 2 + 88, ruleTexture(scene, w / 2 - tx - 30)).setOrigin(0, 0.5);
+  const desc = text(scene, tx, -h / 2 + 100, info.desc, 34, {
+    color: CSS.inkSoft,
     stroke: false,
     weight: '600',
     originX: 0,
@@ -53,14 +49,45 @@ export function choiceCard(scene: Phaser.Scene, x: number, y: number, w: number,
     align: 'left',
     wrap: w / 2 - tx - 30,
   });
-  card.add([g, icon, name, desc]);
+  card.add([bg, medal, icon, name, rule, desc]);
   if (info.tag) {
     const isNew = info.tag === 'NEW!';
-    const tag = text(scene, w / 2 - 36, -h / 2 + 46, info.tag, 36, { originX: 1, color: isNew ? '#7dff8a' : '#9fd3ff' });
-    card.add(tag);
+    const tw = isNew ? 132 : 112;
+    const tagX = w / 2 - 30 - tw / 2;
+    const tagY = -h / 2 + 50;
+    const pill = scene.add.image(tagX, tagY, tagTexture(scene, tw, 54, isNew ? COLORS.green : COLORS.blue));
+    const tag = text(scene, tagX, tagY, info.tag, 30, { strokeColor: isNew ? '#174d14' : '#123a6b', shadow: false });
+    card.add([pill, tag]);
   }
   card.setSize(w, h);
   return card;
+}
+
+/** Small glossy capsule for card tags. */
+function tagTexture(scene: Phaser.Scene, w: number, h: number, color: number): string {
+  return uiTexture(scene, `tag_${w}x${h}_${color.toString(16)}`, w + 6, h + 6, (ctx) => {
+    roundRect(ctx, 3, 3, w, h, h / 2);
+    ctx.fillStyle = rgba(PARCHMENT.rim, 1);
+    ctx.fill();
+    roundRect(ctx, 5.5, 5.5, w - 5, h - 5, h / 2 - 2.5);
+    ctx.fillStyle = vGradient(ctx, 5, h, ['#fff1c4', '#c9973e']);
+    ctx.fill();
+    roundRect(ctx, 8, 8, w - 10, h - 10, h / 2 - 5);
+    ctx.fillStyle = vGradient(ctx, 8, h - 2, [hex(lighten(color, 0.3)), hex(color), hex(shade(color, 0.72))]);
+    ctx.fill();
+  });
+}
+
+/** Faded brown rule under a card title. */
+function ruleTexture(scene: Phaser.Scene, w: number): string {
+  w = Math.max(40, Math.round(w));
+  return uiTexture(scene, `rule_${w}`, w, 4, (ctx) => {
+    const g = ctx.createLinearGradient(0, 0, w, 0);
+    g.addColorStop(0, rgba(PARCHMENT.rule, 0.75));
+    g.addColorStop(1, rgba(PARCHMENT.rule, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 1, w, 2);
+  });
 }
 
 export class LevelUpScene extends Phaser.Scene {
@@ -83,15 +110,16 @@ export class LevelUpScene extends Phaser.Scene {
     const { top, bottom } = safeInsets(this);
     dimmer(this, 0.7);
     const usable = height - top - bottom;
-    const titleY = top + usable * 0.13;
-    const title = text(this, width / 2, titleY, 'LEVEL UP!', 110, { color: CSS.gold });
+    const titleY = top + Math.max(120, usable * 0.11);
+    const title = gradientText(text(this, width / 2, titleY, 'LEVEL UP!', 112, { strokeColor: '#2a1606' }));
     this.tweens.add({ targets: title, scale: { from: 0.5, to: 1 }, duration: 350, ease: 'Back.easeOut' });
-    text(this, width / 2, titleY + 100, `Level ${this.data_.level} · choose one`, 44);
+    ribbon(this, width / 2, titleY + 104, 640, 78);
+    text(this, width / 2, titleY + 102, `Level ${this.data_.level} · choose one`, 40, { color: CSS.cream });
 
     const cardW = 960;
-    const cardH = 270;
-    const gap = 46;
-    const startY = titleY + 190 + cardH / 2;
+    const cardH = 264;
+    const gap = 34;
+    const startY = titleY + 196 + cardH / 2;
     this.data_.choices.forEach((c, i) => {
       const card = choiceCard(this, width / 2, startY + i * (cardH + gap), cardW, cardH, c);
       card.setInteractive({ useHandCursor: true });
@@ -107,13 +135,18 @@ export class LevelUpScene extends Phaser.Scene {
       this.tweens.add({ targets: card, alpha: 1, scale: 1, delay: 80 + i * 90, duration: 260, ease: 'Back.easeOut' });
     });
 
-    const rowsY = startY + 3 * (cardH + gap) - cardH / 2 + 10;
-    if (rowsY + 160 < height - bottom) {
-      text(this, width / 2, rowsY, 'Your gear', 38, { color: '#d9ccff' });
-      const size = 70;
-      const count = Math.max(this.data_.inventory.weapons.length, this.data_.inventory.passives.length);
+    // Current gear in a small window under the cards, when there is room.
+    const inv = this.data_.inventory;
+    const size = 70;
+    const gearRows = inv.passives.length > 0 ? 2 : 1;
+    const gearH = 84 + gearRows * (size + 14);
+    const gearTop = startY + 3 * (cardH + gap) - cardH / 2 - gap + 30;
+    if (gearTop + gearH < height - bottom - 20) {
+      const count = Math.max(inv.weapons.length, inv.passives.length);
       const rowW = count * (size + 10) - 10;
-      buildRows(this, width / 2 - rowW / 2, rowsY + 40, this.data_.inventory, size, 10);
+      panel(this, width / 2, gearTop + gearH / 2, Math.max(rowW + 120, 520), gearH, { header: 62 });
+      text(this, width / 2, gearTop + 32, 'Your gear', 34, { color: CSS.gold });
+      buildRows(this, width / 2 - rowW / 2, gearTop + 80, inv, size, 10);
     }
     // Ignore the tap that may still be in flight from steering.
     this.time.delayedCall(380, () => (this.ready = true));

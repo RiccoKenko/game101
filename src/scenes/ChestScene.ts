@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { EVOLUTIONS } from '../config/weapons';
 import { safeInsets } from '../ui/safe';
 import { COLORS, CSS } from '../ui/theme';
-import { Button, dimmer, text } from '../ui/widgets';
+import { Button, dimmer, gradientText, panel, text } from '../ui/widgets';
 import { type ChestReward } from './GameScene';
 import { choiceCard } from './LevelUpScene';
 
@@ -28,7 +28,7 @@ export class ChestScene extends Phaser.Scene {
     const { top, bottom } = safeInsets(this);
     dimmer(this, 0.75);
     const cy = top + (height - top - bottom) * 0.42;
-    text(this, width / 2, top + 170, 'TREASURE!', 110, { color: CSS.gold });
+    gradientText(text(this, width / 2, top + 170, 'TREASURE!', 110, { strokeColor: '#2a1606' }));
 
     const glow = this.add.image(width / 2, cy, 'aura').setDisplaySize(620, 620).setAlpha(0);
     const chest = this.add.image(width / 2, cy, 'chest').setScale(3);
@@ -48,14 +48,15 @@ export class ChestScene extends Phaser.Scene {
     let y = cy;
     if (r.kind === 'evolution') {
       const evo = EVOLUTIONS[r.evolution];
-      const icon = this.add.image(width / 2, cy, evo.icon).setDisplaySize(260, 260);
+      const icon = this.add.image(width / 2, cy - 20, evo.icon).setDisplaySize(260, 260);
       const full = icon.scale;
       icon.setScale(0);
       this.tweens.add({ targets: icon, scale: full, duration: 400, ease: 'Back.easeOut' });
-      text(this, width / 2, cy + 190, 'EVOLUTION!', 64, { color: '#7dff8a' });
-      text(this, width / 2, cy + 270, evo.name, 60, { color: CSS.gold });
-      text(this, width / 2, cy + 350, evo.description, 38, { wrap: width - 160 });
-      y = cy + 420;
+      panel(this, width / 2, cy + 300, 920, 300, { gem: true });
+      gradientText(text(this, width / 2, cy + 196, 'EVOLUTION!', 60, { strokeColor: '#0d3a10' }), ['#f4ffe8', '#9cf58a', '#3fbf3a']);
+      text(this, width / 2, cy + 280, evo.name, 58, { color: CSS.gold });
+      text(this, width / 2, cy + 370, evo.description, 36, { color: CSS.cream, wrap: 820, shadow: false });
+      y = cy + 460;
     } else {
       const h = 230;
       const startY = cy - ((r.choices.length - 1) * (h + 30)) / 2;
@@ -66,8 +67,9 @@ export class ChestScene extends Phaser.Scene {
       y = startY + (r.choices.length - 1) * (h + 30) + h / 2 + 40;
     }
     const goldY = Math.min(y + 40, height - bottom - 300);
+    panel(this, width / 2, goldY, 400, 92, { radius: 46 });
     this.add.image(width / 2 - 110, goldY, 'icon_coin').setDisplaySize(70, 70);
-    text(this, width / 2 - 60, goldY, `+${this.data_.gold} gold`, 54, { color: CSS.gold, originX: 0 });
+    text(this, width / 2 - 60, goldY + 1, `+${this.data_.gold} gold`, 52, { color: CSS.gold, originX: 0 });
     const btn = new Button(this, width / 2, height - bottom - 150, {
       w: 560,
       h: 140,

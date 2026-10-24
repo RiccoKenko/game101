@@ -4,7 +4,7 @@ import { MAPS } from '../config/maps';
 import { formatTime } from '../core/format';
 import { safeInsets } from '../ui/safe';
 import { COLORS, CSS } from '../ui/theme';
-import { Button, dimmer, panel, text } from '../ui/widgets';
+import { Button, dimmer, dividerTexture, gradientText, panel, text } from '../ui/widgets';
 import { type RunSummary } from './GameScene';
 
 export class GameOverScene extends Phaser.Scene {
@@ -25,12 +25,16 @@ export class GameOverScene extends Phaser.Scene {
     dimmer(this, 0.78);
     const cy = top + (height - top - bottom) * 0.46;
     const title = s.quit ? 'RUN ENDED' : s.bossesKilled > 0 ? 'WELL FOUGHT!' : 'GAME OVER';
-    const t = text(this, width / 2, cy - 640, title, 104, { color: s.quit || s.bossesKilled > 0 ? CSS.gold : '#ff7a7a' });
+    const good = s.quit || s.bossesKilled > 0;
+    const t = gradientText(
+      text(this, width / 2, cy - 640, title, 104, { strokeColor: good ? '#2a1606' : '#3a0610' }),
+      good ? undefined : ['#fff0ea', '#ff9a8a', '#e0443e', '#a8202a'],
+    );
     t.setScale(0.4);
     this.tweens.add({ targets: t, scale: 1, duration: 420, ease: 'Back.easeOut' });
 
-    panel(this, width / 2, cy - 40, 900, 1000);
-    text(this, width / 2, cy - 470, MAPS[s.mapIndex].name, 48, { color: CSS.dark, stroke: false });
+    panel(this, width / 2, cy - 40, 900, 1000, { header: 112, gem: true });
+    text(this, width / 2, cy - 484, MAPS[s.mapIndex].name, 48, { color: CSS.gold });
 
     const rows: [string, string, string?][] = [
       ['Time survived', formatTime(s.time), s.newBest ? 'NEW BEST!' : `Best ${formatTime(s.bestTime)}`],
@@ -41,16 +45,14 @@ export class GameOverScene extends Phaser.Scene {
     ];
     rows.forEach(([label, value, note], i) => {
       const y = cy - 360 + i * 115;
-      text(this, width / 2 - 390, y, label, 42, { color: '#5a4a6e', stroke: false, weight: '600', originX: 0 });
-      text(this, width / 2 + 390, y, value, 48, { color: CSS.dark, stroke: false, originX: 1 });
+      text(this, width / 2 - 390, y, label, 40, { color: CSS.soft, weight: '600', originX: 0, shadow: false, stroke: false });
+      text(this, width / 2 + 390, y, value, 48, { color: CSS.cream, originX: 1 });
       if (note) {
-        const n = text(this, width / 2 + 390, y + 46, note, 30, { color: s.newBest ? CSS.green : CSS.muted, stroke: false, originX: 1 });
+        const n = text(this, width / 2 + 390, y + 46, note, 30, { color: s.newBest ? CSS.green : CSS.muted, stroke: s.newBest, originX: 1 });
         if (s.newBest) this.tweens.add({ targets: n, scale: 1.12, duration: 400, yoyo: true, repeat: -1 });
       }
     });
-    const g = this.add.graphics();
-    g.fillStyle(COLORS.outline, 0.15);
-    g.fillRect(width / 2 - 400, cy + 220, 800, 4);
+    this.add.image(width / 2, cy + 220, dividerTexture(this, 800));
     this.add.image(width / 2 - 200, cy + 300, 'icon_coin').setDisplaySize(84, 84);
     const total = text(this, width / 2 - 140, cy + 300, '+0', 76, { color: CSS.gold, originX: 0 });
     this.tweens.addCounter({
@@ -63,7 +65,7 @@ export class GameOverScene extends Phaser.Scene {
     if (s.total > 0) this.time.delayedCall(1250, () => audio.sfx('coin'));
 
     if (s.unlockedMap !== null) {
-      const u = text(this, width / 2, cy + 520, `New map unlocked:\n${MAPS[s.unlockedMap].name}!`, 50, { color: '#7dff8a' });
+      const u = text(this, width / 2, cy + 520, `New map unlocked:\n${MAPS[s.unlockedMap].name}!`, 50, { color: CSS.green });
       this.tweens.add({ targets: u, scale: 1.08, duration: 500, yoyo: true, repeat: -1 });
     }
 
