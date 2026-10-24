@@ -12,7 +12,20 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { seamless } from './seamless';
-import { cropPiece, despeck, findPieces, groupByBoxes, groupPieces, orderPieces, removeBackground, type Box, type Piece, type RgbaImage } from './slicer';
+import {
+  cropPiece,
+  despeck,
+  findPieces,
+  groupByBoxes,
+  groupPieces,
+  orderPieces,
+  removeBackground,
+  unmixSpill,
+  type Box,
+  type Piece,
+  type Rgb,
+  type RgbaImage,
+} from './slicer';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const IN = join(ROOT, 'art/incoming/mr');
@@ -31,6 +44,8 @@ interface SheetConfig {
   tolerance?: number;
   /** Drop leftover specks smaller than this many pixels. */
   despeck?: number;
+  /** Background colour left in the art's gaps (a ragged robe), recoloured to this colour (see unmixSpill). */
+  spill?: { colour: Rgb; everywhere?: boolean };
   /** Rectangles [x, y, w, h] in sheet pixels to clear first (things drawn that the game does by itself). */
   erase?: [number, number, number, number][];
   /** Ground texture: the key and the size in px of the seamless tile it becomes. */
@@ -73,7 +88,9 @@ async function cutSheet(name: string, cfg: SheetConfig): Promise<string[]> {
     return [cfg.tile.key];
   }
 
-  let { image } = removeBackground(sheet, cfg.tolerance);
+  const removed = removeBackground(sheet, cfg.tolerance);
+  let { image } = removed;
+  if (cfg.spill && removed.background) image = unmixSpill(image, removed.background, cfg.spill.colour, 48, cfg.spill.everywhere);
   for (const [x0, y0, w, h] of cfg.erase ?? [])
     for (let y = y0; y < y0 + h; y++) image.data.fill(0, (y * image.width + x0) * 4, (y * image.width + x0 + w) * 4);
   if (cfg.despeck) image = despeck(image, cfg.despeck);

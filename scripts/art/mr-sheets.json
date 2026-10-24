@@ -4,6 +4,7 @@
     "sizes": { "slime_0": [108, 92], "bat_0": [124, 96], "mushroom_0": [104, 120], "boss_slime": [340, 300] }
   },
   "monsters_graveyard": {
+    "spill": { "colour": [38, 78, 80], "everywhere": true },
     "keys": ["skeleton_0", "ghost_0", "zombie_0", "boss_lich"],
     "sizes": { "skeleton_0": [108, 136], "ghost_0": [108, 124], "zombie_0": [112, 140], "boss_lich": [300, 370] }
   },
