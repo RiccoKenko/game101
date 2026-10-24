@@ -50,6 +50,8 @@ interface SheetConfig {
   erase?: [number, number, number, number][];
   /** Ground texture: the key and the size in px of the seamless tile it becomes. */
   tile?: { key: string; size: number };
+  /** Parts drawn facing the wrong way (a projectile must point right): mirrored left to right. */
+  flip?: string[];
 }
 
 async function load(file: string): Promise<RgbaImage> {
@@ -117,10 +119,9 @@ async function cutSheet(name: string, cfg: SheetConfig): Promise<string[]> {
       continue;
     }
     const [w, h] = cfg.sizes?.[key] ?? [96, 96];
-    const png = await toSharp(cropPiece(image, labels, part, 2))
-      .resize(w, h, { fit: 'inside', kernel: 'lanczos3' })
-      .png()
-      .toBuffer();
+    let piece = toSharp(cropPiece(image, labels, part, 2)).resize(w, h, { fit: 'inside', kernel: 'lanczos3' });
+    if (cfg.flip?.includes(key)) piece = piece.flop();
+    const png = await piece.png().toBuffer();
     await sharp(png).webp({ quality: 92, alphaQuality: 100 }).toFile(join(OUT, `${key}.webp`));
     written.push(key);
     thumbs.push({ input: png, left: x, top: 16 });

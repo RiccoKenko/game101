@@ -24,6 +24,7 @@ describe('level-up choices', () => {
     const inv: Inventory = {
       weapons: WEAPON_IDS.slice(0, MAX_WEAPONS).map((id) => ({ id, level: 1, evolved: null })),
       passives: PASSIVE_IDS.slice(0, MAX_PASSIVES).map((id) => ({ id, level: 1 })),
+      banned: [],
     };
     for (let seed = 0; seed < 50; seed++) {
       for (const c of rollChoices(inv, mulberry32(seed))) {
@@ -42,6 +43,7 @@ describe('level-up choices', () => {
         { id: 'boots', level: 5 },
         { id: 'tome', level: 5 },
       ],
+      banned: [],
     };
     expect(rollChoices(inv, mulberry32(3)).map((c) => c.kind)).toEqual(['gold', 'heal']);
   });
@@ -80,6 +82,7 @@ describe('evolutions', () => {
         { id: 'boomerang', level: 5, evolved: null },
       ],
       passives: PASSIVE_IDS.slice(0, 4).map((id) => ({ id, level: 1 })),
+      banned: [],
     };
     expect(evolvableWeapons(inv)).toEqual([]);
   });

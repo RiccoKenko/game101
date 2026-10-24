@@ -25,7 +25,11 @@ export interface OwnedPassive {
 export interface Inventory {
   weapons: OwnedWeapon[];
   passives: OwnedPassive[];
+  /** Never offered this run: other heroes' own weapons, and anything banished (keys like 'weapon:bow'). */
+  banned: string[];
 }
+
+export const choiceKey = (c: Choice): string => (c.kind === 'weapon' || c.kind === 'passive' ? `${c.kind}:${c.id}` : c.kind);
 
 export type Choice =
   | { kind: 'weapon'; id: WeaponId; level: number }
@@ -41,8 +45,8 @@ export function xpToNext(level: number): number {
 }
 
 /** A run's starting kit: the hero's own weapon at level 1. */
-export function newInventory(start: WeaponId = 'bow'): Inventory {
-  return { weapons: [{ id: start, level: 1, evolved: null }], passives: [] };
+export function newInventory(start: WeaponId = 'bow', banned: string[] = []): Inventory {
+  return { weapons: [{ id: start, level: 1, evolved: null }], passives: [], banned: [...banned] };
 }
 
 export function passiveLevels(inv: Inventory): Partial<Record<PassiveId, number>> {
@@ -70,7 +74,7 @@ function upgradePool(inv: Inventory): { item: Choice; weight: number }[] {
       if (!inv.passives.some((p) => p.id === id)) pool.push({ item: { kind: 'passive', id, level: 1 }, weight: 0.8 });
     }
   }
-  return pool;
+  return pool.filter((p) => !inv.banned.includes(choiceKey(p.item)));
 }
 
 /** Picks up to `count` distinct level-up choices; tops up with gold/heal when everything is maxed. */

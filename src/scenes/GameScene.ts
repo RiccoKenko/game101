@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
-import { characterDef, type CharacterDef, type CharacterId } from '../config/characters';
+import { CHARACTERS, characterDef, type CharacterDef, type CharacterId } from '../config/characters';
 import { BOSSES } from '../config/enemies';
 import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS } from '../config/game';
 import { MAPS, type MapDef } from '../config/maps';
@@ -150,7 +150,8 @@ export class GameScene extends Phaser.Scene {
     this.rng = mulberry32(DEBUG.seed || Date.now() >>> 0);
     this.world = new World(this, this.map);
     const hero = (this.hero = characterDef((DEBUG.hero || saveStore.data.character) as CharacterId));
-    const inventory = newInventory(hero.start);
+    // Each hero's own weapon belongs to that hero: the others are never offered it.
+    const inventory = newInventory(hero.start, CHARACTERS.filter((c) => c.start !== hero.start).map((c) => `weapon:${c.start}`));
     for (const g of DEBUG.give) {
       const evo = EVOLUTIONS[g as EvolutionId];
       const id = (evo ? evo.base : g.replace(/\d+$/, '')) as WeaponId;

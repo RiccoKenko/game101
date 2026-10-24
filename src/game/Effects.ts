@@ -202,6 +202,17 @@ export class Effects {
     this.stars.explode(count, x, y);
   }
 
+  /**
+   * A spell going off: a flash at the hand or crystal, a quick ring, a few sparkles, and a glowing circle on
+   * the ground under the caster.
+   */
+  cast(x: number, y: number, feetX: number, feetY: number, color: number): void {
+    this.glow(x, y, 24, 120, color, 0.22, 0.85);
+    this.ring(x, y, 70, color, 'ring', 35, 260);
+    this.sparkle(x, y, 4, 0xffffff);
+    this.decal('ring', feetX, feetY, 170, 64, color, 0.75, 0.35);
+  }
+
   /** Expanding ring, e.g. for boss summons or revive blasts. */
   ring(x: number, y: number, radius: number, color: number, texture = 'ring', depth = 35, dur = 420): void {
     const img = this.scene.add.image(x, y, texture).setTint(color).setDepth(depth).setScale(0.2).setAlpha(0.9);

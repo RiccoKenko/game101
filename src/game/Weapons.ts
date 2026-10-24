@@ -285,7 +285,8 @@ export class WeaponSystem {
           p.target = targets.length ? targets[i % targets.length] : null;
           p.life = 2;
         }
-        this.ctx.fx.muzzle(from.x, from.y, 0x8fd8ff);
+        if (player.primary === 'bolt') this.ctx.fx.cast(from.x, from.y, player.x, player.y + 42, 0x8fd8ff);
+        else this.ctx.fx.muzzle(from.x, from.y, 0x8fd8ff);
         audio.sfx('zap', 0.6);
         break;
       }
@@ -509,7 +510,10 @@ export class WeaponSystem {
     p.pierce = s.pierce;
     p.radius = radius;
     p.life = 1.4;
-    p.sprite.setRotation(angle).setScale(kind === 'arrow' ? Math.max(1, s.area * 0.9) : 1);
+    // Attack area (Spell Tome, the mage's perk) makes projectiles bigger as well as hitting wider.
+    p.area = s.area;
+    p.sprite.setRotation(angle).setScale(Math.max(kind === 'arrow' ? 1 : 0.8, s.area * (kind === 'arrow' ? 0.9 : 1)));
+    if (p.trail.visible) p.trail.displayHeight *= Math.max(1, s.area);
     return p;
   }
 
@@ -633,6 +637,9 @@ export class WeaponSystem {
       }
 
       if (p.kind === 'bolt') {
+        // A shimmering orb that leaves sparkles behind.
+        p.sprite.setScale(p.area * (1 + 0.14 * Math.sin(p.age * 32)));
+        if (Math.random() < dt * 22) this.ctx.fx.sparkle(p.x, p.y, 1, Math.random() < 0.5 ? 0xffffff : 0x8fd8ff);
         // Steer toward the target; if it died, find the next one nearby.
         if (!p.target || !p.target.active) p.target = enemies.nearest(p.x, p.y, 600);
         if (p.target) {
@@ -686,6 +693,10 @@ export class WeaponSystem {
         p.hits.set(e.uid, p.kind === 'boomerang' ? this.clock + 0.35 : Infinity);
         enemies.damage(e, p.damage, p.x - p.vx * 0.05, p.y - p.vy * 0.05, p.kind === 'boomerang' ? 0.6 : p.kind === 'shard' ? 0.4 : 1);
         this.ctx.fx.sparksAt(p.x, p.y, 3, p.kind === 'shard' ? 0xd4f4ff : p.kind === 'bolt' ? 0x8fd8ff : e.color);
+        if (p.kind === 'bolt') {
+          this.ctx.fx.ring(p.x, p.y, 46 * p.area, 0x8fd8ff, 'ring', 35, 240);
+          this.ctx.fx.sparkle(p.x, p.y, 2, 0xffffff);
+        }
         if (p.kind === 'shard') e.slow = Math.max(e.slow, 1.6);
         if (p.kind !== 'boomerang') {
           p.pierce--;

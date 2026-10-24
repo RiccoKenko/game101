@@ -120,13 +120,25 @@ export class LevelUpScene extends Phaser.Scene {
     const cardH = 264;
     const gap = 34;
     const startY = titleY + 196 + cardH / 2;
+    // A card is picked only when the finger goes down and comes up on it: sliding off a card cancels.
+    let pressed: Phaser.GameObjects.Container | null = null;
+    this.input.on('pointerup', () => (pressed = null));
     this.data_.choices.forEach((c, i) => {
       const card = choiceCard(this, width / 2, startY + i * (cardH + gap), cardW, cardH, c);
       card.setInteractive({ useHandCursor: true });
-      card.on('pointerdown', () => this.ready && card.setScale(0.97));
-      card.on('pointerout', () => card.setScale(1));
+      card.on('pointerdown', () => {
+        if (!this.ready) return;
+        pressed = card;
+        card.setScale(0.97);
+      });
+      card.on('pointerout', () => {
+        card.setScale(1);
+        if (pressed === card) pressed = null;
+      });
       card.on('pointerup', () => {
         card.setScale(1);
+        if (pressed !== card) return;
+        pressed = null;
         if (!this.ready || this.picked) return;
         this.picked = true;
         this.data_.onPick(c);

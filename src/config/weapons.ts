@@ -272,7 +272,7 @@ export const PASSIVES: Record<PassiveId, PassiveDef> = {
   hourglass: { id: 'hourglass', name: 'Hourglass', icon: 'icon_hourglass', description: 'Attack cooldown -8%', maxLevel: 5, perLevel: 0.08 },
   quiver: { id: 'quiver', name: 'Quiver', icon: 'icon_quiver', description: '+1 projectile for all weapons', maxLevel: 2, perLevel: 1 },
   magnet: { id: 'magnet', name: 'Magnet', icon: 'icon_magnet', description: 'Pickup range +30%', maxLevel: 5, perLevel: 0.3 },
-  tome: { id: 'tome', name: 'Spell Tome', icon: 'icon_tome', description: 'Attack area +10%', maxLevel: 5, perLevel: 0.1 },
+  tome: { id: 'tome', name: 'Spell Tome', icon: 'icon_tome', description: 'Attack area +10%: bigger projectiles, blasts, slashes, puddles and auras', maxLevel: 5, perLevel: 0.1 },
 };
 
 export const WEAPON_IDS = Object.keys(WEAPONS) as WeaponId[];

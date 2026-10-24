@@ -74,6 +74,9 @@ export class Enemy {
 interface Shot {
   active: boolean;
   sprite: Phaser.GameObjects.Image;
+  /** A pulsing red glow under every monster shot, so it never looks like one of the hero's. */
+  halo: Phaser.GameObjects.Image;
+  age: number;
   x: number;
   y: number;
   vx: number;
@@ -85,6 +88,9 @@ interface Shot {
 }
 
 const ELITE_TINT = 0xffd36b;
+/** Monster shots: a red glow underneath, and orbs tinted red-pink. */
+const SHOT_DANGER = 0xff2a4a;
+const SHOT_TINT = 0xff7aa8;
 /** An exploder's blast radius, and how long its fuse burns once lit. */
 const EXPLODE_RADIUS = 130;
 const FUSE = 0.8;
@@ -287,6 +293,7 @@ export class EnemyManager {
     for (const s of this.shots) {
       s.active = false;
       s.sprite.setVisible(false);
+      s.halo.setVisible(false);
     }
   }
 
@@ -294,11 +301,30 @@ export class EnemyManager {
     const def = ENEMY_SHOTS[kind];
     let s = this.shots.find((o) => !o.active);
     if (!s) {
-      s = { active: false, sprite: this.ctx.scene.add.image(0, 0, def.texture).setDepth(30), x: 0, y: 0, vx: 0, vy: 0, radius: 0, damage: 0, life: 0, spin: 0 };
+      const scene = this.ctx.scene;
+      s = {
+        active: false,
+        sprite: scene.add.image(0, 0, def.texture).setDepth(30),
+        halo: scene.add.image(0, 0, 'glow').setDepth(29).setTint(SHOT_DANGER),
+        age: 0,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        radius: 0,
+        damage: 0,
+        life: 0,
+        spin: 0,
+      };
       this.shots.push(s);
     }
     s.active = true;
+    s.age = 0;
     s.sprite.setTexture(def.texture).setVisible(true).setRotation(angle);
+    // Monster magic is red-pink; the hero's is blue, white and gold.
+    if (kind === 'fireball') s.sprite.clearTint();
+    else s.sprite.setTint(SHOT_TINT);
+    s.halo.setVisible(true).setDisplaySize(def.radius * 5, def.radius * 5);
     s.x = x;
     s.y = y;
     s.vx = Math.cos(angle) * def.speed;
@@ -817,6 +843,8 @@ export class EnemyManager {
       s.life -= dt;
       if (s.spin) s.sprite.rotation += s.spin * dt;
       s.sprite.setPosition(s.x, s.y);
+      s.age += dt;
+      s.halo.setPosition(s.x, s.y).setAlpha(0.45 + 0.25 * Math.sin(s.age * 18));
       const rr = s.radius + player.radius * 0.8;
       if ((s.x - player.x) ** 2 + (s.y - player.y) ** 2 < rr * rr) {
         this.ctx.hurtPlayer(s.damage);
@@ -825,6 +853,7 @@ export class EnemyManager {
       if (s.life <= 0) {
         s.active = false;
         s.sprite.setVisible(false);
+        s.halo.setVisible(false);
       }
     }
   }
