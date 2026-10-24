@@ -5,8 +5,9 @@
  *
  * Asks Gemini's image model (Nano Banana) for a picture, with reference pictures attached (a layout sketch, a
  * character's master art, a sheet drawn earlier) so the result keeps the game's style, and saves it as PNG.
- * The key comes from the GEMINI_API_KEY environment secret (set in the cloud environment's settings; never pasted
- * into the chat). Image output has no free tier, so every call is logged to art/gemini-log.jsonl with its price,
+ * The key is a network secret on the cloud environment for generativelanguage.googleapis.com (header
+ * x-goog-api-key, no prefix): the environment's proxy adds it, so it never shows inside the session (GEMINI_API_KEY,
+ * if set, is used instead). It is never pasted into the chat. Image output has no free tier, so every call is logged to art/gemini-log.jsonl with its price,
  * and a run that would take this month's total over GEMINI_BUDGET_USD is refused. The default, $9, stays inside
  * the $10 of Google Cloud credit a Google AI Pro subscription brings each month.
  */
@@ -59,16 +60,13 @@ function parseArgs(argv: string[]): Options | 'list' {
   return o;
 }
 
-function key(): string {
-  const k = process.env.GEMINI_API_KEY;
-  if (!k) throw new Error('GEMINI_API_KEY is not set: add it as a secret in the cloud environment settings, then start a new session.');
-  return k;
-}
+/** The key header, unless the environment's proxy adds the key itself (a network secret). */
+const auth = (): Record<string, string> => (process.env.GEMINI_API_KEY ? { 'x-goog-api-key': process.env.GEMINI_API_KEY } : {});
 
 async function call(path: string, body?: unknown): Promise<unknown> {
   const res = await fetch(`${API}/${path}`, {
     method: body ? 'POST' : 'GET',
-    headers: { 'x-goog-api-key': key(), 'Content-Type': 'application/json' },
+    headers: { ...auth(), 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();

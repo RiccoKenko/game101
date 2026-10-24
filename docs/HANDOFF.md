@@ -97,8 +97,12 @@
   1. platform.openai.com → สมัคร/ล็อกอิน (account ส่วนตัว)
   2. Billing → เติม $5 → ปิด auto-recharge
   3. ถ้าระบบขอ ให้ยืนยันตัวตน (Organization verification)
-  4. สร้าง API key → ใส่ใน environment settings → Network secrets ชื่อ `OPENAI_API_KEY`
-  5. เปิด session ใหม่
+  4. สร้าง API key → ใส่เป็น **Network secret** ของ cloud environment
+     - Secret type Bearer
+     - Allowed websites `api.openai.com`
+     - header `Authorization` prefix `Bearer` แล้ววาง key
+     - proxy จะแนบ key ให้เอง สคริปต์ไม่ต้องรู้ค่า key
+  5. ทดสอบด้วย `curl -s -o /dev/null -w '%{http_code}' https://api.openai.com/v1/models` (ต้องได้ 200)
 - **ขั้นแรกใน session ใหม่**
   1. `npm run art:openai -- --spent` เช็กว่าสคริปต์อ่าน key ได้
   2. ลองวาดแผนที่หน้าเลือกด่าน

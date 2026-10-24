@@ -7,8 +7,9 @@
  * with reference pictures attached (a layout sketch, a character's master art, a sheet drawn earlier), and saves
  * it as PNG. `--transparent` asks for a real transparent background (sprite sheets).
  *
- * The key comes from the OPENAI_API_KEY environment secret (set in the cloud environment's settings; never pasted
- * into the chat). The owner's limit is $5 in all: every picture's real cost, worked out from the token counts
+ * The key is a network secret on the cloud environment for api.openai.com: the environment's proxy adds it to the
+ * requests, so it never shows inside the session (OPENAI_API_KEY, if set, is used instead). It is never pasted
+ * into the chat. The owner's limit is $5 in all: every picture's real cost, worked out from the token counts
  * OpenAI returns, is logged to art/openai-log.jsonl, and a picture is refused when the logged total plus a
  * cautious guess at its cost would pass OPENAI_BUDGET_USD (default 5). The prepaid OpenAI balance (no
  * auto-recharge) is the second, hard stop.
@@ -84,11 +85,8 @@ function parseArgs(argv: string[]): Options | 'spent' {
   return o;
 }
 
-function key(): string {
-  const k = process.env.OPENAI_API_KEY;
-  if (!k) throw new Error('OPENAI_API_KEY is not set: add it as a secret in the cloud environment settings, then start a new session.');
-  return k;
-}
+/** The Authorization header, unless the environment's proxy adds the key itself (a network secret). */
+const auth = (): Record<string, string> => (process.env.OPENAI_API_KEY ? { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` } : {});
 
 function spent(): number {
   if (!existsSync(LOG)) return 0;
@@ -109,15 +107,17 @@ async function generate(o: Options): Promise<{ png: Buffer; usage: Usage }> {
       const png = await sharp(join(ROOT, ref)).resize(2048, 2048, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
       form.append('image[]', new Blob([new Uint8Array(png)], { type: 'image/png' }), basename(ref).replace(/\.\w+$/, '.png'));
     }
-    res = await fetch(`${API}/images/edits`, { method: 'POST', headers: { Authorization: `Bearer ${key()}` }, body: form });
+    res = await fetch(`${API}/images/edits`, { method: 'POST', headers: auth(), body: form });
   } else {
     res = await fetch(`${API}/images/generations`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${key()}`, 'Content-Type': 'application/json' },
+      headers: { ...auth(), 'Content-Type': 'application/json' },
       body: JSON.stringify(common),
     });
   }
   const text = await res.text();
+  if (res.status === 401)
+    throw new Error('OpenAI 401: no key reached it. Add the key as a network secret for api.openai.com in the cloud environment settings (or set OPENAI_API_KEY).');
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${text.slice(0, 600)}`);
   const body = JSON.parse(text) as { data?: { b64_json?: string }[]; usage?: Usage };
   const b64 = body.data?.[0]?.b64_json;
