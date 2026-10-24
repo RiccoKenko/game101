@@ -100,3 +100,50 @@ describe('poses', () => {
     expect(blend(a, b, 0.75).slots!.eyes).toBe('happy');
   });
 });
+
+describe('batched puppets', () => {
+  it('draw the same quads, in the same order, as a mesh per part', async () => {
+    const THREE = await import('three');
+    const { readFileSync } = await import('node:fs');
+    const { Puppet } = await import('../../src/puppet/puppet');
+    const { Animator2D } = await import('../../src/puppet/animator');
+    const { CLIPS } = await import('../../src/puppet/clips');
+    const dir = 'public/sprites/deckhand/';
+    const rigDef = JSON.parse(readFileSync(dir + 'rig.json', 'utf8'));
+    const sprites = JSON.parse(readFileSync(dir + 'sprites.json', 'utf8'));
+    const textures = Object.fromEntries(Object.keys(sprites).map((k) => [k, new THREE.Texture()]));
+    // A made-up atlas: each picture gets its own strip, so the UVs say which picture a quad shows.
+    const names = Object.keys(sprites);
+    const rects = Object.fromEntries(names.map((n, i) => [n, [i / names.length, 0, (i + 1) / names.length, 1] as [number, number, number, number]]));
+    const plain = new Puppet({ rig: rigDef, sprites, textures });
+    const batched = new Puppet({ rig: rigDef, sprites, textures, atlas: { texture: new THREE.Texture(), rects } });
+    expect(plain.batched).toBe(false);
+    expect(batched.batched).toBe(true);
+    const anim = new Animator2D(CLIPS.deckhand);
+    anim.play('carry', { fade: 0 });
+    const pose = anim.update(0.37);
+    for (const p of [plain, batched]) {
+      p.setOrder(5000);
+      p.setPose(pose);
+      p.update(0);
+    }
+    // The plain puppet's visible part meshes, back to front as Three.js sorts them.
+    const meshes = plain.root.children.filter((o): o is InstanceType<typeof THREE.Mesh> => o instanceof THREE.Mesh && o.visible);
+    meshes.sort((a, b) => a.renderOrder - b.renderOrder || a.id - b.id);
+    const mesh = batched.root.children[0] as InstanceType<typeof THREE.Mesh>;
+    const pos = mesh.geometry.getAttribute('position');
+    const uv = mesh.geometry.getAttribute('uv');
+    expect(mesh.geometry.drawRange.count).toBe(meshes.length * 6);
+    expect(mesh.renderOrder).toBe(5000);
+    meshes.forEach((m, i) => {
+      const corners = m.geometry.getAttribute('position');
+      for (const [c, k] of [[0, 0], [1, 1], [2, 2], [3, 3]]) {
+        const v = new THREE.Vector3().fromBufferAttribute(corners, c).applyMatrix4(m.matrix);
+        expect(pos.getX(i * 4 + k)).toBeCloseTo(v.x, 3);
+        expect(pos.getY(i * 4 + k)).toBeCloseTo(v.y, 3);
+      }
+      const img = names.find((n) => textures[n] === (m.material as InstanceType<typeof THREE.ShaderMaterial>).uniforms.map.value)!;
+      expect(uv.getX(i * 4)).toBeCloseTo(rects[img][0], 6);
+    });
+  });
+});
