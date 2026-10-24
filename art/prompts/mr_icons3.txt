@@ -1,0 +1,30 @@
+You are the lead artist for "Little Archer: Monster Rush", a cute mobile survivor game seen from a high three-quarter top-down angle (the attached mock-up shows the look). Draw ONE sheet of new square icons for the game's interface: six magic runes that change how every weapon behaves, five evolved weapons, and one game-world sprite.
+
+STYLE
+- Match the painting style of the attached mock-up screenshot exactly: cute early-2000s Korean fantasy MMORPG charm redrawn at modern quality, chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), pastel colours, light from the upper left.
+- Everything is an ORIGINAL design. Do not copy any existing game's characters, monsters, items, logos or interface.
+
+REFERENCES
+- The first attached image is the game's look mock-up. The second is the sheet of the game's existing icons: the new icon tiles must match them exactly in size, framing, dark tile backgrounds, soft radial glow and painting style. The third is a sheet of existing projectiles, for the meteor sprite's style.
+
+TECHNICAL
+- Background between and around the tiles: a perfectly flat, solid magenta #FF00FF. Never use magenta or hot pink inside any of the drawings.
+- No text, numbers or labels anywhere.
+
+LAYOUT (landscape 1536 x 1024)
+- A grid of 6 columns and 2 rows; each drawing centred in its own cell, with at least 60 px of magenta between neighbours and around the edge.
+- Square icon tiles (about 210 px), each a complete square painting with slightly rounded corners, a rich dark background with a soft radial glow behind one bold emblem, no frame.
+- Row 1, the RUNES: each emblem is a smooth carved rune stone, slightly tilted, with one glowing engraved symbol; each rune has its own colour so they are easy to tell apart:
+  1. Ember Rune: a warm red-orange stone engraved with a flame;
+  2. Frost Rune: an icy pale-blue stone engraved with a snowflake;
+  3. Storm Rune: a deep blue stone engraved with a yellow lightning bolt;
+  4. Bounce Rune: a jade-green stone engraved with a curved double arrow that bounces;
+  5. Blast Rune: a charcoal stone engraved with an orange starburst explosion;
+  6. Leech Rune: a crimson stone engraved with a heart and a drop.
+- Row 2, the EVOLVED WEAPONS, then one sprite:
+  7. Thunderstorm: a dark thundercloud pouring many bright lightning bolts;
+  8. Meteor: a huge flaming meteor crashing down with a fiery tail;
+  9. Twin Moons: two silver crescent-shaped boomerangs circling each other with motion arcs;
+  10. Flame Crescent: a curved sword slash made of fire;
+  11. Plague Cloud: a swirling dark-green toxic cloud with a small grinning skull in it;
+  12. NOT a tile: a game-world sprite on the plain magenta background, a round flaming meteor rock flying to the RIGHT, perfectly horizontal, the rock in front and its fire tail behind it on the left, filling about 70% of the cell, no glow around it.
