@@ -85,7 +85,7 @@ export const LEVEL2: LevelDef = {
   // Laid out on the sketch (no painting yet). The dock is on the west edge; the road runs east along the top
   // terrace, swings round a U-bend and comes back west a terrace lower, then drops to the vault. The spots between
   // the two stretches (and the one inside the bend) reach both; a stream crosses the road under two bridges.
-  map: { w: 1536, h: 1024, sketch: 'maps/level2-sketch.png' },
+  map: { w: 1536, h: 1024, art: 'maps/level2.webp', sketch: 'maps/level2-sketch.png' },
   route: [
     [36, 330], [200, 330], [380, 305], [560, 320], [740, 340], [920, 325], [1080, 330], [1200, 370], [1280, 450],
     [1290, 540], [1230, 620], [1110, 660], [960, 655], [800, 640], [640, 655], [500, 690], [400, 750], [340, 785],
@@ -157,7 +157,7 @@ export const LEVEL3: LevelDef = {
   blurb: "The First Mate's big assault on the old lighthouse.",
   // Laid out on the sketch (no painting yet). The pirates land on the south-east side; the road climbs in two
   // hairpins to the top of the cliffs, then runs down west to the vault at the foot of the lighthouse on the point.
-  map: { w: 1536, h: 1024, sketch: 'maps/level3-sketch.png' },
+  map: { w: 1536, h: 1024, art: 'maps/level3.webp', sketch: 'maps/level3-sketch.png' },
   route: [
     [1500, 800], [1320, 805], [1150, 790], [1000, 740], [910, 650], [930, 545], [1050, 500], [1200, 470], [1290, 390],
     [1250, 290], [1120, 240], [940, 230], [770, 255], [640, 320], [560, 430], [470, 520], [370, 555], [290, 550],

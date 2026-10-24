@@ -1,9 +1,9 @@
 // Draws the level's road, spots, dock, vault, hero start and island outline over the painted map.
 import sharp from 'sharp';
-import { LEVEL1 } from '../../src/td/levels';
+import { LEVELS } from '../../src/td/levels';
 import { closedCurve, Path } from '../../src/td/path';
-const [mapFile, out] = process.argv.slice(2);
-const L = LEVEL1;
+const [mapFile, out, id = 'level1'] = process.argv.slice(2);
+const L = LEVELS[id];
 const road = new Path(L.route);
 const pts = road.points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 const island = closedCurve(L.island).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
