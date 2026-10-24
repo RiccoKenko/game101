@@ -23,7 +23,18 @@
   - บอสตกจากฟ้าลงครึ่งบนของจอ (640 px) มีวงกระแทก; บอสตายมีแสงวาบ ระเบิดต่อเนื่อง slow-mo
   - บรรยากาศแต่ละแมพ `game/Ambience.ts` (กลีบดอกไม้ / หมอก+หิ่งห้อย / ถ่านไฟ), ต้นไม้ไหว, HUD มี vignette + ขอบแดงตอนโดนตี/เลือดน้อย
   - FPS ใน container (ไม่มี GPU) ลดจาก ~13 เป็น ~11; JS ต่อเฟรม < 1 ms ต้องให้เจ้านายลองบน iPhone จริงว่าลื่นไหม
-- **เฟสถัดไปที่เสนอไว้:** 2 สไตล์ภาพ (ตัดสินใจหลังลองเล่น) → 3 เนื้อหาเล่นซ้ำ: อาวุธ/ศัตรูใหม่, ภารกิจ, ตัวละครให้เลือก
+- **เฟส 2 ลุคใหม่ "MMORPG เกาหลียุค 2000" (แรงบันดาลใจจาก Ragnarok Online): เจ้านายสั่ง "ลุยเลย ปรับเต็มตามแนวนี้"**
+  - ⚠️ ยืมได้แค่ "สไตล์" (chibi, pastel, มุมมองเฉียงบน, หน้าต่าง navy-ทอง) ห้ามใช้ตัวละคร/ชื่อ/เพลง/โลโก้ของ RO จริง (เช่น Poring) ทุกอย่างต้องออกแบบใหม่ ใน prompt ไม่เอ่ยชื่อเกม
+  - ภาพต้นแบบ: `art/incoming/mr/look_mockup.png` (prompt `art/prompts/mr_look_mockup.txt`) ใช้แนบเป็น ref ทุกภาพ
+  - วาดด้วย OpenAI 11 แผ่น (medium): มอน 3 แมพ (+บอส), ของตกแต่ง 3 แมพ, พื้น 3 แมพ, ไอเท็ม, ไอคอน 23 อัน → `art/incoming/mr/*.png`, prompt `art/prompts/mr_*.txt`
+    - gpt-image-2 ไม่รองรับพื้นโปร่งใส: ใช้พื้นสีล้วน (แมพ 1 ใช้ cyan เพราะมอนสีชมพู/ม่วง, ที่เหลือ magenta)
+  - ตัดด้วย `npm run art:cut [-- <sheet>]` (`scripts/art/cut.ts` + `scripts/art/mr-sheets.json`: ชื่อ key ตามลำดับอ่าน, ขนาดในเกม, `grid` สำหรับไอคอน/ไอเท็ม, `erase` ลบของเกิน เช่นลูกไฟของ imp) → `public/art/<key>.webp` + `src/art/manifest.json`; พื้นทำให้ต่อกันไร้รอยด้วย `scripts/art/seamless.ts`; ภาพตรวจ `art/sliced/mr/*.check.png` (ไม่อยู่ใน git)
+  - เกมโหลด WebP ตาม manifest (`BootScene`), อะไรที่ไม่มีภาพใหม่ใช้ SVG เดิม; มอนมีภาพเดียว เฟรม 2 สร้างเองโดยบีบเล็กน้อย (`textures.ts secondFrame`)
+  - ฮีโร่: เอา puppet อนิเมะจาก Sky Pirates มา bake เป็น sprite sheet `public/art/hero/hero.webp` + `hero.json` (idle/run/shoot/hurt/ko/cheer) + `hero_menu.webp`; สคริปต์อยู่ `scripts/art/hero-bake/` (รันกับ worktree ของ `sky-pirates-td`); `Player.ts` เล่นแอนิเมชันเหล่านี้ถ้ามี
+  - UI ทั้งหมดเปลี่ยนเป็นหน้าต่าง navy โปร่งแสง ขอบทอง, การ์ดตัวเลือกเป็นกระดาษ parchment (`src/ui/*`, ทุก scene)
+  - ไฟล์เดียว (Artifact): `build-artifact.mjs` ฝัง `public/art` เป็น `window.__ASSETS__` (`src/art/assets.ts`)
+  - งบ OpenAI หลังเฟสนี้: $1.44 จาก $5
+- **เฟสถัดไป:** 3 เนื้อหาเล่นซ้ำ: อาวุธ/ศัตรูใหม่, ภารกิจ, ตัวละครให้เลือก
 
 ## Sky Pirates (พักไว้)
 - โค้ดและภาพทั้งหมดอยู่บน branch **`sky-pirates-td`** (commit ebe60ec) อ่าน `docs/HANDOFF.md` บน branch นั้นได้รายละเอียดครบ

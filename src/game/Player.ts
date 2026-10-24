@@ -53,8 +53,9 @@ export class Player {
       this.baseScale = 1;
       this.sprite = scene.add.sprite(0, 0, 'hero_0').setDepth(20).setOrigin(0.5, 1);
     }
-    this.hpBack = scene.add.image(0, 0, 'px').setTint(0x2a1f3d).setDisplaySize(92, 16).setDepth(21);
-    this.hpFill = scene.add.image(0, 0, 'px').setTint(0xff4d5e).setOrigin(0, 0.5).setDepth(22);
+    // A small HP gauge under the hero: dark frame, green fill that turns red when low.
+    this.hpBack = scene.add.image(0, 0, 'px').setTint(0x16233f).setDisplaySize(96, 15).setDepth(21);
+    this.hpFill = scene.add.image(0, 0, 'px').setTint(0x5ad15a).setOrigin(0, 0.5).setDepth(22);
   }
 
   setStats(stats: PlayerStats): void {
@@ -159,6 +160,6 @@ export class Player {
     this.sprite.setAlpha(this.iframes > 0 && this.flash <= 0 ? (Math.floor(this.iframes * 20) % 2 ? 0.55 : 1) : 1);
     const ratio = Phaser.Math.Clamp(this.hp / this.stats.maxHp, 0, 1);
     this.hpBack.setPosition(this.x, this.y + 62);
-    this.hpFill.setPosition(this.x - 42, this.y + 62).setDisplaySize(84 * ratio, 8);
+    this.hpFill.setPosition(this.x - 45, this.y + 62).setDisplaySize(90 * ratio, 9).setTint(ratio < 0.3 ? 0xff4d5e : 0x5ad15a);
   }
 }
