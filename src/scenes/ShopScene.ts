@@ -3,7 +3,7 @@ import { audio } from '../audio/audio';
 import { SHOP, shopCost, type ShopDef } from '../config/shop';
 import { saveStore } from '../core/save';
 import { safeInsets } from '../ui/safe';
-import { COLORS, CSS } from '../ui/theme';
+import { BUTTON, CSS } from '../ui/theme';
 import { Button, gradientText, panel, panelTexture, pipTexture, slotIcon, text } from '../ui/widgets';
 import { menuBackground } from './MenuScene';
 
@@ -38,7 +38,7 @@ export class ShopScene extends Phaser.Scene {
     new Button(this, width / 2, height - bottom - 120, {
       w: 520,
       h: 130,
-      color: COLORS.blue,
+      color: BUTTON.secondary,
       label: 'Back',
       icon: 'icon_home',
       onClick: () => this.scene.start('Menu'),
@@ -60,7 +60,7 @@ export class ShopScene extends Phaser.Scene {
     const btn = new Button(this, w / 2 - 136, -4, {
       w: 236,
       h: Math.min(96, h - 44),
-      color: COLORS.green,
+      color: BUTTON.primary,
       icon: 'icon_coin',
       iconSize: 52,
       label: '0',

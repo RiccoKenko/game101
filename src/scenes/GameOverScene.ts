@@ -3,7 +3,7 @@ import { audio } from '../audio/audio';
 import { MAPS } from '../config/maps';
 import { formatTime } from '../core/format';
 import { safeInsets } from '../ui/safe';
-import { COLORS, CSS } from '../ui/theme';
+import { BUTTON, CSS } from '../ui/theme';
 import { Button, dimmer, dividerTexture, gradientText, panel, text } from '../ui/widgets';
 import { type RunSummary } from './GameScene';
 
@@ -76,7 +76,7 @@ export class GameOverScene extends Phaser.Scene {
     new Button(this, width / 2 - 225, by, {
       w: 420,
       h: 140,
-      color: COLORS.green,
+      color: BUTTON.primary,
       label: 'Play Again',
       icon: 'icon_retry',
       fontSize: 50,
@@ -88,7 +88,7 @@ export class GameOverScene extends Phaser.Scene {
     new Button(this, width / 2 + 225, by, {
       w: 420,
       h: 140,
-      color: COLORS.blue,
+      color: BUTTON.secondary,
       label: 'Menu',
       icon: 'icon_home',
       fontSize: 50,

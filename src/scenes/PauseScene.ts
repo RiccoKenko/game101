@@ -5,7 +5,7 @@ import { formatTime } from '../core/format';
 import { saveStore } from '../core/save';
 import { buildRows } from '../ui/build';
 import { safeInsets } from '../ui/safe';
-import { COLORS, CSS } from '../ui/theme';
+import { BUTTON, CSS } from '../ui/theme';
 import { Button, dimmer, gradientText, panel, text } from '../ui/widgets';
 import { type RunState } from './GameScene';
 
@@ -50,12 +50,12 @@ export class PauseScene extends Phaser.Scene {
     const rowsH = inv.passives.length > 0 ? size * 2 + 16 : size;
     buildRows(this, width / 2 - rowW / 2, gearY - rowsH / 2, inv, size, 12);
 
-    new Button(this, width / 2, cy - 20, { w: 600, h: 140, color: COLORS.green, label: 'Resume', icon: 'icon_play', onClick: () => this.data_.onResume() });
+    new Button(this, width / 2, cy - 20, { w: 600, h: 140, color: BUTTON.primary, label: 'Resume', icon: 'icon_play', onClick: () => this.data_.onResume() });
 
     const music = new Button(this, width / 2 - 270, cy + 160, {
       w: 230,
       h: 130,
-      color: COLORS.blue,
+      color: BUTTON.secondary,
       icon: audio.musicOn ? 'icon_music' : 'icon_music_off',
       iconSize: 90,
       onClick: () => {
@@ -66,7 +66,7 @@ export class PauseScene extends Phaser.Scene {
     const sfx = new Button(this, width / 2, cy + 160, {
       w: 230,
       h: 130,
-      color: COLORS.blue,
+      color: BUTTON.secondary,
       icon: audio.sfxOn ? 'icon_sfx' : 'icon_sfx_off',
       iconSize: 90,
       onClick: () => {
@@ -79,7 +79,7 @@ export class PauseScene extends Phaser.Scene {
     const shake: Button = new Button(this, width / 2 + 270, cy + 160, {
       w: 230,
       h: 130,
-      color: COLORS.blue,
+      color: BUTTON.secondary,
       label: shakeLabel(),
       fontSize: 36,
       onClick: () => {
@@ -93,7 +93,7 @@ export class PauseScene extends Phaser.Scene {
     const quit: Button = new Button(this, width / 2, cy + 336, {
       w: 600,
       h: 120,
-      color: COLORS.red,
+      color: BUTTON.danger,
       label: 'End Run',
       onClick: () => {
         if (armed) {

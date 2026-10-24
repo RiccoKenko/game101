@@ -6,7 +6,7 @@ import { DEBUG } from '../core/debug';
 import { formatTime } from '../core/format';
 import { saveStore } from '../core/save';
 import { safeInsets } from '../ui/safe';
-import { COLORS, CSS } from '../ui/theme';
+import { BUTTON, CSS } from '../ui/theme';
 import { Button, gradientText, panel, panelTexture, ribbon, slotTexture, text } from '../ui/widgets';
 
 const CARD_W = 960;
@@ -59,7 +59,7 @@ export class MenuScene extends Phaser.Scene {
     const music = new Button(this, 78, top + 52, {
       w: 104,
       h: 88,
-      color: COLORS.navy,
+      color: BUTTON.system,
       icon: audio.musicOn ? 'icon_music' : 'icon_music_off',
       iconSize: 60,
       onClick: () => {
@@ -70,7 +70,7 @@ export class MenuScene extends Phaser.Scene {
     const sfx = new Button(this, 200, top + 52, {
       w: 104,
       h: 88,
-      color: COLORS.navy,
+      color: BUTTON.system,
       icon: audio.sfxOn ? 'icon_sfx' : 'icon_sfx_off',
       iconSize: 60,
       onClick: () => {
@@ -87,11 +87,11 @@ export class MenuScene extends Phaser.Scene {
     });
     this.highlight();
 
-    new Button(this, width / 2, playY, { w: 640, h: 150, color: COLORS.green, label: 'PLAY', fontSize: 76, onClick: () => this.play() });
+    new Button(this, width / 2, playY, { w: 640, h: 150, color: BUTTON.primary, label: 'PLAY', fontSize: 76, onClick: () => this.play() });
     new Button(this, width / 2, height - bottom - 120, {
       w: 640,
       h: 110,
-      color: COLORS.orange,
+      color: BUTTON.warning,
       label: 'Upgrade Shop',
       icon: 'icon_shop',
       iconSize: 80,

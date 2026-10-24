@@ -13,19 +13,19 @@ interface LevelUpData {
   onPick: (c: Choice) => void;
 }
 
-export function describeChoice(c: Choice): { icon: string; name: string; tag: string; desc: string; color: number } {
+export function describeChoice(c: Choice): { icon: string; name: string; tag: string; desc: string } {
   if (c.kind === 'weapon') {
     const def = WEAPONS[c.id];
     let desc = c.level === 1 ? def.description : def.upgrades[c.level - 2];
     if (c.level === 5 && def.evolution) desc += `\nMax level! Evolves with ${PASSIVES[def.evolution.requires].name}.`;
-    return { icon: def.icon, name: def.name, tag: c.level === 1 ? 'NEW!' : `LV ${c.level}`, desc, color: COLORS.blue };
+    return { icon: def.icon, name: def.name, tag: c.level === 1 ? 'NEW!' : `LV ${c.level}`, desc };
   }
   if (c.kind === 'passive') {
     const def = PASSIVES[c.id];
-    return { icon: def.icon, name: def.name, tag: c.level === 1 ? 'NEW!' : `LV ${c.level}`, desc: def.description, color: COLORS.purple };
+    return { icon: def.icon, name: def.name, tag: c.level === 1 ? 'NEW!' : `LV ${c.level}`, desc: def.description };
   }
-  if (c.kind === 'gold') return { icon: 'icon_coin', name: 'Gold Pouch', tag: '', desc: `+${c.amount} gold`, color: COLORS.gold };
-  return { icon: 'meat', name: 'Roast Meat', tag: '', desc: 'Restore 30% of your HP', color: COLORS.red };
+  if (c.kind === 'gold') return { icon: 'icon_coin', name: 'Gold Pouch', tag: '', desc: `+${c.amount} gold` };
+  return { icon: 'meat', name: 'Roast Meat', tag: '', desc: 'Restore 30% of your HP' };
 }
 
 /** A tappable upgrade card on parchment: framed icon on the left, name + tag + description on the right. */

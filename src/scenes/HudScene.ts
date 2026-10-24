@@ -4,7 +4,7 @@ import { formatTime } from '../core/format';
 import { resetStick, stick } from '../game/stick';
 import { buildRows } from '../ui/build';
 import { safeInsets } from '../ui/safe';
-import { COLORS, CSS, rgba, WINDOW } from '../ui/theme';
+import { BUTTON, COLORS, CSS, rgba, WINDOW } from '../ui/theme';
 import { Bar, Button, gradientText, heartTexture, panel, starTexture, text, uiTexture, vGradient } from '../ui/widgets';
 import { type GameScene } from './GameScene';
 
@@ -73,7 +73,7 @@ export class HudScene extends Phaser.Scene {
       w: PAUSE_D,
       h: PAUSE_D,
       shape: 'round',
-      color: COLORS.navy,
+      color: BUTTON.system,
       icon: 'icon_pause',
       iconSize: 58,
       onClick: () => this.game_.openPause(),
@@ -209,7 +209,7 @@ export class HudScene extends Phaser.Scene {
     // Sizes snap to 20 px so a handful of panel textures cover every message.
     const w = Math.ceil((t.width + 80) / 20) * 20;
     const h = Math.ceil((t.height + 28) / 20) * 20;
-    const box = (this.toastBox = this.add.container(width / 2, Math.max(height * 0.25, this.y0 + 470), [panel(this, 0, 0, w, h, { radius: 30 }), t]).setDepth(60));
+    const box = (this.toastBox = this.add.container(width / 2, Math.max(height * 0.27, this.y0 + 520), [panel(this, 0, 0, w, h, { radius: 30 }), t]).setDepth(60));
     box.setScale(0.6);
     this.tweens.add({ targets: box, scale: 1, duration: 260, ease: 'Back.easeOut' });
     this.tweens.add({

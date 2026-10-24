@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { EVOLUTIONS } from '../config/weapons';
 import { safeInsets } from '../ui/safe';
-import { COLORS, CSS } from '../ui/theme';
+import { BUTTON, CSS } from '../ui/theme';
 import { Button, dimmer, gradientText, panel, slotIcon, text } from '../ui/widgets';
 import { type ChestReward } from './GameScene';
 import { choiceCard } from './LevelUpScene';
@@ -50,10 +50,10 @@ export class ChestScene extends Phaser.Scene {
       const evo = EVOLUTIONS[r.evolution];
       const icon = this.add.container(width / 2, cy - 30, slotIcon(this, 0, 0, 240, evo.icon, 'evolved')).setScale(0);
       this.tweens.add({ targets: icon, scale: 1, duration: 400, ease: 'Back.easeOut' });
-      panel(this, width / 2, cy + 300, 920, 300, { gem: true });
-      gradientText(text(this, width / 2, cy + 196, 'EVOLUTION!', 60, { strokeColor: '#0d3a10' }), ['#f4ffe8', '#9cf58a', '#3fbf3a']);
-      text(this, width / 2, cy + 280, evo.name, 58, { color: CSS.gold });
-      text(this, width / 2, cy + 370, evo.description, 36, { color: CSS.cream, wrap: 820, shadow: false });
+      panel(this, width / 2, cy + 310, 920, 300, { gem: true });
+      gradientText(text(this, width / 2, cy + 212, 'EVOLUTION!', 60, { strokeColor: '#0d3a10' }), ['#f4ffe8', '#9cf58a', '#3fbf3a']);
+      text(this, width / 2, cy + 290, evo.name, 58, { color: CSS.gold });
+      text(this, width / 2, cy + 378, evo.description, 36, { color: CSS.cream, wrap: 820, shadow: false });
       y = cy + 480;
     } else {
       const h = 230;
@@ -73,7 +73,7 @@ export class ChestScene extends Phaser.Scene {
     const btn = new Button(this, width / 2, height - bottom - 150, {
       w: 560,
       h: 140,
-      color: COLORS.green,
+      color: BUTTON.primary,
       label: 'Collect',
       onClick: () => this.data_.onClose(),
     });
