@@ -24,8 +24,8 @@
     { "name": "quiver", "img": "quiver", "bone": "quiver", "z": 5, "from": [[1065, 315], [1000, 540]], "to": [[175, 470], [300, 690]] },
     { "name": "hood-tip", "img": "hood-tip", "bone": "hoodTip", "z": 8, "from": [[205, 540], [115, 905]], "to": [[118, 100], [35, 450]] },
 
-    { "name": "upper-arm-l", "img": "upper-arm-l", "bone": "upperArm.l", "z": 12, "shade": 0.86, "from": [[240, 418], [415, 598]], "to": [[522, 565], [545, 725]], "width": 0.8 },
-    { "name": "forearm-l", "img": "forearm-l", "bone": "forearm.l", "z": 14, "shade": 0.86, "from": [[713, 428], [870, 590]], "to": [[545, 725], [612, 860]], "width": 0.78 },
+    { "name": "upper-arm-l", "img": "upper-arm-l", "bone": "upperArm.l", "z": 14, "shade": 0.86, "from": [[240, 418], [415, 598]], "to": [[522, 565], [545, 725]], "width": 0.8 },
+    { "name": "forearm-l", "img": "forearm-l", "bone": "forearm.l", "z": 12, "shade": 0.86, "from": [[713, 428], [870, 590]], "to": [[543, 721], [612, 860]], "width": 0.78 },
     { "name": "bow", "img": "bow", "bone": "bow", "z": 18, "from": [[222, 378], [225, 72]], "to": [[643, 923], [643, 593]] },
     { "name": "hand-l-open", "img": "hand-l-open", "bone": "hand.l", "z": 20, "shade": 0.86, "slot": "hand.l", "from": [[1318, 362], [1395, 445]], "to": [[612, 860], [646, 935]] },
     { "name": "hand-l-grip", "img": "hand-l-grip", "bone": "hand.l", "z": 20, "shade": 0.86, "slot": "hand.l", "from": [[232, 818], [395, 835]], "to": [[612, 860], [662, 963]] },
@@ -37,7 +37,7 @@
     { "name": "hips", "img": "hips", "bone": "hips", "z": 30, "from": [[805, 178], [660, 215]], "to": [[395, 762], [258, 800]] },
     { "name": "torso", "img": "torso", "bone": "torso", "z": 40, "from": [[355, 62], [205, 168], [355, 345]], "to": [[398, 452], [235, 560], [395, 740]] },
 
-    { "name": "forearm-r", "img": "forearm-r", "bone": "forearm.r", "z": 42, "from": [[393, 715], [230, 918]], "to": [[145, 712], [105, 805]], "width": 0.8 },
+    { "name": "forearm-r", "img": "forearm-r", "bone": "forearm.r", "z": 42, "from": [[393, 715], [230, 918]], "to": [[151, 698], [105, 805]], "width": 0.8 },
     { "name": "upper-arm-r", "img": "upper-arm-r", "bone": "upperArm.r", "z": 44, "from": [[1330, 420], [1162, 598]], "to": [[235, 560], [145, 712]], "width": 0.85 },
     { "name": "hand-r-open", "img": "hand-r-open", "bone": "hand.r", "z": 46, "slot": "hand.r", "from": [[712, 775], [820, 840]], "to": [[105, 805], [80, 900]] },
     { "name": "hand-r-pinch", "img": "hand-r-pinch", "bone": "hand.r", "z": 46, "slot": "hand.r", "from": [[1175, 775], [1290, 840]], "to": [[105, 805], [80, 900]] },

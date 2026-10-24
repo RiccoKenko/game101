@@ -344,6 +344,26 @@ export function groupByBoxes(pieces: Piece[], boxes: Box[]): { groups: (Piece | 
     if (k < 0) dropped++;
     else groups[k] = groups[k] ? merge(groups[k]!, p) : p;
   }
+  // A box nothing landed in: its part touches a neighbour's (e.g. two portraits elbow to elbow), so both came out
+  // as one blob. Share the blob that overlaps the box most: each part keeps the blob's pixels inside its own box,
+  // as `cropPiece` copies only a piece's bounding box. Put the boxes' common edge on the gap between the parts.
+  const overlap = (a: Box, b: Box) =>
+    Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  const clip = (g: Piece, b: Box): Piece => {
+    const x = Math.max(g.x, b.x);
+    const y = Math.max(g.y, b.y);
+    return { ...g, x, y, w: Math.min(g.x + g.w, b.x + b.w) - x, h: Math.min(g.y + g.h, b.y + b.h) - y };
+  };
+  boxes.forEach((box, k) => {
+    if (groups[k]) return;
+    let best: Piece | undefined;
+    for (const p of pieces) if (overlap(p, box) > (best ? overlap(best, box) : 0)) best = p;
+    if (!best) return;
+    const shared = best;
+    groups[k] = clip(shared, box);
+    const owner = groups.findIndex((g, i) => i !== k && g?.labels.includes(shared.labels[0]));
+    if (owner >= 0) groups[owner] = clip(groups[owner]!, boxes[owner]);
+  });
   return { groups, dropped };
 }
 
@@ -389,30 +409,98 @@ export function cropPiece(img: RgbaImage, labels: Int32Array, piece: Piece, pad 
   return { data, width: w, height: h };
 }
 
-/** An ellipse in sheet pixels: centre, radii and turn in degrees. */
-export type Ellipse = [number, number, number, number, number?];
+/** An ellipse in sheet pixels: centre, radii, turn in degrees and, optionally, `'heal'` (see `eraseEllipses`). */
+export type Ellipse = [number, number, number, number, number?, 'heal'?];
 
 /**
  * Clears the pixels inside each ellipse. Used for the flat skin-coloured "cut ends" some sheets draw where a
  * part meets the next one: hidden under that part in the rig pose, they show as holes once limbs move.
+ * An ellipse marked `'heal'` keeps its pixels but repaints them (see `healEllipse`).
  * `ox`, `oy`: where the image's top-left corner sits on the sheet.
  */
 export function eraseEllipses(img: RgbaImage, ox: number, oy: number, ellipses: Ellipse[]): RgbaImage {
   const out = new Uint8Array(img.data);
-  for (const [cx, cy, rx, ry, deg = 0] of ellipses) {
+  for (const [cx, cy, rx, ry, deg = 0, mode] of ellipses) {
     const c = Math.cos((deg * Math.PI) / 180);
     const s = Math.sin((deg * Math.PI) / 180);
     const r = Math.max(rx, ry);
+    const inside: number[] = [];
     for (let y = Math.max(0, Math.floor(cy - r - oy)); y < Math.min(img.height, Math.ceil(cy + r - oy)); y++)
       for (let x = Math.max(0, Math.floor(cx - r - ox)); x < Math.min(img.width, Math.ceil(cx + r - ox)); x++) {
         const dx = x + ox - cx;
         const dy = y + oy - cy;
         const u = (dx * c + dy * s) / rx;
         const v = (-dx * s + dy * c) / ry;
-        if (u * u + v * v <= 1) out.fill(0, (y * img.width + x) * 4, (y * img.width + x) * 4 + 4);
+        if (u * u + v * v <= 1) inside.push(y * img.width + x);
       }
+    if (mode === 'heal') healEllipse(out, img.width, img.height, inside);
+    else for (const p of inside) out.fill(0, p * 4, p * 4 + 4);
   }
   return { data: out, width: img.width, height: img.height };
+}
+
+/**
+ * Paints over the lines and highlights inside an area (pixel indices `inside`) with the colour of the skin
+ * around it, keeping the outline along the part's silhouette (pixels within `edge` of transparency) and the
+ * alpha. For the round "ball joints" some sheets draw at the ends of limbs: healed, the ball reads as the
+ * rounded end of the limb instead of a separate ball.
+ * The new colours are a smooth fill (repeated averaging) from the opaque, skin-like pixels just outside.
+ */
+function healEllipse(data: Uint8Array, w: number, h: number, inside: number[], edge = 4, iterations = 400) {
+  const clearAt = (x: number, y: number) => x < 0 || y < 0 || x >= w || y >= h || data[(y * w + x) * 4 + 3] < 128;
+  const nearClear = (p: number) => {
+    const x = p % w;
+    const y = (p - x) / w;
+    for (let dy = -edge; dy <= edge; dy++) for (let dx = -edge; dx <= edge; dx++) if (clearAt(x + dx, y + dy)) return true;
+    return false;
+  };
+  const region = inside.filter((p) => data[p * 4 + 3] > 0 && !nearClear(p));
+  if (!region.length) return;
+  const lum = (p: number) => 0.299 * data[p * 4] + 0.587 * data[p * 4 + 1] + 0.114 * data[p * 4 + 2];
+  const light = region.filter((p) => lum(p) > 150);
+  const median = (ps: number[], k: number) => {
+    const vs = ps.map((p) => data[p * 4 + k]).sort((a, b) => a - b);
+    return vs.length % 2 ? vs[(vs.length - 1) / 2] : (vs[vs.length / 2 - 1] + vs[vs.length / 2]) / 2;
+  };
+  const ref = [0, 1, 2].map((k) => median(light.length ? light : region, k));
+  const inRegion = new Set(region);
+  const value = new Map<number, number[]>();
+  for (const p of region) value.set(p, [...ref]);
+  // Neighbours that feed the fill: the region itself and opaque skin-like pixels around it (not outlines or cloth).
+  const sources = new Map<number, number[]>();
+  const feeds = region.map((p) => {
+    const x = p % w;
+    const y = (p - x) / w;
+    const ns: number[] = [];
+    for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+      const q = ny * w + nx;
+      if (inRegion.has(q)) ns.push(q);
+      else if (data[q * 4 + 3] >= 250) {
+        const rgb = [data[q * 4], data[q * 4 + 1], data[q * 4 + 2]];
+        if (Math.hypot(rgb[0] - ref[0], rgb[1] - ref[1], rgb[2] - ref[2]) < 70) {
+          sources.set(q, rgb);
+          ns.push(q);
+        }
+      }
+    }
+    return ns;
+  });
+  const at = (q: number) => value.get(q) ?? sources.get(q)!;
+  for (let it = 0; it < iterations; it++) {
+    const next = region.map((_, i) => {
+      const ns = feeds[i];
+      if (!ns.length) return value.get(region[i])!;
+      const sum = [0, 0, 0];
+      for (const q of ns) for (let k = 0; k < 3; k++) sum[k] += at(q)[k];
+      return sum.map((v) => v / ns.length);
+    });
+    region.forEach((p, i) => value.set(p, next[i]));
+  }
+  for (const p of region) {
+    const v = value.get(p)!;
+    for (let k = 0; k < 3; k++) data[p * 4 + k] = Math.round(v[k]);
+  }
 }
 
 /** Crops a whole picture to its visible pixels plus `pad`. */
