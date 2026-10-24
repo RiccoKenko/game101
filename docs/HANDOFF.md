@@ -2,7 +2,42 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 จุดล่าสุด (24 ต.ค. 2026): กลับมาทำ Monster Rush
+## 📍 จุดที่หยุดไว้ก่อน compact (24 ต.ค. 2026 บ่าย)
+- **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุคใหม่ "MMORPG เกาหลียุค 2000" + ตัวละครหลักใหม่ "Feather Cap"
+- **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`), working tree สะอาด
+  - Test: typecheck, unit 32 ข้อ, e2e 3 ข้อ, build ผ่าน
+- **ลิงก์ทดสอบ (Artifact เดิม, v3):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
+  - สร้างใหม่: `node scripts/build-artifact.mjs <scratchpad>/monster-rush.html` แล้ว publish ทับ path เดิม (หรือใส่ `url` ถ้า session ใหม่)
+- **ลิงก์หลัก little-archer.vercel.app ยังเป็น Monster Rush ภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`)
+  - ⚠️ ยังไม่ deploy ลุคใหม่: รอเจ้านายลองเล่นแล้วสั่งก่อน
+  - วิธี deploy: Vercel MCP `create_deployment` (project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`) แล้วเช็กลิงก์จริง
+- **รอเจ้านายตอบ 3 ข้อ (checkpoint ล่าสุด):**
+  1. ท่าวิ่งยิง + ตัวละครใหม่โอเคไหม
+  2. ปุ่มเดินแบบอยู่กับที่ใช้ถนัดไหม
+  3. ให้ขึ้นลิงก์หลักเลยไหม
+- **ข้อสังเกตที่แจ้งเจ้านายแล้ว:** รองเท้าข้างหน้าไม่บิดออกเหมือน rig pose, แขน chibi ดึงสายได้แค่คาง
+- **งานถัดไปที่เสนอ (เฟส 3 เนื้อหาเล่นซ้ำ)**, เรียงจากถูกไปแพง:
+  1. ภารกิจรายวัน/ความสำเร็จ (ฟรี, แนะนำเริ่มข้อนี้)
+  2. อาวุธใหม่ 3-4 แบบ + ร่างวิวัฒนาการ (~$0.10 ไอคอน)
+  3. มอนใหม่แมพละ 1-2 ตัว + มอนหัวหน้า (~$0.30)
+  4. ตัวละครให้เลือก 2-3 ตัว: ใช้วิธี "เปลี่ยนผิว โครงกระดูกเดิม" แบบ archer (~$0.45/ตัว)
+- **งบ OpenAI:** ใช้ไป **$2.11 จาก $5** (เหลือ $2.89) ตาม `art/openai-log.jsonl`
+  - ⚠️ commit log ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไป/เหลือเท่าไร
+  - ห้ามเพิ่ม `OPENAI_BUDGET_USD` ถ้าเจ้านายไม่สั่ง
+- **บทเรียน:** ถึงข้อ 46 แล้ว (ข้อต่อไปคือ 47)
+- **ภาษา:** เจ้านายขอให้ตอบเป็น**ภาษาไทย** (ใช้ศัพท์อังกฤษให้น้อย)
+- **ตัวละครหลัก (ใหม่) ทำอย่างไร / แก้ต่ออย่างไร**
+  - ภาพต้นฉบับ: `art/incoming/mr/hero_{concepts,master,rigpose,head_faces,parts_body,hands_props}.png`, prompt `art/prompts/mr_hero_*.txt`
+  - puppet id `archer` ใช้โครงกระดูก 17 ชิ้นเดิมของฮีโร่ Sky Pirates (ขนนก = `hoodTip`, ผ้าคลุม = `capelet` ผ่าตัวคอเสื้อ+ตัวผ้า)
+  - เครื่องมือ bake ทั้งชุด (config ตัดภาพ, rig, clips `archer.ts`, หน้า bake, สคริปต์) เก็บใน `scripts/art/hero-bake/`
+    - ใช้งาน: worktree ของ `sky-pirates-td` แล้ว `cp -r scripts/art/hero-bake/{dev,src,scripts,art} <worktree>/` ตาม README ในโฟลเดอร์นั้น
+    - worktree เก่า `scratchpad/sp` จะหายเมื่อ container ถูกเก็บ
+  - ผล bake: `art/baked/hero/hero.png` (256px, 76 เฟรม: idle 16, run 8, runaim 8, runrelease 8, shoot 8, hurt 6, ko 10, cheer 12) → เกมใช้ `public/art/hero/hero.webp` 192px + `hero.json` (feet [96,177])
+    - แปลง: sharp resize 1536×1920 + webp q92
+  - ภาพเมนู `public/art/hero/hero_menu.webp` ตัดจาก master (ล้างช่องพื้นเทาที่ปิดล้อมระหว่างสายธนู 3 ช่องด้วย flood fill)
+  - ฮีโร่อนิเมะเก่าเก็บไว้ที่ `art/baked/hero_anime/`
+
+## ประวัติ Monster Rush (เฟส 1-2 และรอบแก้)
 - **เจ้านายเปลี่ยนทิศ:** ลองเล่น Sky Pirates (Tower Defense) แล้ว "ไม่สนุกเลย" จึงพัก TD ไว้ก่อน แล้วกลับมาเน้น **Little Archer: Monster Rush** (เกม survivor เดิม)
   - เหตุผลที่ TD ไม่สนุก (เจ้านายตอบ): สู้เกม TD ทั่วไปไม่ได้, ป้อมและมอนเดินไม่สมจริง ดูขาด ๆ เกิน ๆ, ความยาก/ความยาวด่านไม่พอดี
   - บทเรียนสำหรับรอบใหม่: ทำให้ "รู้สึกดี" ในมือ (การเคลื่อนไหว, เอฟเฟกต์, จังหวะ) ก่อนเพิ่มเนื้อหา และให้เจ้านายลองเล่นเร็วกว่าเดิม
