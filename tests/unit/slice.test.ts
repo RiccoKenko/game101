@@ -157,3 +157,46 @@ describe('erasing cut ends', () => {
     expect(img.data[(10 * 40 + 20) * 4 + 3]).toBe(255);
   });
 });
+
+describe('portraits touching each other', () => {
+  it('shares one blob between two boxes when the second box would come out empty', () => {
+    // Two portraits elbow to elbow: one connected blob whose centre falls in the first box.
+    const blob = { x: 0, y: 0, w: 200, h: 80, area: 9000, labels: [1] };
+    const { groups, dropped } = groupByBoxes([blob], [
+      { x: 0, y: 0, w: 110, h: 100 },
+      { x: 110, y: 0, w: 110, h: 100 },
+    ]);
+    expect(dropped).toBe(0);
+    expect(groups[0]).toMatchObject({ x: 0, w: 110, h: 80 });
+    expect(groups[1]).toMatchObject({ x: 110, w: 90, h: 80 });
+  });
+});
+
+describe('healing ball joints', () => {
+  it('paints the lines inside a healed ellipse with the skin around them, keeping alpha and the outline', () => {
+    const W = 60;
+    const SKIN: Rgb = [240, 200, 170];
+    const data = new Uint8Array(W * W * 4);
+    for (let y = 10; y < 50; y++)
+      for (let x = 10; x < 50; x++) {
+        const i = (y * W + x) * 4;
+        // A dark crease ring (the drawn ball) in the middle of a skin square, with a dark border at the edge.
+        const ring = Math.abs(Math.hypot(x - 30, y - 30) - 8) < 1.2;
+        const border = x < 12 || x > 47 || y < 12 || y > 47;
+        data.set([...(ring || border ? OUTLINE : SKIN), 255], i);
+      }
+    const img: RgbaImage = { data, width: W, height: W };
+    const out = eraseEllipses(img, 0, 0, [[30, 30, 12, 12, 0, 'heal']]);
+    const px = (x: number, y: number) => Array.from(out.data.slice((y * W + x) * 4, (y * W + x) * 4 + 4));
+    // On the old crease: skin now.
+    for (const [x, y] of [[38, 30], [30, 22], [22, 30]]) {
+      const [r, g, b, a] = px(x, y);
+      expect(a).toBe(255);
+      expect(Math.hypot(r - SKIN[0], g - SKIN[1], b - SKIN[2])).toBeLessThan(25);
+    }
+    // The outline along the silhouette and everything outside the ellipse stay as drawn.
+    expect(px(10, 30)).toEqual([...OUTLINE, 255]);
+    expect(px(45, 45)).toEqual(Array.from(data.slice((45 * W + 45) * 4, (45 * W + 45) * 4 + 4)));
+    expect(px(5, 5)[3]).toBe(0);
+  });
+});

@@ -33,7 +33,10 @@ interface SheetConfig {
   regions?: [number, number][];
   /** Part boxes [x, y, w, h] in sheet pixels by part name, for sheets the automatic grouping gets wrong. */
   boxes?: Record<string, [number, number, number, number]>;
-  /** Ellipses [cx, cy, rx, ry, degrees] in sheet pixels to clear from a part, e.g. drawn "cut ends" at joints. */
+  /**
+   * Ellipses [cx, cy, rx, ry, degrees] in sheet pixels to clear from a part, e.g. drawn "cut ends" at joints; with a
+   * sixth value "heal", the lines inside are painted over with the surrounding skin instead (drawn ball joints).
+   */
   erase?: Record<string, Ellipse[]>;
 }
 
