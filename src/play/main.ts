@@ -22,7 +22,7 @@ import { Animator2D } from '../puppet/animator';
 import { buildAtlas } from '../puppet/atlas';
 import { CLIPS } from '../puppet/clips';
 import { heroClips } from '../puppet/clips/hero';
-import { loadPuppet, loadTexture } from '../puppet/loader';
+import { loadJson, loadPuppet, loadTexture } from '../puppet/loader';
 import type { Clip2D } from '../puppet/pose';
 import { Puppet, spriteGeometry, spriteMaterial, type PuppetAssets } from '../puppet/puppet';
 import type { Painted } from '../showcase/art';
@@ -222,6 +222,63 @@ shake.enabled = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const PIRATE_ART = Object.fromEntries((Object.keys(ENEMIES) as EnemyKind[]).map((k) => [k, paintPirate(k)])) as Record<EnemyKind, Painted>;
 const TOWER_ART = Object.fromEntries(TOWER_KINDS.map((k) => [k, [1, 2, 3].map((l) => paintTower(k, l))])) as Record<TowerKind, Painted[]>;
 const BRANCH_ART = Object.fromEntries(TOWER_KINDS.map((k) => [k, [0, 1].map((b) => paintTower(k, MAX_LEVEL, b as Branch))])) as Record<TowerKind, Painted[]>;
+
+/** A tower picture drawn by Codex, with where its round stone foundation sits in it (sprite px). */
+interface TowerPicture extends Painted {
+  /** The foundation's centre line and width, and how far down its bottom rim's middle is. */
+  fx: number;
+  fw: number;
+  fy: number;
+}
+
+/** Tower pictures by sprite name (e.g. "cannon-2", "storm-4a"); they load after the battle opens. */
+const TOWER_PICS: Record<string, TowerPicture> = {};
+const towerSprite = (kind: TowerKind, level: number, branch: Branch | null) => `${kind}-${branch !== null ? `4${'ab'[branch]}` : level}`;
+
+/**
+ * Finds a tower picture's foundation: the widest row of its bottom third (the stone platform's rim), as
+ * fractions of the picture, so it works on the half-size copies in the single-file build too.
+ */
+function measureFoundation(image: CanvasImageSource & { width: number; height: number }): { fx: number; fw: number; fy: number } {
+  const { width: w, height: h } = image;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(image, 0, 0);
+  const top = Math.floor(h * 0.66);
+  const alpha = ctx.getImageData(0, top, w, h - top).data;
+  const rows: { y: number; l: number; r: number }[] = [];
+  for (let y = 0; y < h - top; y++) {
+    let l = -1;
+    let r = -1;
+    for (let x = 0; x < w; x++)
+      if (alpha[(y * w + x) * 4 + 3] > 128) {
+        if (l < 0) l = x;
+        r = x;
+      }
+    if (l >= 0) rows.push({ y: y + top, l, r });
+  }
+  const widest = Math.max(...rows.map((row) => row.r - row.l));
+  // The lowest row (nearly) as wide as the widest: the middle of the rim at the bottom of the platform.
+  const rim = rows.filter((row) => row.r - row.l >= widest * 0.97).pop()!;
+  return { fx: (rim.l + rim.r) / 2 / w, fw: widest / w, fy: rim.y / h };
+}
+
+async function loadTowerPictures(): Promise<void> {
+  const sprites = await loadJson<Record<string, { w: number; h: number }>>('sprites/towers/sprites.json').catch(() => null);
+  if (!sprites) return;
+  await Promise.all(
+    Object.entries(sprites).map(async ([name, { w, h }]) => {
+      const texture = await loadTexture(`sprites/towers/${name}.png`, renderer).catch(() => null);
+      if (!texture) return;
+      const f = measureFoundation(texture.image as HTMLImageElement);
+      TOWER_PICS[name] = { texture, w, h, fx: f.fx * w, fw: f.fw * w, fy: f.fy * h };
+    }),
+  );
+  // Swap the stand-ins already built for the pictures.
+  for (const slot of towers.keys()) setTower(slot, true);
+}
 const BALL_ART = paintBall();
 const SHARD_ART = paintShard();
 const EAGLE_ART = paintEagle();
@@ -497,18 +554,31 @@ function drivePuppet(v: PirateView, dt: number, order: number): void {
   puppet.hitFlash(frozen ? 0.4 : chilled ? 0.2 : 0);
 }
 
-function setTower(slot: number): void {
+/** The width the tower pictures' stone foundation is drawn at: just covering the painted tower spot. */
+const FOUNDATION = 2.3;
+
+function setTower(slot: number, redraw = false): void {
   const t = battle.towers[slot];
   const old = towers.get(slot);
-  if (old && (!t || old.level !== t.level || old.kind !== t.kind)) {
+  if (old && (redraw || !t || old.level !== t.level || old.kind !== t.kind)) {
     scene.remove(old.mesh);
     towers.delete(slot);
   }
   if (!t || towers.has(slot)) return;
   const [x, y] = level.slots[slot];
-  const art = t.branch !== null ? BRANCH_ART[t.kind][t.branch] : TOWER_ART[t.kind][t.level - 1];
-  const mesh = sprite(art, (level.slotRadius * 2.1) / 150, 'feet');
-  world([x, y + 20], 0, mesh.position);
+  const pic = TOWER_PICS[towerSprite(t.kind, t.level, t.branch)];
+  let mesh: THREE.Mesh;
+  if (pic) {
+    // Hung from the middle of its foundation's bottom rim, which sits just below the spot's centre.
+    const geo = spriteGeometry(pic.w, pic.h).translate(-pic.fx, pic.fy, 0);
+    mesh = new THREE.Mesh(geo, spriteMaterial(pic.texture, flash0));
+    mesh.scale.setScalar((level.slotRadius * FOUNDATION) / pic.fw);
+    world([x, y + level.slotRadius * 0.45], 0, mesh.position);
+  } else {
+    const art = t.branch !== null ? BRANCH_ART[t.kind][t.branch] : TOWER_ART[t.kind][t.level - 1];
+    mesh = sprite(art, (level.slotRadius * 2.1) / 150, 'feet');
+    world([x, y + 20], 0, mesh.position);
+  }
   mesh.renderOrder = sortOrder(y + 20);
   scene.add(mesh);
   towers.set(slot, { mesh, kind: t.kind, level: t.level, recoil: 0 });
@@ -1557,6 +1627,7 @@ function frame(now: number): void {
 
 newBattle();
 applyView();
+void loadTowerPictures();
 if (DIRECT) {
   if (params.get('story') === '1') void playScene(sceneKey(DIRECT.id, 'before'), true);
 } else showChapter();

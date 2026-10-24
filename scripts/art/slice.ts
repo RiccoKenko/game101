@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import {
   cropPiece,
+  cutPolygons,
+  despeck,
   eraseEllipses,
   findPieces,
   groupByBoxes,
@@ -19,6 +21,7 @@ import {
   orderPieces,
   removeBackground,
   trim,
+  unmixSpill,
   type Box,
   type Ellipse,
   type Piece,
@@ -38,6 +41,14 @@ interface SheetConfig {
    * sixth value "heal", the lines inside are painted over with the surrounding skin instead (drawn ball joints).
    */
   erase?: Record<string, Ellipse[]>;
+  /** Polygons (lists of [x, y] in sheet pixels) to clear from a part: strays the AI drew into it. */
+  cut?: Record<string, [number, number][][]>;
+  /** The colour of glows and snow painted over the background on this sheet, to turn pink spill back into it (`unmixSpill`). */
+  spill?: [number, number, number];
+  /** Clean spill trapped inside the art too, not only where it touches the surroundings. */
+  spillEverywhere?: boolean;
+  /** Clear left-over blobs smaller than this many pixels from every part. */
+  despeck?: number;
 }
 
 interface SheetEntry {
@@ -108,7 +119,8 @@ async function main() {
   const manifest: Record<string, SheetEntry> = existsSync(manifestFile) ? JSON.parse(readFileSync(manifestFile, 'utf8')) : {};
   const files = readdirSync(inDir);
 
-  for (const sheet of SHEETS) {
+  // The character sheets every brief asks for, plus any other sheet sheets.json describes (e.g. the towers).
+  for (const sheet of [...new Set([...SHEETS, ...Object.keys(config[id] ?? {})])]) {
     if (only.length && !only.includes(sheet)) continue;
     const file = files.find((f) => new RegExp(`^${id}_${sheet}\\.(png|webp|jpe?g)$`, 'i').test(f));
     if (!file) continue;
@@ -152,6 +164,9 @@ async function main() {
         const out = `${sheet}/${String(k + 1).padStart(2, '0')}-${name}.png`;
         let cut = cropPiece(image, labels, part);
         if (cfg.erase?.[name]) cut = eraseEllipses(cut, part.x - 8, part.y - 8, cfg.erase[name]);
+        if (cfg.cut?.[name]) cut = cutPolygons(cut, part.x - 8, part.y - 8, cfg.cut[name]);
+        if (cfg.spill && background) cut = unmixSpill(cut, background, cfg.spill, 48, cfg.spillEverywhere);
+        if (cfg.despeck) cut = despeck(cut, cfg.despeck);
         await asSharp(cut).png().toFile(join(outDir, out));
         entry.parts.push({ name, file: out, x: part.x, y: part.y, w: part.w, h: part.h });
         checks.push({ box: part, label: `${k + 1} ${name}` });

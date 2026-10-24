@@ -439,6 +439,83 @@ export function eraseEllipses(img: RgbaImage, ox: number, oy: number, ellipses: 
   return { data: out, width: img.width, height: img.height };
 }
 
+/** Clears the pixels inside each polygon (corners in sheet pixels): strays drawn into a part, like a roof from another sheet. */
+export function cutPolygons(img: RgbaImage, ox: number, oy: number, polygons: [number, number][][]): RgbaImage {
+  const out = new Uint8Array(img.data);
+  for (const poly of polygons)
+    for (let y = 0; y < img.height; y++)
+      for (let x = 0; x < img.width; x++) {
+        const px = x + ox + 0.5;
+        const py = y + oy + 0.5;
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const [xi, yi] = poly[i];
+          const [xj, yj] = poly[j];
+          if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+        }
+        if (inside) out.fill(0, (y * img.width + x) * 4, (y * img.width + x) * 4 + 4);
+      }
+  return { data: out, width: img.width, height: img.height };
+}
+
+/**
+ * Glows, snow and haze painted over the coloured background come out as opaque pink: each such pixel is really
+ * `colour` laid over the background at some strength. Starting from the transparent surroundings, walks through
+ * pixels that lie near the mix of `bg` and `colour` and turns each into `colour` at that strength, so a pink
+ * halo becomes a soft violet glow and pink-smeared snow becomes white streaks. Art inside the part, cut off from
+ * the surroundings by ordinary pixels (e.g. glowing runes carved into stone), is left alone, unless `everywhere`
+ * (for art that has no pink of its own, so spill trapped inside it is cleaned too).
+ */
+export function unmixSpill(img: RgbaImage, bg: Rgb, colour: Rgb, near = 48, everywhere = false): RgbaImage {
+  const { width: w, height: h } = img;
+  const out = new Uint8Array(img.data);
+  const dir: Rgb = [colour[0] - bg[0], colour[1] - bg[1], colour[2] - bg[2]];
+  const len2 = dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2 || 1;
+  /** Strength of `colour` in the pixel if it lies near the mix line, else -1. */
+  const strength = (p: number) => {
+    const c = [out[p * 4] - bg[0], out[p * 4 + 1] - bg[1], out[p * 4 + 2] - bg[2]];
+    const t = (c[0] * dir[0] + c[1] * dir[1] + c[2] * dir[2]) / len2;
+    if (t >= 0.97) return -1;
+    const k = Math.max(0, t);
+    return Math.hypot(c[0] - dir[0] * k, c[1] - dir[1] * k, c[2] - dir[2] * k) < near ? k : -1;
+  };
+  const seen = new Uint8Array(w * h);
+  const queue: number[] = [];
+  for (let p = 0; p < w * h; p++) {
+    if (out[p * 4 + 3] === 0) {
+      seen[p] = 1;
+      queue.push(p);
+    } else if (everywhere) {
+      const k = strength(p);
+      if (k >= 0) out.set([colour[0], colour[1], colour[2], Math.round(out[p * 4 + 3] * k)], p * 4);
+    }
+  }
+  while (queue.length) {
+    const p = queue.pop()!;
+    const x = p % w;
+    const y = (p - x) / w;
+    for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) {
+      if (q < 0 || seen[q]) continue;
+      seen[q] = 1;
+      const k = strength(q);
+      if (k < 0) continue;
+      out.set([colour[0], colour[1], colour[2], Math.round(out[q * 4 + 3] * k)], q * 4);
+      queue.push(q);
+    }
+  }
+  return { data: out, width: w, height: h };
+}
+
+/** Clears blobs smaller than `minArea` pixels (left-over specks after cutting strays away). */
+export function despeck(img: RgbaImage, minArea: number, alphaMin = 24): RgbaImage {
+  const { pieces, labels } = findPieces(img, alphaMin);
+  const small = new Set(pieces.filter((p) => p.area < minArea).flatMap((p) => p.labels));
+  if (!small.size) return img;
+  const out = new Uint8Array(img.data);
+  for (let p = 0; p < img.width * img.height; p++) if (small.has(labels[p])) out.fill(0, p * 4, p * 4 + 4);
+  return { data: out, width: img.width, height: img.height };
+}
+
 /**
  * Paints over the lines and highlights inside an area (pixel indices `inside`) with the colour of the skin
  * around it, keeping the outline along the part's silhouette (pixels within `edge` of transparency) and the

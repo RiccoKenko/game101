@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cropPiece, eraseEllipses, findPieces, groupByBoxes, groupPieces, orderPieces, removeBackground, type RgbaImage } from '../../scripts/art/slicer';
+import { cropPiece, cutPolygons, despeck, eraseEllipses, findPieces, groupByBoxes, groupPieces, orderPieces, removeBackground, unmixSpill, type RgbaImage } from '../../scripts/art/slicer';
 
 type Rgb = [number, number, number];
 const MAGENTA: Rgb = [255, 0, 255];
@@ -198,5 +198,45 @@ describe('healing ball joints', () => {
     expect(px(10, 30)).toEqual([...OUTLINE, 255]);
     expect(px(45, 45)).toEqual(Array.from(data.slice((45 * W + 45) * 4, (45 * W + 45) * 4 + 4)));
     expect(px(5, 5)[3]).toBe(0);
+  });
+});
+
+describe('cleaning up AI strays', () => {
+  const blank = (w: number, h: number): RgbaImage => ({ data: new Uint8Array(w * h * 4), width: w, height: h });
+  const put = (img: RgbaImage, x: number, y: number, rgba: number[]) => img.data.set(rgba, (y * img.width + x) * 4);
+  const at = (img: RgbaImage, x: number, y: number) => Array.from(img.data.slice((y * img.width + x) * 4, (y * img.width + x) * 4 + 4));
+
+  it('cuts a polygon given in sheet pixels', () => {
+    const img: RgbaImage = { data: new Uint8Array(20 * 20 * 4).fill(255), width: 20, height: 20 };
+    // The image sits at (100, 100) on the sheet; the triangle covers its top-left half.
+    const out = cutPolygons(img, 100, 100, [[[100, 100], [120, 100], [100, 120]]]);
+    expect(at(out, 2, 2)[3]).toBe(0);
+    expect(at(out, 17, 17)[3]).toBe(255);
+  });
+
+  it('turns pink spill touching the surroundings into the glow colour, and leaves enclosed pink alone', () => {
+    const bg: [number, number, number] = [255, 25, 255];
+    const glow: [number, number, number] = [180, 140, 255];
+    const img = blank(9, 3);
+    // Row 1: transparent, then a halo pixel (glow 40% over the background), then solid stone, then an enclosed rune.
+    const mix = bg.map((b, i) => Math.round(b + (glow[i] - b) * 0.4));
+    put(img, 1, 1, [...mix, 255]);
+    for (let x = 2; x < 9; x++) for (let y = 0; y < 3; y++) put(img, x, y, [120, 110, 100, 255]);
+    put(img, 5, 1, [...mix, 255]);
+    const out = unmixSpill(img, bg, glow);
+    expect(at(out, 1, 1).slice(0, 3)).toEqual(glow);
+    expect(at(out, 1, 1)[3]).toBeGreaterThan(90);
+    expect(at(out, 1, 1)[3]).toBeLessThan(115);
+    expect(at(out, 5, 1)).toEqual([...mix, 255]);
+    expect(at(unmixSpill(img, bg, glow, 48, true), 5, 1).slice(0, 3)).toEqual(glow);
+  });
+
+  it('drops specks smaller than the given area', () => {
+    const img = blank(30, 30);
+    for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) put(img, x, y, [0, 0, 0, 255]);
+    put(img, 25, 25, [0, 0, 0, 255]);
+    const out = despeck(img, 20);
+    expect(at(out, 5, 5)[3]).toBe(255);
+    expect(at(out, 25, 25)[3]).toBe(0);
   });
 });
