@@ -13,6 +13,7 @@
     "art": "tsx scripts/art/slice.ts",
     "art:publish": "tsx scripts/art/publish.ts",
     "map:sketch": "tsx scripts/art/map-sketch.ts",
+    "map:chapter": "tsx scripts/art/chapter-sketch.ts",
     "showcase:artifact": "node scripts/build-showcase.mjs",
     "play:artifact": "node scripts/build-showcase.mjs sky-pirates-play.html play"
   },

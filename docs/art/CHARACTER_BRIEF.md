@@ -6,6 +6,9 @@
 >   - ในหน้า Art Brief ที่ Claude ส่งให้ มีแบบเติมช่องครบแล้วพร้อมปุ่ม Copy
 > - ถ้าอยากคุมเองทีละภาพ: ใช้ prompt แยกในหัวข้อ 8.0-8.9
 > - **แผนที่ด่าน:** หัวข้อ 9 แนบภาพร่างจาก Claude แล้ววาง prompt ให้ ChatGPT วาดทับ
+> - **ป้อม 4 แบบ:** หัวข้อ 11 วางครั้งเดียว ได้ 4 ภาพ
+> - **แผนที่ด่าน 2-3 และแผนที่เลือกด่าน:** หัวข้อ 12-13 แนบภาพร่างแล้ววาง prompt
+> - **ภาพครึ่งตัวของ Talon:** หัวข้อ 14
 >
 > ผลลัพธ์ที่ได้กลับมา Claude จะนำไปตัดชิ้น ใส่กระดูก และทำท่าทางในเกมเอง
 
@@ -14,6 +17,7 @@ This brief is for an AI image generator (Codex `$imagegen`, ChatGPT Images or si
 - Each character's look is defined in section 7.
 - Section 8 holds the exact prompts, one image per prompt.
 - Section 9 is for level maps, painted over a layout sketch.
+- Sections 10–14 are ready-to-paste prompts: the remaining characters, the towers, the level 2 and 3 maps, the Chapter 1 level-select map and Talon's portraits.
 
 ---
 
@@ -1142,4 +1146,303 @@ HOW TO DELIVER
 - No repository or file work: do not create branches, commits or pull requests.
 
 Start now with Image 1.
+```
+
+---
+
+## 11. Towers: ready-to-paste prompt (one chat, four sheets)
+
+> **สำหรับเจ้านาย:** ป้อม 4 แบบ แบบละ 1 ภาพ ในแต่ละภาพมี 5 ป้อมเรียงกัน: ระดับ 1, 2, 3 และสายระดับ 4 อีก 2 สาย
+> - **แนบ:** ภาพแผนที่ด่าน 1 ที่ Codex วาดเสร็จแล้ว (`level1_map`) ให้มุมกล้องกับสไตล์ตรงกัน ถ้าหาไม่เจอก็วางได้เลยโดยไม่ต้องแนบ
+> - ก๊อปทั้งกล่องไปวางในแชตใหม่ของ Codex ครั้งเดียว หลังภาพแรก (ป้อมธนู) ถ้าถูกใจพิมพ์ "ผ่าน" แล้วพิมพ์ "ต่อ" จนครบ 4 ภาพ
+> - **ได้กลับมา:** `towers_archer.png`, `towers_cannon.png`, `towers_storm.png`, `towers_frost.png` แปะกลับมาในแชตกับ Claude ตอนที่ Claude ตอบจบแล้ว
+
+How the towers are used:
+- **Placement.** The game cuts each sheet into 5 towers (left to right). Each tower is drawn on a stone tower spot of the map, anchored at the bottom centre of its foundation, about 110 px wide on the 1536 px map.
+- **Order.** Level 1, level 2, level 3, then the two level-4 specialisations in the order of `src/td/units.ts` (the first branch, then the second).
+- **Later animation.** The cannon barrels, the storm crystals and the frost clouds may get small code animations (recoil, bobbing, puffing) later. They are drawn in place, with a clear outline, so they can be cut out by hand if needed.
+
+```
+You are the building artist for "Little Archer: Sky Pirates", a mobile tower-defense game in the style of Kingdom Rush. In this chat you will draw the game's 4 kinds of defence tower, one sheet per kind. Each sheet shows 5 towers in one row: the tower at level 1, level 2 and level 3, then its two level-4 specialisations. The game team cuts every sheet into separate towers and stands them on the round stone tower spots of the painted level maps. If an image of a level map is attached, it shows the game's painted style and camera angle: match it.
+
+HOW WE WORK
+- Make ONE image per reply, in the order of the IMAGE LIST below. Start with Image 1 right away.
+- Under each image write only one line: "Save as: <file name>". Then wait.
+- When I write NEXT (or ต่อ), make the next image.
+- When I write REDO (or วาดใหม่), redraw the last image and follow the rules more strictly.
+- Any other comment from me is a change request for the last image: redraw it with that change.
+- After Image 1, STOP. Do not start Image 2 until I write APPROVED (or ผ่าน). Until then, only revise Image 1 as I ask.
+- Images 2 to 4 must match the approved Image 1 exactly: the same style, camera angle, foundation, scale and line weight. Use it as a reference image if you can.
+
+STYLE
+- HD 2D hand-drawn anime game art that matches the game's characters and painted maps (not pixel art, not 3D).
+- Storybook fantasy buildings in the spirit of Kingdom Rush towers: chunky, charming, slightly exaggerated shapes with big readable silhouettes. Every tower must still read when shrunk to about 110 px wide.
+- Line art: clean and confident, dark warm brown (#3B2A2A), never pure black. Outer contour about 4 px, inner lines about 2 px at 1024 px image height. Same weight in every image.
+- Colouring: anime cel shading with flat base colours, one soft cool shadow tone (slightly violet) and small crisp highlights. Gentle stone texture, wood grain and roof shingles, but no noise. Light comes from the upper left in every image.
+- Avoid: 3D render, plastic / clay / toy look, Minecraft blockiness, photo textures, realistic grime, thick sticker outlines, glossy 3D highlights.
+
+TECHNICAL
+- Background: real transparent background if you can. Otherwise a perfectly flat solid #FF00FF magenta background (no gradient, texture, floor or shadow). Never draw a checkerboard pattern. Never use magenta or hot pink anywhere in a tower.
+- No text, letters, numbers, labels, logos, signatures, watermarks, frames, borders, UI, level pips or stars anywhere. Banners and flags carry simple shapes only (an arrow, a crystal, a snowflake), never writing.
+- No ground, grass patch, ground shadow, glow halo, aura, light rays, smoke, sparkles, particles or loose snowflakes around the towers. Glowing parts (crystals, runes, windows, lanterns) are painted as bright colours INSIDE the object, with no halo spilling onto the background.
+- No characters: no archers, gunners, mages or animals on or around the towers. The game draws its own.
+- Landscape, at the highest resolution available (at least 1536 x 1024).
+
+SHEET LAYOUT (every image)
+- ONE row of 5 towers, left to right, in the numbered order given.
+- Think of the image as 5 equal columns: each tower is centred in its own column, with at least 60 px of empty background around it. Towers never touch or overlap each other or the image edge.
+- All 5 towers are drawn at the same scale, and the bottoms of all 5 foundations sit on the same horizontal line, about 12% above the bottom edge.
+
+CAMERA AND FOOTPRINT (every tower)
+- The same camera as the game's painted maps: seen from above at a steep angle, like Kingdom Rush.
+- Every tower stands on the SAME round stone foundation: a low round platform of fitted grey stone blocks (#B9B9C6, shade #8B8B98) with a thin ring of moss, exactly like the empty tower spots on the map, because the tower is built on that spot. Its top reads as a slightly flattened circle, with a short band of its stone side showing at the front.
+- The foundation is the same size in all 20 towers: about 65% of a column's width. Only small trim details on it change with the tower kind (frost on the Frost Cloud, carved runes on the Storm Crystal).
+- The tower rises upright from the foundation: we see its front and a little of its roof or top from above, like the trees on the map. Nothing sticks out more than about 15% past the sides of the foundation, so every tower is about the same width.
+- Height grows with the level, measured against the foundation's width: level 1 about 1.0 times, level 2 about 1.25 times, level 3 about 1.5 times, level 4 about 1.7 times (a very tall level-4 tower may reach 2 times).
+
+LEVELS
+- Each level is clearly grander than the one before. Level 1 is small and home-made, level 2 is sturdier and taller with more stone, and level 3 is a proud fortified tower with gold trim and banners. The two level-4 towers are the most impressive, and they look clearly different from each other.
+- Level colours, so players can read a tower's level at a glance: level 1 trim and roof in rust brown (#A0522D), level 2 in royal blue (#3F74C4), level 3 in gold (#E0A821). Each level-4 tower has its own colour, given in its description.
+- Shared materials: warm grey stone (#B9B9C6), honey-brown timber (#A8763F) with darker planks (#7A4F30), dark iron (#3A3F4B, highlight #5B6375), brass and gold fittings (#F4C34F), Little Archer's forest green (#3E9A4F) for banners.
+
+PARTS THE GAME MAY ANIMATE LATER
+Draw them in place, complete and clearly outlined, never hidden behind other parts:
+- Cannon barrels (they will recoil): the whole barrel visible, resting on its carriage or turret.
+- Storm crystals (they will bob and spin): floating above their holder with a clear gap of empty space underneath.
+- Frost clouds (they will puff and drift): floating above their basin with a clear gap of empty space underneath.
+
+IMAGE LIST
+
+Image 1 (save as towers_archer.png): ARCHER TOWER SHEET, landscape.
+The Archer Tower shoots fast arrows and is the only cheap tower that hits flying pirates. Timber and stone, with green-and-gold banners that match Little Archer's hood.
+1. Level 1: a small wooden lookout hut on four stout log legs, with one arrow slit, a steep rust-brown shingled roof (#A0522D), a little yellow pennant on top and a bundle of arrows leaning against one leg.
+2. Level 2: a stone lower storey with a wooden lookout on top and a small railed balcony, two arrow slits, a blue shingled roof (#3F74C4) with a yellow pennant, and a quiver rack on the wall.
+3. Level 3: a proud round stone tower with a timber top storey and a gold shingled roof (#E0A821) under a brass spire. Two green banners with a gold arrow shape hang from it, a wide arched window shows a mounted bow, and the door is banded with iron.
+4. Level 4, Sniper Nest (huge range, big critical hits): very tall and slender. A narrow stone column rises to a high crow's-nest lookout under a steep purple roof (#7B4FB8) with a gold star-shaped finial. A long brass spyglass and a great longbow on a swivel mount poke out to the right, and a rope ladder hangs down the column.
+5. Level 4, Volley Tower (three arrows at once): a wide, sturdy two-storey wooden fort on stone with a broad red roof (#C8402F) and three yellow pennants (#F4C34F). Three big crossbows are mounted side by side along the front battlement, with quivers stuffed with red-and-white-fletched arrows.
+
+Image 2 (save as towers_cannon.png): CANNON SHEET, landscape.
+The Cannon lobs heavy cannonballs that burst on the road and hit every pirate nearby; only the Flak Cannon can hit flyers. Dark iron barrels on oak carriages, inside stone emplacements. Every barrel points up and to the right.
+1. Level 1: a short, fat iron cannon with one rust-brown band (#A0522D) on a simple wooden carriage with two spoked wheels, behind a low ring of sandbags. A small pyramid of cannonballs sits beside it.
+2. Level 2: a longer cannon with blue bands (#3F74C4) on a sturdier carriage, inside a low round stone wall with a plank rim, with a powder barrel and a water bucket.
+3. Level 3: a heavy cannon with gold bands (#E0A821) and a flared muzzle, on a turntable inside a crenellated stone bastion, with a riveted iron shield plate around the barrel and a lantern on a post.
+4. Level 4, Mortar (very long range, giant blasts): an enormous squat, wide-mouthed mortar pot aimed almost straight up. Dark iron with deep red bands (#8A2B22) and big rivets, set in a deep round stone pit, with huge cannonballs stacked beside it. Its dark open mouth is visible from above.
+5. Level 4, Flak Cannon (bursts that hit flyers too): twin long barrels pointing steeply up into the sky on a swivelling turret, with teal bands (#2A8F8A), brass ring sights for aiming at airships, a small gunner's seat and ammunition crates.
+
+Image 3 (save as towers_storm.png): STORM CRYSTAL SHEET, landscape.
+The Storm Crystal fires magic lightning that goes straight through armour. Carved lavender-grey stone (#C5BFE3, shade #7D76A3) with copper (#D08A3C) and gold fittings, and floating violet storm crystals (#B48CFF, deep purple lines #4B2A8A, white highlights). The crystals and the carved runes glow violet inside their own shapes. Violet and lavender only: never pink or magenta.
+1. Level 1: a short tapering pillar of lavender stone with a carved cup on top. A small faceted violet crystal floats just above the cup, with a clear gap between them.
+2. Level 2: a taller pillar with copper bands and glowing violet runes. A bigger crystal floats over a wider cup, between two small stone prongs that do not touch it.
+3. Level 3: an elegant carved obelisk with gold-and-copper rings. Three curved claws reach up around a large crystal floating in the middle, with two tiny shards floating beside it.
+4. Level 4, Lightning Spire (bolts that jump from pirate to pirate): a tall stone-and-copper spire wound with three copper coils, with small zig-zag copper fins and a lightning-rod tip. The crystal floats at the very top.
+5. Level 4, Arcane Lens (a beam that burns hotter the longer it holds): a crystal held inside a gold armillary ring, like a small orrery, with a big round lens of clear pale-lilac glass in a gold frame mounted in front of it, angled to the right like a telescope.
+
+Image 4 (save as towers_frost.png): FROST CLOUD SHEET, landscape.
+The Frost Cloud chills every pirate in range so they walk slowly. Pale icy stone (#CFE6F2, shade #8FB4C8), packed ice (#A9D8EF), fluffy white clouds (#FFFFFF, shade #DDEFFA) and ice-blue accents (#4FA8D8) with snowflake shapes. Frost and icicles creep over the foundation.
+1. Level 1: a small round basin of icy stone with a few icicles on its rim and a snowflake carved on its front. A small fluffy white cloud of three puffs floats just above it, with a clear gap between them.
+2. Level 2: a taller pedestal of ice and stone with silver bands, and a bigger cloud of four puffs floating above it.
+3. Level 3: an ornate frosted stone well with ice-crystal spikes around its rim and silver snowflake ornaments. A large cloud of five puffs floats above it, with a few icicles hanging from the cloud's underside.
+4. Level 4, Blizzard (a wide chill that also chips away health): a wide, heavy grey-blue storm cloud (#8FA6C4, light #B3C6DE) swirling above a tall ice pylon, with icicles everywhere and a fringe of snow streaks hanging from the cloud's underside (attached to the cloud, no loose snowflakes).
+5. Level 4, Ice Shard (shards that freeze pirates solid): no cloud. A tall cluster of sharp pale-cyan ice crystals (#BFF0FF) grows from the pedestal, the tallest in the middle, with one big pointed shard balanced at the top, aimed slightly to the right, ready to fire.
+
+HOW TO DELIVER
+- Make every image with your image generation tool and show it here in the chat so I can download it. Never draw the towers with code (SVG, canvas, Python, Pillow). If you cannot generate images, stop and tell me.
+- No repository or file work: do not create branches, commits or pull requests.
+
+Start now with Image 1.
+```
+
+---
+
+## 12. Level 2 and level 3 maps
+
+> **สำหรับเจ้านาย:** แผนที่ด่าน 2 และ 3 ใช้วิธีเดียวกับหัวข้อ 9.1
+> - แชตใหม่ 1 แชตต่อ 1 ด่าน: **แนบ** ภาพร่างของด่านนั้น (`level2-sketch.png` หรือ `level3-sketch.png`) แล้ววาง prompt ของด่านนั้น
+> - **ได้กลับมา:** `level2_map.png` และ `level3_map.png` (ด่านละ 1 ภาพ)
+
+The sketches come from `npm run map:sketch -- level2` and `-- level3` and follow section 9: the road, tower spots, dock and vault are at the exact pixels the game uses. Save the paintings as `art/incoming/maps/<level>_map.png`.
+
+### 12.1 Level 2 map: `level2_map.png` (landscape, attach `level2-sketch.png`)
+
+```
+You are the environment artist for "Little Archer: Sky Pirates", a mobile tower-defense game in the style of Kingdom Rush. The attached image is the LAYOUT SKETCH of level 2, "Windmill Terraces": Sky Haven's farm island, where the pirates now raid the farms. Repaint it as a finished, beautiful game map.
+
+KEEP THE LAYOUT EXACTLY
+The game's code uses the pixel positions of this sketch, so the painting must line up with it.
+- One landscape image, 1536 x 1024, with exactly the same framing as the sketch. Do not crop, zoom, rotate, mirror or re-frame.
+- Tan band = the ROAD the pirates walk: a dirt farm track with worn cobblestones and wheel ruts. Keep its exact route, curves and width. No branches, no shortcuts.
+- Grey circles = TOWER SPOTS: empty round stone platforms, flat and slightly raised, with a ring of moss. Same place and same size, every one of them. Leave them empty.
+- Brown planks on the left edge = the AIRSHIP DOCK: a wooden pier over the sky with posts and rope railings, where the road starts. No airship.
+- Grey circle with the cyan diamond at the bottom left = the CRYSTAL VAULT: a small stone shrine holding a cluster of glowing cyan Sky Crystals, where the road ends.
+- Light-blue line = a little STREAM. It rises from a round spring pond at the top, runs down across the island and pours off the bottom edge as a small waterfall into the clouds. Keep its course.
+- Brown plank rectangles across the road = two small wooden BRIDGES where the road crosses the stream. Same place; the road runs straight over them at its full width.
+- Darker green bands with a step edge = the TERRACES: the island steps down in three wide grassy tiers from top to bottom. Each step is a low bank of earth and dry-stone wall with grass spilling over it. Keep the steps where the sketch has them.
+- White towers with red caps and four sails = three WINDMILLS in cream plaster and stone, with red-brown caps and cloth sails on wooden frames. Same place and roughly the same size.
+- Yellow striped rectangles = golden wheat fields. Brown striped rectangles = ploughed vegetable rows with cabbages and pumpkins. Keep them roughly where they are.
+- Dark green dots = round orchard trees, some with little red apples. You may add hay bales, a scarecrow, wooden fences, beehives, flowers or a signpost, but only on open grass.
+- Green shape = the grassy top of the floating island. Brown band below it = the island's rocky cliff, with hanging roots and a few small crystals in the rock.
+- Light blue with white shapes = a bright morning sky with soft clouds around the island.
+
+VIEW
+- Seen from above at a steep angle, like Kingdom Rush: the island top keeps the shape of the sketch; windmills, trees and the shrine stand upright and are seen slightly from above; the cliff shows the island's thickness below its front edge.
+
+STYLE
+- HD 2D hand-drawn anime game art that matches the game's characters and the level 1 map: clean warm-brown line art (#3B2A2A, never black), soft cel shading, light from the upper left, warm and adventurous, bright and easy to read on a phone.
+- Fresh, sunny farm colours: lush greens on the terraces, golden wheat, rich brown earth. The road has wheel ruts, pebbles and a soft edge into the grass.
+
+RULES
+- Do not move, add or remove the road, the tower spots, the bridges, the dock or the vault.
+- Keep the road and the tower spots clear: nothing stands on them or hangs over them, and tall things (windmills, trees) never hide them.
+- No characters or animals, no airship, no towers, no text, no numbers, no UI, no frame, no watermark.
+- No dark vignette and no heavy fog: the whole map stays bright.
+
+Make the image now. Under it write only: Save as: level2_map.png
+If I write REDO (or วาดใหม่), paint it again and follow the layout more strictly. Any other comment is a change request: repaint with that change and keep everything else.
+
+HOW TO DELIVER
+- Make the map with your image generation tool and show it here in the chat so I can download it. Never draw it with code (SVG, canvas, Python, Pillow). If you cannot generate images, stop and tell me.
+- No repository or file work: do not create branches, commits or pull requests.
+```
+
+### 12.2 Level 3 map: `level3_map.png` (landscape, attach `level3-sketch.png`)
+
+```
+You are the environment artist for "Little Archer: Sky Pirates", a mobile tower-defense game in the style of Kingdom Rush. The attached image is the LAYOUT SKETCH of level 3, "Lighthouse Point": a rocky cliff island at the edge of the sky, where Sky Haven keeps a crystal vault at the foot of an old lighthouse. The pirates land on the far side for their biggest attack yet. Repaint it as a finished, beautiful game map.
+
+KEEP THE LAYOUT EXACTLY
+The game's code uses the pixel positions of this sketch, so the painting must line up with it.
+- One landscape image, 1536 x 1024, with exactly the same framing as the sketch. Do not crop, zoom, rotate, mirror or re-frame.
+- Tan band = the ROAD the pirates walk: a dusty clifftop path with worn flagstones and loose pebbles. Keep its exact route, curves and width. No branches, no shortcuts.
+- Grey circles = TOWER SPOTS: empty round stone platforms, flat and slightly raised, with a ring of moss. Same place and same size, every one of them. Leave them empty.
+- Red-brown planks on the right edge = the PIRATES' LANDING: a rough, pirate-built wooden jetty over the sky, with mismatched planks, rope lashings and a tattered plain flag, where the road starts. No airship.
+- Striped tower on the left point = the OLD LIGHTHOUSE: a tall stone lighthouse with weathered red-and-white bands and a lamp room glowing warm gold. Keep it where it is, the same height, rising above the island's rim into the sky.
+- Grey circle with the cyan diamond at the lighthouse's foot = the CRYSTAL VAULT: the lighthouse's old stone base, opened up into a round shrine with an arched doorway, holding a cluster of glowing cyan Sky Crystals. The road ends there.
+- Light grey-beige band around the rim and grey-beige patches = bare rock and stony ground, with tufts of tough grass. Small grey shapes = boulders.
+- Dark green dots = hardy, wind-bent pine trees and shrubs. You may add rocks, wildflowers, an old anchor, a broken fence or a signpost, but only on open ground.
+- Green shape = the island top: short, wind-swept grass. Grey band below it = tall grey stone cliffs with cracks, ledges and a few small crystals in the rock.
+- The two small green-topped rocks in the sky = tiny islets drifting near the island.
+- Light blue with white shapes = the sky: paint it as a dramatic late-afternoon sky. Warm golden-orange light near the horizon and soft pink-gold clouds, with a wall of dark purple-grey storm clouds gathering along the top right, behind the pirates' landing: Captain Stormbeard is coming.
+
+VIEW
+- Seen from above at a steep angle, like Kingdom Rush: the island top keeps the shape of the sketch; the lighthouse, trees and rocks stand upright and are seen slightly from above; the cliff shows the island's thickness below its front edge.
+
+STYLE
+- HD 2D hand-drawn anime game art that matches the game's characters and the level 1 map: clean warm-brown line art (#3B2A2A, never black), soft cel shading, warm and adventurous, easy to read on a phone.
+- The low sun is off the picture to the upper left, so the light still comes from the upper left: warm, golden and a little dramatic. The island itself stays bright and clear; only the far sky at the top right is dark.
+
+RULES
+- Do not move, add or remove the road, the tower spots, the landing, the lighthouse or the vault.
+- Keep the road and the tower spots clear: nothing stands on them or hangs over them, and tall things (the lighthouse, trees, rocks) never hide them.
+- No characters or animals, no airship, no towers, no text, no numbers, no UI, no frame, no watermark.
+- No dark vignette and no heavy fog over the island: the road, spots and vault stay bright.
+
+Make the image now. Under it write only: Save as: level3_map.png
+If I write REDO (or วาดใหม่), paint it again and follow the layout more strictly. Any other comment is a change request: repaint with that change and keep everything else.
+
+HOW TO DELIVER
+- Make the map with your image generation tool and show it here in the chat so I can download it. Never draw it with code (SVG, canvas, Python, Pillow). If you cannot generate images, stop and tell me.
+- No repository or file work: do not create branches, commits or pull requests.
+```
+
+---
+
+## 13. Chapter 1 level-select map: `chapter1_map.png`
+
+> **สำหรับเจ้านาย:** แผนที่หน้าเลือกด่านของ Chapter 1 (เกาะ 3 เกาะ เส้นทางจุดไข่ปลา และพายุที่มุมขวาบน)
+> - **แนบ:** `chapter1-sketch.png` แล้ววาง prompt ข้างล่างในแชตใหม่
+> - ระหว่างรอ เกมใช้ภาพร่างนี้เป็นพื้นหลังหน้าเลือกด่านไปก่อน
+> - **ได้กลับมา:** `chapter1_map.png` ภาพเดียว ไม่มีตัวหนังสือ ปุ่ม หรือดาว เพราะเกมใส่เอง
+
+- **The sketch.** `npm run map:chapter` draws `art/maps/chapter1-sketch.png` (and the in-game copy `public/maps/chapter1-sketch.png`) from `CHAPTER1_MAP` in `src/play/chapterMap.ts`. Each island is centred on a level button, the dotted route runs through `route`, and the storm sits at `storm`.
+- **The buttons.** The game draws each level's button, name and stars on the sand-coloured clearing of its island, so the painting keeps those clearings empty and in place.
+- **Delivery.** Save the painting as `art/incoming/maps/chapter1_map.png`. The team then sets `art` in `CHAPTER1_MAP`.
+
+```
+You are the environment artist for "Little Archer: Sky Pirates", a mobile tower-defense game. The attached image is the LAYOUT SKETCH of the Chapter 1 world map: the level-select screen where the player picks a level. Repaint it as a finished, beautiful storybook world map.
+
+KEEP THE LAYOUT EXACTLY
+The game puts a level button on each island at the pixel positions of this sketch, so the painting must line up with it.
+- One landscape image, 1536 x 1024, with exactly the same framing as the sketch. Do not crop, zoom, rotate, mirror or re-frame.
+- Three floating islands, each in the same place, at the same size and with the same outline as in the sketch:
+  - LEFT, the biggest: SKY HAVEN, the hero's home village. Cosy cottages with red and blue roofs, round leafy trees, the CRYSTAL VAULT (a small stone shrine holding a cluster of glowing cyan Sky Crystals) on its left side, and a waterfall pouring off its left edge.
+  - MIDDLE: WINDMILL TERRACES, the farm island. Stepped green terraces, two windmills, golden wheat rows, and a stream from a little spring that runs under a wooden footbridge and pours off the front edge as a waterfall.
+  - RIGHT: LIGHTHOUSE POINT, a rocky cliff island. Grey crags and boulders, a few hardy pine trees, the old red-and-white lighthouse with a glowing cyan crystal in its lamp room, and a small wooden pier on its far right.
+- Each island has a rocky underside hanging below it, with roots and a few small cyan crystals in the rock.
+- Sand-coloured oval on each island = the CLEARING where the game puts that level's button: an open, flat patch of sandy ground, like a little village square. Keep it in the same place and at the same size, and keep it completely empty: nothing stands on it or hangs over it.
+- Cream dots with brown rims = the SKY ROUTE from island to island: a dotted trail like the path on a treasure map, with every dot where the sketch has it. After the third island the dots turn grey-violet and climb up to the storm: the way to the next chapter, still locked.
+- Top right = the STORM: a wall of dark purple-grey storm clouds with one small lightning bolt, and the pirates' AIRSHIP half hidden in it as a dark silhouette (a balloon envelope over a ship's hull, with a few warm-lit portholes). It belongs to Captain Stormbeard's fleet, coming in Chapter 2. Keep it mysterious and a little ominous, but cute and storybook, not scary.
+- Light blue with white shapes = a bright sky with soft clouds: the sun glows at the top left, a few distant birds and tiny faraway islets float in the sky, and a sea of soft white clouds runs along the bottom.
+
+VIEW
+- A storybook world map: the islands are seen from the front and a little above, so we see their grassy tops and the rocky cliffs hanging beneath them, as in the sketch.
+
+STYLE
+- HD 2D hand-drawn anime game art that matches the game's characters and level maps: clean warm-brown line art (#3B2A2A, never black), soft cel shading, light from the upper left, warm and adventurous, bright and easy to read on a phone.
+- Like an illustrated map in a children's adventure book: rich, charming detail on the islands, with calm, simple sky between them.
+
+RULES
+- Do not move, add or remove an island, a clearing, the route dots or the storm.
+- No text, letters, numbers, labels, level names, buttons, stars, icons, UI, frame, border, compass or watermark anywhere. The game draws its own buttons, names and stars on top.
+- No characters: no people and no pirates on the islands. The airship stays a silhouette in the storm.
+- Keep the clearings and the route dots clear: nothing covers them.
+- A wide phone screen may cut off about 15% at the top and at the bottom of the picture: keep everything important (the island tops, the clearings, the route and the airship) out of those strips, as the sketch does.
+- No dark vignette and no heavy fog: everything except the storm corner stays bright.
+
+Make the image now. Under it write only: Save as: chapter1_map.png
+If I write REDO (or วาดใหม่), paint it again and follow the layout more strictly. Any other comment is a change request: repaint with that change and keep everything else.
+
+HOW TO DELIVER
+- Make the map with your image generation tool and show it here in the chat so I can download it. Never draw it with code (SVG, canvas, Python, Pillow). If you cannot generate images, stop and tell me.
+- No repository or file work: do not create branches, commits or pull requests.
+```
+
+---
+
+## 14. Talon portraits: `talon_portraits.png`
+
+> **สำหรับเจ้านาย:** ภาพครึ่งตัวของ Talon สำหรับฉากเล่าเรื่อง (ภาพเดียว มี 3 อารมณ์เรียงซ้ายไปขวา)
+> - **แนบ:** ภาพ Talon ที่ส่งมาแล้ว `talon_rigpose.webp` และ `talon_poses.webp` (อยู่ใน `art/incoming/talon/`) ให้หน้าตาเหมือนเดิม แล้ววาง prompt ข้างล่างในแชตใหม่
+> - **ได้กลับมา:** `talon_portraits.png`
+
+This is Image 7 of the Talon prompt (10.5) as a standalone prompt, because Talon's other images are already done. The order matches the other portrait sheets and `scripts/art/sheets.json` (`proud`, `cry`, `happy`): the slicer reads the three portraits left to right.
+
+```
+You are the lead character artist for "Little Archer: Sky Pirates", a mobile tower-defense game. In this chat you will draw ONE image: three dialog portraits of Talon, the hero's eagle, for the game's story scenes. The attached images are Talon's approved design (the rig pose and the action poses): match them exactly, with the same face, feathers, colours, scarf, line weight and shading.
+
+STYLE
+- HD 2D hand-drawn anime game art (not pixel art, not 3D). Cute chunky proportions: a round body, a big head, big friendly eyes; a heroic little eagle, not a realistic bird.
+- Mood: warm, adventurous fantasy, in the spirit of classic early-2000s Korean fantasy MMORPG character art redrawn at modern quality. Charming and a little cool, never babyish.
+- Line art: clean and confident, dark warm brown (#3B2A2A), never pure black. Outer contour about 4 px, inner lines about 2 px at 1024 px image height.
+- Colouring: anime cel shading with a flat base colour, one soft cool shadow tone (slightly violet) and small crisp highlights. Light comes from the upper left. Gentle gradients on feathers are fine.
+- Eyes: large and expressive, with two white catch-lights and a bold upper lash line.
+- Avoid: 3D render, plastic / vinyl toy / clay look, realistic proportions, photo textures, heavy noise, thick sticker outlines, glossy 3D highlights.
+
+TECHNICAL
+- Background: the same as Talon's other images: a real transparent background if you can. Otherwise a perfectly flat solid #FF00FF magenta background (no gradient, texture, floor or shadow). Never draw a checkerboard pattern. Never use magenta inside the character.
+- No text, letters, numbers, labels, logos, signatures, watermarks, frames, borders or UI anywhere.
+- No ground shadow, glow, aura, motion lines, sparkles or particles.
+- Highest resolution available (at least 1536 x 1024, landscape).
+
+CHARACTER: Talon (id: talon)
+Role: Little Archer's eagle companion. Proud, brave and loyal, with a soft spot for the hero: a cute hero's pet, never fierce or scary.
+Feathers: golden-brown body (#B07A3E, shade #8A5A2E), a cream-white head and chest (#FBF4E4), brown wings with gold-tipped flight feathers (#F4C34F), a white-and-brown tail.
+Face: a strong curved golden beak (#F4B62C), big amber eyes (#E39B2D) with a confident brown brow.
+Gear: a small green scarf (#3E9A4F) that matches the hero's hood, knotted at the neck with two short tails.
+
+IMAGE (save as talon_portraits.png): DIALOG PORTRAITS, landscape.
+Three chest-up portraits of Talon for story dialog boxes, 3/4 view facing right, larger and more detailed than the game sprite, same style and colours, side by side and clearly separated, in this order from left to right:
+1 proud: chest puffed out, head held high, beak closed in a small confident smile, eyes calm and half-lidded, wings folded neatly at its sides.
+2 fierce battle cry: beak wide open crying out, brows angled down, head feathers ruffled up, wings half raised behind its shoulders, scarf tails flicking.
+3 happy and fond: eyes closed in happy arcs (^ ^), beak a little open in a soft chirp, head tilted, cheek feathers fluffed, warm and affectionate.
+Framing:
+- Each portrait sits in its own third of the image: head, scarf, chest and the tops of the wings. The bust ends in a clean, soft edge just below the chest, well above the bottom of the image.
+- The same size in all three: heads at the same height, eyes on the same line, the bust ending at the same height.
+- Wings stay folded or only half raised, inside their own third. Leave at least 80 px of empty background between the portraits and from every edge; nothing touches or overlaps.
+
+Make the image now. Under it write only: Save as: talon_portraits.png
+If I write REDO (or วาดใหม่), draw it again and follow the rules more strictly. Any other comment is a change request: redraw with that change and keep everything else.
+
+HOW TO DELIVER
+- Make the image with your image generation tool and show it here in the chat so I can download it. Never draw the character with code (SVG, canvas, Python, Pillow). If you cannot generate images, stop and tell me.
+- No repository or file work: do not create branches, commits or pull requests.
 ```
