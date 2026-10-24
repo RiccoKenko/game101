@@ -77,8 +77,8 @@ test('a finished daily quest pays out from the Quests screen', async ({ page }) 
   await expect.poll(() => scenes(page), { timeout: 30_000 }).toContain('Menu');
   const box = (await page.locator('canvas').boundingBox())!;
   const scale = box.width / 1080;
-  // The Quests button sits right of centre, 120 game px above the bottom.
-  await page.touchscreen.tap(box.x + (540 + 245) * scale, box.y + box.height - 120 * scale);
+  // The Quests button is the middle one of the bottom row, 120 game px above the bottom.
+  await page.touchscreen.tap(box.x + 540 * scale, box.y + box.height - 120 * scale);
   await expect.poll(() => scenes(page), { timeout: 10_000 }).toContain('Quests');
   // The first row's reward button is the only one that can be pressed.
   const [x, y] = await page.evaluate(() => {

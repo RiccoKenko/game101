@@ -150,9 +150,11 @@ export interface Lifetime {
   chests: number;
   evolutions: number;
   gold: number;
+  /** Map difficulties cleared (each map counts once per difficulty). */
+  clears: number;
 }
 
-export type AchievementId = 'hunter' | 'elite' | 'boss' | 'survivor' | 'level' | 'explorer' | 'treasure' | 'evolve' | 'gold';
+export type AchievementId = 'hunter' | 'elite' | 'boss' | 'survivor' | 'level' | 'explorer' | 'treasure' | 'evolve' | 'gold' | 'champion';
 
 export interface AchievementDef {
   id: AchievementId;
@@ -238,6 +240,14 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     stat: 'gold',
     tiers: tiers([1000, 5000, 20000], [80, 200, 500]),
     describe: (n) => `Earn ${n.toLocaleString('en-US')} gold`,
+  },
+  {
+    id: 'champion',
+    name: 'Champion',
+    icon: 'icon_trophy',
+    stat: 'clears',
+    tiers: tiers([1, 3, 6, 9], [200, 400, 800, 1500]),
+    describe: (n) => (n === 1 ? 'Clear a stage (beat the 15:00 boss)' : `Clear ${n} stages (map + difficulty)`),
   },
 ];
 

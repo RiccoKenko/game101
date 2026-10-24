@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
+import { DIFFICULTIES } from '../config/difficulty';
 import { MAPS } from '../config/maps';
 import { formatTime } from '../core/format';
 import { safeInsets } from '../ui/safe';
@@ -34,7 +35,8 @@ export class GameOverScene extends Phaser.Scene {
     this.tweens.add({ targets: t, scale: 1, duration: 420, ease: 'Back.easeOut' });
 
     panel(this, width / 2, cy - 60, 900, 960, { header: 112, gem: true });
-    text(this, width / 2, cy - 484, MAPS[s.mapIndex].name, 48, { color: CSS.gold });
+    const diff = DIFFICULTIES[s.difficulty];
+    text(this, width / 2, cy - 484, s.difficulty > 0 ? `${MAPS[s.mapIndex].name} · ${diff.name}` : MAPS[s.mapIndex].name, 48, { color: s.difficulty > 0 ? diff.color : CSS.gold });
 
     const rows: [string, string, string?][] = [
       ['Time survived', formatTime(s.time), s.newBest ? 'NEW BEST!' : `Best ${formatTime(s.bestTime)}`],
@@ -67,11 +69,14 @@ export class GameOverScene extends Phaser.Scene {
     });
     if (s.total > 0) this.time.delayedCall(1250, () => audio.sfx('coin'));
 
-    if (s.unlockedMap !== null) {
+    if (s.relic) {
+      const u = text(this, width / 2, cy + 520, `New relic: ${s.relic}!\nWear it from the Relics menu`, 46, { color: CSS.gold });
+      this.tweens.add({ targets: u, scale: 1.06, duration: 500, yoyo: true, repeat: -1 });
+    } else if (s.unlockedMap !== null) {
       const u = text(this, width / 2, cy + 520, `New map unlocked:\n${MAPS[s.unlockedMap].name}!`, 50, { color: CSS.green });
       this.tweens.add({ targets: u, scale: 1.08, duration: 500, yoyo: true, repeat: -1 });
     }
-    if (s.quests.length || s.achievements.length) this.questNote(width / 2, s.unlockedMap !== null ? cy + 650 : cy + 530);
+    if (s.quests.length || s.achievements.length) this.questNote(width / 2, s.unlockedMap !== null || s.relic ? cy + 650 : cy + 530);
 
     const by = height - bottom - 140;
     new Button(this, width / 2 - 225, by, {

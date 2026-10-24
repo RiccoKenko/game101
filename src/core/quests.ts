@@ -106,6 +106,7 @@ export function lifetime(save: SaveData, run?: RunReport): Lifetime {
     chests: s.chests + (run?.chests ?? 0),
     evolutions: s.evolutions + (run?.evolutions ?? 0),
     gold: s.gold + (run?.gold ?? 0),
+    clears: save.clears.reduce((a, b) => a + b, 0),
   };
 }
 

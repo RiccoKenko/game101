@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
-import { MAX_ENEMIES, PLAYER_BASE } from '../config/game';
+import { MAX_ENEMIES } from '../config/game';
 import { BOSSES, ENEMIES, ENEMY_SHOTS, type BossDef, type BossId, type EnemyDef, type EnemyId } from '../config/enemies';
 import { GOBLIN_ESCAPE } from '../config/events';
 import { BURN_TIME, FREEZE_TIME, RUNE_POWER } from '../config/weapons';
@@ -275,7 +275,7 @@ export class EnemyManager {
     if (!e.active || e.enter > 0) return false;
     const crit = canCrit && this.ctx.rng() < this.ctx.player.stats.critChance;
     if (crit) {
-      amount *= PLAYER_BASE.critMult;
+      amount *= this.ctx.player.stats.critMult;
       knockback *= 1.5;
       this.ctx.fx.sparksAt(e.x, e.y, 5, 0xffd36b);
     }

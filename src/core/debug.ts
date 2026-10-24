@@ -6,6 +6,7 @@
  * give: weapons to start with, e.g. `give=slash5,flask3,starfall` (an evolution gives its weapon, evolved).
  * hero: play as this character (archer, mage) without unlocking it.
  * event: start this run event two seconds in (shrine, goblin, meteors, elites, golden).
+ * difficulty: 0 Normal, 1 Hard, 2 Nightmare (ignores what is unlocked). relics: wear these, e.g. `relics=boar,demon`.
  */
 const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
 const num = (key: string, fallback: number) => {
@@ -28,4 +29,6 @@ export const DEBUG = {
   give: (params.get('give') ?? '').split(',').filter(Boolean),
   hero: params.get('hero') ?? '',
   event: params.get('event') ?? '',
+  difficulty: num('difficulty', -1),
+  relics: (params.get('relics') ?? '').split(',').filter(Boolean),
 };

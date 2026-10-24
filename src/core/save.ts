@@ -1,4 +1,6 @@
 import { CHARACTER_IDS, type CharacterId } from '../config/characters';
+import { maxDifficulty } from '../config/difficulty';
+import { MAX_RELICS, RELIC_IDS, type RelicId } from '../config/relics';
 import { MAPS } from '../config/maps';
 import { ACHIEVEMENTS, DAILY_COUNT, QUESTS, type AchievementId, type QuestId } from '../config/quests';
 import { SHOP, type ShopId } from '../config/shop';
@@ -57,6 +59,11 @@ export interface SaveData {
   achievements: Record<AchievementId, number>;
   /** Per map, the hardest difficulty cleared (0 = never cleared, 1 = Normal, 2 = Hard, 3 = Nightmare). */
   clears: number[];
+  /** Per map, the difficulty picked in the menu (never above what `clears` opens). */
+  difficulty: number[];
+  /** Relics won, and the (up to two) worn into runs. */
+  relics: RelicId[];
+  equipped: RelicId[];
   /** The hero picked in the menu, and the heroes unlocked (the archer always is). */
   character: CharacterId;
   characters: CharacterId[];
@@ -84,6 +91,9 @@ export function defaultSave(): SaveData {
     daily: { day: '', quests: [], bonus: 0, bonusClaimed: false },
     achievements: Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, 0])) as Record<AchievementId, number>,
     clears: MAPS.map(() => 0),
+    difficulty: MAPS.map(() => 0),
+    relics: [],
+    equipped: [],
     character: 'archer',
     characters: ['archer'],
   };
@@ -104,6 +114,11 @@ export function sanitize(raw: unknown): SaveData {
   }
   out.unlockedMaps = Math.floor(num(r.unlockedMaps, 1, 1, MAPS.length));
   if (Array.isArray(r.clears)) out.clears = MAPS.map((_, i) => Math.floor(num((r.clears as unknown[])[i], 0, 0, 3)));
+  if (Array.isArray(r.difficulty)) {
+    out.difficulty = MAPS.map((_, i) => Math.floor(num((r.difficulty as unknown[])[i], 0, 0, maxDifficulty(out.clears[i]))));
+  }
+  if (Array.isArray(r.relics)) out.relics = RELIC_IDS.filter((id) => (r.relics as unknown[]).includes(id));
+  if (Array.isArray(r.equipped)) out.equipped = (r.equipped as unknown[]).filter((id): id is RelicId => out.relics.includes(id as RelicId)).slice(0, MAX_RELICS);
   for (const key of ['bestTimes', 'bossKills'] as const) {
     const arr = r[key];
     if (Array.isArray(arr)) out[key] = MAPS.map((_, i) => num(arr[i], 0));

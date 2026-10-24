@@ -15,6 +15,8 @@ export interface PlayerStats {
   goldMult: number;
   revivals: number;
   critChance: number;
+  /** How much more a critical hit deals. */
+  critMult: number;
 }
 
 /** The chosen hero's multipliers (see config/characters.ts). */
@@ -43,5 +45,6 @@ export function computeStats(
     goldMult: 1 + sh('greed'),
     revivals: sh('revival'),
     critChance: PLAYER_BASE.critChance,
+    critMult: PLAYER_BASE.critMult,
   };
 }

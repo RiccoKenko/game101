@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { audio, AUDIO_ENABLED, MUSIC_KEYS } from '../audio/audio';
 import { CHARACTERS } from '../config/characters';
+import { DIFFICULTIES, maxDifficulty } from '../config/difficulty';
 import { BOSSES } from '../config/enemies';
 import { MAPS } from '../config/maps';
 import { DEBUG } from '../core/debug';
@@ -107,29 +108,14 @@ export class MenuScene extends Phaser.Scene {
     this.playButton = new Button(this, width / 2, playY, { w: 640, h: 150, color: BUTTON.primary, label: 'PLAY', fontSize: 76, onClick: () => this.play() });
     this.showHero();
     const by = height - bottom - 120;
-    new Button(this, width / 2 - 245, by, {
-      w: 470,
-      h: 110,
-      color: BUTTON.warning,
-      label: 'Shop',
-      icon: 'icon_shop',
-      iconSize: 80,
-      fontSize: 50,
-      onClick: () => this.scene.start('Shop'),
-    });
-    const quests = new Button(this, width / 2 + 245, by, {
-      w: 470,
-      h: 110,
-      color: BUTTON.purple,
-      label: 'Quests',
-      icon: 'icon_scroll',
-      iconSize: 80,
-      fontSize: 50,
-      onClick: () => this.scene.start('Quests'),
-    });
+    const third = (i: number, label: string, icon: string, color: number, scene: string) =>
+      new Button(this, width / 2 + (i - 1) * 330, by, { w: 310, h: 110, color, label, icon, iconSize: 66, fontSize: 40, onClick: () => this.scene.start(scene) });
+    third(0, 'Shop', 'icon_shop', BUTTON.warning, 'Shop');
+    const quests = third(1, 'Quests', 'icon_scroll', BUTTON.purple, 'Quests');
+    third(2, 'Relics', save.equipped.length ? `relic_${save.equipped[0]}` : 'relic_slime', BUTTON.system, 'Relics');
     const waiting = claimableCount(save);
     if (waiting > 0) {
-      const b = badge(this, quests.x + 235 - 16, by - 55 + 4, waiting);
+      const b = badge(this, quests.x + 155 - 16, by - 55 + 4, waiting);
       this.tweens.add({ targets: b, scale: 1.15, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
 
@@ -225,6 +211,30 @@ export class MenuScene extends Phaser.Scene {
     }
     this.cards[index] = { bg, name, locked };
     c.setSize(w, h).setInteractive({ useHandCursor: true });
+    // Once the map is cleared, a pill on the card picks Normal / Hard / Nightmare.
+    const top = maxDifficulty(save.clears[index]);
+    if (!locked && top > 0) {
+      const pill = this.add.container(w / 2 - 130, 0);
+      const pbg = this.add.image(0, 0, panelTexture(this, 210, 96, { style: 'inset', radius: 26 }));
+      const pic = this.add.image(-66, 0, 'icon_skull').setDisplaySize(58, 58);
+      const ptx = text(this, 20, 1, '', 30, { originX: 0.5 });
+      const show = () => {
+        const d = DIFFICULTIES[save.difficulty[index]];
+        pic.setTexture(d.icon).setDisplaySize(58, 58);
+        ptx.setText(d.name).setColor(d.color).setFontSize(d.name.length > 6 ? 24 : 30);
+      };
+      show();
+      pill.add([pbg, pic, ptx]).setSize(210, 96).setInteractive({ useHandCursor: true });
+      pill.on('pointerup', () => {
+        save.difficulty[index] = (save.difficulty[index] + 1) % (top + 1);
+        saveStore.save();
+        audio.sfx('click');
+        show();
+        this.selected = index;
+        this.highlight();
+      });
+      c.add(pill);
+    }
     c.on('pointerup', () => {
       if (locked) {
         this.tweens.add({ targets: c, x: x + 14, duration: 50, yoyo: true, repeat: 3 });

@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
 import { CHARACTERS, characterDef, type CharacterDef, type CharacterId } from '../config/characters';
+import { DIFFICULTIES, maxDifficulty, type DifficultyDef } from '../config/difficulty';
 import { BOSSES } from '../config/enemies';
+import { relicDef, relicFor, type RelicId } from '../config/relics';
 import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
-import { EVOLUTIONS, MAX_WEAPON_LEVEL, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
+import { EVOLUTIONS, MAX_WEAPON_LEVEL, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
 import { DEBUG } from '../core/debug';
 import {
   applyChoice,
@@ -78,6 +80,8 @@ export interface RunState {
   /** The boss that came at 15:00; defeating it wins the run. */
   finalBoss: Enemy | null;
   won: boolean;
+  /** Captain's Medal: the next revival restores full HP. */
+  medal: boolean;
   swarmsSpawned: number;
   ringsSpawned: number;
   boss: Enemy | null;
@@ -102,6 +106,9 @@ export interface RunSummary {
   won: boolean;
   /** Gold for clearing the stage (included in total). */
   victoryBonus: number;
+  difficulty: number;
+  /** A relic won by this clear, by name. */
+  relic: string | null;
   /** Daily quests this run finished, and achievement tiers it reached ("Monster Hunter II"). */
   quests: string[];
   achievements: string[];
@@ -126,6 +133,10 @@ export class GameScene extends Phaser.Scene {
   private mapIndex = 0;
   /** The hero being played (the menu's choice). */
   private hero!: CharacterDef;
+  /** The map's difficulty for this run, and the relics worn. */
+  private difficulty = 0;
+  private diff!: DifficultyDef;
+  private relics = new Set<RelicId>();
   private rng!: Rng;
   private world!: World;
   private enemies!: EnemyManager;
@@ -170,6 +181,10 @@ export class GameScene extends Phaser.Scene {
     this.map = MAPS[this.mapIndex];
     this.rng = mulberry32(DEBUG.seed || Date.now() >>> 0);
     this.world = new World(this, this.map);
+    const save = saveStore.data;
+    this.difficulty = DEBUG.difficulty >= 0 ? DEBUG.difficulty : Math.min(save.difficulty[this.mapIndex], maxDifficulty(save.clears[this.mapIndex]));
+    this.diff = DIFFICULTIES[this.difficulty];
+    this.relics = new Set((DEBUG.relics.length ? DEBUG.relics : save.equipped) as RelicId[]);
     const hero = (this.hero = characterDef((DEBUG.hero || saveStore.data.character) as CharacterId));
     // Each hero's own weapon belongs to that hero: the others are never offered it.
     const inventory = newInventory(hero.start, CHARACTERS.filter((c) => c.start !== hero.start).map((c) => `weapon:${c.start}`));
@@ -212,6 +227,7 @@ export class GameScene extends Phaser.Scene {
       greedUntil: -1,
       finalBoss: null,
       won: false,
+      medal: false,
       swarmsSpawned: 0,
       ringsSpawned: ringEventsDue(DEBUG.startTime),
       boss: null,
@@ -228,8 +244,8 @@ export class GameScene extends Phaser.Scene {
     ctx.hitStop = (s) => this.hitStop(s);
     ctx.shake = (ms, k) => this.shake(ms, k);
     ctx.slowMo = (scale, s) => this.slowMo(scale, s);
-    ctx.monsterDamage = 1;
-    ctx.monsterHp = () => (this.run.time < this.run.greedUntil ? GREED_PACT.hp : 1);
+    ctx.monsterDamage = this.diff.damage;
+    ctx.monsterHp = () => this.diff.hp * (this.run.time < this.run.greedUntil ? GREED_PACT.hp : 1);
     ctx.player = this.player = new Player(this, stats, hero);
     ctx.fx = this.fx = new Effects(this);
     this.player.onStep = (x, y) => this.fx.dust(x, y);
@@ -274,6 +290,8 @@ export class GameScene extends Phaser.Scene {
     this.tiersShown = { ...this.tiersAtStart };
     this.weapons = new WeaponSystem(ctx);
     this.weapons.sync(inventory.weapons, stats);
+    // Relics, the difficulty's gold and anything else that changes stats, once everything exists.
+    this.applyRelicsAtStart();
     this.cameras.main.centerOn(0, 0);
     this.ambience = new Ambience(this, this.mapIndex);
 
@@ -589,7 +607,8 @@ export class GameScene extends Phaser.Scene {
     const run = this.run;
     if (run.revivesLeft > 0) {
       run.revivesLeft--;
-      this.player.hp = run.stats.maxHp * 0.5;
+      this.player.hp = run.stats.maxHp * (run.medal ? 1 : 0.5);
+      run.medal = false;
       this.player.iframes = 2.5;
       const { x, y } = this.player;
       this.fx.ring(x, y, 620, 0xffcc33);
@@ -629,6 +648,17 @@ export class GameScene extends Phaser.Scene {
   private refreshStats(): void {
     const run = this.run;
     run.stats = computeStats(saveStore.data.shop, passiveLevels(run.inventory), this.hero);
+    const st = run.stats;
+    st.goldMult *= this.diff.gold;
+    if (this.relics.has('slime')) st.xpMult *= 1.1;
+    if (this.relics.has('lich')) {
+      st.magnet *= 1.4;
+      st.goldMult *= 1.15;
+    }
+    if (this.relics.has('demon')) {
+      st.critChance += 0.08;
+      st.critMult = 2.5;
+    }
     const b = run.blessings;
     run.stats.damageMult *= 1 + b.damage;
     run.stats.speed *= 1 + b.speed;
@@ -699,19 +729,37 @@ export class GameScene extends Phaser.Scene {
       reward = { kind: 'evolution', evolution: evolve(inv, evolvable[0])! };
       this.run.evolutions++;
     } else {
-      const count = 1 + (this.rng() < 0.6 ? 1 : 0) + (this.rng() < 0.3 ? 1 : 0);
+      const count = 1 + (this.rng() < 0.6 ? 1 : 0) + (this.rng() < 0.3 ? 1 : 0) + (this.relics.has('ogre') ? 1 : 0);
       const choices = rollChoices(inv, this.rng, 3)
         .filter((c) => c.kind === 'weapon' || c.kind === 'passive' || c.kind === 'rune')
         .slice(0, count);
       choices.forEach((c) => applyChoice(inv, c));
       reward = { kind: 'upgrades', choices };
     }
-    const gold = 30 * (this.mapIndex + 1);
+    const gold = 30 * (this.mapIndex + 1) * (this.relics.has('ogre') ? 2 : 1);
     this.run.gold += gold;
     this.refreshStats();
     audio.sfx('chest');
     if (DEBUG.bot) return;
     this.openModal('Chest', { reward, gold, onClose: () => this.closeModal('Chest') });
+  }
+
+  /** Relics that act once, when the run starts. */
+  private applyRelicsAtStart(): void {
+    const run = this.run;
+    if (this.relics.has('slime')) run.rerolls++;
+    if (this.relics.has('captain')) {
+      run.revivesLeft++;
+      run.medal = true;
+    }
+    if (this.relics.has('boar')) {
+      const inv = run.inventory;
+      inv.weapons[0].level = Math.max(inv.weapons[0].level, 2);
+      const free = RUNE_IDS.filter((id) => !inv.runes.some((r) => r.id === id));
+      if (free.length && inv.runes.length < 3) inv.runes.push({ id: free[Math.floor(this.rng() * free.length)], level: 1 });
+    }
+    this.refreshStats();
+    [...this.relics].forEach((id, i) => this.time.delayedCall(1200 + i * 2900, () => this.events.emit('toast', `${relicDef(id).name}: ${relicDef(id).text}`)));
   }
 
   // ---------------------------------------------------------------- shrine
@@ -843,7 +891,17 @@ export class GameScene extends Phaser.Scene {
     const bonus = Math.floor((run.time * RUN_BONUS.perSecond + run.kills * RUN_BONUS.perKill) * run.stats.goldMult);
     const victoryBonus = run.won ? Math.floor(VICTORY_GOLD[this.mapIndex] * run.stats.goldMult) : 0;
     const total = collected + bonus + victoryBonus;
-    if (run.won) save.clears[this.mapIndex] = Math.max(save.clears[this.mapIndex], 1);
+    // A clear opens the next difficulty and may win a relic (worn at once if a slot is free).
+    let relic: string | null = null;
+    if (run.won) {
+      save.clears[this.mapIndex] = Math.max(save.clears[this.mapIndex], this.difficulty + 1);
+      const r = relicFor(this.mapIndex, this.difficulty);
+      if (r && !save.relics.includes(r.id)) {
+        save.relics.push(r.id);
+        if (save.equipped.length < 2) save.equipped.push(r.id);
+        relic = r.name;
+      }
+    }
     const prevBest = save.bestTimes[this.mapIndex];
     const newBest = run.time > prevBest;
     save.gold += total;
@@ -872,6 +930,8 @@ export class GameScene extends Phaser.Scene {
       achievements,
       won: run.won,
       victoryBonus,
+      difficulty: this.difficulty,
+      relic,
     };
     audio.stopMusic();
     if (run.won) {
