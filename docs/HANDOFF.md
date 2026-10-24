@@ -2,35 +2,31 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 สถานะล่าสุด (24 ต.ค. 2026 บ่าย หลัง compact)
-- **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุคใหม่ "MMORPG เกาหลียุค 2000" + ตัวละครหลักใหม่ "Feather Cap"
-- **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`), working tree สะอาด
-  - Test: typecheck, unit 43 ข้อ, e2e 4 ข้อ, build ผ่าน
-- **ลิงก์ทดสอบ (Artifact เดิม, v4 มีภารกิจแล้ว):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
+## 📍 สถานะล่าสุด (24 ต.ค. 2026 เย็น)
+- **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุค "MMORPG เกาหลียุค 2000"
+- **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`)
+  - Test: typecheck, unit 51 ข้อ, e2e 4 ข้อ, build ผ่าน
+- **ลิงก์ทดสอบ (Artifact เดิม, v5 = เฟส 3 ครบ):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
   - สร้างใหม่: `node scripts/build-artifact.mjs <scratchpad>/monster-rush.html` แล้ว publish ทับ path เดิม (หรือใส่ `url` ถ้า session ใหม่)
 - **ลิงก์หลัก little-archer.vercel.app ยังเป็น Monster Rush ภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`)
-  - ⚠️ ยังไม่ deploy ลุคใหม่: รอเจ้านายลองเล่นแล้วสั่งก่อน
+  - ⚠️ ยังไม่ deploy: รอเจ้านายสั่ง (ถามไปแล้ว 2 รอบ ยังไม่ได้คำตอบ)
   - วิธี deploy: Vercel MCP `create_deployment` (project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`) แล้วเช็กลิงก์จริง
-- **รอเจ้านายตอบ 3 ข้อ (checkpoint ล่าสุด):**
-  1. ท่าวิ่งยิง + ตัวละครใหม่โอเคไหม
-  2. ปุ่มเดินแบบอยู่กับที่ใช้ถนัดไหม
-  3. ให้ขึ้นลิงก์หลักเลยไหม
-- **ข้อสังเกตที่แจ้งเจ้านายแล้ว:** รองเท้าข้างหน้าไม่บิดออกเหมือน rig pose, แขน chibi ดึงสายได้แค่คาง
-- **งานถัดไปที่เสนอ (เฟส 3 เนื้อหาเล่นซ้ำ)**, เรียงจากถูกไปแพง:
-  1. ✅ ภารกิจรายวัน/ความสำเร็จ: **เสร็จแล้ว** (เจ้านายสั่ง "ทำต่อได้เลย" หลัง compact) รอเจ้านายลองเล่น
-     - กติกา `src/config/quests.ts` (ภารกิจ 9 แบบ สุ่มวันละ 3 ตามวันที่, เป้า/รางวัลขึ้นกับจำนวนแมพที่ปลดล็อก, โบนัสทำครบ; ความสำเร็จ 9 อย่างหลายขั้น), ตรรกะ `src/core/quests.ts` (+ `tests/unit/quests.test.ts`)
-     - เซฟเพิ่ม `stats` (eliteKills, chests, evolutions, gold, bestLevel), `daily`, `achievements`; เซฟเก่าอ่านได้ (kills/runs เดิมนับต่อ)
-     - `GameScene` นับ elite/หีบ/วิวัฒนาการ, เช็กทุก 1 วิ แล้วส่ง event `quest` ให้ HUD แสดงป้ายทีละอัน; จบรอบส่งรายการที่สำเร็จไป GameOver
-     - หน้า `QuestsScene` (แท็บ Daily / Achievements, ปุ่มรับเหรียญมีเหรียญบินเข้ากระเป๋า), เมนูมีปุ่ม Shop + Quests (เลขแดงบอกรางวัลที่รอรับ)
-     - ไอคอนใหม่วาดด้วยโค้ด: `icon_scroll`, `icon_trophy`, `icon_crown`, `icon_check` (`src/art/icons.ts`) ไม่ใช้งบ OpenAI
-     - ไอเดียต่อยอด: พอซื้อของใน Shop ครบ เหรียญจะไม่มีที่ใช้ → ตัวละครให้เลือก (ข้อ 4) ขายด้วยเหรียญได้
-  2. อาวุธใหม่ 3-4 แบบ + ร่างวิวัฒนาการ (~$0.10 ไอคอน)
-  3. มอนใหม่แมพละ 1-2 ตัว + มอนหัวหน้า (~$0.30)
-  4. ตัวละครให้เลือก 2-3 ตัว: ใช้วิธี "เปลี่ยนผิว โครงกระดูกเดิม" แบบ archer (~$0.45/ตัว)
-- **งบ OpenAI:** ใช้ไป **$2.11 จาก $5** (เหลือ $2.89) ตาม `art/openai-log.jsonl`
+- **เฟส 3 เนื้อหาเล่นซ้ำ: ครบทั้ง 4 ข้อแล้ว** (เจ้านายสั่ง "ทำต่อได้เลยตัวละคร เพิ่มสายเวทไปก็ได้ ละก็เพิ่มอาวุธกับมอนใหม่ด้วย")
+  1. **ภารกิจรายวัน/ความสำเร็จ**: `src/config/quests.ts`, `src/core/quests.ts`, `QuestsScene`, ป้ายในเกม, เซฟ `daily`/`achievements`/`stats`
+  2. **ตัวละครให้เลือก**: `src/config/characters.ts` (archer ฟรี, mage 600 เหรียญ: เริ่มด้วย Magic Bolt, วง +15%, HP -10%)
+     - เมนู: ลูกศรซ้าย/ขวา + ป้ายชื่อ; ตัวที่ล็อกเป็นเงาดำ + กุญแจ, ปุ่ม PLAY กลายเป็น "Unlock 600"; เซฟ `character`, `characters`
+     - เกม: `Player` ใช้ sheet ตามตัวละคร (anim `<sheet>_<name>`), อาวุธเริ่มของตัวละคร = `player.primary` ยิงจาก `attackPoint()` (`muzzle` ใน config) และเล่นท่ายิง
+     - Little Mage: ภาพ `art/incoming/mr/mage_*.png` (พื้นเขียว #00FF00), puppet + bake โดย subagent ตาม `scripts/art/hero-bake/README.md` (ส่วน mage), ผล `art/baked/mage/`, เกมใช้ `public/art/hero/mage.webp/.json`, ภาพเมนู `mage_menu.webp` ตัดด้วย `scripts/art/menu-still.ts`
+  3. **อาวุธใหม่ 4 + ร่างวิวัฒนาการ 2**: Magic Bolt (ไล่ตาม) → Starfall (+Spell Tome), Frost Shards (ทำให้ช้า) → Blizzard (+Winged Boots), Moon Slash (ฟันวงพระจันทร์), Poison Flask (บ่อพิษ) — ภาพ `items2` (ไอคอน 6 + sprite 6)
+  4. **มอนใหม่ 6 + หัวหน้า 3**: Meadow: ฝูง Buzzbee, Puffball (แตก 2); Graveyard: Pumpkin Bomb (ระเบิด), Wraith (ยิง `spirit`); Castle: Mimic (แกล้งเป็นหีบ), ฝูง Flame Wisp; หัวหน้า Boar Chief / Bone Captain / Ogre Warden ที่ 2:30, 7:30... ดรอปหีบ
+     - config: `ENEMIES` (behavior ใหม่ swarm/splitter/exploder/ambush), `BOSSES` (`leader: true`), `MAPS[].extras/swarm/leader`, `waves.ts leadersDue/swarmSize`
+- **สมดุล (บอท `?bot&speed=8`, ไม่มีอัปเกรด):** Meadow รอด 7 นาทีเหมือนเดิม; Castle ตาย ~30 วิ ทั้งเก่าและใหม่ (แมพนี้ต้องอัปเกรดก่อน); Graveyard ตอนแรกยากขึ้นมาก → ลดแรงระเบิดฟักทอง/ลูกวิญญาณ, ฟิวส์ 0.8 วิ, ออกน้อยลง (ผลรันซ้ำอยู่ในรายงานล่าสุด)
+- **สวิตช์ทดสอบใหม่:** `?give=slash5,flask3,starfall` และ `?hero=mage`
+- **ข้อสังเกตจอมเวท (ไม่ร้ายแรง):** รองเท้าชี้ตรงทั้งคู่, แขนข้างร่ายถูกยืด ~16% ตอนพุ่ง, ท่า KO ไม้เท้าพาดตัว, ปลายหมวกแกว่งได้แค่ ~10°
+- **งบ OpenAI:** ใช้ไป **$3.22 จาก $5** (เหลือ $1.78) ตาม `art/openai-log.jsonl`
   - ⚠️ commit log ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไป/เหลือเท่าไร
   - ห้ามเพิ่ม `OPENAI_BUDGET_USD` ถ้าเจ้านายไม่สั่ง
-- **บทเรียน:** ถึงข้อ 46 แล้ว (ข้อต่อไปคือ 47)
+- **บทเรียน:** ถึงข้อ 48 แล้ว (ข้อต่อไปคือ 49)
 - **ภาษา:** เจ้านายขอให้ตอบเป็น**ภาษาไทย** (ใช้ศัพท์อังกฤษให้น้อย)
 - **ตัวละครหลัก (ใหม่) ทำอย่างไร / แก้ต่ออย่างไร**
   - ภาพต้นฉบับ: `art/incoming/mr/hero_{concepts,master,rigpose,head_faces,parts_body,hands_props}.png`, prompt `art/prompts/mr_hero_*.txt`
