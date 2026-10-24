@@ -33,8 +33,10 @@ export class Player {
   /** True when the painted, animated hero sheet loaded (otherwise the two-frame SVG hero is used). */
   private readonly painted: boolean;
   private readonly baseScale: number;
-  /** A one-shot animation playing over the idle/run loop (shoot, hurt, cheer, ko). */
+  /** A one-shot animation playing over the idle/run loop (shoot, runshoot, hurt, cheer, ko). */
   private action: string | null = null;
+  /** Which way the last shot went (-1 left, 1 right): the hero faces it while shooting, even running the other way. */
+  private aimFace = 1;
 
   constructor(scene: Phaser.Scene, public stats: PlayerStats) {
     this.hp = stats.maxHp;
@@ -85,10 +87,21 @@ export class Player {
     this.playAction('hurt', true);
   }
 
-  /** A little kick when the bow fires; standing still, the painted hero plays a full shot. */
-  recoil(): void {
+  /** The bow fires toward `angle`: a little kick, and the painted hero plays a shot (running or standing). */
+  shootAt(angle: number): void {
     this.squash = Math.max(this.squash, 0.5);
-    if (!this.moving) this.playAction('shoot', false);
+    this.aimFace = Math.cos(angle) < 0 ? -1 : 1;
+    if (this.moving && this.hasAnim('runshoot')) this.playAction('runshoot', true);
+    else if (!this.moving) this.playAction('shoot', this.action === 'shoot' || this.action === 'runshoot');
+  }
+
+  /** Where arrows leave the bow when shooting toward `angle` (in front of the chest, not the middle of the body). */
+  bowPoint(angle: number): { x: number; y: number } {
+    return { x: this.x + Math.cos(angle) * 40, y: this.y - 40 + Math.sin(angle) * 22 };
+  }
+
+  private hasAnim(name: string): boolean {
+    return this.painted && this.sprite.scene.anims.exists(`hero_${name}`);
   }
 
   /** Throws the bow up in joy (level-ups, boss kills). */
@@ -115,10 +128,10 @@ export class Player {
     this.anim += dt;
     if (this.painted) {
       if (!this.action) this.sprite.play(this.moving ? 'hero_run' : 'hero_idle', true);
-      // A run started mid-shot cuts the shot short.
-      else if (this.moving && this.action === 'shoot') {
+      // Starting or stopping mid-shot cuts the shot short (the next shot plays the right one).
+      else if ((this.moving && this.action === 'shoot') || (!this.moving && this.action === 'runshoot')) {
         this.action = null;
-        this.sprite.play('hero_run', true);
+        this.sprite.play(this.moving ? 'hero_run' : 'hero_idle', true);
       }
     } else if (this.moving && this.anim > 0.16) {
       this.anim = 0;
@@ -128,7 +141,9 @@ export class Player {
       this.frame = 0;
       this.sprite.setTexture('hero_0');
     }
-    if (Math.abs(this.faceX) > 0.15) this.sprite.setFlipX(this.faceX < 0);
+    const shooting = this.action === 'shoot' || this.action === 'runshoot';
+    if (shooting) this.sprite.setFlipX(this.aimFace < 0);
+    else if (Math.abs(this.faceX) > 0.15) this.sprite.setFlipX(this.faceX < 0);
     if (this.moving !== this.wasMoving) {
       this.wasMoving = this.moving;
       this.squash = Math.max(this.squash, 0.8);

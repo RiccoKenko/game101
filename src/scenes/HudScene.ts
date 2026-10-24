@@ -9,6 +9,8 @@ import { Bar, Button, gradientText, heartTexture, panel, starTexture, text, uiTe
 import { type GameScene } from './GameScene';
 
 const STICK_RADIUS = 110;
+/** A touch that starts this close to the joystick's centre grabs it. */
+const STICK_GRAB = 250;
 /** Top panel: HP and XP bars on the left, level and timer on the right. */
 const PANEL_H = 132;
 const PAUSE_D = 116;
@@ -102,8 +104,10 @@ export class HudScene extends Phaser.Scene {
 
     if (DEBUG.enabled) this.fpsText = text(this, width / 2, this.scale.height - 60, '', 30);
 
-    this.joyBase = this.add.image(0, 0, 'joy_base').setVisible(false).setDepth(100);
-    this.joyKnob = this.add.image(0, 0, 'joy_knob').setVisible(false).setDepth(101);
+    // A fixed joystick, centred near the bottom of the screen; it stays put while the thumb steers.
+    const joyY = this.scale.height - safeInsets(this).bottom - 270;
+    this.joyBase = this.add.image(width / 2, joyY, 'joy_base').setDepth(100).setAlpha(0.6);
+    this.joyKnob = this.add.image(width / 2, joyY, 'joy_knob').setDepth(101).setAlpha(0.75);
     this.input.on('pointerdown', this.onDown, this);
     this.input.on('pointermove', this.onMove, this);
     this.input.on('pointerup', this.onUp, this);
@@ -140,28 +144,22 @@ export class HudScene extends Phaser.Scene {
 
   private onDown(pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
     if (over.length > 0 || this.joyPointer !== null) return;
+    if (Phaser.Math.Distance.Between(pointer.x, pointer.y, this.joyBase.x, this.joyBase.y) > STICK_GRAB) return;
     this.joyPointer = pointer.id;
-    this.joyBase.setPosition(pointer.x, pointer.y).setVisible(true);
-    this.joyKnob.setPosition(pointer.x, pointer.y).setVisible(true);
+    this.joyBase.setAlpha(0.95);
+    this.joyKnob.setAlpha(1);
     stick.active = true;
-    stick.x = stick.y = 0;
+    this.onMove(pointer);
   }
 
   private onMove(pointer: Phaser.Input.Pointer): void {
     if (pointer.id !== this.joyPointer) return;
-    let dx = pointer.x - this.joyBase.x;
-    let dy = pointer.y - this.joyBase.y;
-    const len = Math.hypot(dx, dy);
-    if (len > STICK_RADIUS) {
-      // Drag the base along so the stick never "sticks" at the edge.
-      const over = len - STICK_RADIUS;
-      this.joyBase.x += (dx / len) * over;
-      this.joyBase.y += (dy / len) * over;
-      dx = pointer.x - this.joyBase.x;
-      dy = pointer.y - this.joyBase.y;
-    }
-    this.joyKnob.setPosition(pointer.x, pointer.y);
+    const dx = pointer.x - this.joyBase.x;
+    const dy = pointer.y - this.joyBase.y;
     const l = Math.hypot(dx, dy);
+    // The knob stays inside the ring; the base never moves.
+    const k = l > STICK_RADIUS ? STICK_RADIUS / l : 1;
+    this.joyKnob.setPosition(this.joyBase.x + dx * k, this.joyBase.y + dy * k);
     const mag = l < 14 ? 0 : Math.min(1, l / (STICK_RADIUS * 0.7));
     stick.x = l ? (dx / l) * mag : 0;
     stick.y = l ? (dy / l) * mag : 0;
@@ -174,8 +172,8 @@ export class HudScene extends Phaser.Scene {
 
   private releaseStick(): void {
     this.joyPointer = null;
-    this.joyBase.setVisible(false);
-    this.joyKnob.setVisible(false);
+    this.joyBase.setAlpha(0.6);
+    this.joyKnob.setAlpha(0.75).setPosition(this.joyBase.x, this.joyBase.y);
     resetStick();
   }
 

@@ -329,10 +329,10 @@ export class GameScene extends Phaser.Scene {
   private spawnBoss(k: number): void {
     const def = BOSSES[this.map.boss];
     const hp = (1 + 0.35 * (hpMultiplier(this.run.time) - 1)) * bossHpMultiplier(k);
-    // It drops from the sky into the lower half of the screen, clear of the HUD and the boss bar, where the hero
-    // can watch it land.
+    // It drops from the sky into the lower half of the screen, clear of the HUD and the boss bar (and mostly
+    // above the joystick), where the hero can watch it land.
     const a = Math.PI / 2 + (this.rng() - 0.5) * 0.6;
-    this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 560, this.player.y + Math.sin(a) * 560, hp);
+    this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, hp);
     audio.sfx('boss_warning');
     this.events.emit('boss', def.name);
   }

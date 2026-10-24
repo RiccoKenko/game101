@@ -208,12 +208,13 @@ export class WeaponSystem {
         const target = this.bossInRange(950) ?? enemies.nearest(player.x, player.y, 950);
         const base = target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.atan2(player.faceY, player.faceX);
         const spread = evolved ? 0.22 : 0.16;
+        const bow = player.bowPoint(base);
         for (let i = 0; i < s.amount; i++) {
           const a = base + (i - (s.amount - 1) / 2) * spread;
-          this.shoot('arrow', evolved ? 'arrow_storm' : 'arrow', a, s, 22 * s.area);
+          this.shoot('arrow', evolved ? 'arrow_storm' : 'arrow', a, s, 22 * s.area, bow);
         }
-        this.ctx.fx.muzzle(player.x + Math.cos(base) * 44, player.y - 10 + Math.sin(base) * 44, evolved ? 0x9fdcff : 0xfff1b8);
-        player.recoil();
+        this.ctx.fx.muzzle(bow.x, bow.y, evolved ? 0x9fdcff : 0xfff1b8);
+        player.shootAt(base);
         audio.sfx('shoot');
         break;
       }
@@ -289,11 +290,12 @@ export class WeaponSystem {
     }
   }
 
-  private shoot(kind: ProjKind, texture: string, angle: number, s: WeaponStats, radius: number): Projectile {
+  /** Launches a projectile from `from` (default: just off the hero's body). */
+  private shoot(kind: ProjKind, texture: string, angle: number, s: WeaponStats, radius: number, from?: { x: number; y: number }): Projectile {
     const { player } = this.ctx;
     const p = this.obtain(kind, texture);
-    p.x = player.x + Math.cos(angle) * 30;
-    p.y = player.y - 10 + Math.sin(angle) * 30;
+    p.x = from?.x ?? player.x + Math.cos(angle) * 30;
+    p.y = from?.y ?? player.y - 10 + Math.sin(angle) * 30;
     p.vx = Math.cos(angle) * s.speed;
     p.vy = Math.sin(angle) * s.speed;
     p.damage = s.damage;

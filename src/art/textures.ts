@@ -168,22 +168,46 @@ function generated(scene: Phaser.Scene): void {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 48, 48);
   });
+  // Joystick in the HUD's navy-glass and gold look: a ring with four direction notches, and a gold knob.
   canvasTexture(scene, 'joy_base', 260, 260, (ctx) => {
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
-    ctx.lineWidth = 8;
+    ctx.fillStyle = 'rgba(22,35,63,0.55)';
     ctx.beginPath();
     ctx.arc(130, 130, 120, 0, Math.PI * 2);
     ctx.fill();
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = '#e3c27a';
     ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,240,200,0.35)';
+    ctx.beginPath();
+    ctx.arc(130, 130, 108, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(227,194,122,0.8)';
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2;
+      ctx.save();
+      ctx.translate(130 + Math.cos(a) * 96, 130 + Math.sin(a) * 96);
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(9, 0);
+      ctx.lineTo(-5, -9);
+      ctx.lineTo(-5, 9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
   });
   canvasTexture(scene, 'joy_knob', 120, 120, (ctx) => {
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.strokeStyle = 'rgba(42,31,61,0.8)';
-    ctx.lineWidth = 6;
+    const g = ctx.createRadialGradient(48, 44, 6, 60, 60, 54);
+    g.addColorStop(0, '#fff3c9');
+    g.addColorStop(0.55, '#e3c27a');
+    g.addColorStop(1, '#a8803a');
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(60, 60, 52, 0, Math.PI * 2);
+    ctx.arc(60, 60, 50, 0, Math.PI * 2);
     ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#16233f';
     ctx.stroke();
   });
   canvasTexture(scene, 'ring', 128, 128, (ctx) => {
