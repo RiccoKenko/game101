@@ -74,7 +74,7 @@
 
 ## สำหรับนักพัฒนา
 
-เทคโนโลยี: Phaser 3 + TypeScript + Vite (เป็นเว็บล้วน ไม่มี server) ภาพทั้งหมดเป็น SVG ที่เขียนในโค้ด แล้วแปลงเป็น texture ตอนเปิดเกม
+เทคโนโลยี: Phaser 3 + TypeScript + Vite (เป็นเว็บล้วน ไม่มี server) ภาพหลักเป็นภาพวาด (WebP ใน `public/art/`) ส่วนที่ยังไม่มีภาพวาดใช้ SVG ที่เขียนในโค้ดแทน
 
 ```bash
 npm install
@@ -101,13 +101,19 @@ PW_CHROMIUM=/path/to/chromium npm run test:e2e   # smoke test บนจอ iPhon
 - `scripts/shot.mjs` ถ่ายภาพหน้าจอเกมบน iPhone จำลอง
 - `scripts/art-sheet.mjs` + `art.html` ดูภาพ SVG ทั้งหมดในหน้าเดียว
 - `scripts/make-icons.mjs` สร้างไอคอนแอปจากภาพฮีโร่
-- `scripts/build-artifact.mjs` build เป็นไฟล์ HTML ไฟล์เดียว (ไม่มีเสียง) สำหรับแชร์แบบ artifact
+- `scripts/build-artifact.mjs` build เป็นไฟล์ HTML ไฟล์เดียว (ไม่มีเสียง, ฝังภาพใน `public/art/` ไว้ด้วย) สำหรับแชร์แบบ artifact
+
+**งานภาพ** (ลุคเกม MMORPG เกาหลียุค 2000 ออกแบบใหม่ทั้งหมด):
+- `npm run art:openai -- <out.png> --prompt <file> --ref <ภาพ>` สั่ง OpenAI วาด 1 ภาพ (key เก็บเป็น network secret ของ environment; มีเพดานงบใน `art/openai-log.jsonl`)
+- prompt อยู่ใน `art/prompts/mr_*.txt`, ภาพต้นฉบับใน `art/incoming/mr/`, ภาพต้นแบบลุค `art/incoming/mr/look_mockup.png`
+- `npm run art:cut` ตัดแผ่นภาพเป็น texture ขนาดเกม ตาม `scripts/art/mr-sheets.json` → `public/art/<key>.webp` + `src/art/manifest.json`
+- ฮีโร่เป็น sprite sheet ที่ bake จาก puppet ของโปรเจกต์ Sky Pirates (`scripts/art/hero-bake/`)
 
 ---
 
 ## เครดิต
 
-- **ภาพทั้งหมด:** วาดเป็น vector (SVG) โดย Claude สำหรับเกมนี้โดยเฉพาะ (ดู `docs/ART-STYLE.md`)
+- **ภาพ:** ภาพวาดสร้างด้วย OpenAI image model ตาม prompt ของเกมนี้ (ออกแบบใหม่ทั้งหมด ไม่ใช้ตัวละครของเกมอื่น) และภาพ vector (SVG) ที่ Claude วาดในโค้ด (ดู `docs/ART-STYLE.md`)
 - **ฟอนต์:** Fredoka (SIL Open Font License) ผ่าน @fontsource
 - **เสียงและเพลง:** CC0 จาก Kenney.nl และ OpenGameArt.org รายละเอียดทุกไฟล์อยู่ใน `docs/AUDIO-CREDITS.md`
   - เพลงแมพสุสาน: "Waltz of the Ghosts" by Aureolus_Omicron, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/) ตัดเป็น loop และปรับระดับเสียง
