@@ -1,0 +1,27 @@
+You are the lead character artist for "Little Archer: Monster Rush", a cute mobile survivor game. Paint ONE polished master illustration of the player character, Little Archer.
+
+REFERENCES
+- The FIRST attached image is the approved concept sheet: use design B, the MIDDLE column ("Feather Cap"), for the character's look.
+- The SECOND attached image is a monster sheet from the same game: match its proportions, outline weight and painting style so the hero belongs in the same world.
+
+STYLE
+- Chunky chibi proportions (about 2.5 heads tall, big head, big friendly eyes), clean warm dark-brown outlines (never pure black), soft cel shading with gentle gradients, light from the upper left.
+- MORE DETAIL AND TEXTURE than the concept: fine felt fuzz on the cap, individual barbs on the feather, visible weave and stitching on the linen tunic, leather grain, stitched seams and worn edges on the belt, pouch, gloves, quiver and boots, a soft fabric fold pattern on the cape with a lighter lining, wood grain on the bow, small shiny highlights on the brass buckle, clasp and gold bow tips. Rich, but still clean and readable at small size.
+- Everything is an ORIGINAL design. Do not imitate any famous game or anime character.
+
+CHARACTER: Little Archer (id: hero)
+- A cheerful, brave kid archer, about 12, boyish. Round face, big warm brown eyes, rosy cheeks, short messy chestnut-brown hair.
+- Cap: a red felt cap with a small gold button on the side and a long white feather with a grey tip, swept back.
+- Cape: a short royal-blue cape over the shoulders with a pale-blue lining, fastened at the throat with a small gold clasp.
+- Tunic: an off-white linen tunic to mid-thigh with rolled sleeves.
+- Belt: a brown leather belt with a brass buckle and a small pouch on the hip; a dark leather strap across the chest for the quiver.
+- Legs: brown canvas shorts; brown leather boots with folded cuffs and laces.
+- Hands: a leather bracer on the LEFT forearm (bow arm); a fingerless leather glove on the RIGHT hand (string hand).
+- Weapon: a short wooden recurve bow with gold tips and a leather-wrapped grip; a thin cream string.
+- Back: a brown leather quiver with arrows; fletching red and white, steel tips.
+
+POSE
+- Full body, three-quarter front view turned toward the RIGHT, standing ready: the bow held low in the left hand, the right hand reaching to the quiver strap, a confident happy smile, the feather and cape swaying a little.
+
+TECHNICAL
+- Portrait. Background: a plain flat light grey (#DCDCDC). No ground shadow, no glow, no text, letters, frame or watermark.
