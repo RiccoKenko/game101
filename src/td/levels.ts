@@ -33,7 +33,7 @@ export interface LevelDef {
 
 export const LEVEL1: LevelDef = {
   id: 'level1',
-  name: 'Pirates on the Horizon',
+  name: 'The First Raid',
   blurb: 'The first raid on Sky Haven. Guard the crystal vault!',
   // Painted by Codex over the sketch; the road and spots below were measured on the painting.
   map: { w: 1536, h: 1024, art: 'maps/level1.webp', sketch: 'maps/level1-sketch.png' },
@@ -82,6 +82,9 @@ export const LEVEL2: LevelDef = {
   id: 'level2',
   name: 'Windmill Terraces',
   blurb: "Raiders on Sky Haven's farm island. Hold the bend!",
+  // Laid out on the sketch (no painting yet). The dock is on the west edge; the road runs east along the top
+  // terrace, swings round a U-bend and comes back west a terrace lower, then drops to the vault. The spots between
+  // the two stretches (and the one inside the bend) reach both; a stream crosses the road under two bridges.
   map: { w: 1536, h: 1024, sketch: 'maps/level2-sketch.png' },
   route: [
     [36, 330], [200, 330], [380, 305], [560, 320], [740, 340], [920, 325], [1080, 330], [1200, 370], [1280, 450],
@@ -102,39 +105,47 @@ export const LEVEL2: LevelDef = {
   startGold: 260,
   crystals: 20,
   ordersAfter: [2, 4, 6],
+  // Flyers already in wave 3 and armour in wave 4, powder-monkey swarms all along; the last waves are big, so
+  // a few towers left at level 2 no longer hold them.
   waves: [
-    { groups: [{ enemy: 'deckhand', count: 8, gap: 1.4 }, { enemy: 'powderMonkey', count: 4, gap: 0.8, delay: 8 }] },
-    { groups: [{ enemy: 'powderMonkey', count: 10, gap: 0.6 }, { enemy: 'deckhand', count: 6, gap: 1.2, delay: 5 }] },
-    { groups: [{ enemy: 'parrot', count: 6, gap: 1.2 }, { enemy: 'deckhand', count: 8, gap: 1.1, delay: 3 }] },
-    { groups: [{ enemy: 'ironclad', count: 3, gap: 3 }, { enemy: 'powderMonkey', count: 12, gap: 0.5, delay: 4 }] },
+    { groups: [{ enemy: 'deckhand', count: 8, gap: 1.4 }, { enemy: 'powderMonkey', count: 5, gap: 0.8, delay: 8 }] },
+    { groups: [{ enemy: 'powderMonkey', count: 12, gap: 0.55 }, { enemy: 'deckhand', count: 6, gap: 1.2, delay: 5 }] },
+    { groups: [{ enemy: 'parrot', count: 6, gap: 1.2 }, { enemy: 'deckhand', count: 10, gap: 1, delay: 3 }] },
     {
       groups: [
-        { enemy: 'deckhand', count: 16, gap: 0.9 },
+        { enemy: 'ironclad', count: 3, gap: 3 },
+        { enemy: 'powderMonkey', count: 14, gap: 0.5, delay: 4 },
+        { enemy: 'deckhand', count: 6, gap: 1, delay: 8 },
+      ],
+    },
+    {
+      groups: [
+        { enemy: 'deckhand', count: 18, gap: 0.85 },
         { enemy: 'parrot', count: 8, gap: 1, delay: 6 },
-        { enemy: 'powderMonkey', count: 10, gap: 0.5, delay: 10 },
+        { enemy: 'powderMonkey', count: 12, gap: 0.45, delay: 10 },
       ],
     },
     {
       groups: [
         { enemy: 'ironclad', count: 6, gap: 2.5 },
-        { enemy: 'powderMonkey', count: 16, gap: 0.5, delay: 3 },
-        { enemy: 'parrot', count: 8, gap: 1, delay: 10 },
+        { enemy: 'powderMonkey', count: 18, gap: 0.45, delay: 3 },
+        { enemy: 'parrot', count: 10, gap: 0.9, delay: 10 },
       ],
     },
     {
       groups: [
-        { enemy: 'deckhand', count: 20, gap: 0.8 },
-        { enemy: 'ironclad', count: 6, gap: 2.5, delay: 6 },
-        { enemy: 'powderMonkey', count: 16, gap: 0.5, delay: 10 },
-        { enemy: 'parrot', count: 10, gap: 1, delay: 14 },
-      ],
-    },
-    {
-      groups: [
-        { enemy: 'powderMonkey', count: 20, gap: 0.45 },
-        { enemy: 'deckhand', count: 18, gap: 0.8, delay: 4 },
-        { enemy: 'ironclad', count: 8, gap: 2.2, delay: 9 },
+        { enemy: 'deckhand', count: 22, gap: 0.75 },
+        { enemy: 'ironclad', count: 8, gap: 2.2, delay: 6 },
+        { enemy: 'powderMonkey', count: 18, gap: 0.45, delay: 10 },
         { enemy: 'parrot', count: 12, gap: 0.9, delay: 14 },
+      ],
+    },
+    {
+      groups: [
+        { enemy: 'powderMonkey', count: 24, gap: 0.4 },
+        { enemy: 'deckhand', count: 22, gap: 0.7, delay: 4 },
+        { enemy: 'ironclad', count: 12, gap: 1.9, delay: 9 },
+        { enemy: 'parrot', count: 16, gap: 0.8, delay: 14 },
       ],
     },
   ],
@@ -144,6 +155,8 @@ export const LEVEL3: LevelDef = {
   id: 'level3',
   name: 'Lighthouse Point',
   blurb: "The First Mate's big assault on the old lighthouse.",
+  // Laid out on the sketch (no painting yet). The pirates land on the south-east side; the road climbs in two
+  // hairpins to the top of the cliffs, then runs down west to the vault at the foot of the lighthouse on the point.
   map: { w: 1536, h: 1024, sketch: 'maps/level3-sketch.png' },
   route: [
     [1500, 800], [1320, 805], [1150, 790], [1000, 740], [910, 650], [930, 545], [1050, 500], [1200, 470], [1290, 390],
@@ -161,42 +174,49 @@ export const LEVEL3: LevelDef = {
     [55, 500], [80, 420], [180, 380], [320, 375], [430, 260], [600, 165], [860, 130], [1100, 140], [1320, 190], [1425, 330],
     [1445, 560], [1430, 730], [1385, 880], [1150, 910], [880, 905], [620, 885], [440, 810], [300, 720], [170, 660], [80, 600],
   ],
-  startGold: 330,
+  startGold: 340,
   crystals: 20,
   ordersAfter: [2, 4, 6, 8],
+  // A gentle start, then every kind together; from wave 5 the waves come faster (12 s rests instead of 14), and
+  // the First Mate leads the whole crew in the last one.
   waves: [
     { groups: [{ enemy: 'deckhand', count: 10, gap: 1.3 }] },
     { groups: [{ enemy: 'powderMonkey', count: 10, gap: 0.7 }, { enemy: 'parrot', count: 3, gap: 1.2, delay: 6 }] },
     { groups: [{ enemy: 'ironclad', count: 2, gap: 3 }, { enemy: 'deckhand', count: 10, gap: 1.1, delay: 2 }] },
-    { groups: [{ enemy: 'parrot', count: 8, gap: 1 }, { enemy: 'powderMonkey', count: 10, gap: 0.6, delay: 5 }] },
+    { groups: [{ enemy: 'parrot', count: 8, gap: 1 }, { enemy: 'powderMonkey', count: 12, gap: 0.5, delay: 5 }] },
     {
       groups: [
         { enemy: 'ironclad', count: 4, gap: 2.5 },
         { enemy: 'deckhand', count: 12, gap: 0.9, delay: 3 },
-        { enemy: 'powderMonkey', count: 8, gap: 0.5, delay: 10 },
+        { enemy: 'powderMonkey', count: 10, gap: 0.4, delay: 10 },
       ],
+      rest: 12,
     },
     {
       groups: [
         { enemy: 'parrot', count: 10, gap: 1 },
         { enemy: 'ironclad', count: 5, gap: 2.5, delay: 5 },
-        { enemy: 'powderMonkey', count: 14, gap: 0.5, delay: 9 },
+        { enemy: 'powderMonkey', count: 18, gap: 0.4, delay: 9 },
       ],
+      rest: 12,
     },
     {
       groups: [
         { enemy: 'deckhand', count: 20, gap: 0.8 },
         { enemy: 'ironclad', count: 6, gap: 2.2, delay: 6 },
         { enemy: 'parrot', count: 8, gap: 1, delay: 12 },
+        { enemy: 'powderMonkey', count: 12, gap: 0.4, delay: 16 },
       ],
+      rest: 12,
     },
     {
       groups: [
         { enemy: 'parrot', count: 12, gap: 0.9 },
-        { enemy: 'powderMonkey', count: 20, gap: 0.45, delay: 5 },
+        { enemy: 'powderMonkey', count: 24, gap: 0.4, delay: 5 },
         { enemy: 'ironclad', count: 7, gap: 2.4, delay: 10 },
         { enemy: 'deckhand', count: 12, gap: 0.8, delay: 14 },
       ],
+      rest: 12,
     },
     {
       groups: [
@@ -205,6 +225,7 @@ export const LEVEL3: LevelDef = {
         { enemy: 'parrot', count: 14, gap: 0.9, delay: 10 },
         { enemy: 'powderMonkey', count: 24, gap: 0.4, delay: 16 },
       ],
+      rest: 12,
     },
     {
       groups: [

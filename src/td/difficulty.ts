@@ -18,10 +18,17 @@ export interface DifficultyDef {
   count: number;
 }
 
+/**
+ * Tuned with scripts/tools/balance_bot.mts (a bot that never moves the hero or calls the companions):
+ * - Easy: half the spots with towers upgraded once still wins every level with all 3 stars.
+ * - Normal: a mixed defence that upgrades gets 3 stars; one tower kind alone struggles from level 2 on.
+ * - Hard: the same mixed defence still wins, usually losing a few crystals (2 stars is typical, 3 possible).
+ * Pirate hit points weigh the most: they make every pirate harder without paying more gold for it.
+ */
 export const DIFFICULTY: Record<Difficulty, DifficultyDef> = {
-  easy: { name: 'Easy', blurb: 'Fewer, softer pirates and more gold', hp: 0.75, gold: 1.25, count: 0.8 },
+  easy: { name: 'Easy', blurb: 'Fewer, softer pirates and more gold', hp: 0.8, gold: 1.2, count: 0.85 },
   normal: { name: 'Normal', blurb: 'The battle as designed', hp: 1, gold: 1, count: 1 },
-  hard: { name: 'Hard', blurb: 'Tougher pirates, and more of them', hp: 1.3, gold: 0.9, count: 1.2 },
+  hard: { name: 'Hard', blurb: 'Tougher pirates, and more of them', hp: 1.2, gold: 0.95, count: 1.1 },
 };
 
 /** The level's waves with each group's size scaled; a group never drops below one pirate. */

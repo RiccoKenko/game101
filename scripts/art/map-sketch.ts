@@ -162,12 +162,12 @@ const DECOR: Record<string, Decor> = {
   ${field([520, 205], 140, 84, -4, '#ecd060', '#a8875a')}
   ${field([1090, 215], 140, 80, 5, '#a8875a', '#6d4a2e')}
   ${field([640, 870], 150, 60, -2, '#ecd060', '#a8875a')}
-  ${field([1110, 860], 120, 56, 4, '#a8875a', '#6d4a2e')}
+  ${field([1150, 858], 110, 50, -8, '#a8875a', '#6d4a2e')}
   <ellipse cx="880" cy="170" rx="64" ry="32" fill="${WATER}" stroke="${INK}" stroke-width="4"/>
 </g>`;
     },
     stream: [[880, 175], [868, 250], [890, 330], [880, 420], [866, 500], [878, 590], [875, 660], [888, 760], [895, 910]],
-    trees: [[170, 420], [1360, 330], [1370, 560], [1150, 800], [420, 600], [640, 590], [1330, 720], [760, 200], [1000, 590], [400, 230], [640, 760]],
+    trees: [[170, 420], [1360, 330], [1370, 560], [1140, 790], [420, 600], [640, 590], [1330, 690], [1000, 590], [400, 230], [640, 760]],
     props: () => `${windmill([1270, 260], 15)}${windmill([175, 720], 40)}${windmill([670, 250], 5)}`,
   },
   // A rocky headland: grey cliffs and outcrops, boulders, a few wind-bent trees, the old lighthouse on the western
@@ -188,17 +188,21 @@ const DECOR: Record<string, Decor> = {
     },
     grass: '#a3cf6e',
     ground: (s) => {
-      const island = closedCurve(s.level.island);
+      // A band of bare rock round the rim, and stony outcrops (centre, radii).
+      const outcrops: [Pt, number, number][] = [
+        [[640, 175], 110, 50], [[1200, 190], 130, 50], [[1400, 440], 50, 110], [[560, 840], 120, 50], [[1150, 880], 150, 46],
+        [[120, 600], 70, 40], [[700, 760], 70, 40], [[1240, 560], 46, 34],
+      ];
       return `<g clip-path="url(#isle)">
-  <polygon points="${pts(island)}" fill="none" stroke="#b9b4a6" stroke-width="44" stroke-linejoin="round"/>
-  ${[[[640, 175], 110, 50], [[1200, 190], 130, 50], [[1400, 440], 50, 110], [[560, 840], 120, 50], [[1150, 880], 150, 46], [[120, 600], 70, 40], [[700, 760], 70, 40], [[1240, 560], 46, 34]]
-    .map(([[x, y], rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#b9b4a6" stroke="#8c8478" stroke-width="4"/>`).join('')}
+  <polygon points="${pts(closedCurve(s.level.island))}" fill="none" stroke="#b9b4a6" stroke-width="44" stroke-linejoin="round"/>
+  ${outcrops.map(([[x, y], rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#b9b4a6" stroke="#8c8478" stroke-width="4"/>`).join('')}
 </g>`;
     },
     trees: [[470, 300], [800, 170], [1000, 860], [560, 700], [1010, 420], [300, 440], [1200, 560], [650, 560], [1340, 300], [570, 860]],
-    props: (s) =>
-      `${[[700, 175], [1250, 180], [1395, 400], [520, 830], [1180, 880], [140, 610], [690, 770], [1410, 650], [330, 650], [960, 140]].filter((p) => s.clear(p as Pt, 30)).map((p) => rock(p as Pt)).join('')}
-  ${lighthouse([135, 470])}`,
+    props: (s) => {
+      const boulders: Pt[] = [[700, 175], [1250, 180], [1395, 400], [520, 830], [1180, 880], [140, 610], [690, 770], [1410, 650], [330, 650], [960, 140]];
+      return `${boulders.filter((p) => s.clear(p, 30)).map((p) => rock(p)).join('')}${lighthouse([135, 470])}`;
+    },
   },
 };
 

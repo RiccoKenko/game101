@@ -12,7 +12,7 @@ Helpers used while bringing art into the game and tuning balance. They are run b
 | `playshot.mjs <prefix> "<query>" "<js>" <ms,ms>` | Opens `play.html`, runs some JS once it is ready (e.g. `__play.battle.callWave()`), then screenshots after each delay. |
 | `map_overlay.mts <map> <out.png>` | Draws the level's road, tower spots, dock, vault and island over a painted map. |
 | `map_measure.mts <raw rgb>` | Measures how far the painted road and stone spots sit from the level data. |
-| `balance_bot.mts [towers]` | Plays level 1 with several build plans over six seeds and prints the crystals left (`BRANCH=1` buys level 4, `PICK=n` picks that order card). |
+| `balance_bot.mts [level\|all] [easy\|normal\|hard\|all] [towers]` | Plays the hero/lazy/mixed/archers/cannons/storms plans on a level and difficulty over six seeds and prints the crystals left (`BRANCH=1` buys level 4, `PICK=n` picks that order card, `PLANS=a,b` runs only those plans). |
 | `check-artifact.mjs <page.html> <out.png>` | Loads a single-file build offline the way an artifact wraps it, and reports errors. |
 | `gen_prompts.py` | Builds the all-in-one Codex prompts of section 10 in `docs/art/CHARACTER_BRIEF.md`. |
 
