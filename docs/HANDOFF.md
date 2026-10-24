@@ -8,11 +8,22 @@
   - บทเรียนสำหรับรอบใหม่: ทำให้ "รู้สึกดี" ในมือ (การเคลื่อนไหว, เอฟเฟกต์, จังหวะ) ก่อนเพิ่มเนื้อหา และให้เจ้านายลองเล่นเร็วกว่าเดิม
 - **โค้ดบน branch นี้ (`claude/compassionate-dirac-2wzrb3`) คือ Monster Rush ตาม commit b5f1bda** (เวอร์ชันสุดท้ายก่อนเริ่ม Sky Pirates) + ไฟล์นี้ + `art/openai-log.jsonl`
   - Phaser 3.90 + TypeScript + Vite, ภาพ SVG เขียนในโค้ด; วิธีเล่น/สวิตช์ทดสอบ/ไฟล์ค่าสมดุลอยู่ใน `README.md`
-  - Test: unit 18 ข้อ, e2e 3 ข้อ ผ่าน (`npx vitest run`, `PW_CHROMIUM=/opt/pw-browsers/chromium npx playwright test`)
+  - Test: unit 19 ข้อ, e2e 3 ข้อ ผ่าน (`npx vitest run`, `PW_CHROMIUM=/opt/pw-browsers/chromium npx playwright test`)
   - เซฟของผู้เล่นใช้ key `little-archer-save-v1` (Sky Pirates ใช้ key อื่น จึงไม่เคยแตะเซฟเดิม)
 - **ลิงก์หลัก little-archer.vercel.app กลับเป็น Monster Rush แล้ว** (deploy ด้วย Vercel MCP `create_deployment`, project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `RiccoKenko/game101` ref branch นี้)
 - **เจ้านายอยากได้ (ตอบ 24 ต.ค.):** "คืนเกมเดิมแต่ยกเครื่องใหม่ ปรับกราฟิก effect ให้สวยงามขึ้น แล้วเพิ่มเนื้อหาให้เล่นซ้ำไม่เบื่อ เช่น อาวุธ/ศัตรูใหม่ ภารกิจ ตัวละครให้เลือก"
-  - งานถัดไป: เสนอแผนยกเครื่องเป็นเฟส ให้เจ้านายเลือกก่อนลงมือ
+  - เจ้านายเลือก **"ทำเอฟเฟกต์ก่อน ค่อยตัดสินใจ"** เรื่องสไตล์ภาพ (อนิเมะแบบ Sky Pirates หรือเวกเตอร์เดิมขัดเกลา) หลังลองเล่นเฟส 1
+- **เฟส 1 ความมันมือ + เอฟเฟกต์ (ภาพเดิม): เสร็จแล้ว** commit 0aecdf0, **รอเจ้านายลองเล่น** ยังไม่ deploy ขึ้นลิงก์หลัก
+  - ลองเล่น: Artifact https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง) สร้างใหม่ด้วย `node scripts/build-artifact.mjs <out.html>` แล้ว publish ทับ path เดิม
+  - มอนขยับตามชนิด (`motion` ใน `config/enemies.ts`: hop/flap/float/walk/heavy), โผล่แบบเด้ง, ยุบตอนโดนตี, ตายแล้วกระพริบขาวหมุนหาย + รอยกระเซ็น (`Effects.corpse/decal`)
+  - คริติคอล 6% x2 เลขส้มใหญ่ (`PLAYER_BASE.critChance/critMult`, `stats.critChance`)
+  - hit-stop / slow-mo / shake ผ่าน `ctx.hitStop/slowMo/shake` (ปิดเองตอน `?bot`); สวิตช์ Shake ในหน้าหยุด (`settings.shake`)
+  - ลูกธนู/มีดมีหางแสง, ธนูมีแสงตอนยิง + ฮีโร่ถอยนิด, ขวานมีเงาตาม, ออร่าพองตอนตี, สายฟ้าซิกแซก, ระเบิดมีวงเป้าแดง + เงา + รอยไหม้
+  - เพชร/เหรียญเด้งออกจากศัตรู, เหรียญหมุน, หีบมีแสงหมุน, เลเวลอัปมีแสงทอง + slow-mo 0.4 วิ ก่อนการ์ดขึ้น
+  - บอสตกจากฟ้าลงครึ่งบนของจอ (640 px) มีวงกระแทก; บอสตายมีแสงวาบ ระเบิดต่อเนื่อง slow-mo
+  - บรรยากาศแต่ละแมพ `game/Ambience.ts` (กลีบดอกไม้ / หมอก+หิ่งห้อย / ถ่านไฟ), ต้นไม้ไหว, HUD มี vignette + ขอบแดงตอนโดนตี/เลือดน้อย
+  - FPS ใน container (ไม่มี GPU) ลดจาก ~13 เป็น ~11; JS ต่อเฟรม < 1 ms ต้องให้เจ้านายลองบน iPhone จริงว่าลื่นไหม
+- **เฟสถัดไปที่เสนอไว้:** 2 สไตล์ภาพ (ตัดสินใจหลังลองเล่น) → 3 เนื้อหาเล่นซ้ำ: อาวุธ/ศัตรูใหม่, ภารกิจ, ตัวละครให้เลือก
 
 ## Sky Pirates (พักไว้)
 - โค้ดและภาพทั้งหมดอยู่บน branch **`sky-pirates-td`** (commit ebe60ec) อ่าน `docs/HANDOFF.md` บน branch นั้นได้รายละเอียดครบ
@@ -90,7 +101,7 @@
   - ภาษาไทยปนศัพท์เทคนิค
   - ส่งงานก่อนแล้วค่อยอธิบาย
   - อธิบายแบบคนที่ไม่ใช่สาย dev
-  - มี "📚 บทเรียนที่ N" ซึ่งถึง **42** แล้ว (ข้อต่อไปคือ 43)
+  - มี "📚 บทเรียนที่ N" ซึ่งถึง **43** แล้ว (ข้อต่อไปคือ 44)
 - **checkpoint:** เมื่อถึงจุดที่หยุดได้ให้บอกก่อน เพราะเจ้านายจะสั่ง handoff แล้ว compact
 - **งานภาพ:** Codex เป็น account กลางที่**ไม่ได้เชื่อม GitHub** ใช้เป็นแชตธรรมดา
   - เจ้านายใช้แอป Gemini (account บริษัท) แทนได้ด้วย prompt เดิม ผลออกมาดี: ป้อมและแผนที่ด่าน 2-3 วาดด้วย Gemini
