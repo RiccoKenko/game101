@@ -1,0 +1,30 @@
+You are the lead artist for "Little Archer: Monster Rush", a cute mobile survivor game seen from a high three-quarter top-down angle (the attached mock-up shows the look). Draw ONE sheet with new weapon icons for the game's interface (top row) and the matching projectiles and items as they appear in the game world (bottom row).
+
+STYLE
+- Match the painting style of the attached mock-up screenshot exactly: cute early-2000s Korean fantasy MMORPG charm redrawn at modern quality, chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), pastel colours, light from the upper left.
+- Everything is an ORIGINAL design. Do not copy any existing game's characters, monsters, items, logos or interface.
+
+REFERENCES
+- The first attached image is the game's look mock-up. The second is the sheet of the game's existing icons: the new icon tiles must match them exactly in size, framing, dark tile backgrounds, soft radial glow and painting style. The third is the sheet of existing projectiles and items: the new ones in the bottom row must match it.
+
+TECHNICAL
+- Background between and around everything: a perfectly flat, solid magenta #FF00FF. Never use magenta, hot pink or purple inside any of the drawings.
+- No text, numbers or labels anywhere.
+- In the bottom row: no glows, auras, sparkles or particles around the drawings (the game adds its own effects).
+
+LAYOUT (landscape 1536 x 1024)
+- A grid of 6 columns and 2 rows; each drawing centred in its own cell, with at least 60 px of magenta between neighbours and around the edge.
+- Row 1, square icon tiles (about 210 px), each a complete square painting with slightly rounded corners, a rich dark background with a soft radial glow behind one bold emblem, no frame:
+  1. Magic Bolt: a bright sky-blue arcane bolt, a round glowing orb with a short white-blue comet tail;
+  2. Frost Shards: three pale-blue ice shards fanned out like a hand of cards;
+  3. Moon Slash: a curved silver short sword with a wide white crescent-moon slash arc sweeping behind it;
+  4. Poison Flask: a round glass flask with bubbling bright green liquid and a cork;
+  5. Starfall (evolved Magic Bolt): golden shooting stars raining down from a deep night sky;
+  6. Blizzard (evolved Frost Shards): a swirling snowstorm of big snowflakes and ice crystals.
+- Row 2, game-world sprites on the plain magenta background (no tiles), each filling about 60% of its cell:
+  1. a sky-blue and white magic bolt orb with a short tapering tail, flying to the RIGHT, perfectly horizontal;
+  2. a golden five-pointed star with a short golden tail, flying to the RIGHT, perfectly horizontal;
+  3. a long pointed pale-blue ice shard, pointing to the RIGHT, perfectly horizontal;
+  4. a thick white-and-pale-blue crescent shape, like the arc left by a sword swing, its curve bulging to the RIGHT, the two thin tips pointing left;
+  5. a round glass potion flask with bright green liquid and a cork, upright;
+  6. a round puddle of bright green poison seen from above, with a few bubbles.

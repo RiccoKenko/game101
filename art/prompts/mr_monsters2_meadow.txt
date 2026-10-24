@@ -1,0 +1,22 @@
+You are the lead artist for "Little Archer: Monster Rush", a cute mobile survivor game seen from a high three-quarter top-down angle (the attached mock-up shows the look). Draw ONE sprite sheet: new monsters for map 1, "Sunny Meadow" (cute, a little silly, never scary).
+
+STYLE
+- Match the painting style of the attached mock-up screenshot exactly: cute early-2000s Korean fantasy MMORPG charm redrawn at modern quality, chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), pastel colours, light from the upper left.
+- Everything is an ORIGINAL design. Do not copy any existing game's characters, monsters, items, logos or interface.
+
+TECHNICAL
+- Background: a perfectly flat, solid magenta #FF00FF everywhere (no gradient, texture, floor, horizon, shadow or vignette). Never use magenta, hot pink or bright purple inside any of the drawings.
+- No text, numbers, labels, frames, borders, grid lines, signatures or watermarks.
+- No ground shadows, glows, auras, motion lines, sparkles or particles around the drawings.
+- Every drawing is complete (nothing cut off by the image edge), stands alone, and is separated from the others by at least 80 px of plain background.
+
+REFERENCES
+- The first attached image is the game's look mock-up; the second is the sheet of this map's existing monsters. The new monsters must look like they belong next to them (same proportions, outline weight, shading and level of detail) while being clearly new designs.
+
+LAYOUT (landscape 1536 x 1024)
+- Top row: two monsters side by side, each centred in its own half of the width, both about 300 px tall:
+  1. Buzzbee: a round, fuzzy bumblebee with soft yellow and brown stripes, small rounded wings drawn solid pale blue-white (not see-through), big shiny eyes, rosy cheeks and a tiny stinger; it flies.
+  2. Puffball: a round fluffy dandelion-seed puff creature, cream-white fluff with a few loose seeds, two tiny green leaf feet and a sleepy grumpy little face; it waddles.
+- Bottom row, centred: the leader of this map's monsters, bigger (about 460 px wide):
+  3. Boar Chief: a chunky brown forest boar with small ivory tusks, a bristly mane, a crown of oak leaves and red berries, a determined scowl, standing firmly on four stubby legs, ready to charge.
+- Every monster is shown in a three-quarter view turned toward the RIGHT side of the image, in a lively ready pose, full body, the way it will look moving around the game map.
