@@ -1,0 +1,17 @@
+You are the lead character designer for "Little Archer: Monster Rush", a cute mobile survivor game. Draw ONE character design sheet with three alternative designs for the player character, Little Archer: a cheerful, brave kid archer who runs around the map shooting arrows at monsters.
+
+STYLE
+- Match the attached monster sheet exactly so the hero belongs in the same world: chunky chibi proportions (about 2.5 heads tall, big head, big friendly eyes), clean warm dark-brown outlines of the same thickness, soft cel shading with gentle gradients, pastel-bright colours, light from the upper left.
+- The hero must read clearly at small size on bright green grass: a strong simple silhouette and at least one bold accent colour that is NOT green (red, blue, orange, cream).
+- Everything is an ORIGINAL design. Do not imitate any famous game or anime character.
+
+THE THREE DESIGNS (one per column, left to right)
+- A, "Ranger": a forest-green hood with a gold trim and a little gold bell on its tip, a bright red scarf, a cream tunic under a brown leather vest, blue shorts, brown boots.
+- B, "Feather Cap": a red cap with a long white feather, a short blue cape, a white tunic with a brown belt and pouch, brown boots.
+- C, "Fox Scout": an orange hood with small fox ears, a cream scarf, a navy jacket with gold buttons, brown shorts and boots.
+- All three: brown hair, a short wooden bow with gold tips, a quiver of arrows with red-and-white feathers on the back.
+
+LAYOUT (landscape 1536 x 1024)
+- Top row: each design standing in a three-quarter view turned toward the RIGHT, bow ready, full body, about 450 px tall.
+- Bottom row, under each design: the same character running to the right while drawing the bow at full draw (running and shooting at the same time), about 330 px tall.
+- Background: plain flat light grey. No text, letters, labels, frames, grid lines or watermarks. Keep the designs clearly separated.
