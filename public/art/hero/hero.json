@@ -1,0 +1,46 @@
+{
+  "frameWidth": 192,
+  "frameHeight": 192,
+  "feet": [
+    96,
+    177
+  ],
+  "animations": {
+    "idle": {
+      "start": 0,
+      "count": 16,
+      "fps": 12,
+      "loop": true
+    },
+    "run": {
+      "start": 16,
+      "count": 8,
+      "fps": 16,
+      "loop": true
+    },
+    "shoot": {
+      "start": 24,
+      "count": 8,
+      "fps": 16,
+      "loop": false
+    },
+    "hurt": {
+      "start": 32,
+      "count": 6,
+      "fps": 12,
+      "loop": false
+    },
+    "ko": {
+      "start": 38,
+      "count": 10,
+      "fps": 12,
+      "loop": false
+    },
+    "cheer": {
+      "start": 48,
+      "count": 12,
+      "fps": 12,
+      "loop": false
+    }
+  }
+}
