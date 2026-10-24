@@ -15,9 +15,10 @@ export interface Stage2D {
   render(): void;
 }
 
-export function createStage2D(host: HTMLElement): Stage2D {
+/** `maxPixelRatio` caps the drawing resolution on high-density screens. */
+export function createStage2D(host: HTMLElement, maxPixelRatio = 3): Stage2D {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.setClearColor(0x000000, 0);
   host.appendChild(renderer.domElement);

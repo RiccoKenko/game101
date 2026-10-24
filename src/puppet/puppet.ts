@@ -1,8 +1,11 @@
 /**
  * Draws a 2D cut-out character with Three.js: one flat, unlit sprite per part, placed every frame from the
  * skeleton. Adds what makes cut-outs feel alive: spring-swung cloth, blinking, a real bowstring and hit flashes.
+ * Given an atlas of its pictures (and no bowstring), a puppet draws all its parts as one mesh: one draw call
+ * instead of one per part, which keeps a road full of pirates smooth on phones.
  */
 import * as THREE from 'three';
+import type { Atlas } from './atlas';
 import type { Pose2D } from './pose';
 import { apply, fitAffine, mul, partMatrix, Skeleton2D, spritePoint, type Affine, type PartDef, type RigDef, type SpriteInfo, type Vec2 } from './rig';
 
@@ -10,6 +13,8 @@ export interface PuppetAssets {
   rig: RigDef;
   sprites: Record<string, SpriteInfo>;
   textures: Record<string, THREE.Texture>;
+  /** All the pictures in one texture: puppets made from these assets draw in one call. */
+  atlas?: Atlas;
 }
 
 // Textures hold premultiplied alpha, so edges filter cleanly and the flash can whiten without halos.
@@ -47,6 +52,29 @@ export function spriteMaterial(map: THREE.Texture, flash: { value: number }, sha
   });
 }
 
+// The batched mesh: the same shading, with each part's darkening (far limbs) carried per vertex.
+const BATCH_VERT = `
+attribute float shade;
+varying vec2 vUv;
+varying float vShade;
+void main() {
+  vUv = uv;
+  vShade = shade;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+const BATCH_FRAG = `
+uniform sampler2D map;
+uniform vec3 tint;
+uniform float opacity;
+uniform float flash;
+varying vec2 vUv;
+varying float vShade;
+void main() {
+  vec4 t = texture2D(map, vUv);
+  vec3 rgb = mix(t.rgb * tint * vShade, vec3(t.a), flash);
+  gl_FragColor = vec4(rgb, t.a) * opacity;
+}`;
+
 /** A plane whose vertices are the sprite's own pixels, y-up, top-left at the origin. */
 export function spriteGeometry(w: number, h: number): THREE.PlaneGeometry {
   return new THREE.PlaneGeometry(w, h).translate(w / 2, -h / 2, 0);
@@ -56,9 +84,23 @@ const toMatrix4 = (m: Affine, out: THREE.Matrix4) => out.set(m[0], m[2], 0, m[4]
 
 interface PartNode {
   def: PartDef;
-  mesh: THREE.Mesh;
+  /** Its own mesh, unless the puppet draws batched. */
+  mesh?: THREE.Mesh;
+  visible: boolean;
   /** The part image in its bone's space. */
   local: Affine;
+  /** Batched: where its picture sits in the atlas, and its darkening. */
+  uv?: [number, number, number, number];
+  shade: number;
+}
+
+/** One mesh holding a quad per part, rewritten every frame in drawing order. */
+interface Batch {
+  mesh: THREE.Mesh;
+  material: THREE.ShaderMaterial;
+  pos: THREE.BufferAttribute;
+  uv: THREE.BufferAttribute;
+  shade: THREE.BufferAttribute;
 }
 
 interface Spring {
@@ -92,25 +134,33 @@ export class Puppet {
   private blinkT = -1;
   private string?: THREE.Mesh;
   private arrow?: { mesh: THREE.Mesh; sprite: SpriteInfo };
+  private batch?: Batch;
+  private drawList: PartNode[] = [];
 
   constructor(private assets: PuppetAssets) {
     const { rig, textures } = assets;
     this.skeleton = new Skeleton2D(rig);
+    // A bowstring weaves between the parts, so a puppet with one keeps a mesh per part.
+    const atlas = rig.string || rig.arrow ? undefined : assets.atlas;
     for (const def of rig.parts) {
       const sprite = this.sprite(def.img);
-      const mesh = new THREE.Mesh(spriteGeometry(sprite.w, sprite.h), spriteMaterial(textures[def.img], this.flashU, def.shade));
-      mesh.matrixAutoUpdate = false;
-      mesh.frustumCulled = false;
-      const node = { def, mesh, local: partMatrix(def, sprite, this.skeleton.bone(def.bone).at) };
+      const node: PartNode = { def, visible: true, local: partMatrix(def, sprite, this.skeleton.bone(def.bone).at), shade: def.shade ?? 1 };
+      if (atlas) node.uv = atlas.rects[def.img];
+      else {
+        node.mesh = new THREE.Mesh(spriteGeometry(sprite.w, sprite.h), spriteMaterial(textures[def.img], this.flashU, def.shade));
+        node.mesh.matrixAutoUpdate = false;
+        node.mesh.frustumCulled = false;
+        this.root.add(node.mesh);
+      }
       this.parts.set(def.name, node);
       if (def.slot) {
         const list = this.slots.get(def.slot) ?? [];
-        mesh.visible = list.length === 0;
+        this.setVisible(node, list.length === 0);
         list.push(node);
         this.slots.set(def.slot, list);
       }
-      this.root.add(mesh);
     }
+    if (atlas) this.batch = this.makeBatch(atlas);
     this.springs = (rig.springs ?? []).map((s) => ({ ...s, angle: 0, vel: 0 }));
     if (rig.string) {
       const geo = new THREE.BufferGeometry();
@@ -129,6 +179,49 @@ export class Puppet {
       this.root.add(mesh);
     }
     this.setOrder(0);
+  }
+
+  private makeBatch(atlas: Atlas): Batch {
+    const n = this.parts.size;
+    const geo = new THREE.BufferGeometry();
+    const pos = new THREE.BufferAttribute(new Float32Array(n * 4 * 3), 3).setUsage(THREE.DynamicDrawUsage);
+    const uv = new THREE.BufferAttribute(new Float32Array(n * 4 * 2), 2).setUsage(THREE.DynamicDrawUsage);
+    const shade = new THREE.BufferAttribute(new Float32Array(n * 4), 1).setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('position', pos);
+    geo.setAttribute('uv', uv);
+    geo.setAttribute('shade', shade);
+    // Corners 0-3 of each quad: top left, top right, bottom left, bottom right.
+    const index: number[] = [];
+    for (let i = 0; i < n; i++) index.push(i * 4, i * 4 + 2, i * 4 + 1, i * 4 + 2, i * 4 + 3, i * 4 + 1);
+    geo.setIndex(index);
+    geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
+    const material = new THREE.ShaderMaterial({
+      vertexShader: BATCH_VERT,
+      fragmentShader: BATCH_FRAG,
+      uniforms: { map: { value: atlas.texture }, tint: { value: new THREE.Color(1, 1, 1) }, opacity: { value: 1 }, flash: this.flashU },
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      blending: THREE.CustomBlending,
+      blendSrc: THREE.OneFactor,
+      blendDst: THREE.OneMinusSrcAlphaFactor,
+      blendSrcAlpha: THREE.OneFactor,
+      blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
+    });
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.frustumCulled = false;
+    this.root.add(mesh);
+    return { mesh, material, pos, uv, shade };
+  }
+
+  /** Whether it draws all its parts in one call. */
+  get batched(): boolean {
+    return !!this.batch;
+  }
+
+  private setVisible(node: PartNode, visible: boolean): void {
+    node.visible = visible;
+    if (node.mesh) node.mesh.visible = visible;
   }
 
   /** How many pictures it is made of. */
@@ -158,15 +251,15 @@ export class Puppet {
 
   /** Colours the whole character (e.g. icy blue while chilled); white is its own colours. */
   tint(color: THREE.Color): void {
-    for (const n of this.parts.values()) {
-      const shade = n.def.shade ?? 1;
-      (n.mesh.material as THREE.ShaderMaterial).uniforms.tint.value.setRGB(color.r * shade, color.g * shade, color.b * shade);
-    }
+    if (this.batch) this.batch.material.uniforms.tint.value.copy(color);
+    for (const n of this.parts.values())
+      if (n.mesh) (n.mesh.material as THREE.ShaderMaterial).uniforms.tint.value.setRGB(color.r * n.shade, color.g * n.shade, color.b * n.shade);
   }
 
   /** Fades the whole character (0 = gone). */
   opacity(value: number): void {
-    for (const n of this.parts.values()) (n.mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = value;
+    if (this.batch) this.batch.material.uniforms.opacity.value = value;
+    for (const n of this.parts.values()) if (n.mesh) (n.mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = value;
     if (this.arrow) (this.arrow.mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = value;
   }
 
@@ -177,7 +270,7 @@ export class Puppet {
 
   /** Shows one part of a slot (e.g. eyes "eyes-happy"). */
   showSlot(slot: string, part: string): void {
-    for (const n of this.slots.get(slot) ?? []) n.mesh.visible = n.def.name === part;
+    for (const n of this.slots.get(slot) ?? []) this.setVisible(n, n.def.name === part);
   }
 
   /** A named point (see RigDef.points) in character space, from the last update. */
@@ -212,13 +305,47 @@ export class Puppet {
     for (const [slot, part] of Object.entries(pose.slots ?? {})) this.showSlot(slot, part);
     if (rig.blink) this.blink(dt, pose.slots?.[rig.blink.slot] ?? rig.blink.open);
 
-    for (const node of this.parts.values()) {
-      toMatrix4(mul(this.skeleton.world.get(node.def.bone)!, node.local), node.mesh.matrix);
-      node.mesh.renderOrder = this.order + (pose.z?.[node.def.name] ?? node.def.z);
-    }
+    if (this.batch) this.fillBatch(this.batch, pose);
+    else
+      for (const node of this.parts.values()) {
+        toMatrix4(mul(this.skeleton.world.get(node.def.bone)!, node.local), node.mesh!.matrix);
+        node.mesh!.renderOrder = this.order + (pose.z?.[node.def.name] ?? node.def.z);
+      }
     this.updateString(pose);
     this.updateArrow(pose);
     this.flashU.value = Math.max(0, this.flashU.value - dt * 9);
+  }
+
+  /** Writes the shown parts' quads back to front (the same order separate meshes would draw in). */
+  private fillBatch(b: Batch, pose: Pose2D): void {
+    const list = this.drawList;
+    list.length = 0;
+    for (const n of this.parts.values()) if (n.visible) list.push(n);
+    const z = (n: PartNode) => pose.z?.[n.def.name] ?? n.def.z;
+    list.sort((p, q) => z(p) - z(q));
+    const pos = b.pos.array as Float32Array;
+    const uv = b.uv.array as Float32Array;
+    const shade = b.shade.array as Float32Array;
+    list.forEach((n, i) => {
+      const m = mul(this.skeleton.world.get(n.def.bone)!, n.local);
+      const { w, h } = this.sprite(n.def.img);
+      // Part space is the picture's pixels, y up, top left at the origin: corners (0, 0), (w, 0), (0, -h), (w, -h).
+      const o = i * 12;
+      pos[o] = m[4];
+      pos[o + 1] = m[5];
+      pos[o + 3] = m[0] * w + m[4];
+      pos[o + 4] = m[1] * w + m[5];
+      pos[o + 6] = -m[2] * h + m[4];
+      pos[o + 7] = -m[3] * h + m[5];
+      pos[o + 9] = m[0] * w - m[2] * h + m[4];
+      pos[o + 10] = m[1] * w - m[3] * h + m[5];
+      const [u0, v0, u1, v1] = n.uv!;
+      uv.set([u0, v1, u1, v1, u0, v0, u1, v0], i * 8);
+      shade.fill(n.shade, i * 4, i * 4 + 4);
+    });
+    b.pos.needsUpdate = b.uv.needsUpdate = b.shade.needsUpdate = true;
+    b.mesh.geometry.setDrawRange(0, list.length * 6);
+    b.mesh.renderOrder = this.order;
   }
 
   private swing(dt: number): void {

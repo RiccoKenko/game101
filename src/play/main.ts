@@ -19,6 +19,7 @@ import { Shake } from '../fx/shake';
 import { GameTime } from '../fx/time';
 import { Trail } from '../fx/trail';
 import { Animator2D } from '../puppet/animator';
+import { buildAtlas } from '../puppet/atlas';
 import { CLIPS } from '../puppet/clips';
 import { heroClips } from '../puppet/clips/hero';
 import { loadPuppet, loadTexture } from '../puppet/loader';
@@ -109,12 +110,15 @@ const world = (p: Pt, lift = 0, out = new THREE.Vector3()) => out.set(p[0], -p[1
 
 // ---------- stage and camera
 
-const stage = createStage2D($('stage'));
+/** The battle is drawn at most at twice the CSS resolution: sharp enough, and far less to fill on 3× phones. */
+const MAX_PIXEL_RATIO = 2;
+const MAX_ZOOM = 1.6;
+const stage = createStage2D($('stage'), MAX_PIXEL_RATIO);
 const { scene, camera, renderer } = stage;
 const bar = $('bar') as HTMLElement;
 bar.style.width = '20%';
 
-const bounds = (): Bounds => ({ screenW: stage.width, screenH: stage.height, mapW: level.map.w, mapH: level.map.h, maxZoom: 1.6 });
+const bounds = (): Bounds => ({ screenW: stage.width, screenH: stage.height, mapW: level.map.w, mapH: level.map.h, maxZoom: MAX_ZOOM });
 /** The opening view of a level: zoomed to fit the island's height on the screen, a little right of centre. */
 const startView = (): View => clampView({ cx: level.map.w * 0.53, cy: level.map.h * 0.53, zoom: Math.max(0.62, stage.height / 820) }, bounds());
 let view: View = startView();
@@ -178,6 +182,9 @@ async function puppetLook(id: string, fit: { height: number } | { width: number 
   probe.dispose();
   const top = headTop[1];
   const size = 'height' in fit ? fit.height / top : fit.width / (box.max.x - box.min.x);
+  // One draw call per character: its pictures packed at the most detail the battle can show (fully zoomed in on
+  // a sharp screen); `?nobatch` draws part by part instead, for comparison.
+  if (!params.has('nobatch')) assets.atlas = buildAtlas(assets, Math.min(1, size * MAX_ZOOM * MAX_PIXEL_RATIO), renderer);
   return { assets, clips, size, height: top * size, box, nose, headTop };
 }
 
@@ -1492,9 +1499,26 @@ function syncHero(dt: number): void {
   }
 }
 
+/** `?debug`: frame rate, script time per frame, draw calls and pirates on the field, for testing on a phone. */
+const perf = { fps: 0, ms: 0, calls: 0, frames: 0, sum: 0, since: performance.now() };
+const debugEl = params.has('debug') ? app.appendChild(Object.assign(document.createElement('div'), { className: 'debug' })) : null;
+
+function measure(start: number, now: number): void {
+  perf.frames++;
+  perf.sum += performance.now() - start;
+  if (now - perf.since < 500) return;
+  perf.fps = Math.round((perf.frames * 1000) / (now - perf.since));
+  perf.ms = perf.sum / perf.frames;
+  perf.calls = renderer.info.render.calls;
+  perf.frames = perf.sum = 0;
+  perf.since = now;
+  if (debugEl) debugEl.textContent = `${perf.fps} fps · ${perf.ms.toFixed(1)} ms · ${perf.calls} draws · ${battle.enemies.length} pirates`;
+}
+
 let lastT = performance.now();
 let clock = 0;
 function frame(now: number): void {
+  const start = performance.now();
   const realDt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
   requestAnimationFrame(frame);
@@ -1528,6 +1552,7 @@ function frame(now: number): void {
   shake.apply(camera);
   stage.render();
   shake.restore(camera);
+  measure(start, now);
 }
 
 newBattle();
@@ -1556,6 +1581,7 @@ window.__play = {
     return difficulty;
   },
   progress,
+  perf,
   toScreen: (p: Pt) => toScreen(view, bounds(), p),
   setSpeed: (s: number) => (speed = s),
   newBattle,

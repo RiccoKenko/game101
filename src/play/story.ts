@@ -38,7 +38,7 @@ export const SPEAKERS: Record<Speaker, SpeakerDef> = {
     name: 'Talon',
     side: 'left',
     // Talon's portraits are still to be drawn; the game snapshots his puppet's head until then.
-    portraits: { proud: 'sprites/talon/proud.png', happy: 'sprites/talon/happy.png', worried: 'sprites/talon/worried.png' },
+    portraits: { proud: 'sprites/talon/proud.png', cry: 'sprites/talon/cry.png', happy: 'sprites/talon/happy.png' },
     colour: '#b0702c',
   },
   mochi: {
@@ -69,7 +69,7 @@ export const SPEAKERS: Record<Speaker, SpeakerDef> = {
 export const STORY: Record<string, StoryLine[]> = {
   'level1:before': [
     { who: 'archer', mood: 'smile', text: 'Morning, Sky Haven! The crystals are humming today.' },
-    { who: 'talon', mood: 'worried', text: 'Kree! Kree-kree!' },
+    { who: 'talon', mood: 'cry', text: 'Kree! Kree-kree!' },
     { who: 'archer', mood: 'surprised', text: 'What is it, Talon? …An airship! Heading straight for our dock!' },
     { who: 'firstMate', mood: 'sneer', text: 'Ahoy, little island! Captain Stormbeard sends his regards… and his empty sacks.' },
     { who: 'deckhand', mood: 'greedy', text: 'Shiny crystals! Shiny, shiny crystals!' },
