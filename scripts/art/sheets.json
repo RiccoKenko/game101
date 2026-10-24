@@ -91,7 +91,7 @@
     "poses": { "names": ["idle", "walk", "run-attack", "run-away", "hit", "ko", "taunt", "cheer"] },
     "portraits": {
       "names": ["greedy", "angry", "panicked"],
-      "boxes": { "greedy": [0, 100, 521, 900], "angry": [521, 100, 514, 900], "panicked": [1035, 100, 501, 900] }
+      "boxes": { "greedy": [0, 100, 521, 900], "angry": [521, 100, 549, 900], "panicked": [1070, 100, 466, 900] }
     }
   },
   "powder_monkey": {
