@@ -59,3 +59,37 @@ test('boss appears at 5:00', async ({ page }) => {
     .toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('a finished daily quest pays out from the Quests screen', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => {
+    const d = new Date();
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const quests = [
+      { id: 'kills', map: 0, target: 300, reward: 60, progress: 300, claimed: false },
+      { id: 'level', map: 0, target: 10, reward: 60, progress: 2, claimed: false },
+      { id: 'runs', map: 0, target: 3, reward: 40, progress: 0, claimed: false },
+    ];
+    localStorage.setItem('little-archer-save-v1', JSON.stringify({ version: 1, gold: 5, daily: { day, quests, bonus: 80, bonusClaimed: false } }));
+  });
+  await page.goto('/');
+  await expect.poll(() => scenes(page), { timeout: 30_000 }).toContain('Menu');
+  const box = (await page.locator('canvas').boundingBox())!;
+  const scale = box.width / 1080;
+  // The Quests button sits right of centre, 120 game px above the bottom.
+  await page.touchscreen.tap(box.x + (540 + 245) * scale, box.y + box.height - 120 * scale);
+  await expect.poll(() => scenes(page), { timeout: 10_000 }).toContain('Quests');
+  // The first row's reward button is the only one that can be pressed.
+  const [x, y] = await page.evaluate(() => {
+    type Btn = { x: number; y: number; opts?: { onClick?: unknown }; enabled?: boolean };
+    const g = (window as unknown as { __game: { scene: { getScene(k: string): { content: Btn[] } } } }).__game;
+    const b = g.scene.getScene('Quests').content.find((o) => o.opts?.onClick && o.enabled)!;
+    return [b.x, b.y];
+  });
+  await page.touchscreen.tap(box.x + x * scale, box.y + y * scale);
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('little-archer-save-v1')!).gold), { timeout: 5_000 })
+    .toBe(65);
+  expect(errors).toEqual([]);
+});

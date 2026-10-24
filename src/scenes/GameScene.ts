@@ -3,6 +3,7 @@ import { audio } from '../audio/audio';
 import { BOSSES } from '../config/enemies';
 import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS } from '../config/game';
 import { MAPS, type MapDef } from '../config/maps';
+import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
 import { type EvolutionId } from '../config/weapons';
 import { DEBUG } from '../core/debug';
 import {
@@ -16,6 +17,7 @@ import {
   type Choice,
   type Inventory,
 } from '../core/progression';
+import { applyRun, describeQuest, ensureDaily, lifetime, progressWith, questDone, ROMAN, tiersReached } from '../core/quests';
 import { mulberry32, weightedPick, type Rng } from '../core/rng';
 import { saveStore } from '../core/save';
 import { computeStats, type PlayerStats } from '../core/stats';
@@ -44,6 +46,9 @@ export interface RunState {
   mapIndex: number;
   time: number;
   kills: number;
+  eliteKills: number;
+  chests: number;
+  evolutions: number;
   gold: number;
   level: number;
   xp: number;
@@ -72,6 +77,16 @@ export interface RunSummary {
   quit: boolean;
   unlockedMap: number | null;
   bossesKilled: number;
+  /** Daily quests this run finished, and achievement tiers it reached ("Monster Hunter II"). */
+  quests: string[];
+  achievements: string[];
+}
+
+/** Something to celebrate in the HUD: a daily quest or an achievement tier finished during the run. */
+export interface QuestNotice {
+  title: string;
+  line: string;
+  icon: string;
 }
 
 export type ChestReward =
@@ -101,6 +116,11 @@ export class GameScene extends Phaser.Scene {
   private slowScale = 1;
   /** Real seconds left of the level-up burst before the upgrade cards open. */
   private levelUpWait = 0;
+  /** Quest and achievement banners already shown this run; tiers reached before the run started. */
+  private questsShown = new Set<number>();
+  private tiersAtStart = {} as Record<AchievementId, number>;
+  private tiersShown = {} as Record<AchievementId, number>;
+  private questCheck = 0;
   private keys?: Record<string, Phaser.Input.Keyboard.Key>;
 
   constructor() {
@@ -113,6 +133,8 @@ export class GameScene extends Phaser.Scene {
     this.pendingLevelUps = 0;
     this.modalOpen = false;
     this.freeze = this.slowLeft = this.levelUpWait = 0;
+    this.questCheck = 0;
+    this.questsShown = new Set();
   }
 
   create(): void {
@@ -125,6 +147,9 @@ export class GameScene extends Phaser.Scene {
       mapIndex: this.mapIndex,
       time: DEBUG.startTime,
       kills: 0,
+      eliteKills: 0,
+      chests: 0,
+      evolutions: 0,
       gold: 0,
       level: 1,
       xp: 0,
@@ -171,6 +196,10 @@ export class GameScene extends Phaser.Scene {
       onChest: () => this.openChest(),
     });
     this.ctx = ctx;
+    ensureDaily(saveStore.data);
+    saveStore.save();
+    this.tiersAtStart = tiersReached(lifetime(saveStore.data));
+    this.tiersShown = { ...this.tiersAtStart };
     this.weapons = new WeaponSystem(ctx);
     this.weapons.sync(inventory.weapons, stats);
     this.cameras.main.centerOn(0, 0);
@@ -250,6 +279,11 @@ export class GameScene extends Phaser.Scene {
     this.weapons.update(dt);
     this.pickups.update(dt, run.stats.magnet);
     this.fx.update(dt);
+    this.questCheck += dt;
+    if (this.questCheck >= 1) {
+      this.questCheck = 0;
+      this.checkQuests();
+    }
 
     if (this.pendingLevelUps > 0 && !this.modalOpen && !run.ended && this.levelUpWait <= 0) {
       if (DEBUG.bot) this.openLevelUp();
@@ -342,6 +376,7 @@ export class GameScene extends Phaser.Scene {
   private onEnemyKilled(e: Enemy): void {
     const run = this.run;
     run.kills++;
+    if (e.elite) run.eliteKills++;
     if (e.isBoss) {
       this.onBossDefeated(e);
       return;
@@ -499,8 +534,10 @@ export class GameScene extends Phaser.Scene {
     const inv = this.run.inventory;
     let reward: ChestReward;
     const evolvable = evolvableWeapons(inv);
+    this.run.chests++;
     if (evolvable.length) {
       reward = { kind: 'evolution', evolution: evolve(inv, evolvable[0])! };
+      this.run.evolutions++;
     } else {
       const count = 1 + (this.rng() < 0.6 ? 1 : 0) + (this.rng() < 0.3 ? 1 : 0);
       const choices = rollChoices(inv, this.rng, 3)
@@ -529,6 +566,46 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // ---------------------------------------------------------------- quests
+
+  /** The run so far, as the daily quests and achievements measure it. */
+  report(): RunReport {
+    const r = this.run;
+    return {
+      mapIndex: r.mapIndex,
+      time: r.time,
+      level: r.level,
+      kills: r.kills,
+      eliteKills: r.eliteKills,
+      bossKills: r.bossesKilled,
+      gold: Math.floor(r.gold),
+      chests: r.chests,
+      evolutions: r.evolutions,
+    };
+  }
+
+  /** Shows a banner the moment the run finishes a daily quest or reaches an achievement tier. */
+  private checkQuests(): void {
+    const save = saveStore.data;
+    const report = this.report();
+    save.daily.quests.forEach((q, i) => {
+      if (questDone(q) || this.questsShown.has(i) || progressWith(q, report) < q.target) return;
+      this.questsShown.add(i);
+      this.notice({ title: 'Quest complete!', line: describeQuest(q), icon: questDef(q.id).icon });
+    });
+    const reached = tiersReached(lifetime(save, report));
+    for (const a of ACHIEVEMENTS) {
+      if (reached[a.id] <= this.tiersShown[a.id]) continue;
+      this.tiersShown[a.id] = reached[a.id];
+      this.notice({ title: 'Achievement!', line: `${a.name} ${ROMAN[reached[a.id] - 1]}`, icon: a.icon });
+    }
+  }
+
+  private notice(n: QuestNotice): void {
+    this.events.emit('quest', n);
+    audio.sfx('chest');
+  }
+
   private endRun(quit: boolean): void {
     const run = this.run;
     if (run.ended) return;
@@ -542,8 +619,11 @@ export class GameScene extends Phaser.Scene {
     const newBest = run.time > prevBest;
     save.gold += total;
     if (newBest) save.bestTimes[this.mapIndex] = run.time;
-    save.stats.runs++;
-    save.stats.kills += run.kills;
+    const quests = applyRun(save, this.report(), bonus).map(describeQuest);
+    const reached = tiersReached(lifetime(save));
+    const achievements = ACHIEVEMENTS.flatMap((a) =>
+      Array.from({ length: Math.max(0, reached[a.id] - this.tiersAtStart[a.id]) }, (_, k) => `${a.name} ${ROMAN[this.tiersAtStart[a.id] + k]}`),
+    );
     saveStore.save();
 
     const summary: RunSummary = {
@@ -559,6 +639,8 @@ export class GameScene extends Phaser.Scene {
       quit,
       unlockedMap: run.unlockedMap,
       bossesKilled: run.bossesKilled,
+      quests,
+      achievements,
     };
     audio.stopMusic();
     if (!quit) {

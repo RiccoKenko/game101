@@ -883,4 +883,48 @@ export const ICONS_ART: ArtSet = {
       );
     })(),
   ),
+
+  // ======================= quests =======================
+  icon_scroll: svg(
+    S,
+    S,
+    cel('icon_scroll_p', rr(22, 16, 52, 64, 5), '#fbeccb', '#e2c99a', [-5, -5]) +
+      ln('M32 34L64 34M32 45L64 45M32 56L54 56', '#b48f55', 4) +
+      cel('icon_scroll_t', rr(14, 9, 68, 15, 7.5), '#e9cf98', '#c09a5a', [-3, -3]) +
+      cel('icon_scroll_b', rr(14, 72, 68, 15, 7.5), '#e9cf98', '#c09a5a', [-3, -3]) +
+      `<path d="${circ(14, 16.5, 4)}${circ(82, 16.5, 4)}${circ(14, 79.5, 4)}${circ(82, 79.5, 4)}" fill="#a8783e"/>` +
+      cel('icon_scroll_s', circ(66, 64, 11), RED, RED_D, [-3, -3], 3.5) +
+      `<path d="${star(66, 64, 5.5, 2.6)}" fill="#ffd0d4"/>` +
+      hl(rr(19, 12, 26, 3.5, 1.75), 0.7) +
+      hl(rr(27, 22, 3.5, 30, 1.75), 0.5),
+  ),
+
+  icon_trophy: svg(
+    S,
+    S,
+    tube('M27 24Q8 22 12 38Q15 48 30 50', 6, GOLD_D, 3.5) +
+      tube('M69 24Q88 22 84 38Q81 48 66 50', 6, GOLD_D, 3.5) +
+      cel('icon_trophy_st', rr(41, 56, 14, 16, 3), GOLD_D, '#b8741a', [-2, -2], 3.5) +
+      cel('icon_trophy_c', 'M22 12L74 12L72 38Q70 60 48 62Q26 60 24 38Z', GOLD, GOLD_D, [-6, -6]) +
+      `<path d="${star(48, 34, 12, 5.2)}" fill="#fff6c8" stroke="${GOLD_D}" stroke-width="2.5" stroke-linejoin="round"/>` +
+      cel('icon_trophy_b', rr(24, 70, 48, 17, 5), WOOD, WOOD_D, [-3, -3]) +
+      cel('icon_trophy_pl', rr(38, 74, 20, 8, 2), GOLD, GOLD_D, [-1.5, -1.5], 2) +
+      ln('M30 18L30 36', '#fff', 4, 0.8) +
+      hl(circ(31, 42, 2.4), 0.7),
+  ),
+
+  icon_crown: svg(
+    S,
+    S,
+    cel('icon_crown_c', 'M14 72L10 32L32 50L48 20L64 50L86 32L82 72Z', GOLD, GOLD_D, [-5, -5]) +
+      `<path d="${circ(10, 30, 6)}${circ(48, 17, 6.5)}${circ(86, 30, 6)}" fill="${GOLD}" stroke="${O}" stroke-width="3.5"/>` +
+      cel('icon_crown_b', rr(13, 64, 70, 18, 5), GOLD_D, '#b8741a', [-3, -3]) +
+      cel('icon_crown_g1', circ(48, 73, 6), RED, RED_D, [-2, -2], 3) +
+      cel('icon_crown_g2', circ(29, 73, 4.5), XP, XP_D, [-1.5, -1.5], 3) +
+      cel('icon_crown_g3', circ(67, 73, 4.5), XP, XP_D, [-1.5, -1.5], 3) +
+      ln('M20 40L22 60', '#fff', 3.5, 0.75) +
+      hl(circ(46, 15, 2), 0.9),
+  ),
+
+  icon_check: svg(S, S, tube('M20 50L40 70L78 28', 15, '#5ad15a', 5) + ln('M24 49L39 63', '#c6ffb8', 4, 0.8)),
 };

@@ -71,6 +71,7 @@ export class GameOverScene extends Phaser.Scene {
       const u = text(this, width / 2, cy + 520, `New map unlocked:\n${MAPS[s.unlockedMap].name}!`, 50, { color: CSS.green });
       this.tweens.add({ targets: u, scale: 1.08, duration: 500, yoyo: true, repeat: -1 });
     }
+    if (s.quests.length || s.achievements.length) this.questNote(width / 2, s.unlockedMap !== null ? cy + 650 : cy + 530);
 
     const by = height - bottom - 140;
     new Button(this, width / 2 - 225, by, {
@@ -98,5 +99,19 @@ export class GameOverScene extends Phaser.Scene {
         this.scene.start('Menu');
       },
     });
+  }
+
+  /** "2 quests complete · 1 achievement": a gold strip pointing to the Quests screen, where the gold is claimed. */
+  private questNote(x: number, y: number): void {
+    const s = this.summary;
+    const bits = [];
+    if (s.quests.length) bits.push(s.quests.length === 1 ? '1 quest complete' : `${s.quests.length} quests complete`);
+    if (s.achievements.length) bits.push(s.achievements.length === 1 ? '1 achievement' : `${s.achievements.length} achievements`);
+    const w = 860;
+    panel(this, x, y, w, 132, { style: 'selected', radius: 30 });
+    const icon = this.add.image(x - w / 2 + 72, y, s.quests.length ? 'icon_scroll' : 'icon_trophy').setDisplaySize(86, 86);
+    this.tweens.add({ targets: icon, angle: { from: -8, to: 8 }, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    text(this, x - w / 2 + 132, y - 24, bits.join('  ·  '), 40, { color: CSS.gold, originX: 0 });
+    text(this, x - w / 2 + 132, y + 28, 'Claim your gold in Quests', 32, { color: CSS.cream, weight: '600', originX: 0 });
   }
 }

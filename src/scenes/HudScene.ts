@@ -6,7 +6,7 @@ import { buildRows } from '../ui/build';
 import { safeInsets } from '../ui/safe';
 import { BUTTON, COLORS, CSS, rgba, WINDOW } from '../ui/theme';
 import { Bar, Button, gradientText, heartTexture, panel, starTexture, text, uiTexture, vGradient } from '../ui/widgets';
-import { type GameScene } from './GameScene';
+import { type GameScene, type QuestNotice } from './GameScene';
 
 const STICK_RADIUS = 110;
 /** A touch that starts this close to the joystick's centre grabs it. */
@@ -30,6 +30,9 @@ export class HudScene extends Phaser.Scene {
   private fpsText?: Phaser.GameObjects.Text;
   private rows?: Phaser.GameObjects.Container;
   private toastBox?: Phaser.GameObjects.Container;
+  /** Quest and achievement banners wait their turn here. */
+  private notices: QuestNotice[] = [];
+  private noticeBusy = false;
   private joyBase!: Phaser.GameObjects.Image;
   private joyKnob!: Phaser.GameObjects.Image;
   private joyPointer: number | null = null;
@@ -48,6 +51,8 @@ export class HudScene extends Phaser.Scene {
     this.game_ = this.scene.get('Game') as GameScene;
     this.last = { time: -1, kills: -1, gold: -1, level: -1 };
     this.joyPointer = null;
+    this.notices = [];
+    this.noticeBusy = false;
     const { width, height } = this.scale;
     const y0 = (this.y0 = safeInsets(this).top + 16);
     this.hurt = 0;
@@ -118,13 +123,16 @@ export class HudScene extends Phaser.Scene {
     const onToast = (msg: string) => this.toast(msg);
     const onInv = () => this.rebuildRows();
     const onHurt = () => (this.hurt = 1);
+    const onQuest = (n: QuestNotice) => this.queueNotice(n);
     ev.on('boss', onBoss);
     ev.on('toast', onToast);
+    ev.on('quest', onQuest);
     ev.on('inventory', onInv);
     ev.on('hurt', onHurt);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       ev.off('boss', onBoss);
       ev.off('toast', onToast);
+      ev.off('quest', onQuest);
       ev.off('inventory', onInv);
       ev.off('hurt', onHurt);
       resetStick();
@@ -217,6 +225,42 @@ export class HudScene extends Phaser.Scene {
       delay: 2200,
       duration: 500,
       onComplete: () => box.destroy(),
+    });
+  }
+
+  private queueNotice(n: QuestNotice): void {
+    this.notices.push(n);
+    if (!this.noticeBusy) this.nextNotice();
+  }
+
+  /** A gold-framed banner that slides in under the toasts: icon, "QUEST COMPLETE!" and what was done. */
+  private nextNotice(): void {
+    const n = this.notices.shift();
+    this.noticeBusy = !!n;
+    if (!n) return;
+    const { width, height } = this.scale;
+    const w = 800;
+    const left = -w / 2 + 132;
+    const line = text(this, left, 0, n.line, 36, { color: CSS.cream, originX: 0, wrap: w - 170 });
+    const h = Math.ceil((line.height + 74) / 20) * 20;
+    line.setY(h / 2 - 18 - line.height / 2);
+    const title = text(this, left, -h / 2 + 34, n.title.toUpperCase(), 30, { color: CSS.gold, originX: 0 });
+    const icon = this.add.image(-w / 2 + 70, 0, n.icon);
+    icon.setScale(84 / Math.max(icon.width, icon.height));
+    const y = Math.max(height * 0.27, this.y0 + 520) + 160;
+    const box = this.add.container(-w / 2, y, [panel(this, 0, 0, w, h, { style: 'selected', radius: 28 }), icon, title, line]).setDepth(61);
+    this.tweens.add({ targets: box, x: width / 2, duration: 380, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: icon, scale: icon.scale * 1.25, duration: 160, delay: 380, yoyo: true, ease: 'Quad.easeOut' });
+    this.tweens.add({
+      targets: box,
+      alpha: 0,
+      y: y - 50,
+      delay: 2600,
+      duration: 400,
+      onComplete: () => {
+        box.destroy();
+        this.nextNotice();
+      },
     });
   }
 

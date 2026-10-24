@@ -4,10 +4,11 @@ import { BOSSES } from '../config/enemies';
 import { MAPS } from '../config/maps';
 import { DEBUG } from '../core/debug';
 import { formatTime } from '../core/format';
+import { claimableCount, ensureDaily } from '../core/quests';
 import { saveStore } from '../core/save';
 import { safeInsets } from '../ui/safe';
 import { BUTTON, CSS } from '../ui/theme';
-import { Button, gradientText, panel, panelTexture, ribbon, slotTexture, text } from '../ui/widgets';
+import { badge, Button, gradientText, panel, panelTexture, ribbon, slotTexture, text } from '../ui/widgets';
 
 const CARD_W = 960;
 const CARD_H = 152;
@@ -31,6 +32,9 @@ export class MenuScene extends Phaser.Scene {
     const save = saveStore.data;
     if (DEBUG.gold >= 0) save.gold = DEBUG.gold;
     if (DEBUG.unlock) save.unlockedMaps = MAPS.length;
+    // New day: new quests (and any reward left unclaimed yesterday is paid now, so the gold shown is right).
+    ensureDaily(save);
+    saveStore.save();
     this.selected = save.unlockedMaps - 1;
 
     const { width, height } = this.scale;
@@ -88,16 +92,32 @@ export class MenuScene extends Phaser.Scene {
     this.highlight();
 
     new Button(this, width / 2, playY, { w: 640, h: 150, color: BUTTON.primary, label: 'PLAY', fontSize: 76, onClick: () => this.play() });
-    new Button(this, width / 2, height - bottom - 120, {
-      w: 640,
+    const by = height - bottom - 120;
+    new Button(this, width / 2 - 245, by, {
+      w: 470,
       h: 110,
       color: BUTTON.warning,
-      label: 'Upgrade Shop',
+      label: 'Shop',
       icon: 'icon_shop',
       iconSize: 80,
-      fontSize: 46,
+      fontSize: 50,
       onClick: () => this.scene.start('Shop'),
     });
+    const quests = new Button(this, width / 2 + 245, by, {
+      w: 470,
+      h: 110,
+      color: BUTTON.purple,
+      label: 'Quests',
+      icon: 'icon_scroll',
+      iconSize: 80,
+      fontSize: 50,
+      onClick: () => this.scene.start('Quests'),
+    });
+    const waiting = claimableCount(save);
+    if (waiting > 0) {
+      const b = badge(this, quests.x + 235 - 16, by - 55 + 4, waiting);
+      this.tweens.add({ targets: b, scale: 1.15, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
 
     audio.playMusic(this, 'music_menu');
     // Warm up map music in the background so a run starts with its track.

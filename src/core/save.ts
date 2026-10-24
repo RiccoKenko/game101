@@ -1,4 +1,5 @@
 import { MAPS } from '../config/maps';
+import { ACHIEVEMENTS, DAILY_COUNT, QUESTS, type AchievementId, type QuestId } from '../config/quests';
 import { SHOP, type ShopId } from '../config/shop';
 
 export interface Settings {
@@ -6,6 +7,37 @@ export interface Settings {
   sfx: boolean;
   /** Screen shake on hits and explosions. */
   shake: boolean;
+}
+
+/** One of the day's quests, as rolled: target and reward are fixed when it is rolled. */
+export interface DailyQuest {
+  id: QuestId;
+  /** The map it is tied to (only for per-map quests; 0 otherwise). */
+  map: number;
+  target: number;
+  reward: number;
+  progress: number;
+  claimed: boolean;
+}
+
+export interface DailyState {
+  /** Local date the quests were rolled for, YYYY-MM-DD ('' = never). */
+  day: string;
+  quests: DailyQuest[];
+  /** Extra gold for finishing all of them. */
+  bonus: number;
+  bonusClaimed: boolean;
+}
+
+export interface LifetimeStats {
+  runs: number;
+  kills: number;
+  eliteKills: number;
+  chests: number;
+  evolutions: number;
+  /** All gold earned, end-of-run bonus included (quest rewards not). */
+  gold: number;
+  bestLevel: number;
 }
 
 export interface SaveData {
@@ -18,7 +50,10 @@ export interface SaveData {
   bestTimes: number[];
   bossKills: number[];
   settings: Settings;
-  stats: { runs: number; kills: number };
+  stats: LifetimeStats;
+  daily: DailyState;
+  /** Achievement tiers already claimed, per achievement. */
+  achievements: Record<AchievementId, number>;
 }
 
 export interface KeyValueStorage {
@@ -39,7 +74,9 @@ export function defaultSave(): SaveData {
     bestTimes: MAPS.map(() => 0),
     bossKills: MAPS.map(() => 0),
     settings: { music: true, sfx: true, shake: true },
-    stats: { runs: 0, kills: 0 },
+    stats: { runs: 0, kills: 0, eliteKills: 0, chests: 0, evolutions: 0, gold: 0, bestLevel: 0 },
+    daily: { day: '', quests: [], bonus: 0, bonusClaimed: false },
+    achievements: Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, 0])) as Record<AchievementId, number>,
   };
 }
 
@@ -69,10 +106,38 @@ export function sanitize(raw: unknown): SaveData {
   }
   if (r.stats && typeof r.stats === 'object') {
     const s = r.stats as Record<string, unknown>;
-    out.stats.runs = Math.floor(num(s.runs, 0));
-    out.stats.kills = Math.floor(num(s.kills, 0));
+    for (const key of Object.keys(out.stats) as (keyof LifetimeStats)[]) out.stats[key] = Math.floor(num(s[key], 0));
+  }
+  out.daily = sanitizeDaily(r.daily);
+  if (r.achievements && typeof r.achievements === 'object') {
+    const a = r.achievements as Record<string, unknown>;
+    for (const def of ACHIEVEMENTS) out.achievements[def.id] = Math.floor(num(a[def.id], 0, 0, def.tiers.length));
   }
   return out;
+}
+
+/** Keeps the day's quests if they are all well formed; otherwise they are rolled again (day ''). */
+function sanitizeDaily(raw: unknown): DailyState {
+  const empty: DailyState = { day: '', quests: [], bonus: 0, bonusClaimed: false };
+  if (!raw || typeof raw !== 'object') return empty;
+  const d = raw as Record<string, unknown>;
+  if (typeof d.day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.day) || !Array.isArray(d.quests)) return empty;
+  const quests: DailyQuest[] = [];
+  for (const q of d.quests as unknown[]) {
+    if (!q || typeof q !== 'object') return empty;
+    const v = q as Record<string, unknown>;
+    if (!QUESTS.some((def) => def.id === v.id)) return empty;
+    quests.push({
+      id: v.id as QuestId,
+      map: Math.floor(num(v.map, 0, 0, MAPS.length - 1)),
+      target: Math.floor(num(v.target, 1, 1)),
+      reward: Math.floor(num(v.reward, 0, 0, 10_000)),
+      progress: num(v.progress, 0),
+      claimed: v.claimed === true,
+    });
+  }
+  if (quests.length !== DAILY_COUNT) return empty;
+  return { day: d.day, quests, bonus: Math.floor(num(d.bonus, 0, 0, 10_000)), bonusClaimed: d.bonusClaimed === true };
 }
 
 function browserStorage(): KeyValueStorage | null {

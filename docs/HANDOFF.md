@@ -2,11 +2,11 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 จุดที่หยุดไว้ก่อน compact (24 ต.ค. 2026 บ่าย)
+## 📍 สถานะล่าสุด (24 ต.ค. 2026 บ่าย หลัง compact)
 - **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุคใหม่ "MMORPG เกาหลียุค 2000" + ตัวละครหลักใหม่ "Feather Cap"
 - **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`), working tree สะอาด
-  - Test: typecheck, unit 32 ข้อ, e2e 3 ข้อ, build ผ่าน
-- **ลิงก์ทดสอบ (Artifact เดิม, v3):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
+  - Test: typecheck, unit 43 ข้อ, e2e 4 ข้อ, build ผ่าน
+- **ลิงก์ทดสอบ (Artifact เดิม, v4 มีภารกิจแล้ว):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
   - สร้างใหม่: `node scripts/build-artifact.mjs <scratchpad>/monster-rush.html` แล้ว publish ทับ path เดิม (หรือใส่ `url` ถ้า session ใหม่)
 - **ลิงก์หลัก little-archer.vercel.app ยังเป็น Monster Rush ภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`)
   - ⚠️ ยังไม่ deploy ลุคใหม่: รอเจ้านายลองเล่นแล้วสั่งก่อน
@@ -17,7 +17,13 @@
   3. ให้ขึ้นลิงก์หลักเลยไหม
 - **ข้อสังเกตที่แจ้งเจ้านายแล้ว:** รองเท้าข้างหน้าไม่บิดออกเหมือน rig pose, แขน chibi ดึงสายได้แค่คาง
 - **งานถัดไปที่เสนอ (เฟส 3 เนื้อหาเล่นซ้ำ)**, เรียงจากถูกไปแพง:
-  1. ภารกิจรายวัน/ความสำเร็จ (ฟรี, แนะนำเริ่มข้อนี้)
+  1. ✅ ภารกิจรายวัน/ความสำเร็จ: **เสร็จแล้ว** (เจ้านายสั่ง "ทำต่อได้เลย" หลัง compact) รอเจ้านายลองเล่น
+     - กติกา `src/config/quests.ts` (ภารกิจ 9 แบบ สุ่มวันละ 3 ตามวันที่, เป้า/รางวัลขึ้นกับจำนวนแมพที่ปลดล็อก, โบนัสทำครบ; ความสำเร็จ 9 อย่างหลายขั้น), ตรรกะ `src/core/quests.ts` (+ `tests/unit/quests.test.ts`)
+     - เซฟเพิ่ม `stats` (eliteKills, chests, evolutions, gold, bestLevel), `daily`, `achievements`; เซฟเก่าอ่านได้ (kills/runs เดิมนับต่อ)
+     - `GameScene` นับ elite/หีบ/วิวัฒนาการ, เช็กทุก 1 วิ แล้วส่ง event `quest` ให้ HUD แสดงป้ายทีละอัน; จบรอบส่งรายการที่สำเร็จไป GameOver
+     - หน้า `QuestsScene` (แท็บ Daily / Achievements, ปุ่มรับเหรียญมีเหรียญบินเข้ากระเป๋า), เมนูมีปุ่ม Shop + Quests (เลขแดงบอกรางวัลที่รอรับ)
+     - ไอคอนใหม่วาดด้วยโค้ด: `icon_scroll`, `icon_trophy`, `icon_crown`, `icon_check` (`src/art/icons.ts`) ไม่ใช้งบ OpenAI
+     - ไอเดียต่อยอด: พอซื้อของใน Shop ครบ เหรียญจะไม่มีที่ใช้ → ตัวละครให้เลือก (ข้อ 4) ขายด้วยเหรียญได้
   2. อาวุธใหม่ 3-4 แบบ + ร่างวิวัฒนาการ (~$0.10 ไอคอน)
   3. มอนใหม่แมพละ 1-2 ตัว + มอนหัวหน้า (~$0.30)
   4. ตัวละครให้เลือก 2-3 ตัว: ใช้วิธี "เปลี่ยนผิว โครงกระดูกเดิม" แบบ archer (~$0.45/ตัว)

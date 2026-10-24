@@ -393,11 +393,32 @@ export function slotTexture(scene: Phaser.Scene, size: number, kind: SlotKind = 
 
 /** A slot with an icon tucked inside, centred on (x, y). */
 export function slotIcon(scene: Phaser.Scene, x: number, y: number, size: number, icon: string, kind: SlotKind = 'weapon'): Phaser.GameObjects.Image[] {
-  return [
-    scene.add.image(x, y, slotTexture(scene, size, kind, 'back')),
-    scene.add.image(x, y, icon).setDisplaySize(size - 6, size - 6),
-    scene.add.image(x, y, slotTexture(scene, size, kind, 'frame')),
-  ];
+  const back = scene.add.image(x, y, slotTexture(scene, size, kind, 'back'));
+  const img = scene.add.image(x, y, icon);
+  // Square icons fill the slot; anything else (a chest, a monster) fits inside it without stretching.
+  img.setScale((size - 6) / Math.max(img.width, img.height));
+  return [back, img, scene.add.image(x, y, slotTexture(scene, size, kind, 'frame'))];
+}
+
+/** Red bubble with a count (rewards waiting), centred on (x, y). */
+export function badge(scene: Phaser.Scene, x: number, y: number, n: number): Phaser.GameObjects.Container {
+  const d = 52;
+  const key = uiTexture(scene, `badge_${d}`, d + 8, d + 8, (ctx) => {
+    const c = d / 2 + 4;
+    ctx.beginPath();
+    ctx.arc(c, c, d / 2, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(WINDOW.rim, 1);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(c, c, d / 2 - 3, 0, Math.PI * 2);
+    ctx.fillStyle = vGradient(ctx, c - d / 2, c + d / 2, ['#ff9a8a', '#e8434f', '#a81e2c']);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(c - d * 0.12, c - d * 0.22, d * 0.2, d * 0.1, -0.4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fill();
+  });
+  return scene.add.container(x, y, [scene.add.image(0, 0, key), text(scene, 0, 1, String(n), 32, { strokeColor: '#5a0a12', shadow: false })]);
 }
 
 /** Glossy red heart (the HP glyph in the HUD). */
