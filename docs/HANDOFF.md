@@ -20,7 +20,7 @@
   3. **อาวุธใหม่ 4 + ร่างวิวัฒนาการ 2**: Magic Bolt (ไล่ตาม) → Starfall (+Spell Tome), Frost Shards (ทำให้ช้า) → Blizzard (+Winged Boots), Moon Slash (ฟันวงพระจันทร์), Poison Flask (บ่อพิษ) — ภาพ `items2` (ไอคอน 6 + sprite 6)
   4. **มอนใหม่ 6 + หัวหน้า 3**: Meadow: ฝูง Buzzbee, Puffball (แตก 2); Graveyard: Pumpkin Bomb (ระเบิด), Wraith (ยิง `spirit`); Castle: Mimic (แกล้งเป็นหีบ), ฝูง Flame Wisp; หัวหน้า Boar Chief / Bone Captain / Ogre Warden ที่ 2:30, 7:30... ดรอปหีบ
      - config: `ENEMIES` (behavior ใหม่ swarm/splitter/exploder/ambush), `BOSSES` (`leader: true`), `MAPS[].extras/swarm/leader`, `waves.ts leadersDue/swarmSize`
-- **สมดุล (บอท `?bot&speed=8`, ไม่มีอัปเกรด):** Meadow รอด 7 นาทีเหมือนเดิม; Castle ตาย ~30 วิ ทั้งเก่าและใหม่ (แมพนี้ต้องอัปเกรดก่อน); Graveyard ตอนแรกยากขึ้นมาก → ลดแรงระเบิดฟักทอง/ลูกวิญญาณ, ฟิวส์ 0.8 วิ, ออกน้อยลง (ผลรันซ้ำอยู่ในรายงานล่าสุด)
+- **สมดุล (บอท `?bot&speed=8`, ไม่มีอัปเกรด):** Meadow รอด 7 นาทีเหมือนเดิม; Castle ตาย ~30 วิ ทั้งเก่าและใหม่ (แมพนี้ต้องอัปเกรดก่อน); Graveyard ตอนแรกยากขึ้นมาก (ตาย 2:41-3:24 เทียบเดิม 6:35+) → ลดแรงระเบิดฟักทอง/ลูกวิญญาณ, ฟิวส์ 0.8 วิ, Wraith มาที่ 2:30 น้อยลงและยิงทุก 3.8 วิ → บอทรอดถึง 5:45 (ตายตอนบอส Lich; seed 21) ใกล้ของเดิมแล้ว
 - **สวิตช์ทดสอบใหม่:** `?give=slash5,flask3,starfall` และ `?hero=mage`
 - **ข้อสังเกตจอมเวท (ไม่ร้ายแรง):** รองเท้าชี้ตรงทั้งคู่, แขนข้างร่ายถูกยืด ~16% ตอนพุ่ง, ท่า KO ไม้เท้าพาดตัว, ปลายหมวกแกว่งได้แค่ ~10°
 - **งบ OpenAI:** ใช้ไป **$3.22 จาก $5** (เหลือ $1.78) ตาม `art/openai-log.jsonl`
