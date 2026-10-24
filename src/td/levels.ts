@@ -8,6 +8,8 @@ import type { WaveDef } from './waves';
 export interface LevelDef {
   id: string;
   name: string;
+  /** One line for the level-select card. */
+  blurb?: string;
   map: { w: number; h: number; art?: string; sketch: string };
   /** Road control points, from the airship dock to the crystal vault. */
   route: Pt[];
@@ -32,6 +34,7 @@ export interface LevelDef {
 export const LEVEL1: LevelDef = {
   id: 'level1',
   name: 'Pirates on the Horizon',
+  blurb: 'The first raid on Sky Haven. Guard the crystal vault!',
   // Painted by Codex over the sketch; the road and spots below were measured on the painting.
   map: { w: 1536, h: 1024, art: 'maps/level1.webp', sketch: 'maps/level1-sketch.png' },
   route: [
@@ -74,6 +77,11 @@ export const LEVEL1: LevelDef = {
     },
   ],
 };
+
+/** Chapter 1's levels, in order: each one unlocks the next. */
+export const CHAPTER1: LevelDef[] = [LEVEL1];
+
+export const LEVELS: Record<string, LevelDef> = Object.fromEntries(CHAPTER1.map((l) => [l.id, l]));
 
 /** Problems that would make a level unplayable: tower spots on the road, off the island, or overlapping. */
 export function checkLevel(level: LevelDef): string[] {

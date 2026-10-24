@@ -582,7 +582,7 @@ function updateHud(): void {
   if (!!boss !== !bar.hidden) bar.hidden = !boss;
   if (boss) {
     $('boss-name').textContent = boss.def.name;
-    ($('boss-hp') as HTMLElement).style.width = `${(Math.max(0, boss.hp / boss.def.hp) * 100).toFixed(1)}%`;
+    ($('boss-hp') as HTMLElement).style.width = `${(Math.max(0, boss.hp / boss.maxHp) * 100).toFixed(1)}%`;
   }
 }
 
@@ -1168,7 +1168,7 @@ function syncPirates(dt: number, t: number): void {
       m.visible = i < e.load && !v.puppet;
       m.position.x = (i - (v.crystals.length - 1) / 2) * 24 + Math.sin(t * 3 + v.phase + i) * 1.5;
     });
-    const share = Math.max(0, e.hp / e.def.hp);
+    const share = Math.max(0, e.hp / e.maxHp);
     v.hpBack.visible = v.hpFill.visible = share < 1 && !e.def.boss;
     v.hpFill.scale.set(38 * share, 5, 1);
     (v.hpFill.material as THREE.MeshBasicMaterial).color.setHex(share > 0.5 ? 0x7ee05a : share > 0.25 ? 0xf4c34f : 0xe5533d);

@@ -5,6 +5,7 @@
  */
 import { mulberry32, type Rng } from '../core/rng';
 import { dealHand, neutralModifiers, type CardDef, type Modifiers } from './cards';
+import { DIFFICULTY, scaleWaves, type Difficulty } from './difficulty';
 import { branchCost, nextCost, Purse, SELL_REFUND } from './economy';
 import type { LevelDef } from './levels';
 import { closedCurve, insidePolygon, Path, type Pt } from './path';
@@ -26,6 +27,8 @@ export interface Enemy {
   kind: EnemyKind;
   def: EnemyDef;
   hp: number;
+  /** Hit points at full health (the kind's, scaled by the difficulty). */
+  maxHp: number;
   /** Distance along the road from the dock. */
   d: number;
   /** +1 walking to the vault, −1 walking back to the dock. */
@@ -183,14 +186,15 @@ export class Battle {
   /** Card hands have their own random stream, so picking cards never changes how the fighting plays out. */
   private cardRng: Rng;
 
-  constructor(readonly level: LevelDef, seed = 1) {
+  constructor(readonly level: LevelDef, seed = 1, readonly difficulty: Difficulty = 'normal') {
+    const d = DIFFICULTY[difficulty];
     this.rng = mulberry32(seed);
     this.cardRng = mulberry32(seed * 7919 + 13);
     this.path = new Path(level.route);
     this.island = closedCurve(level.island);
     this.vault = new Vault(level.crystals);
-    this.waves = new WaveRunner(level.waves);
-    this.purse = new Purse(level.startGold);
+    this.waves = new WaveRunner(scaleWaves(level.waves, d.count, (k) => !!ENEMIES[k].boss));
+    this.purse = new Purse(Math.round(level.startGold * d.gold));
     this.towers = level.slots.map(() => null);
     this.hero = { pos: [...level.heroStart], goal: null, facing: 1, cooldown: 0, drawing: null };
   }
@@ -369,8 +373,9 @@ export class Battle {
   private spawn(kind: EnemyKind): void {
     const def = ENEMIES[kind];
     const lane = (this.rng() - 0.5) * 0.55 * this.level.roadWidth;
+    const hp = Math.round(def.hp * DIFFICULTY[this.difficulty].hp);
     const enemy: Enemy = {
-      id: this.nextId++, kind, def, hp: def.hp, d: 0, heading: 1, lane: def.boss ? 0 : lane, load: 0,
+      id: this.nextId++, kind, def, hp, maxHp: hp, d: 0, heading: 1, lane: def.boss ? 0 : lane, load: 0,
       pos: [0, 0], vel: [0, 0], progress: 0, carrying: false, flying: def.flying, slow: 1, slowFor: 0, frozen: 0, stun: 0,
       haste: 1, hasteFor: 0, shoutIn: def.shout ? def.shout.every / 2 : Infinity,
     };
