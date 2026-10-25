@@ -3,6 +3,7 @@ import { audio } from '../audio/audio';
 import { MAPS } from '../config/maps';
 import { formatTime } from '../core/format';
 import { saveStore } from '../core/save';
+import { talentDef } from '../config/talents';
 import { buildRows } from '../ui/build';
 import { safeInsets } from '../ui/safe';
 import { BUTTON, CSS } from '../ui/theme';
@@ -49,6 +50,10 @@ export class PauseScene extends Phaser.Scene {
     const rowW = count * (size + 12) - 12;
     const rowsH = inv.passives.length > 0 ? size * 2 + 16 : size;
     buildRows(this, width / 2 - rowW / 2, gearY - rowsH / 2, inv, size, 12);
+    if (inv.talents.length) {
+      const names = inv.talents.map((t) => talentDef(t).name).join('  ·  ');
+      text(this, width / 2, gearY + 132, `Talents: ${names}`, 28, { color: CSS.gold, weight: '600', shadow: false, wrap: 860 });
+    }
 
     new Button(this, width / 2, cy - 20, { w: 600, h: 140, color: BUTTON.primary, label: 'Resume', icon: 'icon_play', onClick: () => this.data_.onResume() });
 

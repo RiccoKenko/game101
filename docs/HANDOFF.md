@@ -2,15 +2,32 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 สถานะล่าสุด (25 ต.ค. 2026, v7)
+## 📍 สถานะล่าสุด (25 ต.ค. 2026, v8)
 - **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุค "MMORPG เกาหลียุค 2000"
 - **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`)
-  - Test: typecheck, unit 61 ข้อ, e2e 4 ข้อ, build ผ่าน
-- **ลิงก์ทดสอบ (Artifact เดิม, v7):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
-  - สร้างใหม่: `node scripts/build-artifact.mjs <scratchpad>/monster-rush.html` แล้ว publish ทับ path เดิม (หรือใส่ `url` ถ้า session ใหม่)
-- **ลิงก์หลัก little-archer.vercel.app ยังเป็น Monster Rush ภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`)
-  - ⚠️ ยังไม่ deploy: รอเจ้านายสั่ง
-  - วิธี deploy: Vercel MCP `create_deployment` (project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`) แล้วเช็กลิงก์จริง
+  - Test: typecheck, unit 67 ข้อ, e2e 4 ข้อ, build ผ่าน
+- **ลิงก์ทดสอบ (Artifact เดิม):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
+  - สร้างใหม่: `node scripts/build-artifact.mjs <scratchpad>/monster-rush.html` แล้ว publish ทับโดยใส่ `url` นี้ (session ใหม่ต้อง `action: read` ลิงก์ก่อน ไม่งั้นจะได้ลิงก์ใหม่)
+  - มีลิงก์ซ้ำที่สร้างพลาดตอน v7: https://claude.ai/artifact/DaeJvjMYDtgQqPh675dMmy (ลบได้ถ้าเจ้านายสั่ง)
+- **ลิงก์หลัก little-archer.vercel.app ยังเป็นภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`) ⚠️ รอเจ้านายสั่ง
+  - วิธี deploy: Vercel MCP `create_deployment` (project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`)
+- **รอบ v8 (เจ้านาย: ความยากโอเคแล้ว, อยากได้สกิล/ทางเลือกเยอะ ๆ, ฮีโร่เลือกได้เลยไม่ต้องปลดล็อกและเล่นต่างกัน, เงินได้เยอะเกินจนซื้อหมดในตาเดียว)** ทำด้วยโค้ดทั้งหมด ไม่ใช้ OpenAI
+  - **ฮีโร่ฟรีทุกตัว + ต่างกัน** (`config/characters.ts`): Archer/Ranger = เร็ว, คริ +5%, Run and Gun (`moveHaste` ยิงเร็วขึ้นตอนวิ่ง) แต่ area -10%; Mage/Arcanist = area +20%, คูลดาวน์ -10%, Mana Shield (`Player.blockHit`, กลับมาใน 10 วิ) แต่ HP -20%, ช้าลง 5%
+  - **พรสวรรค์** `config/talents.ts`: เลเวล 5/10/15/20/25 การ์ดเป็นพรสวรรค์ของฮีโร่ (archer 8, mage 10) → `Choice.kind 'talent'`, `rollTalents`, `GameScene.deal`, `run.talentsDue`; ผลอยู่ใน `computeStats(..., talents)`, รูนจากพรสวรรค์ใน `runeLevels`, ท่าของตัวเองใน `WeaponSystem.updateTalents` (Arrow Rain, Starcaller), Second Wind/Blink/Mana Font ใน `GameScene.hurtPlayer`; หน้าหยุดเกมแสดงพรสวรรค์ที่ได้
+  - **อาวุธใหม่ 6 + วิวัฒนาการ 6** (`Weapons.ts`): Shuriken→Star Storm (+Seeker Rune), Shockwave→Earthquake (+Thorn Mail), Flame Trail→Inferno Road (+Moon Charm), Sentry Turret→Golden Ballista (+Echo Rune), Javelin→Dragon Lance (+Reaper Rune), Spirit Wisps→Soul Harvest (+Life Spring); ทุกอาวุธวิวัฒนาการด้วยของไม่ซ้ำกัน (มี unit test)
+  - **ไอเทมใหม่ 5:** Wisdom Cap, Berserker Mask (`stats.rage`), Thorn Mail (`stats.thorns` ใน `Enemies.update`), Hunter's Ring (`stats.bigGame`), Phoenix Feather (revive)
+  - **รูนใหม่ 3:** Seeker (`homing` ใน `updateProjectiles`), Giant (`fireMaybeGiant`), Nova (ใน `EnemyManager.damage`)
+  - **เงิน:** `coinFactor(t)` ใน `core/waves.ts` (โอกาสดรอปเหรียญ × min(1, 3/spawnRate)), อีลีทดรอป 1 เหรียญ, `RUN_BONUS` = 0.3/วิ + 0.02/kill, `shopCost` = base×1.5×1.6^level (ร้านทั้งหมด ~8,700), การ์ดตอนของครบ = `might` (+4% ดาเมจ) / `tough` (+5% HP) / ฮีล แทนเหรียญ
+  - ไอคอนใหม่ 20 อัน (SVG ท้าย `icons.ts`), ภาพในเกม `shuriken`, `spear`, `spear_dragon`, `turret`, `turret_gold`, `wisp` (`items.ts`), `flame` (canvas)
+- **ผลวัด (บอท god mode, Meadow, ไม่มีอัปเกรดร้าน):** เหรียญที่เก็บได้ตอน 10:00 เหลือ 351 (v7 ได้ 1,315; 15:00 ได้ 1,689 + โบนัสจบรอบ ~1,100); ให้อาวุธชุดเดียวกัน v8 ฆ่าได้พอ ๆ กับ v7 (1,285 vs 1,193 ตัวที่ 4:00) ไม่มี error; บอทไม่ god รอด 4:30 ทั้งสองฮีโร่ (archer เหลือ 90 HP, mage 32)
+- **รอเจ้านาย:** ลองเล่น v8, เพิ่มฮีโร่ใหม่ไหม (ต้องวาดด้วย OpenAI ประมาณ $0.6 ต่อตัว, งบเหลือ $1.47), ขึ้นลิงก์หลักเมื่อไร
+- **งบ OpenAI:** ใช้ไป **$3.53 จาก $5** (เหลือ $1.47) ตาม `art/openai-log.jsonl`
+  - ⚠️ commit log ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไป/เหลือเท่าไร; ห้ามเพิ่ม `OPENAI_BUDGET_USD` ถ้าเจ้านายไม่สั่ง
+- **บทเรียน:** ถึงข้อ 51 แล้ว (ข้อต่อไปคือ 52)
+- **ภาษา:** เจ้านายขอให้ตอบเป็น**ภาษาไทย** (ใช้ศัพท์อังกฤษให้น้อย)
+- **ทดสอบ:** เครื่องใน container ช้า (เกมเดิน ~0.5 วินาทีต่อวินาทีจริงตอนบอท speed=8) ใช้ worktree แช่แข็ง (`git worktree add <scratchpad>/after HEAD` + symlink node_modules + vite port อื่น) ตอนวัดสมดุล เพราะ dev server รีโหลดเมื่อแก้โค้ด
+
+## รอบ v7 (25 ต.ค. 2026)
 - **รอบ v7 (เจ้านายบอก "พอมีของระดับนึงแล้วเริ่มง่าย" + ขอสกิล/ไอเทมหลากหลายขึ้น + ไม่อยากใช้เครดิต OpenAI ทุกอย่าง)** ทำทั้งหมดด้วยโค้ด **ไม่ใช้ OpenAI ($0)**
   - **อาวุธใหม่ 4** (`config/weapons.ts`, ทำงานใน `game/Weapons.ts`): Prism Beam (ลำแสงทะลุแนว, `fireBeams`), Whirlwind (พายุดูดมอน, `addTwister/updateTwisters/whirl`), Spike Traps (กับดักรอบตัว, `setTrap/updateTraps`), Ward Orbs (ลูกแก้วหมุนใกล้ตัว + บังกระสุน `EnemyManager.blockShots`)
     - วิวัฒนาการ: Rainbow Ray (+Lucky Clover, ลำแสง 4 เส้นหมุนตลอด), Cyclone (+Magnet, พายุ 2 ลูกหมุนรอบตัว), Glacier Mines (+Frost Rune, แช่แข็ง), Aegis (+Iron Shield, สะท้อนกระสุนเป็นลูกเวททอง)
