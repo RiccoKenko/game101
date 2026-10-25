@@ -2,7 +2,7 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 สถานะล่าสุด (24 ต.ค. 2026 ค่ำ)
+## 📍 จุดที่หยุดไว้ก่อน compact (25 ต.ค. 2026)
 - **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุค "MMORPG เกาหลียุค 2000"
 - **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`)
   - Test: typecheck, unit 54 ข้อ, e2e 4 ข้อ, build ผ่าน
@@ -11,6 +11,12 @@
 - **ลิงก์หลัก little-archer.vercel.app ยังเป็น Monster Rush ภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`)
   - ⚠️ ยังไม่ deploy: รอเจ้านายสั่ง (ถามไปหลายรอบ ยังไม่ได้คำตอบ)
   - วิธี deploy: Vercel MCP `create_deployment` (project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`) แล้วเช็กลิงก์จริง
+- **รอเจ้านายตอบ 2 ข้อ (checkpoint ล่าสุด, หลังส่ง v6):**
+  1. ลองเล่น v6 แล้วยังรู้สึกจำเจไหม ตรงไหนยังขาด ยาก/ง่ายไป
+  2. ให้ขึ้นลิงก์หลัก little-archer.vercel.app เลยไหม (deploy ได้ทันทีตามวิธีด้านบน)
+- **ไอเดียถัดไป (ยังไม่ได้ทำ, เสนอได้ถ้าเจ้านายยังรู้สึกจำเจ):** ปุ่มพุ่งหลบ + ท่าไม้ตายต่อตัวละคร (เจ้านายยังไม่เลือกในรอบที่แล้ว), ตัวละครที่ 3 (สายประชิด), Talent tree ต่อตัวละคร, ความยากแต่ละระดับมีกติกาพิเศษ (mutator)
+- **ทดสอบหลังสุด (บอท 7 นาที, ไม่มีอัปเกรด, v6):** Meadow รอดเต็มเลือด, Graveyard รอดเหลือเลือด 10, ไม่มี error
+- **ของชั่วคราวใน container (หายได้):** dev server `npx vite --port 5181` (ใช้กับสคริปต์ทดสอบใน `scratchpad/q/*.cjs`), worktree `scratchpad/old` (build เก่า e5eaf15 ไว้เทียบสมดุล), `scratchpad/sp` (sky-pirates-td สำหรับ bake ฮีโร่; มีไฟล์ mage ที่ยังไม่ commit ในนั้น แต่สำเนาครบอยู่ใน `scripts/art/hero-bake/` แล้ว)
 - **รอบล่าสุด (เจ้านายลองเล่น v5 แล้วติ 6 ข้อ + "เล่น 4-5 ตาก็เบื่อ อยากให้มีความลึก")** เจ้านายเลือก 3 ชุด: สกิลเปลี่ยนวิธียิง, แต่ละรอบไม่ซ้ำ, เป้าหมายระยะยาว (ไม่เลือก dash/ท่าไม้ตาย)
   - **แก้ 6 ข้อ:** ลูกเวทกลับด้าน (ภาพวาดหันซ้าย → `flip` ใน `mr-sheets.json`), นักเวทได้การ์ด Bow (อาวุธประจำตัวละครเป็นของตัวนั้นเท่านั้น `Inventory.banned`), เอฟเฟกต์ร่ายเวท `fx.cast` + ประกายที่ลูกเวท, Spell Tome ทำให้กระสุนใหญ่ขึ้นจริง, กดการ์ดแล้วเลื่อนนิ้วออก = ยกเลิก, กระสุนมอนสีแดงชมพู + วงแสงแดง
   - **รูน 6 แบบ** (`RUNES`, `RUNE_POWER` ใน `config/weapons.ts`; ทำงานใน `EnemyManager.runeProcs/kill`, ลูกเด้งใน `WeaponSystem.bounce`) ช่องรูน 3, ปุ่ม Reroll/Banish (shop `reroll`, `banish`), ร่างวิวัฒนาการใหม่ 5 แบบที่ต้องใช้รูน (thunder, meteor, twinmoon, flameslash, plague)
