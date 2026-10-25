@@ -65,7 +65,7 @@ export interface SaveData {
   /** Relics won, and the (up to two) worn into runs. */
   relics: RelicId[];
   equipped: RelicId[];
-  /** The hero picked in the menu, and the heroes unlocked (the archer always is). */
+  /** The hero picked in the menu. Every hero is open to everyone (`characters` is kept for old saves). */
   character: CharacterId;
   characters: CharacterId[];
   /** Curses picked for the next runs, and per map the most heat a clear was won with. */
@@ -99,7 +99,7 @@ export function defaultSave(): SaveData {
     relics: [],
     equipped: [],
     character: 'archer',
-    characters: ['archer'],
+    characters: [...CHARACTER_IDS],
     curses: [],
     bestHeat: MAPS.map(() => 0),
   };
@@ -144,10 +144,7 @@ export function sanitize(raw: unknown): SaveData {
     const a = r.achievements as Record<string, unknown>;
     for (const def of ACHIEVEMENTS) out.achievements[def.id] = Math.floor(num(a[def.id], 0, 0, def.tiers.length));
   }
-  if (Array.isArray(r.characters)) {
-    out.characters = CHARACTER_IDS.filter((id) => id === 'archer' || (r.characters as unknown[]).includes(id));
-  }
-  if (out.characters.includes(r.character as CharacterId)) out.character = r.character as CharacterId;
+  if (CHARACTER_IDS.includes(r.character as CharacterId)) out.character = r.character as CharacterId;
   if (Array.isArray(r.curses)) out.curses = CURSE_IDS.filter((id) => (r.curses as unknown[]).includes(id));
   if (Array.isArray(r.bestHeat)) out.bestHeat = MAPS.map((_, i) => Math.floor(num((r.bestHeat as unknown[])[i], 0, 0, MAX_HEAT)));
   return out;

@@ -262,6 +262,21 @@ function effectTextures(scene: Phaser.Scene): void {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 64, 32);
   });
+  // A patch of fire on the ground (Flame Trail): flattened, red at the rim, yellow at the heart.
+  canvasTexture(scene, 'flame', 128, 64, (ctx) => {
+    ctx.save();
+    ctx.scale(1, 0.5);
+    const g = ctx.createRadialGradient(64, 64, 4, 64, 64, 62);
+    g.addColorStop(0, 'rgba(255,244,170,1)');
+    g.addColorStop(0.35, 'rgba(255,170,60,0.95)');
+    g.addColorStop(0.7, 'rgba(240,80,30,0.6)');
+    g.addColorStop(1, 'rgba(200,40,20,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(64, 64, 62, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
   canvasTexture(scene, 'star', 48, 48, (ctx) => {
     ctx.fillStyle = '#fff';
     ctx.beginPath();

@@ -51,6 +51,10 @@ export class Player {
   private readonly sheet: string;
   private readonly strides: Set<string>;
   private readonly muzzle: [number, number];
+  /** Mana Shield (the mage): up and ready to block a hit, or seconds until it comes back. */
+  shieldUp = false;
+  private shieldWait = 0;
+  private bubble: Phaser.GameObjects.Image;
 
   constructor(scene: Phaser.Scene, public stats: PlayerStats, character: CharacterDef) {
     this.hp = stats.maxHp;
@@ -75,6 +79,8 @@ export class Player {
       this.baseScale = 1;
       this.sprite = scene.add.sprite(0, 0, 'hero_0').setDepth(20).setOrigin(0.5, 1);
     }
+    this.bubble = scene.add.image(0, 0, 'ring').setDepth(23).setTint(0x8fd8ff).setVisible(false);
+    this.shieldUp = stats.shieldTime > 0;
     // A small HP gauge under the hero: dark frame, green fill that turns red when low.
     this.hpBack = scene.add.image(0, 0, 'px').setTint(0x16233f).setDisplaySize(96, 15).setDepth(21);
     this.hpFill = scene.add.image(0, 0, 'px').setTint(0x5ad15a).setOrigin(0, 0.5).setDepth(22);
@@ -96,6 +102,15 @@ export class Player {
       this.faceX = dx / len;
       this.faceY = dy / len;
     }
+  }
+
+  /** The Mana Shield takes a hit if it is up: it breaks (and starts coming back). Returns true if it blocked. */
+  blockHit(): boolean {
+    if (!this.shieldUp) return false;
+    this.shieldUp = false;
+    this.shieldWait = this.stats.shieldTime;
+    this.bubble.setVisible(false);
+    return true;
   }
 
   heal(amount: number): void {
@@ -169,6 +184,19 @@ export class Player {
 
   update(dt: number): void {
     this.iframes = Math.max(0, this.iframes - dt);
+    if (this.stats.shieldTime > 0 && !this.shieldUp) {
+      this.shieldWait -= dt;
+      if (this.shieldWait <= 0) {
+        this.shieldUp = true;
+        this.bubble.setScale(0.2).setAlpha(1);
+      }
+    }
+    // The shield shows as a soft blue ring that breathes around the hero.
+    this.bubble.setVisible(this.shieldUp);
+    if (this.shieldUp) {
+      const k = Math.min(1.45, this.bubble.scaleX + dt * 6);
+      this.bubble.setPosition(this.x, this.y + 2).setScale(k * (1 + 0.03 * Math.sin(this.anim * 5))).setAlpha(0.45 + 0.15 * Math.sin(this.anim * 3));
+    }
     this.anim += dt;
     if (this.painted) {
       this.sinceShot += dt;

@@ -453,6 +453,75 @@ export const ITEMS_ART: ArtSet = {
     ]),
   ),
 
+  // Shuriken: a four-bladed throwing star (spun in game).
+  shuriken: svg(
+    44,
+    44,
+    `<path d="M22 2L27 17L42 22L27 27L22 42L17 27L2 22L17 17Z" fill="#e3e9f3" ${ol(2.5)}/>` +
+      `<path d="M22 2L27 17L22 22ZM42 22L27 27L22 22ZM22 42L17 27L22 22ZM2 22L17 17L22 22Z" fill="#a9b6cc"/>` +
+      `<circle cx="22" cy="22" r="5" fill="#545c75" ${ol(2)}/>` +
+      `<path d="M20 8L22 15" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`,
+  ),
+
+  // Javelin, pointing right; the Dragon Lance is gold and red.
+  ...Object.fromEntries(
+    (
+      [
+        ['spear', '#c98a4b', '#9a6232', '#e6ecf5', '#9aa6bf', '#d8e8ff'],
+        ['spear_dragon', '#c43c2c', '#8a2418', '#ffd36b', '#e39b1b', '#fff1b8'],
+      ] as const
+    ).map(([key, shaft, shaftDark, head, headDark, shine]) => [
+      key,
+      svg(
+        112,
+        22,
+        `<rect x="4" y="8.5" width="80" height="5" rx="2.5" fill="${shaft}" ${ol(2)}/>` +
+          `<path d="M8 12H80" stroke="${shaftDark}" stroke-width="1.2" stroke-linecap="round"/>` +
+          `<path d="M4 6L14 11L4 16Z" fill="${head}" ${ol(1.8)}/>` +
+          `<path d="M80 4L108 11L80 18L85 11Z" fill="${head}" ${ol(2)}/>` +
+          `<path d="M85 11.5L104 11.5L84 16.5Z" fill="${headDark}"/>` +
+          `<path d="M84 7.5L96 9.6" stroke="${shine}" stroke-width="1.4" stroke-linecap="round"/>`,
+      ),
+    ]),
+  ),
+
+  // Sentry Turret: a little crossbow on a wooden tripod (the Ballista is gold).
+  ...Object.fromEntries(
+    (
+      [
+        ['turret', '#a8683a', '#7a4524', '#8a93ad', '#5d6684'],
+        ['turret_gold', '#c9973e', '#8a6420', '#ffd36b', '#e39b1b'],
+      ] as const
+    ).map(([key, wood, woodDark, metal, metalDark]) => [
+      key,
+      svg(
+        72,
+        72,
+        `<path d="M36 40L18 66M36 40L54 66M36 40L36 68" fill="none" stroke="${O}" stroke-width="8" stroke-linecap="round"/>` +
+          `<path d="M36 40L18 66M36 40L54 66M36 40L36 68" fill="none" stroke="${wood}" stroke-width="4.5" stroke-linecap="round"/>` +
+          `<rect x="14" y="26" width="44" height="12" rx="4" fill="${wood}" ${ol(2.5)}/>` +
+          `<path d="M18 34H54" stroke="${woodDark}" stroke-width="2"/>` +
+          `<path d="M50 14Q64 32 50 50" fill="none" stroke="${O}" stroke-width="7" stroke-linecap="round"/>` +
+          `<path d="M50 14Q64 32 50 50" fill="none" stroke="${metal}" stroke-width="3.6" stroke-linecap="round"/>` +
+          `<path d="M50 14L40 32L50 50" fill="none" stroke="#fff6e0" stroke-width="1.6"/>` +
+          `<path d="M58 28L68 32L58 36Z" fill="${metal}" ${ol(2)}/>` +
+          `<circle cx="22" cy="32" r="4" fill="${metalDark}" ${ol(1.8)}/>`,
+      ),
+    ]),
+  ),
+
+  // Spirit Wisp: a little ghost flame with two eyes.
+  wisp: svg(
+    40,
+    48,
+    `<defs><radialGradient id="wisp_g" cx="20" cy="28" r="20" gradientUnits="userSpaceOnUse">` +
+      `<stop offset=".4" stop-color="#bff8ff" stop-opacity=".7"/><stop offset="1" stop-color="#8ff0ff" stop-opacity="0"/></radialGradient></defs>` +
+      `<circle cx="20" cy="28" r="20" fill="url(#wisp_g)"/>` +
+      `<path d="M20 6C24 14 31 18 31 29C31 36 26 41 20 41C14 41 9 36 9 29C9 21 15 18 16 12C17 15 18 17 20 18C20 13 19 10 20 6Z" fill="#effdff" ${ol(2.4)}/>` +
+      `<path d="M27 26C28 32 25 37 20 38" fill="none" stroke="#9fe8f6" stroke-width="2.4" stroke-linecap="round"/>` +
+      `<ellipse cx="16.5" cy="29" rx="2" ry="3" fill="${O}"/><ellipse cx="23.5" cy="29" rx="2" ry="3" fill="${O}"/>`,
+  ),
+
   spark: svg(
     24,
     24,

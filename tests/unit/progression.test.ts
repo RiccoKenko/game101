@@ -25,6 +25,7 @@ describe('level-up choices', () => {
       weapons: WEAPON_IDS.slice(0, MAX_WEAPONS).map((id) => ({ id, level: 1, evolved: null })),
       passives: PASSIVE_IDS.slice(0, MAX_PASSIVES).map((id) => ({ id, level: 1 })),
       runes: [],
+      talents: [],
       banned: [],
     };
     for (let seed = 0; seed < 50; seed++) {
@@ -35,7 +36,7 @@ describe('level-up choices', () => {
     }
   });
 
-  it('falls back to gold and healing when everything is maxed', () => {
+  it('offers small lasting boosts and a meal once everything is maxed', () => {
     const inv: Inventory = {
       weapons: WEAPON_IDS.slice(0, MAX_WEAPONS).map((id) => ({ id, level: 5, evolved: null })),
       passives: [
@@ -49,9 +50,10 @@ describe('level-up choices', () => {
         { id: 'chain', level: 3 },
         { id: 'leech', level: 3 },
       ],
+      talents: [],
       banned: [],
     };
-    expect(rollChoices(inv, mulberry32(3)).map((c) => c.kind)).toEqual(['gold', 'heal']);
+    expect(rollChoices(inv, mulberry32(3)).map((c) => c.kind)).toEqual(['might', 'tough', 'heal']);
   });
 
   it('applies upgrades and caps levels', () => {
@@ -89,6 +91,7 @@ describe('evolutions', () => {
       ],
       passives: PASSIVE_IDS.slice(0, 4).map((id) => ({ id, level: 1 })),
       runes: [],
+      talents: [],
       banned: [],
     };
     expect(evolvableWeapons(inv)).toEqual([]);

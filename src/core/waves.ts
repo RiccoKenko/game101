@@ -23,6 +23,15 @@ export function spawnRate(t: number): number {
   return 1.3 + 1.1 * m + 0.1 * m * m;
 }
 
+/**
+ * Coins drop less often as the crowds grow, so gold comes in at a steady pace (about COIN_FLOW drops' worth a
+ * second) rather than snowballing with the number of monsters late in a run.
+ */
+export const COIN_FLOW = 3;
+export function coinFactor(t: number): number {
+  return Math.min(1, COIN_FLOW / spawnRate(t));
+}
+
 /** Relative weights of the map's [early, mid, late] enemy types at time t. */
 export function enemyWeights(t: number): [number, number, number] {
   const m = minutes(t);

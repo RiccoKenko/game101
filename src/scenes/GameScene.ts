@@ -7,6 +7,7 @@ import { BOSSES } from '../config/enemies';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
 import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
+import { TALENT, TALENT_LEVELS, type TalentId } from '../config/talents';
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
@@ -17,9 +18,11 @@ import {
   choiceKey,
   evolvableWeapons,
   evolve,
+  MAXED,
   newInventory,
   passiveLevels,
   rollChoices,
+  rollTalents,
   runeLevels,
   xpToNext,
   type Choice,
@@ -32,6 +35,7 @@ import { computeStats, type PlayerStats } from '../core/stats';
 import {
   bossesDue,
   bossHpMultiplier,
+  coinFactor,
   eliteChance,
   enemyWeights,
   hpMultiplier,
@@ -85,6 +89,10 @@ export interface RunState {
   medal: boolean;
   swarmsSpawned: number;
   ringsSpawned: number;
+  /** Talent cards owed (levels 5, 10, 15... reached), and when Second Wind and Blink can next fire. */
+  talentsDue: number;
+  secondWindAt: number;
+  blinkAt: number;
   boss: Enemy | null;
   ended: boolean;
   unlockedMap: number | null;
@@ -240,6 +248,9 @@ export class GameScene extends Phaser.Scene {
       medal: false,
       swarmsSpawned: 0,
       ringsSpawned: ringEventsDue(DEBUG.startTime),
+      talentsDue: 0,
+      secondWindAt: 0,
+      blinkAt: 0,
       boss: null,
       ended: false,
       unlockedMap: null,
@@ -546,8 +557,8 @@ export class GameScene extends Phaser.Scene {
     // A golden hour: coins drop more often and are worth more.
     const golden = this.runEvents.golden;
     const coinValue = COIN_VALUE[this.mapIndex] * (golden ? GOLDEN_HOUR.coinValue : 1);
-    if (this.rng() < e.coinChance * (golden ? GOLDEN_HOUR.coinChance : 1)) this.pickups.drop('coin', e.x + 24, e.y + 10, coinValue);
-    if (e.elite) this.pickups.burstCoins(e.x, e.y, 3, coinValue);
+    const chance = e.elite ? 1 : e.coinChance * coinFactor(this.run.time) * (golden ? GOLDEN_HOUR.coinChance : 1);
+    if (this.rng() < chance) this.pickups.drop('coin', e.x + 24, e.y + 10, coinValue);
     if (this.rng() < DROP_CHANCE.meat) this.pickups.drop('meat', e.x - 20, e.y);
     else if (this.rng() < DROP_CHANCE.magnet) this.pickups.drop('magnet', e.x - 20, e.y);
   }
@@ -613,21 +624,72 @@ export class GameScene extends Phaser.Scene {
       run.level++;
       run.xpNext = xpToNext(run.level);
       this.pendingLevelUps++;
+      if (TALENT_LEVELS.includes(run.level)) run.talentsDue++;
     }
   }
 
   hurtPlayer(amount: number): void {
     const run = this.run;
     if (this.player.iframes > 0 || run.ended || DEBUG.god) return;
+    const { x, y } = this.player;
+    // The Mana Shield takes the whole hit (Mana Font: and blasts monsters back).
+    if (this.player.blockHit()) {
+      this.player.iframes = 0.6;
+      this.fx.ring(x, y, 140, 0x8fd8ff);
+      this.fx.sparkle(x, y - 20, 6, 0xd8f4ff);
+      audio.sfx('zap', 0.7);
+      if (this.has('font')) {
+        this.fx.shockwave(x, y + 30, 240, 0x8fd8ff);
+        this.enemies.forEachInRadius(x, y, 240, (e) => this.enemies.damage(e, 20 * run.stats.damageMult, x, y, 3, false));
+      }
+      return;
+    }
     const dmg = Math.max(1, Math.round(amount * (this.curses.has('fragile') ? CURSE.fragile : 1) - run.stats.armor));
     this.player.hp -= dmg;
     this.player.iframes = PLAYER_BASE.iframes;
     this.player.hitFlash();
-    this.fx.damageNumber(this.player.x, this.player.y - 70, dmg, 0xff6b6b);
+    this.fx.damageNumber(x, y - 70, dmg, 0xff6b6b);
     this.shake(90, 0.004);
     this.events.emit('hurt');
     audio.sfx('hurt');
-    if (this.player.hp <= 0) this.onPlayerDown();
+    if (this.player.hp <= 0) {
+      this.onPlayerDown();
+      return;
+    }
+    // Second Wind: a burst of health when it gets low.
+    if (this.has('secondwind') && run.time >= run.secondWindAt && this.player.hp < run.stats.maxHp * TALENT.secondWindAt) {
+      run.secondWindAt = run.time + TALENT.secondWindEvery;
+      this.player.heal(run.stats.maxHp * TALENT.secondWindHeal);
+      this.fx.ring(x, y, 200, 0x7dff8a);
+      this.fx.sparkle(x, y - 20, 8, 0xc8ffb8);
+      this.events.emit('toast', 'Second Wind!');
+    }
+    if (this.has('blink') && run.time >= run.blinkAt) {
+      run.blinkAt = run.time + TALENT.blinkEvery;
+      this.blink();
+    }
+  }
+
+  private has(id: TalentId): boolean {
+    return this.run.inventory.talents.includes(id);
+  }
+
+  /** Blink: the mage vanishes and reappears away from the monsters around her, untouchable for a moment. */
+  private blink(): void {
+    const p = this.player;
+    let ax = 0;
+    let ay = 0;
+    this.enemies.forEachInRadius(p.x, p.y, 320, (e) => {
+      ax += p.x - e.x;
+      ay += p.y - e.y;
+    });
+    const a = ax || ay ? Math.atan2(ay, ax) : this.rng() * Math.PI * 2;
+    this.fx.deathPuff(p.x, p.y, 1.2, 0xc9a8ff);
+    p.x += Math.cos(a) * TALENT.blinkDistance;
+    p.y += Math.sin(a) * TALENT.blinkDistance;
+    p.iframes = Math.max(p.iframes, 1);
+    this.fx.deathPuff(p.x, p.y, 1.2, 0xc9a8ff);
+    this.fx.sparkle(p.x, p.y - 20, 6, 0xe2d0ff);
   }
 
   private onPlayerDown(): void {
@@ -660,21 +722,26 @@ export class GameScene extends Phaser.Scene {
       if (c.kind === 'weapon') return this.run.inventory.weapons.some((w) => w.id === c.id) ? 4 : 3;
       if (c.kind === 'passive') return this.run.inventory.passives.some((p) => p.id === c.id) ? 2 : 1;
       if (c.kind === 'rune') return 2.5;
-      return 0;
+      if (c.kind === 'talent') return 5;
+      return c.kind === 'heal' ? 0 : 0.5;
     };
     return [...choices].sort((a, b) => score(b) - score(a))[0];
   }
 
   private applyChoiceNow(choice: Choice): void {
-    if (choice.kind === 'gold') this.run.gold += choice.amount;
-    else if (choice.kind === 'heal') this.player.heal(this.run.stats.maxHp * choice.amount);
-    else applyChoice(this.run.inventory, choice);
+    const run = this.run;
+    if (choice.kind === 'heal') this.player.heal(run.stats.maxHp * choice.amount);
+    else if (choice.kind === 'might') run.blessings.damage += MAXED.might;
+    else if (choice.kind === 'tough') {
+      run.blessings.maxHp += MAXED.tough;
+      this.player.heal(run.stats.maxHp * MAXED.tough);
+    } else applyChoice(run.inventory, choice);
     this.refreshStats();
   }
 
   private refreshStats(): void {
     const run = this.run;
-    run.stats = computeStats(saveStore.data.shop, passiveLevels(run.inventory), this.hero);
+    run.stats = computeStats(saveStore.data.shop, passiveLevels(run.inventory), this.hero, run.inventory.talents);
     const st = run.stats;
     st.goldMult *= this.diff.gold * (1 + HEAT_GOLD * this.heat);
     if (this.curses.has('famine')) st.healMult = CURSE.famine;
@@ -693,6 +760,7 @@ export class GameScene extends Phaser.Scene {
     run.stats.maxHp = Math.round(run.stats.maxHp * (1 + b.maxHp));
     this.ctx.runes = runeLevels(run.inventory);
     this.player.setStats(run.stats);
+    this.weapons.talents = run.inventory.talents;
     this.weapons.sync(run.inventory.weapons, run.stats);
     this.events.emit('inventory');
   }
@@ -721,9 +789,20 @@ export class GameScene extends Phaser.Scene {
     return this.curses.has('fewer') ? 2 : 3;
   }
 
+  /** The cards for the next level-up: the hero's talents at levels 5, 10, 15..., otherwise upgrades. */
+  private deal(count: number, avoid: Choice[] = []): Choice[] {
+    const talents = avoid.length ? avoid[0].kind === 'talent' : this.run.talentsDue > 0;
+    if (talents) {
+      const t = rollTalents(this.run.inventory, this.hero.id, this.rng, count, avoid);
+      if (t.length) return t;
+    }
+    return rollChoices(this.run.inventory, this.rng, count, avoid);
+  }
+
   private openLevelUp(): void {
     this.pendingLevelUps--;
-    const choices = rollChoices(this.run.inventory, this.rng, this.cardCount);
+    const choices = this.deal(this.cardCount);
+    if (this.run.talentsDue > 0) this.run.talentsDue--;
     if (DEBUG.bot) {
       this.applyChoiceNow(this.botPick(choices));
       return;
@@ -741,13 +820,13 @@ export class GameScene extends Phaser.Scene {
       reroll: (current: Choice[]) => {
         if (run.rerolls <= 0) return null;
         run.rerolls--;
-        return rollChoices(run.inventory, this.rng, this.cardCount, current);
+        return this.deal(this.cardCount, current);
       },
       banish: (c: Choice, current: Choice[]) => {
         if (run.banishes <= 0) return null;
         run.banishes--;
         run.inventory.banned.push(choiceKey(c));
-        const fresh = rollChoices(run.inventory, this.rng, 1, current)[0];
+        const fresh = this.deal(1, current)[0];
         return current.map((x) => (x === c ? fresh : x));
       },
     });

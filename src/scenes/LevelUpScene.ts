@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
+import { talentDef } from '../config/talents';
 import { PASSIVES, requirementName, RUNES, WEAPONS } from '../config/weapons';
-import { type Choice, type Inventory } from '../core/progression';
+import { MAXED, type Choice, type Inventory } from '../core/progression';
 import { buildRows } from '../ui/build';
 import { safeInsets } from '../ui/safe';
 import { COLORS, CSS, hex, lighten, PARCHMENT, rgba, shade } from '../ui/theme';
@@ -35,7 +36,12 @@ export function describeChoice(c: Choice): { icon: string; name: string; tag: st
     const def = RUNES[c.id];
     return { icon: def.icon, name: def.name, tag: c.level === 1 ? 'RUNE' : `LV ${c.level}`, desc: def.levels[c.level - 1] };
   }
-  if (c.kind === 'gold') return { icon: 'icon_coin', name: 'Gold Pouch', tag: '', desc: `+${c.amount} gold` };
+  if (c.kind === 'talent') {
+    const def = talentDef(c.id);
+    return { icon: def.icon, name: def.name, tag: 'HERO', desc: def.text };
+  }
+  if (c.kind === 'might') return { icon: 'icon_might', name: 'Power Up', tag: '', desc: `Damage +${MAXED.might * 100}% for the rest of the run` };
+  if (c.kind === 'tough') return { icon: 'icon_heart', name: 'Toughness', tag: '', desc: `Max HP +${MAXED.tough * 100}% for the rest of the run` };
   return { icon: 'meat', name: 'Roast Meat', tag: '', desc: 'Restore 30% of your HP' };
 }
 
@@ -47,6 +53,7 @@ export function choiceCard(scene: Phaser.Scene, x: number, y: number, w: number,
   const d = Math.min(150, h - 70);
   const ix = -w / 2 + 40 + d / 2;
   const kind = c.kind === 'weapon' ? 'weapon' : c.kind === 'passive' ? 'passive' : c.kind === 'rune' ? 'rune' : 'evolved';
+  const tagColor = info.tag === 'NEW!' ? COLORS.green : info.tag === 'RUNE' ? 0x2fae8f : info.tag === 'HERO' ? 0xd9861c : COLORS.blue;
   const slot = slotIcon(scene, ix, 0, d, info.icon, kind);
   const tx = ix + d / 2 + 36;
   const name = text(scene, tx, -h / 2 + 52, info.name, 50, { color: CSS.ink, stroke: false, originX: 0 });
@@ -66,8 +73,8 @@ export function choiceCard(scene: Phaser.Scene, x: number, y: number, w: number,
     const tw = isNew ? 132 : 112;
     const tagX = w / 2 - 30 - tw / 2;
     const tagY = -h / 2 + 50;
-    const pill = scene.add.image(tagX, tagY, tagTexture(scene, tw, 54, isNew ? COLORS.green : info.tag === 'RUNE' ? 0x2fae8f : COLORS.blue));
-    const tag = text(scene, tagX, tagY, info.tag, 30, { strokeColor: isNew ? '#174d14' : '#123a6b', shadow: false });
+    const pill = scene.add.image(tagX, tagY, tagTexture(scene, tw, 54, tagColor));
+    const tag = text(scene, tagX, tagY, info.tag, 30, { strokeColor: isNew ? '#174d14' : info.tag === 'HERO' ? '#5a2e06' : '#123a6b', shadow: false });
     card.add([pill, tag]);
   }
   card.setSize(w, h);
@@ -125,7 +132,9 @@ export class LevelUpScene extends Phaser.Scene {
     dimmer(this, 0.7);
     const usable = height - top - bottom;
     const titleY = top + Math.max(120, usable * 0.11);
-    const title = gradientText(text(this, width / 2, titleY, 'LEVEL UP!', 112, { strokeColor: '#2a1606' }));
+    // Every few levels the cards are the hero's own talents.
+    const talent = this.data_.choices[0]?.kind === 'talent';
+    const title = gradientText(text(this, width / 2, titleY, talent ? 'HERO TALENT!' : 'LEVEL UP!', talent ? 96 : 112, { strokeColor: '#2a1606' }));
     this.tweens.add({ targets: title, scale: { from: 0.5, to: 1 }, duration: 350, ease: 'Back.easeOut' });
     ribbon(this, width / 2, titleY + 104, 640, 78);
     text(this, width / 2, titleY + 102, `Level ${this.data_.level} · choose one`, 40, { color: CSS.cream });

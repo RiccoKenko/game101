@@ -78,6 +78,8 @@ export class Enemy {
   blinkWarn = 0;
   blinkX = 0;
   blinkY = 0;
+  /** Seconds until Thorn Mail can hurt this monster again. */
+  thornT = 0;
   /** A boss in its angry phase (under half HP, or from the start late in a run): it adds a new attack. */
   enraged = false;
   /** The enraged attack's timer, shots left in a burst, and spin angle. */
@@ -140,6 +142,7 @@ export class EnemyManager {
   private nextUid = 1;
   private regularCount = 0;
   private blastsThisFrame = 0;
+  private novasThisFrame = 0;
   /** Telegraphed ground attacks (an enraged boss's stomps and splashes): a red circle, then the hit. */
   private strikes: { x: number; y: number; r: number; t: number; damage: number; color: number }[] = [];
 
@@ -161,7 +164,7 @@ export class EnemyManager {
     e.affixes = [];
     e.shield = e.shieldMax = e.shieldIdle = e.vampT = e.summonT = e.blinkT = e.blinkWarn = 0;
     e.enraged = false;
-    e.ptimer = e.pcount = e.pangle = 0;
+    e.ptimer = e.pcount = e.pangle = e.thornT = 0;
     this.hideExtras(e);
     e.spawnT = 0;
     e.face = 1;
@@ -429,7 +432,11 @@ export class EnemyManager {
   /** Deals damage (sometimes a critical hit, unless `canCrit` is false); returns true if the enemy died. */
   damage(e: Enemy, amount: number, fromX: number, fromY: number, knockback = 1, canCrit = true): boolean {
     if (!e.active || e.enter > 0) return false;
-    const crit = canCrit && this.ctx.rng() < this.ctx.player.stats.critChance;
+    const st = this.ctx.player.stats;
+    // Hunter's Ring / Hunter's Mark against the big ones; the Berserker Mask when the hero is hurt.
+    if (st.bigGame > 0 && (e.elite || e.isBoss)) amount *= 1 + st.bigGame;
+    if (st.rage > 0 && this.ctx.player.hp < st.maxHp * 0.5) amount *= 1 + st.rage;
+    const crit = canCrit && this.ctx.rng() < st.critChance;
     if (crit) {
       amount *= this.ctx.player.stats.critMult;
       knockback *= 1.5;
@@ -461,6 +468,16 @@ export class EnemyManager {
       e.ky += (dy / d) * k;
     }
     audio.sfx('hit');
+    // Nova Rune: a critical hit bursts onto the monsters around it (a few per frame at most).
+    const nova = this.ctx.runes.nova;
+    if (crit && nova && this.novasThisFrame < 8) {
+      this.novasThisFrame++;
+      const share = RUNE_POWER.nova[nova - 1];
+      this.ctx.fx.ring(e.x, e.y, 90, 0xffd36b, 'ring', 35, 220);
+      this.forEachInRadius(e.x, e.y, 90, (o) => {
+        if (o !== e) this.damage(o, amount * share, e.x, e.y, 0.5, false);
+      });
+    }
     if (canCrit && e.hp > 0) this.runeProcs(e, amount);
     // Reaper Rune: a weapon hit finishes off a monster that is nearly dead.
     const reaper = this.ctx.runes.reaper;
@@ -700,6 +717,7 @@ export class EnemyManager {
     const relocate = Math.hypot(view.width, view.height) * 0.75 + 300;
     let contact = 0;
     this.blastsThisFrame = 0;
+    this.novasThisFrame = 0;
 
     for (let i = 0; i < this.alive.length; i++) {
       const e = this.alive[i];
@@ -845,7 +863,17 @@ export class EnemyManager {
       e.ky *= decay;
 
       const sleeping = e.def?.behavior === 'ambush' && e.state === 0;
-      if (d < e.radius + player.radius * 0.85 && !sleeping) contact = Math.max(contact, e.damage);
+      e.thornT -= dt;
+      if (d < e.radius + player.radius * 0.85 && !sleeping) {
+        contact = Math.max(contact, e.damage);
+        // Thorn Mail pricks whatever touches the hero and shoves it away.
+        const thorns = player.stats.thorns;
+        if (thorns > 0 && e.thornT <= 0) {
+          e.thornT = 0.6;
+          this.ctx.fx.sparksAt(e.x, e.y, 3, 0xc8e070);
+          this.damage(e, thorns * player.stats.damageMult, px, py, 2.5, false);
+        }
+      }
 
       if (!e.boss && d > relocate && e.def?.behavior === 'flee') {
         // Ran clean off the screen: gone.

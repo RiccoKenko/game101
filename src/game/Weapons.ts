@@ -8,12 +8,16 @@ import {
   WEAPONS,
   type WeaponStats,
 } from '../config/weapons';
+import { TALENT, type TalentId } from '../config/talents';
 import { type OwnedWeapon } from '../core/progression';
 import { type PlayerStats } from '../core/stats';
 import { type GameCtx } from './context';
 import { type Enemy } from './Enemies';
 
-type ProjKind = 'arrow' | 'dagger' | 'boomerang' | 'bomb' | 'bolt' | 'star' | 'shard' | 'flask' | 'splinter';
+type ProjKind = 'arrow' | 'dagger' | 'boomerang' | 'bomb' | 'bolt' | 'star' | 'shard' | 'flask' | 'splinter' | 'shuriken' | 'spear' | 'wisp';
+
+/** Projectiles that the Seeker Rune bends toward monsters. */
+const SEEKERS: ReadonlySet<ProjKind> = new Set<ProjKind>(['arrow', 'dagger', 'shard', 'splinter', 'shuriken', 'spear']);
 
 class Projectile {
   active = false;
@@ -50,6 +54,13 @@ class Projectile {
   meteor = false;
   /** Split Rune: bursts into splinters on its first hit (arrows, daggers, bolts, shards; never a splinter). */
   canSplit = false;
+  /** Turn rate toward enemies (Star Storm, Seeker Rune), radians per second; 0 = flies straight. */
+  homing = 0;
+  /** Dragon Lance (finishes off the wounded), Soul Harvest (bursts heal the hero). */
+  lance = false;
+  harvest = false;
+  /** Spirit Wisp: the speed it dives at. */
+  speed = 0;
   /** A motion streak behind arrows and daggers; the ground shadow under a bomb. */
   constructor(readonly sprite: Phaser.GameObjects.Image, readonly trail: Phaser.GameObjects.Image) {}
 }
@@ -60,6 +71,8 @@ const TRAILS: Record<string, [number, number, number]> = {
   arrow_storm: [0x9fdcff, 140, 16],
   dagger: [0xd8e8ff, 70, 8],
   dagger_gold: [0xffd36b, 84, 10],
+  spear: [0xffffff, 120, 12],
+  spear_dragon: [0xff8a3d, 160, 18],
   bolt: [0x8fd8ff, 80, 16],
   star_bolt: [0xffe08a, 110, 14],
   ice_shard: [0xd4f4ff, 60, 8],
@@ -115,7 +128,22 @@ interface Zone {
   left: number;
   tick: number;
   slow: boolean;
+  /** A Flame Trail patch (flickers; Inferno Road's set monsters on fire). */
+  fire: boolean;
+  burn: boolean;
   img: Phaser.GameObjects.Image;
+}
+
+/** A Sentry Turret set down on the ground, shooting at the nearest monster until it wears out. */
+interface Turret {
+  img: Phaser.GameObjects.Image;
+  x: number;
+  y: number;
+  life: number;
+  shot: number;
+  stats: WeaponStats;
+  /** Golden Ballista: twin piercing bolts. */
+  gold: boolean;
 }
 
 interface WeaponRuntime {
@@ -143,6 +171,8 @@ interface WeaponRuntime {
   orbHits: Map<number, number>;
   /** Echo Rune: seconds until the last attack goes off again (0 = none waiting). */
   echo: number;
+  /** Attacks made (the Giant Rune makes every n-th one giant). */
+  shots: number;
 }
 
 const AXE_RADIUS = 175;
@@ -171,6 +201,14 @@ const TRAP_ARM = 0.35;
 const MAX_TRAPS = 18;
 const WARD_RADIUS = 120;
 const WARD_HIT = 28;
+const QUAKE_RADIUS = 210;
+const FLAME_RADIUS = 55;
+const MAX_FLAMES = 40;
+const TURRET_EVERY = 0.45;
+const TURRET_RANGE = 750;
+const WISP_RADIUS = 70;
+/** Seconds a wisp drifts out before it picks a monster and dives. */
+const WISP_DRIFT = 0.4;
 /** How fast a Magic Bolt turns toward its target (radians per second). */
 const BOLT_TURN = 7;
 
@@ -181,9 +219,14 @@ export class WeaponSystem {
   private beams: Beam[] = [];
   private twisters: Twister[] = [];
   private traps: Trap[] = [];
+  private turrets: Turret[] = [];
   private clock = 0;
   /** HP per second healed by Sanctuary. */
   regen = 0;
+  /** The hero's talents (some add attacks of their own: Arrow Rain, Starcaller). */
+  talents: readonly TalentId[] = [];
+  private rainT = 0;
+  private starsT = 0;
 
   constructor(private ctx: GameCtx) {}
 
@@ -208,6 +251,7 @@ export class WeaponSystem {
           orbAngle: 0,
           orbHits: new Map(),
           echo: 0,
+          shots: 0,
         };
         this.runtimes.push(rt);
       }
@@ -219,7 +263,11 @@ export class WeaponSystem {
         cooldown: base.cooldown * stats.cooldownMult,
         area: base.area * stats.areaMult,
         duration: base.duration * stats.durationMult,
-        amount: base.amount + (AMOUNT_BOOSTED.has(owned.id) && !(owned.id === 'daggers' && owned.evolved) ? stats.amountBonus : 0),
+        pierce: base.pierce >= 999 ? base.pierce : base.pierce + stats.pierceBonus,
+        amount:
+          base.amount +
+          (AMOUNT_BOOSTED.has(owned.id) && !(owned.id === 'daggers' && owned.evolved) ? stats.amountBonus : 0) +
+          (owned.id === this.ctx.player.primary ? stats.primaryAmount : 0),
       };
       this.syncVisuals(rt);
     }
@@ -292,13 +340,14 @@ export class WeaponSystem {
     p.hits.clear();
     p.target = null;
     p.bounces = 0;
-    p.meteor = p.plague = p.canSplit = false;
+    p.meteor = p.plague = p.canSplit = p.lance = p.harvest = false;
+    p.homing = 0;
     p.sprite.clearTint();
     p.sprite.setTexture(texture).setVisible(true).setScale(1).setRotation(0);
     if (kind === 'bomb' || kind === 'flask') {
       p.trail.setTexture('shadow').setOrigin(0.5).setBlendMode(Phaser.BlendModes.NORMAL).clearTint().setAlpha(1).setVisible(true);
-    } else if (kind === 'boomerang') {
-      // It spins, so a straight streak would look wrong.
+    } else if (kind === 'boomerang' || kind === 'shuriken' || kind === 'wisp') {
+      // It spins (or floats), so a straight streak would look wrong.
       p.trail.setVisible(false);
     } else {
       const [color, , thick] = TRAILS[texture] ?? TRAILS.arrow;
@@ -311,6 +360,8 @@ export class WeaponSystem {
   update(dt: number): void {
     this.clock += dt;
     const { player } = this.ctx;
+    // Run and Gun (the archer): weapons reload faster while the hero is on the move.
+    const cdt = dt * (player.moving ? 1 + player.stats.moveHaste : 1);
     for (const rt of this.runtimes) {
       const s = rt.stats;
       switch (rt.owned.id) {
@@ -319,7 +370,7 @@ export class WeaponSystem {
           break;
         case 'frost':
           if (!rt.owned.evolved) {
-            this.fireOnCooldown(rt, dt);
+            this.fireOnCooldown(rt, cdt);
             break;
           }
           this.updateBlizzard(rt, dt);
@@ -336,7 +387,7 @@ export class WeaponSystem {
               this.ctx.fx.sparkle(player.x + Math.cos(a) * r, player.y + 10 + Math.sin(a) * r, 1, 0xffe9a3);
             }
           }
-          rt.timer -= dt;
+          rt.timer -= cdt;
           if (rt.timer <= 0) {
             rt.timer = s.cooldown;
             this.auraTick(rt);
@@ -355,24 +406,26 @@ export class WeaponSystem {
             this.updateRainbow(rt, dt);
             break;
           }
-          this.fireOnCooldown(rt, dt);
+          this.fireOnCooldown(rt, cdt);
           break;
         case 'twister':
           if (rt.owned.evolved) {
             this.updateCyclone(rt, dt);
             break;
           }
-          this.fireOnCooldown(rt, dt);
+          this.fireOnCooldown(rt, cdt);
           break;
         default:
-          this.fireOnCooldown(rt, dt);
+          this.fireOnCooldown(rt, cdt);
       }
     }
+    this.updateTalents(dt);
     this.updateProjectiles(dt);
     this.updateZones(dt);
     this.updateBeams(dt);
     this.updateTwisters(dt);
     this.updateTraps(dt);
+    this.updateTurrets(dt);
   }
 
   /** Attacks every `cooldown` seconds; with the Echo Rune an attack may go off again a moment later. */
@@ -380,7 +433,7 @@ export class WeaponSystem {
     rt.timer -= dt;
     if (rt.timer <= 0) {
       rt.timer = rt.stats.cooldown;
-      this.fire(rt);
+      this.fireMaybeGiant(rt);
       this.rollEcho(rt);
     }
     if (rt.echo > 0) {
@@ -393,9 +446,48 @@ export class WeaponSystem {
     }
   }
 
+  /** Giant Rune: every n-th attack hits twice as hard and comes out half again as big. */
+  private fireMaybeGiant(rt: WeaponRuntime): void {
+    const lv = this.ctx.runes.giant;
+    rt.shots++;
+    if (!lv || rt.shots % RUNE_POWER.giant[lv - 1] !== 0) {
+      this.fire(rt);
+      return;
+    }
+    const normal = rt.stats;
+    rt.stats = { ...normal, damage: normal.damage * 2, area: normal.area * 1.5 };
+    this.fire(rt);
+    rt.stats = normal;
+    const { player } = this.ctx;
+    this.ctx.fx.ring(player.x, player.y - 10, 90, 0xffcc33, 'ring', 35, 260);
+  }
+
   private rollEcho(rt: WeaponRuntime): void {
     const lv = this.ctx.runes.echo;
-    if (lv && rt.echo <= 0 && this.ctx.rng() < RUNE_POWER.echo[lv - 1]) rt.echo = ECHO_DELAY;
+    const chance = (lv ? RUNE_POWER.echo[lv - 1] : 0) + this.ctx.player.stats.echoBonus;
+    if (chance > 0 && rt.echo <= 0 && this.ctx.rng() < chance) rt.echo = ECHO_DELAY;
+  }
+
+  /** Talents that attack on their own: Arrow Rain (the archer) and Starcaller (the mage). */
+  private updateTalents(dt: number): void {
+    const st = this.ctx.player.stats;
+    if (this.talents.includes('rain')) {
+      this.rainT += dt;
+      if (this.rainT >= TALENT.rainEvery) {
+        this.rainT = 0;
+        // As strong as the Bow is now (or a base Bow if it was evolved away... it never is).
+        const bow = this.runtimes.find((r) => r.owned.id === 'bow');
+        const damage = (bow ? bow.stats.damage : 10 * st.damageMult) * 1.5;
+        this.starfall({ damage, cooldown: 0, amount: TALENT.rainArrows, pierce: 0, area: st.areaMult, speed: 0, duration: 0 }, 'arrow');
+      }
+    }
+    if (this.talents.includes('stars')) {
+      this.starsT += dt;
+      if (this.starsT >= TALENT.starsEvery) {
+        this.starsT = 0;
+        this.starfall({ damage: 30 * st.damageMult, cooldown: 0, amount: 1, pierce: 0, area: st.areaMult, speed: 0, duration: 0 });
+      }
+    }
   }
 
   /** The active boss if it's within range of the hero (weapons focus it so crowds can't shield it). */
@@ -580,9 +672,196 @@ export class WeaponSystem {
       case 'traps':
         for (let i = 0; i < s.amount; i++) this.setTrap(s, !!evolved);
         break;
+      case 'shuriken': {
+        // Each star goes for its own enemy (the boss first) and bounces on from there.
+        const targets = enemies.nearestN(player.x, player.y, s.amount, 850);
+        const boss = this.bossInRange(850);
+        if (boss) targets.unshift(boss);
+        const face = Math.atan2(player.faceY, player.faceX);
+        for (let i = 0; i < s.amount; i++) {
+          const t = targets.length ? targets[i % targets.length] : null;
+          const a = t ? Math.atan2(t.y - player.y, t.x - player.x) + (i >= targets.length ? 0.35 : 0) : face + (i - (s.amount - 1) / 2) * 0.4;
+          const p = this.shoot('shuriken', 'shuriken', a, s, 22 * s.area);
+          p.pierce = 0;
+          p.bounces += s.pierce;
+          p.life = 2;
+          p.sprite.setScale(s.area * (evolved ? 1.35 : 1));
+          if (evolved) {
+            p.sprite.setTint(0xffe08a);
+            p.homing = 5;
+          }
+        }
+        audio.sfx('shoot', 0.6);
+        break;
+      }
+      case 'quake':
+        for (let i = 0; i < s.amount; i++) this.ctx.scene.time.delayedCall(i * 320, () => this.shockwave(s, !!evolved));
+        break;
+      case 'firetrail':
+        this.dropFlame(s, !!evolved);
+        break;
+      case 'turret':
+        for (let i = 0; i < s.amount; i++) this.setTurret(s, i, !!evolved);
+        break;
+      case 'spear': {
+        // Thrown the way the hero is walking (or last walked): aim by moving.
+        const base = Math.atan2(player.faceY, player.faceX);
+        const from = { x: player.x + Math.cos(base) * 30, y: player.y - 16 };
+        for (let i = 0; i < s.amount; i++) {
+          const a = base + (i - (s.amount - 1) / 2) * 0.16;
+          const p = this.shoot('spear', evolved ? 'spear_dragon' : 'spear', a, s, 26 * s.area, from);
+          p.knockback = 2.4;
+          p.life = 1.2;
+          p.lance = !!evolved;
+          p.sprite.setScale(s.area * (evolved ? 1.25 : 1));
+        }
+        this.ctx.fx.muzzle(from.x, from.y, evolved ? 0xff8a3d : 0xffffff);
+        audio.sfx('shoot', 0.9);
+        break;
+      }
+      case 'wisps':
+        for (let i = 0; i < s.amount; i++) this.releaseWisp(s, i, !!evolved);
+        break;
       default:
         break;
     }
+  }
+
+  // ---------------------------------------------------------------- Shockwave / Earthquake
+
+  /** A wave stomped out around the hero: hurts and shoves back everything in it (Earthquake also stuns). */
+  private shockwave(s: WeaponStats, quake: boolean): void {
+    const { player, enemies, fx } = this.ctx;
+    const R = QUAKE_RADIUS * s.area;
+    const x = player.x;
+    const y = player.y + 30;
+    fx.shockwave(x, y, R, quake ? 0xffb36b : 0xe8dcc0);
+    fx.ring(x, y - 30, R, quake ? 0xff9a3d : 0xfff4d6, 'ring', 35, 320);
+    fx.dust(x - 40, y, 4);
+    fx.dust(x + 40, y, 4);
+    enemies.forEachInRadius(player.x, player.y, R, (e) => {
+      enemies.damage(e, s.damage, player.x, player.y, 2.2);
+      if (quake) enemies.freezeSolid(e, 0.6);
+    });
+    this.ctx.shake(quake ? 160 : 90, quake ? 0.006 : 0.003);
+    audio.sfx('explosion', quake ? 0.7 : 0.4);
+  }
+
+  // ---------------------------------------------------------------- Flame Trail / Inferno Road
+
+  /** A burning footprint where the hero is (only one at a time while standing still). */
+  private dropFlame(s: WeaponStats, inferno: boolean): void {
+    const { player } = this.ctx;
+    const x = player.x - player.faceX * 18;
+    const y = player.y + 34;
+    if (!player.moving && this.zones.some((z) => z.fire && Math.abs(z.x - x) < 40 && Math.abs(z.y - y) < 30)) return;
+    const r = FLAME_RADIUS * s.area;
+    const img = this.ctx.scene.add.image(x, y, 'flame').setDepth(2).setDisplaySize(r * 2.2, r * 1.2);
+    if (inferno) img.setTint(0xffd0a0);
+    this.zones.push({ x, y, r, damage: s.damage, left: s.duration, tick: 0, slow: false, fire: true, burn: inferno, img });
+    const fires = this.zones.filter((z) => z.fire);
+    if (fires.length > MAX_FLAMES) {
+      const old = fires[0];
+      old.img.destroy();
+      this.zones.splice(this.zones.indexOf(old), 1);
+    }
+  }
+
+  // ---------------------------------------------------------------- Sentry Turret / Golden Ballista
+
+  private setTurret(s: WeaponStats, i: number, gold: boolean): void {
+    const { player } = this.ctx;
+    const a = (i / Math.max(1, s.amount)) * Math.PI * 2 + this.clock;
+    const x = player.x + Math.cos(a) * 70;
+    const y = player.y + 10 + Math.sin(a) * 50;
+    const img = this.ctx.scene.add.image(x, y, gold ? 'turret_gold' : 'turret').setDepth(9).setScale(0).setOrigin(0.5, 0.85);
+    this.ctx.scene.tweens.add({ targets: img, scale: 1.2 * Math.sqrt(s.area), duration: 260, ease: 'Back.easeOut' });
+    this.ctx.fx.dust(x, y + 10, 3);
+    this.turrets.push({ img, x, y, life: s.duration, shot: 0.3, stats: s, gold });
+    while (this.turrets.length > s.amount * 2) {
+      const old = this.turrets.shift()!;
+      old.img.destroy();
+    }
+  }
+
+  private updateTurrets(dt: number): void {
+    const { enemies } = this.ctx;
+    for (let i = this.turrets.length - 1; i >= 0; i--) {
+      const t = this.turrets[i];
+      t.life -= dt;
+      t.shot -= dt;
+      if (t.life <= 0) {
+        this.ctx.fx.deathPuff(t.x, t.y, 0.8, 0xd9c9a3);
+        t.img.destroy();
+        this.turrets.splice(i, 1);
+        continue;
+      }
+      if (t.life < 0.5) t.img.setAlpha(t.life / 0.5);
+      if (t.shot > 0) continue;
+      const target = enemies.nearest(t.x, t.y, TURRET_RANGE);
+      if (!target) continue;
+      t.shot = TURRET_EVERY;
+      const a = Math.atan2(target.y - t.y, target.x - t.x);
+      const from = { x: t.x + Math.cos(a) * 20, y: t.y - 34 };
+      for (const off of t.gold ? [-0.07, 0.07] : [0]) {
+        const p = this.shoot('arrow', t.gold ? 'arrow_storm' : 'arrow', a + off, t.stats, 20, from);
+        p.life = 1;
+      }
+      t.img.setFlipX(Math.cos(a) < 0);
+      this.ctx.fx.muzzle(from.x, from.y, t.gold ? 0xffe08a : 0xfff1b8);
+    }
+  }
+
+  // ---------------------------------------------------------------- Spirit Wisps / Soul Harvest
+
+  private releaseWisp(s: WeaponStats, i: number, harvest: boolean): void {
+    const { player } = this.ctx;
+    const a = (i / Math.max(1, s.amount)) * Math.PI * 2 + this.ctx.rng() * 0.6;
+    const p = this.obtain('wisp', 'wisp');
+    p.x = player.x;
+    p.y = player.y - 30;
+    p.vx = Math.cos(a) * s.speed * 0.7;
+    p.vy = Math.sin(a) * s.speed * 0.7;
+    p.damage = s.damage;
+    p.area = s.area;
+    p.speed = s.speed;
+    p.life = 3.5;
+    p.harvest = harvest;
+    p.sprite.setScale(0.9 + 0.2 * s.area);
+    if (harvest) p.sprite.setTint(0xd8ffe0);
+  }
+
+  /** A wisp drifts out, then dives at the nearest monster and bursts on touching one. */
+  private updateWisp(p: Projectile, dt: number): void {
+    const { enemies, fx, player } = this.ctx;
+    if (p.age < WISP_DRIFT) {
+      const k = Math.exp(-4 * dt);
+      p.vx *= k;
+      p.vy *= k;
+    } else {
+      if (!p.target || !p.target.active) p.target = enemies.nearest(p.x, p.y, 700);
+      const want = p.target ? Math.atan2(p.target.y - p.y, p.target.x - p.x) : Math.atan2(p.vy, p.vx);
+      const cur = Math.atan2(p.vy, p.vx);
+      const a = cur + Phaser.Math.Clamp(Phaser.Math.Angle.Wrap(want - cur), -8 * dt, 8 * dt);
+      const sp = Math.min(p.speed, Math.hypot(p.vx, p.vy) + p.speed * 3 * dt);
+      p.vx = Math.cos(a) * sp;
+      p.vy = Math.sin(a) * sp;
+    }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.sprite.setPosition(p.x, p.y + Math.sin(p.age * 9) * 4).setFlipX(p.vx < 0);
+    if (Math.random() < dt * 14) fx.sparkle(p.x, p.y, 1, p.harvest ? 0xc8ffd8 : 0xbff8ff);
+    let hit = false;
+    if (p.age >= WISP_DRIFT * 0.5) enemies.forEachInRadius(p.x, p.y, 18, () => (hit = true));
+    if (!hit && p.life > 0) return;
+    // Burst.
+    const r = WISP_RADIUS * p.area;
+    fx.ring(p.x, p.y, r, p.harvest ? 0x9dff8a : 0x8ff0ff, 'ring', 35, 260);
+    fx.sparkle(p.x, p.y, 3, 0xffffff);
+    enemies.forEachInRadius(p.x, p.y, r, (e) => enemies.damage(e, p.damage, p.x, p.y, 0.6));
+    if (p.harvest && hit) player.heal(player.stats.maxHp * 0.005);
+    if (hit) audio.sfx('zap', 0.4);
+    this.release(p);
   }
 
   // ---------------------------------------------------------------- Prism Beam / Rainbow Ray
@@ -921,7 +1200,7 @@ export class WeaponSystem {
   }
 
   /** Starfall: stars streak down from the sky onto enemies on screen (the boss first) and burst. */
-  private starfall(s: WeaponStats): void {
+  private starfall(s: WeaponStats, texture = 'star_bolt'): void {
     const { enemies, player } = this.ctx;
     const inView = enemies.inRect(this.ctx.view());
     Phaser.Utils.Array.Shuffle(inView);
@@ -932,7 +1211,7 @@ export class WeaponSystem {
       const a = this.ctx.rng() * Math.PI * 2;
       const tx = t ? t.x : player.x + Math.cos(a) * 280;
       const ty = t ? t.y : player.y + Math.sin(a) * 280;
-      const p = this.obtain('star', 'star_bolt');
+      const p = this.obtain('star', texture);
       p.sx = tx + 260;
       p.sy = ty - 620;
       p.tx = tx;
@@ -975,13 +1254,18 @@ export class WeaponSystem {
       const z = this.zones[i];
       z.left -= dt;
       z.tick -= dt;
-      z.img.setAlpha(Math.min(0.6, z.left / 0.4));
+      if (z.fire) {
+        // Flames flicker, and throw up the odd ember.
+        z.img.setAlpha(Math.min(0.85, z.left / 0.4) * (0.8 + 0.2 * Math.sin(this.clock * 23 + z.x)));
+        if (Math.random() < dt * 2) fx.sparkle(z.x + (Math.random() - 0.5) * z.r, z.y - 10, 1, 0xffb36b);
+      } else z.img.setAlpha(Math.min(0.6, z.left / 0.4));
       if (z.tick <= 0) {
         z.tick = 0.4;
         enemies.forEachInRadius(z.x, z.y, z.r, (e) => {
           enemies.damage(e, z.damage, z.x, z.y, 0, false);
           if (z.slow) e.slow = Math.max(e.slow, 0.6);
-          if (Math.random() < 0.3) fx.sparksAt(e.x, e.y, 1, 0x9be64a);
+          if (z.burn) enemies.ignite(e, z.damage);
+          if (Math.random() < 0.3) fx.sparksAt(e.x, e.y, 1, z.fire ? 0xff8a3d : 0x9be64a);
         });
       }
       if (z.left <= 0) {
@@ -1107,7 +1391,7 @@ export class WeaponSystem {
           const r = PUDDLE_RADIUS * p.area;
           const img = this.ctx.scene.add.image(p.tx, p.ty, 'puddle').setDepth(2).setDisplaySize(r * 2, r * 1.05);
           if (p.plague) img.setTint(0x7fb86a);
-          this.zones.push({ x: p.tx, y: p.ty, r, damage: p.damage, left: p.duration, tick: 0, slow: p.plague, img });
+          this.zones.push({ x: p.tx, y: p.ty, r, damage: p.damage, left: p.duration, tick: 0, slow: p.plague, fire: false, burn: false, img });
           this.ctx.fx.sparksAt(p.tx, p.ty, 6, 0xb6f26a);
           audio.sfx('hit', 0.6);
           this.release(p);
@@ -1143,6 +1427,27 @@ export class WeaponSystem {
         }
         continue;
       }
+
+      if (p.kind === 'wisp') {
+        this.updateWisp(p, dt);
+        continue;
+      }
+
+      // Star Storm and the Seeker Rune bend projectiles toward the nearest monster.
+      const seek = p.homing || (SEEKERS.has(p.kind) && this.ctx.runes.homing ? RUNE_POWER.homing[this.ctx.runes.homing - 1] : 0);
+      if (seek > 0) {
+        if (!p.target || !p.target.active || p.hits.has(p.target.uid)) p.target = this.nearestUnhit(p, 450);
+        if (p.target) {
+          const cur = Math.atan2(p.vy, p.vx);
+          const want = Math.atan2(p.target.y - p.y, p.target.x - p.x);
+          const a = cur + Phaser.Math.Clamp(Phaser.Math.Angle.Wrap(want - cur), -seek * dt, seek * dt);
+          const sp = Math.hypot(p.vx, p.vy);
+          p.vx = Math.cos(a) * sp;
+          p.vy = Math.sin(a) * sp;
+          if (p.kind !== 'shuriken') p.sprite.setRotation(a);
+        }
+      }
+      if (p.kind === 'shuriken') p.sprite.rotation += 18 * dt;
 
       if (p.kind === 'bolt') {
         // A shimmering orb that leaves sparkles behind.
@@ -1199,7 +1504,12 @@ export class WeaponSystem {
         const until = p.hits.get(e.uid);
         if (until !== undefined && this.clock < until) return;
         p.hits.set(e.uid, p.kind === 'boomerang' ? this.clock + 0.35 : Infinity);
-        enemies.damage(e, p.damage, p.x - p.vx * 0.05, p.y - p.vy * 0.05, p.kind === 'boomerang' ? 0.6 : p.kind === 'shard' ? 0.4 : 1);
+        enemies.damage(e, p.damage, p.x - p.vx * 0.05, p.y - p.vy * 0.05, p.kind === 'boomerang' ? 0.6 : p.kind === 'shard' ? 0.4 : p.knockback);
+        // Dragon Lance: sets the monster alight and finishes it off if it is nearly gone.
+        if (p.lance && e.active) {
+          enemies.ignite(e, p.damage * 0.2);
+          if (!e.isBoss && e.hp < e.maxHp * 0.2) enemies.damage(e, e.hp + 1, p.x, p.y, 0, false);
+        }
         this.ctx.fx.sparksAt(p.x, p.y, 3, p.kind === 'shard' ? 0xd4f4ff : p.kind === 'bolt' ? 0x8fd8ff : e.color);
         if (p.kind === 'bolt') {
           this.ctx.fx.ring(p.x, p.y, 46 * p.area, 0x8fd8ff, 'ring', 35, 240);
@@ -1216,6 +1526,21 @@ export class WeaponSystem {
         }
       });
     }
+  }
+
+  /** The closest active monster within `range` this projectile hasn't hit yet. */
+  private nearestUnhit(p: Projectile, range: number): Enemy | null {
+    let best: Enemy | null = null;
+    let bestD = range * range;
+    for (const e of this.ctx.enemies.alive) {
+      if (!e.active || p.hits.has(e.uid)) continue;
+      const d = (e.x - p.x) ** 2 + (e.y - p.y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = e;
+      }
+    }
+    return best;
   }
 
   /** Bounce Rune: a spent projectile turns toward the nearest enemy it hasn't hit yet. Returns false if none. */
@@ -1269,5 +1594,7 @@ export class WeaponSystem {
     this.twisters = [];
     this.traps.forEach((t) => t.img.destroy());
     this.traps = [];
+    this.turrets.forEach((t) => t.img.destroy());
+    this.turrets = [];
   }
 }

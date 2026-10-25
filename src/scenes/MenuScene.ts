@@ -32,11 +32,9 @@ export class MenuScene extends Phaser.Scene {
   private heroIndex = 0;
   private heroImg?: Phaser.GameObjects.Image;
   private heroName!: Phaser.GameObjects.Text;
-  private heroPerk!: Phaser.GameObjects.Text;
-  private heroLock!: Phaser.GameObjects.Image;
+  private heroPros!: Phaser.GameObjects.Text;
+  private heroCons!: Phaser.GameObjects.Text;
   private heroBox = { x: 0, top: 0, bottom: 0 };
-  private playButton!: Button;
-  private goldText!: Phaser.GameObjects.Text;
 
   constructor() {
     super('Menu');
@@ -74,7 +72,7 @@ export class MenuScene extends Phaser.Scene {
     const pillX = width - 24 - 120;
     panel(this, pillX, top + 56, 240, 72, { radius: 36 });
     this.add.image(pillX - 120 + 40, top + 56, 'icon_coin').setDisplaySize(54, 54);
-    this.goldText = text(this, pillX - 120 + 78, top + 57, String(save.gold), 44, { color: CSS.gold, originX: 0 });
+    text(this, pillX - 120 + 78, top + 57, String(save.gold), 44, { color: CSS.gold, originX: 0 });
     const music = new Button(this, 78, top + 52, {
       w: 104,
       h: 88,
@@ -106,7 +104,7 @@ export class MenuScene extends Phaser.Scene {
     });
     this.highlight();
 
-    this.playButton = new Button(this, width / 2, playY, { w: 640, h: 150, color: BUTTON.primary, label: 'PLAY', fontSize: 76, onClick: () => this.play() });
+    new Button(this, width / 2, playY, { w: 640, h: 150, color: BUTTON.primary, label: 'PLAY', fontSize: 76, onClick: () => this.play() });
     // Curses (after the first boss): a round button beside PLAY, with the heat picked on a badge.
     if (save.unlockedMaps >= CURSE_UNLOCK_MAPS) {
       const cx = width / 2 + 320 + (width / 2 - 320) / 2;
@@ -137,20 +135,21 @@ export class MenuScene extends Phaser.Scene {
 
   /**
    * The hero standing between the title and the map cards, with arrows to switch heroes and a plate with the
-   * hero's name and perk under it. Falls back to the drawn two-frame hero when there is no painted art.
+   * hero's name, what kind of fighter it is, and its strengths and weaknesses. Falls back to the drawn two-frame
+   * hero when there is no painted art.
    */
   private hero(x: number, areaTop: number, areaBottom: number): void {
-    const plateH = 92;
+    const plateH = 136;
     const bottom = areaBottom - plateH - 6;
     this.heroBox = { x, top: areaTop, bottom };
     if (this.textures.exists('hero_menu')) {
       this.add.ellipse(x, bottom - 14, 300, 46, 0x050a18, 0.35);
       const py = areaBottom - plateH / 2;
-      panel(this, x, py, 720, plateH, { radius: 28 });
-      this.heroName = text(this, x, py - 18, '', 40, { color: CSS.gold });
-      this.heroPerk = text(this, x, py + 22, '', 27, { color: CSS.soft, weight: '600', shadow: false });
+      panel(this, x, py, 960, plateH, { radius: 28 });
+      this.heroName = text(this, x, py - 40, '', 40, { color: CSS.gold });
+      this.heroPros = text(this, x, py + 4, '', 27, { color: '#b4f0a0', weight: '600', shadow: false });
+      this.heroCons = text(this, x, py + 40, '', 27, { color: '#ffb0a0', weight: '600', shadow: false });
       const ay = bottom - Math.min(HERO_H, bottom - areaTop - 6) / 2;
-      this.heroLock = this.add.image(x, ay, 'icon_lock').setDisplaySize(120, 120).setDepth(2);
       for (const dir of [-1, 1]) {
         const b = new Button(this, x + dir * 410, ay, {
           w: 104,
@@ -265,57 +264,32 @@ export class MenuScene extends Phaser.Scene {
 
   private switchHero(dir: number): void {
     this.heroIndex = (this.heroIndex + dir + CHARACTERS.length) % CHARACTERS.length;
-    const c = CHARACTERS[this.heroIndex];
-    const save = saveStore.data;
-    if (save.characters.includes(c.id)) {
-      save.character = c.id;
-      saveStore.save();
-    }
+    saveStore.data.character = CHARACTERS[this.heroIndex].id;
+    saveStore.save();
+    audio.sfx('click');
     this.showHero(dir);
   }
 
-  /** Shows the selected hero; a locked one is a dark silhouette with a padlock, and PLAY becomes "Unlock". */
+  /** Shows the selected hero: picture, name and kind, strengths (green) and weaknesses (red). */
   private showHero(dir = 0): void {
     if (!this.heroName) return;
     const c = CHARACTERS[this.heroIndex];
-    const locked = !saveStore.data.characters.includes(c.id);
     const { x, top, bottom } = this.heroBox;
     this.heroImg?.destroy();
     const key = this.textures.exists(c.menu) ? c.menu : 'hero_menu';
     const img = (this.heroImg = this.add.image(x + dir * 120, bottom - 6, key).setOrigin(0.5, 1).setAlpha(dir ? 0 : 1));
     img.setScale(Math.min(HERO_H, bottom - top - 6) / img.height);
-    if (locked) img.setTint(0x262a40);
     this.tweens.add({ targets: img, x, alpha: 1, duration: 220, ease: 'Quad.easeOut' });
     this.tweens.add({ targets: img, y: img.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.heroLock.setVisible(locked).setDepth(img.depth + 1);
-    this.heroName.setText(c.name);
-    this.heroPerk.setText(c.perk);
-    if (locked) this.playButton.setLabel(`Unlock ${c.price}`).setColor(BUTTON.warning);
-    else this.playButton.setLabel('PLAY').setColor(BUTTON.primary);
+    this.heroName.setText(`${c.name} · ${c.title}`);
+    this.heroPros.setText(`Strong: ${c.pros}`);
+    this.heroCons.setText(`Weak: ${c.cons}`);
   }
 
   private play(): void {
-    const c = CHARACTERS[this.heroIndex];
-    const save = saveStore.data;
-    if (save.characters.includes(c.id)) {
-      save.character = c.id;
-      saveStore.save();
-      this.scene.start('Game', { map: this.selected });
-      return;
-    }
-    if (save.gold < c.price) {
-      this.tweens.add({ targets: this.playButton, x: this.playButton.x + 14, duration: 50, yoyo: true, repeat: 3 });
-      this.heroPerk.setText(`Not enough gold: you need ${c.price}.`);
-      return;
-    }
-    save.gold -= c.price;
-    save.characters.push(c.id);
-    save.character = c.id;
+    saveStore.data.character = CHARACTERS[this.heroIndex].id;
     saveStore.save();
-    audio.sfx('victory');
-    this.goldText.setText(String(save.gold));
-    this.cameras.main.flash(250, 255, 244, 214);
-    this.showHero();
+    this.scene.start('Game', { map: this.selected });
   }
 }
 

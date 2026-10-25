@@ -15,7 +15,10 @@ import { CURSES, CURSE_IDS, MAX_HEAT, heatOf } from '../../src/config/curses';
 import { RUNE_IDS, RUNE_POWER } from '../../src/config/weapons';
 import { ICONS_ART } from '../../src/art/icons';
 import manifest from '../../src/art/manifest.json';
-import { rollChoices } from '../../src/core/progression';
+import { applyChoice, rollChoices, rollTalents, runeLevels } from '../../src/core/progression';
+import { TALENTS, TALENT_LEVELS, talentDef } from '../../src/config/talents';
+import { shopCost, SHOP } from '../../src/config/shop';
+import { coinFactor } from '../../src/core/waves';
 import { mulberry32 } from '../../src/core/rng';
 
 describe('weapons', () => {
@@ -45,25 +48,58 @@ describe('weapons', () => {
 });
 
 describe('characters', () => {
-  it('each hero starts with a real weapon; only the first is free', () => {
-    for (const c of CHARACTERS) expect(WEAPONS[c.start]).toBeDefined();
-    expect(CHARACTERS[0].price).toBe(0);
-    expect(CHARACTERS.slice(1).every((c) => c.price > 0)).toBe(true);
+  it('each hero starts with a real weapon, has talents of its own, and trades a strength for a weakness', () => {
+    for (const c of CHARACTERS) {
+      expect(WEAPONS[c.start]).toBeDefined();
+      expect(c.pros.length && c.cons.length).toBeTruthy();
+      expect(TALENTS.filter((t) => t.hero === c.id).length).toBeGreaterThanOrEqual(TALENT_LEVELS.length + 2);
+    }
   });
 
-  it("the mage's perk changes HP and area", () => {
+  it('the archer is quick and sharp; the mage casts wide behind a shield but is frail', () => {
     const shop = defaultSave().shop;
+    const archer = computeStats(shop, {}, characterDef('archer'));
     const mage = computeStats(shop, { tome: 1 }, characterDef('mage'));
-    expect(mage.maxHp).toBe(90);
-    expect(mage.areaMult).toBeCloseTo(1.15 * 1.1);
+    expect(archer.speed).toBeGreaterThan(mage.speed);
+    expect(archer.moveHaste).toBeGreaterThan(0);
+    expect(archer.critChance).toBeGreaterThan(mage.critChance);
+    expect(mage.maxHp).toBe(80);
+    expect(mage.areaMult).toBeCloseTo(1.2 * 1.1);
+    expect(mage.shieldTime).toBeGreaterThan(0);
+    expect(archer.shieldTime).toBe(0);
     expect(computeStats(shop, {}).maxHp).toBe(100);
   });
 
-  it('saves keep only real, unlocked heroes', () => {
-    expect(sanitize({}).characters).toEqual(['archer']);
-    expect(sanitize({ characters: ['mage', 'ninja'], character: 'mage' })).toMatchObject({ characters: ['archer', 'mage'], character: 'mage' });
-    // Picked but never unlocked: back to the archer.
-    expect(sanitize({ characters: ['archer'], character: 'mage' }).character).toBe('archer');
+  it('talents change the hero: Tailwind, Grand Magic, Mana Font, rune-like talents', () => {
+    const shop = defaultSave().shop;
+    const archer = characterDef('archer');
+    expect(computeStats(shop, {}, archer, ['tailwind']).moveHaste).toBeCloseTo(archer.moveHaste * 2);
+    const mage = characterDef('mage');
+    expect(computeStats(shop, {}, mage, ['grand']).areaMult).toBeCloseTo(mage.area * 1.25);
+    expect(computeStats(shop, {}, mage, ['font']).shieldTime).toBeLessThan(mage.shield);
+    const inv = newInventory('bolt');
+    inv.runes.push({ id: 'burn', level: 2 });
+    inv.talents.push('pyro', 'cryo');
+    expect(runeLevels(inv)).toMatchObject({ burn: 3, freeze: 2 });
+  });
+
+  it('talent cards are only the hero\'s own, never twice', () => {
+    const inv = newInventory('bow');
+    for (let i = 0; i < 6; i++) {
+      const cards = rollTalents(inv, 'archer', mulberry32(i), 3);
+      for (const c of cards) {
+        expect(c.kind).toBe('talent');
+        if (c.kind === 'talent') expect(talentDef(c.id).hero).toBe('archer');
+      }
+      if (cards[0]) applyChoice(inv, cards[0]);
+    }
+    expect(new Set(inv.talents).size).toBe(inv.talents.length);
+  });
+
+  it('every hero is open to play; old saves keep the picked hero', () => {
+    expect(sanitize({}).characters).toEqual(CHARACTERS.map((c) => c.id));
+    expect(sanitize({ characters: ['archer'], character: 'mage' }).character).toBe('mage');
+    expect(sanitize({ character: 'ninja' }).character).toBe('archer');
   });
 });
 
@@ -125,6 +161,20 @@ describe('more weapons, items and runes', () => {
     for (const icon of icons) expect(painted.has(icon) || icon in ICONS_ART, icon).toBe(true);
   });
 
+  it('the newest weapons evolve with the newest items and runes', () => {
+    expect(WEAPONS.shuriken.evolution).toEqual({ into: 'starstorm', requires: 'homing' });
+    expect(WEAPONS.quake.evolution).toEqual({ into: 'earthquake', requires: 'thorns' });
+    expect(WEAPONS.firetrail.evolution).toEqual({ into: 'inferno', requires: 'charm' });
+    expect(WEAPONS.turret.evolution).toEqual({ into: 'ballista', requires: 'echo' });
+    expect(WEAPONS.spear.evolution).toEqual({ into: 'lance', requires: 'reaper' });
+    expect(WEAPONS.wisps.evolution).toEqual({ into: 'soulharvest', requires: 'spring' });
+  });
+
+  it('no two weapons evolve with the same item or rune', () => {
+    const reqs = Object.values(WEAPONS).map((w) => w.evolution!.requires);
+    expect(new Set(reqs).size).toBe(reqs.length);
+  });
+
   it('the new weapons evolve with the new passives and the Frost Rune', () => {
     expect(WEAPONS.beam.evolution).toEqual({ into: 'rainbow', requires: 'clover' });
     expect(WEAPONS.twister.evolution).toEqual({ into: 'cyclone', requires: 'magnet' });
@@ -179,5 +229,24 @@ describe('elite powers and curses', () => {
     expect(s.bestHeat).toEqual([3, MAX_HEAT, 0]);
     expect(sanitize({}).curses).toEqual([]);
     expect(CURSE_IDS).toHaveLength(new Set(CURSE_IDS).size);
+  });
+});
+
+describe('gold', () => {
+  it('coins drop less often as the crowds grow, so gold comes in steadily', () => {
+    expect(coinFactor(0)).toBe(1);
+    expect(coinFactor(600)).toBeLessThan(0.2);
+    expect(coinFactor(900)).toBeLessThan(coinFactor(600));
+  });
+
+  it('every shop level costs more than the last, and maxing the shop takes many runs', () => {
+    let total = 0;
+    for (const d of SHOP) {
+      for (let l = 0; l < d.maxLevel; l++) {
+        total += shopCost(d, l);
+        if (l > 0) expect(shopCost(d, l)).toBeGreaterThan(shopCost(d, l - 1));
+      }
+    }
+    expect(total).toBeGreaterThan(8000);
   });
 });

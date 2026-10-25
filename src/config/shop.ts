@@ -36,7 +36,7 @@ export function shopDef(id: ShopId): ShopDef {
   return SHOP.find((d) => d.id === id)!;
 }
 
-/** Gold needed to buy the next level when the item is currently at `level`. */
+/** Gold needed to buy the next level when the item is currently at `level`: each level costs 60% more. */
 export function shopCost(def: ShopDef, level: number): number {
-  return Math.round((def.baseCost * (1 + level * 0.9)) / 5) * 5;
+  return Math.round((def.baseCost * 1.5 * 1.6 ** level) / 5) * 5;
 }

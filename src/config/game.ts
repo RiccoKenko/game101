@@ -37,7 +37,7 @@ export const XP_GEM_TIERS = [
 /** Gold value of one coin on each map (index 0 = Meadow). */
 export const COIN_VALUE = [1, 2, 3];
 /** Bonus gold at the end of a run: per second survived and per kill. */
-export const RUN_BONUS = { perSecond: 0.1, perKill: 0.1 };
+export const RUN_BONUS = { perSecond: 0.3, perKill: 0.02 };
 export const BOSS_GOLD = [100, 160, 240];
 /** Extra gold for clearing a stage (defeating the boss at 15:00), per map. */
 export const VICTORY_GOLD = [250, 400, 600];
