@@ -152,9 +152,11 @@ export interface Lifetime {
   gold: number;
   /** Map difficulties cleared (each map counts once per difficulty). */
   clears: number;
+  /** The most heat (curses) a stage was ever cleared with. */
+  heat: number;
 }
 
-export type AchievementId = 'hunter' | 'elite' | 'boss' | 'survivor' | 'level' | 'explorer' | 'treasure' | 'evolve' | 'gold' | 'champion';
+export type AchievementId = 'hunter' | 'elite' | 'boss' | 'survivor' | 'level' | 'explorer' | 'treasure' | 'evolve' | 'gold' | 'champion' | 'cursed';
 
 export interface AchievementDef {
   id: AchievementId;
@@ -248,6 +250,14 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     stat: 'clears',
     tiers: tiers([1, 3, 6, 9], [200, 400, 800, 1500]),
     describe: (n) => (n === 1 ? 'Clear a stage (beat the 15:00 boss)' : `Clear ${n} stages (map + difficulty)`),
+  },
+  {
+    id: 'cursed',
+    name: 'Curse Breaker',
+    icon: 'icon_curse',
+    stat: 'heat',
+    tiers: tiers([2, 5, 8, 11], [200, 400, 800, 1500]),
+    describe: (n) => `Clear a stage with curses of heat ${n} or more`,
   },
 ];
 

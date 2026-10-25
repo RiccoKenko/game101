@@ -42,7 +42,7 @@ export function speedMultiplier(t: number): number {
 
 export function eliteChance(t: number): number {
   const m = minutes(t);
-  return m < 2 ? 0 : Math.min(0.05, 0.01 * (m - 1));
+  return m < 2 ? 0 : Math.min(0.06, 0.012 * (m - 1));
 }
 
 /** How many bosses should have appeared by time t (1 at 5:00, 2 at 10:00, ...). */

@@ -36,7 +36,12 @@ export class GameOverScene extends Phaser.Scene {
 
     panel(this, width / 2, cy - 60, 900, 960, { header: 112, gem: true });
     const diff = DIFFICULTIES[s.difficulty];
-    text(this, width / 2, cy - 484, s.difficulty > 0 ? `${MAPS[s.mapIndex].name} · ${diff.name}` : MAPS[s.mapIndex].name, 48, { color: s.difficulty > 0 ? diff.color : CSS.gold });
+    const where = [MAPS[s.mapIndex].name, ...(s.difficulty > 0 ? [diff.name] : []), ...(s.heat > 0 ? [`Heat ${s.heat}`] : [])].join(' · ');
+    text(this, width / 2, cy - 484, where, s.heat > 0 ? 42 : 48, { color: s.heat > 0 ? '#d9c2ff' : s.difficulty > 0 ? diff.color : CSS.gold });
+    if (s.newBestHeat) {
+      const n = text(this, width / 2, cy - 430, 'New best heat on this map!', 32, { color: CSS.green });
+      this.tweens.add({ targets: n, scale: 1.08, duration: 450, yoyo: true, repeat: -1 });
+    }
 
     const rows: [string, string, string?][] = [
       ['Time survived', formatTime(s.time), s.newBest ? 'NEW BEST!' : `Best ${formatTime(s.bestTime)}`],

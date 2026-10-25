@@ -19,6 +19,12 @@ export interface GameCtx {
   runes: Partial<Record<RuneId, number>>;
   /** Seconds since the run started. */
   runTime: number;
+  /** The map's difficulty this run (0 Normal, 1 Hard, 2 Nightmare). */
+  difficulty: number;
+  /** Extra powers every elite carries (a curse). */
+  affixBonus: number;
+  /** Multiplier on regular monsters' speed (a curse). */
+  monsterSpeed: number;
   /** Multipliers on monster HP and damage (the difficulty, a Pact of Greed). */
   monsterHp(): number;
   monsterDamage: number;

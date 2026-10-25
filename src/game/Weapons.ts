@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { audio } from '../audio/audio';
 import {
   AMOUNT_BOOSTED,
+  ECHO_DELAY,
   EVOLUTIONS,
   RUNE_POWER,
   WEAPONS,
@@ -12,7 +13,7 @@ import { type PlayerStats } from '../core/stats';
 import { type GameCtx } from './context';
 import { type Enemy } from './Enemies';
 
-type ProjKind = 'arrow' | 'dagger' | 'boomerang' | 'bomb' | 'bolt' | 'star' | 'shard' | 'flask';
+type ProjKind = 'arrow' | 'dagger' | 'boomerang' | 'bomb' | 'bolt' | 'star' | 'shard' | 'flask' | 'splinter';
 
 class Projectile {
   active = false;
@@ -47,6 +48,8 @@ class Projectile {
   bounces = 0;
   /** A falling Meteor (bomb evolved) rather than a Starfall star. */
   meteor = false;
+  /** Split Rune: bursts into splinters on its first hit (arrows, daggers, bolts, shards; never a splinter). */
+  canSplit = false;
   /** A motion streak behind arrows and daggers; the ground shadow under a bomb. */
   constructor(readonly sprite: Phaser.GameObjects.Image, readonly trail: Phaser.GameObjects.Image) {}
 }
@@ -62,6 +65,46 @@ const TRAILS: Record<string, [number, number, number]> = {
   ice_shard: [0xd4f4ff, 60, 8],
   meteor: [0xff8a3d, 170, 30],
 };
+
+/** A Prism Beam: a line of light from the hero that hit everything along it as it fired, now fading. */
+interface Beam {
+  glow: Phaser.GameObjects.Image;
+  core: Phaser.GameObjects.Image;
+  angle: number;
+  len: number;
+  width: number;
+  life: number;
+  dur: number;
+}
+
+/** A Whirlwind wandering about, dragging monsters in and grinding them down. */
+interface Twister {
+  img: Phaser.GameObjects.Image;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+  life: number;
+  r: number;
+  damage: number;
+  tick: number;
+  target: Enemy | null;
+}
+
+/** A Spike Trap waiting on the ground for a monster to step on it. */
+interface Trap {
+  img: Phaser.GameObjects.Image;
+  x: number;
+  y: number;
+  /** Seconds until it is armed, and until it rusts away untouched. */
+  arm: number;
+  life: number;
+  r: number;
+  damage: number;
+  /** Glacier Mines: the burst freezes. */
+  frost: boolean;
+}
 
 /** A Poison Flask puddle: hurts what stands in it every so often, then dries up. */
 interface Zone {
@@ -92,6 +135,14 @@ interface WeaponRuntime {
   auraSize: number;
   /** 1 on each damage tick, easing back to 0 (the aura swells). */
   pulse: number;
+  /** Things that circle the hero: Ward Orbs, a Cyclone's twisters, a Rainbow Ray's beams (with `cores`). */
+  orbs: Phaser.GameObjects.Image[];
+  cores: Phaser.GameObjects.Image[];
+  orbAngle: number;
+  /** Enemy uid -> time it may be hit again by this weapon's orbs, beams or twisters. */
+  orbHits: Map<number, number>;
+  /** Echo Rune: seconds until the last attack goes off again (0 = none waiting). */
+  echo: number;
 }
 
 const AXE_RADIUS = 175;
@@ -102,6 +153,24 @@ const SLASH_RADIUS = 150;
 const PUDDLE_RADIUS = 95;
 const BLIZZARD_RADIUS = 190;
 const STAR_RADIUS = 80;
+const BEAM_LENGTH = 820;
+const BEAM_WIDTH = 34;
+const RAINBOW_LENGTH = 520;
+/** Beam colours, one per beam. */
+const PRISM = [0x8fe8ff, 0xff8ab0, 0xffe07a, 0x9dff8a, 0xc9a8ff];
+const TWISTER_RADIUS = 85;
+/** Monsters this many radii from a whirlwind's middle are dragged in, this hard (px/s of pull). */
+const TWISTER_PULL = 2.3;
+const TWISTER_FORCE = 1500;
+const TWISTER_TICK = 0.3;
+const CYCLONE_ORBIT = 240;
+const TRAP_RADIUS = 100;
+/** A trap goes off when a monster comes this close to its middle. */
+const TRAP_TRIGGER = 22;
+const TRAP_ARM = 0.35;
+const MAX_TRAPS = 18;
+const WARD_RADIUS = 120;
+const WARD_HIT = 28;
 /** How fast a Magic Bolt turns toward its target (radians per second). */
 const BOLT_TURN = 7;
 
@@ -109,6 +178,9 @@ export class WeaponSystem {
   private runtimes: WeaponRuntime[] = [];
   private projectiles: Projectile[] = [];
   private zones: Zone[] = [];
+  private beams: Beam[] = [];
+  private twisters: Twister[] = [];
+  private traps: Trap[] = [];
   private clock = 0;
   /** HP per second healed by Sanctuary. */
   regen = 0;
@@ -120,7 +192,23 @@ export class WeaponSystem {
     for (const owned of weapons) {
       let rt = this.runtimes.find((r) => r.owned.id === owned.id);
       if (!rt) {
-        rt = { owned, stats: WEAPONS[owned.id].levels[0], timer: 0.3, axes: [], axeAngle: 0, axeActive: false, axeHits: new Map(), ghosts: [], auraSize: 0, pulse: 0 };
+        rt = {
+          owned,
+          stats: WEAPONS[owned.id].levels[0],
+          timer: 0.3,
+          axes: [],
+          axeAngle: 0,
+          axeActive: false,
+          axeHits: new Map(),
+          ghosts: [],
+          auraSize: 0,
+          pulse: 0,
+          orbs: [],
+          cores: [],
+          orbAngle: 0,
+          orbHits: new Map(),
+          echo: 0,
+        };
         this.runtimes.push(rt);
       }
       rt.owned = owned;
@@ -130,6 +218,7 @@ export class WeaponSystem {
         damage: base.damage * stats.damageMult,
         cooldown: base.cooldown * stats.cooldownMult,
         area: base.area * stats.areaMult,
+        duration: base.duration * stats.durationMult,
         amount: base.amount + (AMOUNT_BOOSTED.has(owned.id) && !(owned.id === 'daggers' && owned.evolved) ? stats.amountBonus : 0),
       };
       this.syncVisuals(rt);
@@ -161,6 +250,22 @@ export class WeaponSystem {
       rt.aura.setDisplaySize(rt.auraSize * 1.1, rt.auraSize * 1.1);
       rt.ring?.setDisplaySize(rt.auraSize, rt.auraSize);
     }
+    // Ward Orbs, a Cyclone's two twisters and a Rainbow Ray's beams are always out, so they live on the runtime.
+    const circling = id === 'ward' ? rt.stats.amount : rt.owned.evolved && (id === 'twister' || id === 'beam') ? rt.stats.amount : 0;
+    if (circling > 0) {
+      const tex = id === 'ward' ? (rt.owned.evolved ? 'ward_holy' : 'ward') : id === 'twister' ? 'twister' : 'beam';
+      while (rt.orbs.length < circling) rt.orbs.push(scene.add.image(0, 0, tex).setDepth(id === 'beam' ? 27 : 26));
+      while (rt.orbs.length > circling) rt.orbs.pop()!.destroy();
+      rt.orbs.forEach((o, i) => {
+        o.setTexture(tex);
+        if (id === 'ward') o.setScale(1.4 * rt.stats.area);
+        if (id === 'twister') o.setOrigin(0.5, 0.9).setScale((TWISTER_RADIUS * rt.stats.area) / 60).setAlpha(0.85);
+        if (id === 'beam') o.setOrigin(0, 0.5).setTint(PRISM[i % PRISM.length]);
+      });
+      const cores = id === 'beam' ? circling : 0;
+      while (rt.cores.length < cores) rt.cores.push(scene.add.image(0, 0, 'beam').setDepth(28).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD));
+      while (rt.cores.length > cores) rt.cores.pop()!.destroy();
+    }
     if (id === 'aura') {
       const tex = rt.owned.evolved ? 'aura_holy' : 'aura';
       if (!rt.aura) {
@@ -187,7 +292,7 @@ export class WeaponSystem {
     p.hits.clear();
     p.target = null;
     p.bounces = 0;
-    p.meteor = p.plague = false;
+    p.meteor = p.plague = p.canSplit = false;
     p.sprite.clearTint();
     p.sprite.setTexture(texture).setVisible(true).setScale(1).setRotation(0);
     if (kind === 'bomb' || kind === 'flask') {
@@ -214,11 +319,7 @@ export class WeaponSystem {
           break;
         case 'frost':
           if (!rt.owned.evolved) {
-            rt.timer -= dt;
-            if (rt.timer <= 0) {
-              rt.timer = s.cooldown;
-              this.fire(rt);
-            }
+            this.fireOnCooldown(rt, dt);
             break;
           }
           this.updateBlizzard(rt, dt);
@@ -239,18 +340,62 @@ export class WeaponSystem {
           if (rt.timer <= 0) {
             rt.timer = s.cooldown;
             this.auraTick(rt);
+            this.rollEcho(rt);
+          }
+          if (rt.echo > 0) {
+            rt.echo -= dt;
+            if (rt.echo <= 0) this.auraTick(rt);
           }
           break;
-        default:
-          rt.timer -= dt;
-          if (rt.timer <= 0) {
-            rt.timer = s.cooldown;
-            this.fire(rt);
+        case 'ward':
+          this.updateWard(rt, dt);
+          break;
+        case 'beam':
+          if (rt.owned.evolved) {
+            this.updateRainbow(rt, dt);
+            break;
           }
+          this.fireOnCooldown(rt, dt);
+          break;
+        case 'twister':
+          if (rt.owned.evolved) {
+            this.updateCyclone(rt, dt);
+            break;
+          }
+          this.fireOnCooldown(rt, dt);
+          break;
+        default:
+          this.fireOnCooldown(rt, dt);
       }
     }
     this.updateProjectiles(dt);
     this.updateZones(dt);
+    this.updateBeams(dt);
+    this.updateTwisters(dt);
+    this.updateTraps(dt);
+  }
+
+  /** Attacks every `cooldown` seconds; with the Echo Rune an attack may go off again a moment later. */
+  private fireOnCooldown(rt: WeaponRuntime, dt: number): void {
+    rt.timer -= dt;
+    if (rt.timer <= 0) {
+      rt.timer = rt.stats.cooldown;
+      this.fire(rt);
+      this.rollEcho(rt);
+    }
+    if (rt.echo > 0) {
+      rt.echo -= dt;
+      if (rt.echo <= 0) {
+        this.fire(rt);
+        const { player } = this.ctx;
+        this.ctx.fx.ring(player.x, player.y - 10, 70, 0xc9a8ff, 'ring', 35, 240);
+      }
+    }
+  }
+
+  private rollEcho(rt: WeaponRuntime): void {
+    const lv = this.ctx.runes.echo;
+    if (lv && rt.echo <= 0 && this.ctx.rng() < RUNE_POWER.echo[lv - 1]) rt.echo = ECHO_DELAY;
   }
 
   /** The active boss if it's within range of the hero (weapons focus it so crowds can't shield it). */
@@ -418,8 +563,297 @@ export class WeaponSystem {
         if (targets.length) audio.sfx('zap');
         break;
       }
+      case 'beam':
+        this.fireBeams(s);
+        break;
+      case 'twister': {
+        // Each whirlwind heads for a different enemy on screen (or off in a random direction).
+        const inView = enemies.inRect(this.ctx.view());
+        for (let i = 0; i < s.amount; i++) {
+          const target: Enemy | null = inView.length ? inView[Math.floor(this.ctx.rng() * inView.length)] : null;
+          const a = target ? Math.atan2(target.y - player.y, target.x - player.x) : this.ctx.rng() * Math.PI * 2;
+          this.addTwister(player.x, player.y + 10, a, s, target);
+        }
+        audio.sfx('shoot', 0.5);
+        break;
+      }
+      case 'traps':
+        for (let i = 0; i < s.amount; i++) this.setTrap(s, !!evolved);
+        break;
       default:
         break;
+    }
+  }
+
+  // ---------------------------------------------------------------- Prism Beam / Rainbow Ray
+
+  /** Prism Beam: beams fan out toward the nearest enemy (the boss first), hitting everything along them at once. */
+  private fireBeams(s: WeaponStats): void {
+    const { player, enemies, fx } = this.ctx;
+    const target = this.bossInRange(BEAM_LENGTH) ?? enemies.nearest(player.x, player.y, BEAM_LENGTH);
+    const base = target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.atan2(player.faceY, player.faceX);
+    const width = BEAM_WIDTH * s.area;
+    for (let i = 0; i < s.amount; i++) {
+      const a = base + (i - (s.amount - 1) / 2) * 0.42;
+      const color = PRISM[i % PRISM.length];
+      const ox = player.x + Math.cos(a) * 30;
+      const oy = player.y - 10 + Math.sin(a) * 30;
+      enemies.forEachOnSegment(ox, oy, ox + Math.cos(a) * BEAM_LENGTH, oy + Math.sin(a) * BEAM_LENGTH, width / 2, (e) => {
+        enemies.damage(e, s.damage, ox, oy, 0.5);
+        fx.sparksAt(e.x, e.y, 2, color);
+      });
+      const scene = this.ctx.scene;
+      const glow = scene.add.image(0, 0, 'beam').setDepth(27).setOrigin(0, 0.5).setTint(color);
+      const core = scene.add.image(0, 0, 'beam').setDepth(28).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD);
+      this.beams.push({ glow, core, angle: a, len: BEAM_LENGTH, width, life: s.duration, dur: s.duration });
+    }
+    fx.muzzle(player.x + Math.cos(base) * 30, player.y - 10 + Math.sin(base) * 30, PRISM[0]);
+    audio.sfx('zap', 0.6);
+  }
+
+  /** Lays a beam's two layers (coloured glow, white core) from the hero along `angle`. */
+  private placeBeam(glow: Phaser.GameObjects.Image, core: Phaser.GameObjects.Image, angle: number, len: number, width: number, alpha: number): void {
+    const { player } = this.ctx;
+    const x = player.x + Math.cos(angle) * 30;
+    const y = player.y - 10 + Math.sin(angle) * 30;
+    glow.setPosition(x, y).setRotation(angle).setDisplaySize(len, width * 1.9).setAlpha(alpha * 0.8);
+    core.setPosition(x, y).setRotation(angle).setDisplaySize(len, width * 0.45).setAlpha(alpha);
+  }
+
+  private updateBeams(dt: number): void {
+    for (let i = this.beams.length - 1; i >= 0; i--) {
+      const b = this.beams[i];
+      b.life -= dt;
+      // Snaps out at full width, then thins and fades.
+      const u = Math.max(0, b.life / b.dur);
+      this.placeBeam(b.glow, b.core, b.angle, b.len, b.width * (0.5 + 0.5 * u), Math.min(1, u * 1.6));
+      if (b.life <= 0) {
+        b.glow.destroy();
+        b.core.destroy();
+        this.beams.splice(i, 1);
+      }
+    }
+  }
+
+  /** Rainbow Ray: the beams spin around the hero for good, hitting whatever they sweep over. */
+  private updateRainbow(rt: WeaponRuntime, dt: number): void {
+    const s = rt.stats;
+    const { enemies, fx } = this.ctx;
+    rt.orbAngle += s.speed * dt;
+    const len = RAINBOW_LENGTH * s.area;
+    const width = BEAM_WIDTH * 0.9 * s.area;
+    const n = rt.orbs.length;
+    rt.timer -= dt;
+    const hitNow = rt.timer <= 0;
+    if (hitNow) rt.timer = 0.05;
+    for (let i = 0; i < n; i++) {
+      const a = rt.orbAngle + (i / n) * Math.PI * 2;
+      this.placeBeam(rt.orbs[i], rt.cores[i], a, len, width * (1 + 0.08 * Math.sin(this.clock * 20 + i)), 0.85);
+      if (!hitNow) continue;
+      const { player } = this.ctx;
+      const ox = player.x + Math.cos(a) * 30;
+      const oy = player.y - 10 + Math.sin(a) * 30;
+      enemies.forEachOnSegment(ox, oy, ox + Math.cos(a) * len, oy + Math.sin(a) * len, width / 2, (e) => {
+        if (this.clock < (rt.orbHits.get(e.uid) ?? 0)) return;
+        rt.orbHits.set(e.uid, this.clock + 0.3);
+        enemies.damage(e, s.damage, ox, oy, 0.4);
+        fx.sparksAt(e.x, e.y, 2, PRISM[i % PRISM.length]);
+      });
+    }
+    if (rt.orbHits.size > 600) rt.orbHits.clear();
+  }
+
+  // ---------------------------------------------------------------- Whirlwind / Cyclone
+
+  private addTwister(x: number, y: number, angle: number, s: WeaponStats, target: Enemy | null): void {
+    const r = TWISTER_RADIUS * s.area;
+    const img = this.ctx.scene.add.image(x, y, 'twister').setDepth(26).setOrigin(0.5, 0.9).setAlpha(0);
+    this.twisters.push({ img, x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, age: 0, life: s.duration, r, damage: s.damage, tick: 0, target });
+  }
+
+  /** Drags monsters within reach toward (x, y), and every so often hurts the ones inside radius `r`. */
+  private whirl(x: number, y: number, r: number, force: number, dt: number, damage: number | null): void {
+    const { enemies, fx } = this.ctx;
+    enemies.forEachInRadius(x, y, r * TWISTER_PULL, (e) => {
+      if (e.isBoss) return;
+      const dx = x - e.x;
+      const dy = y - e.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const k = force * (1 - e.kbResist * 0.7) * dt;
+      e.kx += (dx / d) * k;
+      e.ky += (dy / d) * k;
+    });
+    if (damage === null) return;
+    enemies.forEachInRadius(x, y, r, (e) => {
+      enemies.damage(e, damage, x, y, 0);
+      if (Math.random() < 0.3) fx.sparksAt(e.x, e.y, 1, 0xe6f0ff);
+    });
+  }
+
+  /** The twister picture: spun by flipping, wobbling and swaying, with dust kicked up at its foot. */
+  private spinTwister(img: Phaser.GameObjects.Image, x: number, y: number, r: number, age: number, alpha: number, dt: number): void {
+    const k = r / 60;
+    img.setPosition(x, y + r * 0.35).setAlpha(alpha);
+    img.setScale(k * (1 + 0.07 * Math.sin(age * 19)), k * (1 - 0.04 * Math.sin(age * 19)));
+    img.setFlipX(Math.floor(age / 0.07) % 2 === 0).setRotation(Math.sin(age * 5) * 0.08);
+    if (Math.random() < dt * 14) this.ctx.fx.dust(x + (Math.random() - 0.5) * r, y + r * 0.3, 1);
+  }
+
+  private updateTwisters(dt: number): void {
+    const { enemies } = this.ctx;
+    for (let i = this.twisters.length - 1; i >= 0; i--) {
+      const t = this.twisters[i];
+      t.age += dt;
+      t.life -= dt;
+      // Drifts toward its enemy (or the nearest one once that is gone), with a lazy wander.
+      if (!t.target || !t.target.active) t.target = enemies.nearest(t.x, t.y, 500);
+      const cur = Math.atan2(t.vy, t.vx);
+      let turn = Math.sin(t.age * 2.3 + i) * 0.9 * dt;
+      if (t.target) turn += Phaser.Math.Clamp(Phaser.Math.Angle.Wrap(Math.atan2(t.target.y - t.y, t.target.x - t.x) - cur), -1.4 * dt, 1.4 * dt);
+      const sp = Math.hypot(t.vx, t.vy);
+      t.vx = Math.cos(cur + turn) * sp;
+      t.vy = Math.sin(cur + turn) * sp;
+      t.x += t.vx * dt;
+      t.y += t.vy * dt;
+      t.tick -= dt;
+      const hit = t.tick <= 0;
+      if (hit) t.tick = TWISTER_TICK;
+      this.whirl(t.x, t.y, t.r, TWISTER_FORCE, dt, hit ? t.damage : null);
+      this.spinTwister(t.img, t.x, t.y, t.r, t.age, Math.min(0.85, t.age / 0.25, t.life / 0.35), dt);
+      if (t.life <= 0) {
+        t.img.destroy();
+        this.twisters.splice(i, 1);
+      }
+    }
+  }
+
+  /** Cyclone: two big twisters circle the hero for good, dragging monsters in from far around. */
+  private updateCyclone(rt: WeaponRuntime, dt: number): void {
+    const s = rt.stats;
+    const { player } = this.ctx;
+    rt.orbAngle += s.speed * dt;
+    rt.timer -= dt;
+    const hit = rt.timer <= 0;
+    if (hit) rt.timer = 0.25;
+    const orbit = CYCLONE_ORBIT + 60 * (s.area - 1);
+    const r = TWISTER_RADIUS * s.area;
+    rt.orbs.forEach((img, i) => {
+      const a = rt.orbAngle + (i / rt.orbs.length) * Math.PI * 2;
+      const x = player.x + Math.cos(a) * orbit;
+      const y = player.y + Math.sin(a) * orbit * 0.8;
+      this.whirl(x, y, r, TWISTER_FORCE * 1.4, dt, hit ? s.damage : null);
+      this.spinTwister(img, x, y, r, this.clock + i * 0.5, 0.85, dt);
+    });
+  }
+
+  // ---------------------------------------------------------------- Spike Traps / Glacier Mines
+
+  /** Drops a trap somewhere around the hero; the oldest go once there are too many. */
+  private setTrap(s: WeaponStats, frost: boolean): void {
+    const { player, rng } = this.ctx;
+    const a = rng() * Math.PI * 2;
+    const d = 60 + rng() * 140;
+    const x = player.x + Math.cos(a) * d;
+    const y = player.y + 20 + Math.sin(a) * d * 0.8;
+    const img = this.ctx.scene.add.image(x, y, frost ? 'trap_frost' : 'trap').setDepth(3).setScale(0);
+    const size = frost ? 1.15 : 0.95;
+    this.ctx.scene.tweens.add({ targets: img, scale: size * Math.sqrt(s.area), duration: 260, ease: 'Back.easeOut' });
+    this.traps.push({ img, x, y, arm: TRAP_ARM, life: s.duration, r: TRAP_RADIUS * s.area, damage: s.damage, frost });
+    while (this.traps.length > MAX_TRAPS) this.trapGone(this.traps.shift()!);
+  }
+
+  private trapGone(t: Trap): void {
+    this.ctx.scene.tweens.add({ targets: t.img, alpha: 0, duration: 300, onComplete: () => t.img.destroy() });
+  }
+
+  private updateTraps(dt: number): void {
+    const { enemies, fx } = this.ctx;
+    for (let i = this.traps.length - 1; i >= 0; i--) {
+      const t = this.traps[i];
+      t.arm -= dt;
+      t.life -= dt;
+      if (t.life <= 0) {
+        this.trapGone(t);
+        this.traps.splice(i, 1);
+        continue;
+      }
+      if (t.arm > 0) continue;
+      let stepped = false;
+      enemies.forEachInRadius(t.x, t.y, TRAP_TRIGGER, () => (stepped = true));
+      if (!stepped) continue;
+      // Snap! Spikes burst out: damage and a stumble (Glacier Mines freeze instead).
+      const color = t.frost ? 0x9fe8ff : 0xe3e9f3;
+      fx.shockwave(t.x, t.y, t.r, color);
+      fx.ring(t.x, t.y, t.r, color, 'ring', 35, 260);
+      fx.sparksAt(t.x, t.y, 8, color);
+      if (t.frost) fx.sparkle(t.x, t.y, 4, 0xffffff);
+      enemies.forEachInRadius(t.x, t.y, t.r, (e) => {
+        enemies.damage(e, t.damage, t.x, t.y, 0.9);
+        if (t.frost) enemies.freezeSolid(e, 1.5);
+        else e.slow = Math.max(e.slow, 1);
+      });
+      audio.sfx('hit', 0.8);
+      t.img.destroy();
+      this.traps.splice(i, 1);
+    }
+  }
+
+  // ---------------------------------------------------------------- Ward Orbs / Aegis
+
+  /** Orbs circle close: they hurt monsters they touch and swallow monster shots (Aegis fires them back). */
+  private updateWard(rt: WeaponRuntime, dt: number): void {
+    const s = rt.stats;
+    const { player, enemies, fx } = this.ctx;
+    const evolved = !!rt.owned.evolved;
+    rt.orbAngle += s.speed * dt;
+    const R = WARD_RADIUS * (1 + (s.area - 1) * 0.6);
+    const hitR = WARD_HIT * s.area;
+    const n = rt.orbs.length;
+    for (let i = 0; i < n; i++) {
+      const a = rt.orbAngle + (i / n) * Math.PI * 2;
+      const x = player.x + Math.cos(a) * R;
+      const y = player.y - 10 + Math.sin(a) * R;
+      rt.orbs[i].setPosition(x, y).setRotation(this.clock * 3);
+      if (Math.random() < dt * 5) fx.sparkle(x, y, 1, evolved ? 0xfff1a0 : 0xbff8ff);
+      enemies.forEachInRadius(x, y, hitR, (e) => {
+        if (this.clock < (rt.orbHits.get(e.uid) ?? 0)) return;
+        rt.orbHits.set(e.uid, this.clock + 0.5);
+        enemies.damage(e, s.damage, player.x, player.y, evolved ? 1.6 : 0.9);
+        fx.sparksAt(e.x, e.y, 2, evolved ? 0xffe08a : 0x8ff0ff);
+      });
+      enemies.blockShots(x, y, hitR + 8, evolved ? (sx, sy) => this.reflect(sx, sy, s) : undefined);
+    }
+    if (rt.orbHits.size > 600) rt.orbHits.clear();
+  }
+
+  /** Aegis: a blocked monster shot flies back as a golden bolt that seeks out an enemy. */
+  private reflect(x: number, y: number, s: WeaponStats): void {
+    const target = this.ctx.enemies.nearest(x, y, 900);
+    const a = target ? Math.atan2(target.y - y, target.x - x) : this.ctx.rng() * Math.PI * 2;
+    const p = this.shoot('bolt', 'bolt', a, { ...s, speed: 760, pierce: 0, area: 1 }, 24, { x, y });
+    p.target = target;
+    p.life = 1.6;
+    p.canSplit = false;
+    p.sprite.setTint(0xffe08a);
+  }
+
+  // ---------------------------------------------------------------- Split Rune
+
+  /** Split Rune: a projectile's first hit throws off splinters to either side (they skip the one it hit). */
+  private splinter(p: Projectile, hit: Enemy): void {
+    const lv = this.ctx.runes.split;
+    if (!lv) return;
+    const n = RUNE_POWER.split[lv - 1];
+    const base = Math.atan2(p.vy, p.vx);
+    const stats: WeaponStats = { damage: p.damage * RUNE_POWER.splitDamage[lv - 1], cooldown: 0, amount: 1, pierce: 0, area: 0.75, speed: 820, duration: 0 };
+    for (let k = 0; k < n; k++) {
+      const a = base + (k - (n - 1) / 2) * (n === 2 ? 0.8 : 0.6);
+      const q = this.shoot('splinter', 'ice_shard', a, stats, 14, { x: p.x, y: p.y });
+      q.hits.set(hit.uid, Infinity);
+      q.life = 0.45;
+      q.bounces = 0;
+      q.sprite.setTint(0xffe08a);
+      q.trail.setTint(0xffe08a);
     }
   }
 
@@ -571,6 +1005,7 @@ export class WeaponSystem {
     p.life = 1.4;
     const ricochet = this.ctx.runes.ricochet;
     if (ricochet && kind !== 'boomerang') p.bounces = RUNE_POWER.ricochet[ricochet - 1];
+    p.canSplit = kind === 'arrow' || kind === 'dagger' || kind === 'bolt' || kind === 'shard';
     // Attack area (Spell Tome, the mage's perk) makes projectiles bigger as well as hitting wider.
     p.area = s.area;
     p.sprite.setRotation(angle).setScale(Math.max(kind === 'arrow' ? 1 : 0.8, s.area * (kind === 'arrow' ? 0.9 : 1)));
@@ -771,6 +1206,10 @@ export class WeaponSystem {
           this.ctx.fx.sparkle(p.x, p.y, 2, 0xffffff);
         }
         if (p.kind === 'shard') e.slow = Math.max(e.slow, 1.6);
+        if (p.canSplit) {
+          p.canSplit = false;
+          this.splinter(p, e);
+        }
         if (p.kind !== 'boomerang') {
           p.pierce--;
           if (p.pierce < 0 && !this.bounce(p)) this.release(p);
@@ -818,9 +1257,17 @@ export class WeaponSystem {
       rt.ghosts.forEach((g) => g.destroy());
       rt.aura?.destroy();
       rt.ring?.destroy();
+      rt.orbs.forEach((o) => o.destroy());
+      rt.cores.forEach((o) => o.destroy());
     }
     this.runtimes = [];
     this.zones.forEach((z) => z.img.destroy());
     this.zones = [];
+    this.beams.forEach((b) => (b.glow.destroy(), b.core.destroy()));
+    this.beams = [];
+    this.twisters.forEach((t) => t.img.destroy());
+    this.twisters = [];
+    this.traps.forEach((t) => t.img.destroy());
+    this.traps = [];
   }
 }

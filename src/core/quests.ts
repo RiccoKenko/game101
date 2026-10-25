@@ -107,6 +107,7 @@ export function lifetime(save: SaveData, run?: RunReport): Lifetime {
     evolutions: s.evolutions + (run?.evolutions ?? 0),
     gold: s.gold + (run?.gold ?? 0),
     clears: save.clears.reduce((a, b) => a + b, 0),
+    heat: Math.max(0, ...save.bestHeat),
   };
 }
 

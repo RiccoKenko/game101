@@ -250,6 +250,18 @@ function effectTextures(scene: Phaser.Scene): void {
     ctx.quadraticCurveTo(64, 15, 0, 8);
     ctx.fill();
   });
+  // A beam of light, stretched along x: soft edges, solid middle (tinted for colour, layered for a white core).
+  canvasTexture(scene, 'beam', 64, 32, (ctx) => {
+    const g = ctx.createLinearGradient(0, 0, 0, 32);
+    g.addColorStop(0, 'rgba(255,255,255,0)');
+    g.addColorStop(0.28, 'rgba(255,255,255,0.5)');
+    g.addColorStop(0.42, 'rgba(255,255,255,1)');
+    g.addColorStop(0.58, 'rgba(255,255,255,1)');
+    g.addColorStop(0.72, 'rgba(255,255,255,0.5)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 32);
+  });
   canvasTexture(scene, 'star', 48, 48, (ctx) => {
     ctx.fillStyle = '#fff';
     ctx.beginPath();

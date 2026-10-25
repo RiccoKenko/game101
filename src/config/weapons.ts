@@ -1,10 +1,13 @@
-export type WeaponId = 'bow' | 'daggers' | 'axes' | 'aura' | 'lightning' | 'bomb' | 'boomerang' | 'bolt' | 'frost' | 'slash' | 'flask';
+export type WeaponId =
+  | 'bow' | 'daggers' | 'axes' | 'aura' | 'lightning' | 'bomb' | 'boomerang' | 'bolt' | 'frost' | 'slash' | 'flask'
+  | 'beam' | 'twister' | 'traps' | 'ward';
 export type EvolutionId =
   | 'stormbow' | 'blades' | 'titanaxes' | 'sanctuary' | 'starfall' | 'blizzard'
-  | 'thunder' | 'meteor' | 'twinmoon' | 'flameslash' | 'plague';
+  | 'thunder' | 'meteor' | 'twinmoon' | 'flameslash' | 'plague'
+  | 'rainbow' | 'cyclone' | 'glacier' | 'aegis';
 /** Runes change how every weapon's hits behave (set on fire, freeze, chain...). */
-export type RuneId = 'burn' | 'freeze' | 'chain' | 'ricochet' | 'blast' | 'leech';
-export type PassiveId = 'heart' | 'boots' | 'powergem' | 'hourglass' | 'quiver' | 'magnet' | 'tome';
+export type RuneId = 'burn' | 'freeze' | 'chain' | 'ricochet' | 'blast' | 'leech' | 'split' | 'echo' | 'reaper';
+export type PassiveId = 'heart' | 'boots' | 'powergem' | 'hourglass' | 'quiver' | 'magnet' | 'tome' | 'clover' | 'shield' | 'spring' | 'charm';
 
 /** Absolute stats of a weapon at one level. Area is a multiplier on the weapon's base size. */
 export interface WeaponStats {
@@ -18,7 +21,7 @@ export interface WeaponStats {
   area: number;
   /** Projectile speed in px/s (Axes: radians per second). */
   speed: number;
-  /** Seconds the attack lasts (Axes spin time, a Poison Flask puddle). 0 = not used. */
+  /** Seconds the attack lasts (Axes spin time, a puddle, a beam, a whirlwind, a trap). 0 = not used. */
   duration: number;
 }
 
@@ -111,6 +114,33 @@ const flask2 = s({ area: 1.2 }, flask1);
 const flask3 = s({ amount: 2 }, flask2);
 const flask4 = s({ damage: 8, duration: 4 }, flask3);
 const flask5 = s({ amount: 3, area: 1.4 }, flask4);
+
+const beam1: WeaponStats = { damage: 15, cooldown: 1.7, amount: 1, pierce: 999, area: 1, speed: 0, duration: 0.35 };
+const beam2 = s({ damage: 22 }, beam1);
+const beam3 = s({ amount: 2 }, beam2);
+const beam4 = s({ area: 1.3, cooldown: 1.45 }, beam3);
+const beam5 = s({ amount: 3, damage: 30 }, beam4);
+
+// Whirlwind: damage per tick (every TWISTER_TICK s), speed in px/s, duration = how long each one lasts.
+const tw1: WeaponStats = { damage: 6, cooldown: 3.2, amount: 1, pierce: 0, area: 1, speed: 150, duration: 3.5 };
+const tw2 = s({ damage: 9 }, tw1);
+const tw3 = s({ amount: 2 }, tw2);
+const tw4 = s({ area: 1.25, duration: 4.5 }, tw3);
+const tw5 = s({ amount: 3, damage: 12 }, tw4);
+
+// Spike Traps: amount = traps set per drop, duration = how long an untouched trap waits.
+const trap1: WeaponStats = { damage: 30, cooldown: 1.6, amount: 1, pierce: 0, area: 1, speed: 0, duration: 14 };
+const trap2 = s({ amount: 2 }, trap1);
+const trap3 = s({ damage: 45 }, trap2);
+const trap4 = s({ area: 1.3, cooldown: 1.3 }, trap3);
+const trap5 = s({ amount: 3, damage: 60 }, trap4);
+
+// Ward Orbs: always out, circling; speed in radians per second.
+const ward1: WeaponStats = { damage: 10, cooldown: 0, amount: 2, pierce: 0, area: 1, speed: 3, duration: 0 };
+const ward2 = s({ amount: 3 }, ward1);
+const ward3 = s({ damage: 15 }, ward2);
+const ward4 = s({ amount: 4, speed: 3.6 }, ward3);
+const ward5 = s({ damage: 22, area: 1.25 }, ward4);
 
 export const WEAPONS: Record<WeaponId, WeaponDef> = {
   bow: {
@@ -212,6 +242,42 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     upgrades: ['Area +20%', '+1 flask', 'Damage +3, lasts longer', '+1 flask, area +20%'],
     evolution: { into: 'plague', requires: 'leech' },
   },
+  beam: {
+    id: 'beam',
+    name: 'Prism Beam',
+    icon: 'icon_beam',
+    description: 'A beam of light that burns through every enemy in a line.',
+    levels: [beam1, beam2, beam3, beam4, beam5],
+    upgrades: ['Damage +7', '+1 beam', 'Wider beams, faster', '+1 beam, damage +8'],
+    evolution: { into: 'rainbow', requires: 'clover' },
+  },
+  twister: {
+    id: 'twister',
+    name: 'Whirlwind',
+    icon: 'icon_twister',
+    description: 'Sends out a whirlwind that drags enemies in and grinds them down.',
+    levels: [tw1, tw2, tw3, tw4, tw5],
+    upgrades: ['Damage +3', '+1 whirlwind', 'Bigger, lasts longer', '+1 whirlwind, damage +3'],
+    evolution: { into: 'cyclone', requires: 'magnet' },
+  },
+  traps: {
+    id: 'traps',
+    name: 'Spike Traps',
+    icon: 'icon_traps',
+    description: 'Sets spike traps around you that burst when a monster steps on one.',
+    levels: [trap1, trap2, trap3, trap4, trap5],
+    upgrades: ['+1 trap', 'Damage +15', 'Bigger bursts, faster', '+1 trap, damage +15'],
+    evolution: { into: 'glacier', requires: 'freeze' },
+  },
+  ward: {
+    id: 'ward',
+    name: 'Ward Orbs',
+    icon: 'icon_ward',
+    description: 'Orbs circle close around you, hurting monsters and blocking their shots.',
+    levels: [ward1, ward2, ward3, ward4, ward5],
+    upgrades: ['+1 orb', 'Damage +5', '+1 orb, spins faster', 'Damage +7, bigger'],
+    evolution: { into: 'aegis', requires: 'shield' },
+  },
 };
 
 export const EVOLUTIONS: Record<EvolutionId, EvolutionDef> = {
@@ -303,6 +369,39 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDef> = {
     description: 'Big, lasting poison pools that slow and melt enemies.',
     stats: { damage: 12, cooldown: 1.8, amount: 3, pierce: 0, area: 1.6, speed: 0, duration: 6 },
   },
+  rainbow: {
+    id: 'rainbow',
+    base: 'beam',
+    name: 'Rainbow Ray',
+    icon: 'icon_rainbow',
+    description: 'Four rainbow beams spin around you without end.',
+    // Damage each time a spinning beam sweeps over an enemy; speed in radians per second.
+    stats: { damage: 22, cooldown: 0, amount: 4, pierce: 999, area: 1.25, speed: 2.2, duration: 0 },
+  },
+  cyclone: {
+    id: 'cyclone',
+    base: 'twister',
+    name: 'Cyclone',
+    icon: 'icon_cyclone',
+    description: 'Two great cyclones circle you, dragging in every monster near them.',
+    stats: { damage: 14, cooldown: 0, amount: 2, pierce: 0, area: 1.6, speed: 1.6, duration: 0 },
+  },
+  glacier: {
+    id: 'glacier',
+    base: 'traps',
+    name: 'Glacier Mines',
+    icon: 'icon_glacier',
+    description: 'Big frost mines that freeze everything in the burst solid.',
+    stats: { damage: 80, cooldown: 1.1, amount: 3, pierce: 0, area: 1.5, speed: 0, duration: 16 },
+  },
+  aegis: {
+    id: 'aegis',
+    base: 'ward',
+    name: 'Aegis',
+    icon: 'icon_aegis',
+    description: 'Six holy orbs that turn monster shots back on them.',
+    stats: { damage: 30, cooldown: 0, amount: 6, pierce: 0, area: 1.4, speed: 3.8, duration: 0 },
+  },
 };
 
 export interface RuneDef {
@@ -329,7 +428,16 @@ export const RUNE_POWER = {
   blast: [0.3, 0.4, 0.5],
   /** HP healed per kill. */
   leech: [0.3, 0.5, 0.8],
+  /** Splinters a projectile bursts into on its first hit, and their share of its damage. */
+  split: [2, 2, 3],
+  splitDamage: [0.35, 0.5, 0.5],
+  /** Chance a weapon's attack goes off a second time a moment later. */
+  echo: [0.15, 0.25, 0.35],
+  /** Monsters (not bosses) hit while under this share of their HP are finished off. */
+  reaper: [0.08, 0.12, 0.16],
 };
+/** Seconds after an attack that its echo goes off. */
+export const ECHO_DELAY = 0.22;
 export const BURN_TIME = 3;
 export const FREEZE_TIME = 1.2;
 
@@ -340,6 +448,9 @@ export const RUNES: Record<RuneId, RuneDef> = {
   ricochet: { id: 'ricochet', name: 'Bounce Rune', icon: 'icon_rune_ricochet', maxLevel: 3, levels: ['Projectiles bounce on to 1 more enemy', 'Bounce 2 times', 'Bounce 3 times'] },
   blast: { id: 'blast', name: 'Blast Rune', icon: 'icon_rune_blast', maxLevel: 3, levels: ['Defeated enemies explode', 'Bigger explosions', 'Biggest explosions'] },
   leech: { id: 'leech', name: 'Leech Rune', icon: 'icon_rune_leech', maxLevel: 3, levels: ['Heal a little for every defeat', 'Heal more per defeat', 'Heal the most per defeat'] },
+  split: { id: 'split', name: 'Split Rune', icon: 'icon_rune_split', maxLevel: 3, levels: ['Projectiles burst into 2 splinters on their first hit', 'Splinters hit harder', 'Burst into 3 splinters'] },
+  echo: { id: 'echo', name: 'Echo Rune', icon: 'icon_rune_echo', maxLevel: 3, levels: ['Attacks may go off twice (15%)', 'Twice 25% of the time', 'Twice 35% of the time'] },
+  reaper: { id: 'reaper', name: 'Reaper Rune', icon: 'icon_rune_reaper', maxLevel: 3, levels: ['Hits finish off monsters under 8% HP', 'Under 12% HP', 'Under 16% HP'] },
 };
 export const RUNE_IDS = Object.keys(RUNES) as RuneId[];
 
@@ -366,6 +477,10 @@ export const PASSIVES: Record<PassiveId, PassiveDef> = {
   quiver: { id: 'quiver', name: 'Quiver', icon: 'icon_quiver', description: '+1 projectile for all weapons', maxLevel: 2, perLevel: 1 },
   magnet: { id: 'magnet', name: 'Magnet', icon: 'icon_magnet', description: 'Pickup range +30%', maxLevel: 5, perLevel: 0.3 },
   tome: { id: 'tome', name: 'Spell Tome', icon: 'icon_tome', description: 'Attack area +10%: bigger projectiles, blasts, slashes, puddles and auras', maxLevel: 5, perLevel: 0.1 },
+  clover: { id: 'clover', name: 'Lucky Clover', icon: 'icon_clover', description: 'Critical hit chance +5%', maxLevel: 5, perLevel: 0.05 },
+  shield: { id: 'shield', name: 'Iron Shield', icon: 'icon_shield', description: 'Take 1 less damage from every hit', maxLevel: 3, perLevel: 1 },
+  spring: { id: 'spring', name: 'Life Spring', icon: 'icon_spring', description: 'Recover 0.3% of your max HP every second', maxLevel: 5, perLevel: 0.003 },
+  charm: { id: 'charm', name: 'Moon Charm', icon: 'icon_charm', description: 'Effects last 15% longer: puddles, axes, whirlwinds, traps, burns, freezes', maxLevel: 5, perLevel: 0.15 },
 };
 
 export const WEAPON_IDS = Object.keys(WEAPONS) as WeaponId[];
@@ -373,4 +488,6 @@ export const PASSIVE_IDS = Object.keys(PASSIVES) as PassiveId[];
 export const MAX_WEAPON_LEVEL = 5;
 
 /** Weapons whose attack count is boosted by the Quiver passive. */
-export const AMOUNT_BOOSTED: ReadonlySet<WeaponId> = new Set<WeaponId>(['bow', 'daggers', 'axes', 'lightning', 'bomb', 'boomerang', 'bolt', 'frost', 'flask']);
+export const AMOUNT_BOOSTED: ReadonlySet<WeaponId> = new Set<WeaponId>([
+  'bow', 'daggers', 'axes', 'lightning', 'bomb', 'boomerang', 'bolt', 'frost', 'flask', 'beam', 'twister', 'traps', 'ward',
+]);

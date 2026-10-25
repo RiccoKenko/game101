@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
+import { AFFIX, AFFIX_IDS, affixCount, affixDef, type AffixId } from '../config/affixes';
 import { MAX_ENEMIES } from '../config/game';
+import { MAPS } from '../config/maps';
 import { BOSSES, ENEMIES, ENEMY_SHOTS, type BossDef, type BossId, type EnemyDef, type EnemyId } from '../config/enemies';
 import { GOBLIN_ESCAPE } from '../config/events';
 import { BURN_TIME, FREEZE_TIME, RUNE_POWER } from '../config/weapons';
 import { SpatialHash } from '../core/spatial';
 import { damageMultiplier, hpMultiplier, speedMultiplier } from '../core/waves';
+import { FONT } from '../ui/theme';
 import { type GameCtx } from './context';
 
 export class Enemy {
@@ -62,6 +65,29 @@ export class Enemy {
   burnTick = 0;
   /** Frozen solid for this many seconds (Frost Rune): can't move or hurt. */
   frozen = 0;
+  /** An elite's powers (config/affixes.ts) and their state. */
+  affixes: AffixId[] = [];
+  shield = 0;
+  shieldMax = 0;
+  /** Seconds since the shield was last hit (it comes back after a while). */
+  shieldIdle = 0;
+  vampT = 0;
+  summonT = 0;
+  blinkT = 0;
+  /** A Blinker's next spot, marked on the ground for `blinkWarn` seconds before it appears there. */
+  blinkWarn = 0;
+  blinkX = 0;
+  blinkY = 0;
+  /** A boss in its angry phase (under half HP, or from the start late in a run): it adds a new attack. */
+  enraged = false;
+  /** The enraged attack's timer, shots left in a burst, and spin angle. */
+  ptimer = 0;
+  pcount = 0;
+  pangle = 0;
+  /** Coloured glow underneath (an elite's power, an enraged boss), the powers' names, an elite's shield bubble. */
+  aura?: Phaser.GameObjects.Image;
+  label?: Phaser.GameObjects.Text;
+  bubble?: Phaser.GameObjects.Image;
 
   constructor(scene: Phaser.Scene) {
     this.shadow = scene.add.image(0, 0, 'shadow').setDepth(4);
@@ -96,6 +122,7 @@ interface Shot {
 }
 
 const ELITE_TINT = 0xffd36b;
+const ENRAGED_GLOW = 0xff3a3a;
 /** Monster shots: a red glow underneath, and orbs tinted red-pink. */
 const SHOT_DANGER = 0xff2a4a;
 const SHOT_TINT = 0xff7aa8;
@@ -113,6 +140,8 @@ export class EnemyManager {
   private nextUid = 1;
   private regularCount = 0;
   private blastsThisFrame = 0;
+  /** Telegraphed ground attacks (an enraged boss's stomps and splashes): a red circle, then the hit. */
+  private strikes: { x: number; y: number; r: number; t: number; damage: number; color: number }[] = [];
 
   constructor(private ctx: GameCtx) {}
 
@@ -129,6 +158,11 @@ export class EnemyManager {
     e.hitSquash = e.enter = e.lean = 0;
     e.small = e.selfDestructed = false;
     e.burnDps = e.burnLeft = e.burnTick = e.frozen = 0;
+    e.affixes = [];
+    e.shield = e.shieldMax = e.shieldIdle = e.vampT = e.summonT = e.blinkT = e.blinkWarn = 0;
+    e.enraged = false;
+    e.ptimer = e.pcount = e.pangle = 0;
+    this.hideExtras(e);
     e.spawnT = 0;
     e.face = 1;
     e.phase = this.ctx.rng() * Math.PI * 2;
@@ -150,7 +184,7 @@ export class EnemyManager {
     e.elite = elite;
     e.scale = elite ? 1.35 : 1;
     e.maxHp = e.hp = def.hp * hpMultiplier(t) * (elite ? 5 : 1) * this.ctx.monsterHp();
-    e.speed = def.speed * speedMultiplier(t) * (0.92 + this.ctx.rng() * 0.16);
+    e.speed = def.speed * speedMultiplier(t) * (0.92 + this.ctx.rng() * 0.16) * this.ctx.monsterSpeed;
     e.damage = def.damage * damageMultiplier(t) * (elite ? 1.3 : 1) * this.ctx.monsterDamage;
     e.radius = def.radius * e.scale;
     e.xp = def.xp * (elite ? 6 : 1);
@@ -163,7 +197,124 @@ export class EnemyManager {
     const sw = e.sprite.displayWidth * 0.8;
     e.shadow.setDisplaySize(sw, sw * 0.3);
     this.regularCount++;
+    if (elite) this.giveAffixes(e);
     return e;
+  }
+
+  /** An elite rolls its powers: shown as a glow in the first power's colour and their names over its head. */
+  private giveAffixes(e: Enemy): void {
+    const b = e.def!.behavior;
+    // Treasure, bombs and the goblin stay as they are.
+    if (b === 'ambush' || b === 'flee' || b === 'exploder') return;
+    const pool = [...AFFIX_IDS];
+    const n = affixCount(this.ctx.runTime, this.ctx.difficulty, this.ctx.affixBonus);
+    for (let k = 0; k < n && pool.length; k++) e.affixes.push(pool.splice(Math.floor(this.ctx.rng() * pool.length), 1)[0]);
+    if (e.affixes.includes('swift')) e.speed *= AFFIX.swift;
+    if (e.affixes.includes('shielded')) e.shield = e.shieldMax = e.maxHp * AFFIX.shield;
+    e.vampT = e.summonT = e.blinkT = this.ctx.rng() * 2;
+    const first = affixDef(e.affixes[0]);
+    this.extras(e);
+    e.aura!.setTint(first.color).setVisible(true);
+    e.label!.setText(e.affixes.map((a) => affixDef(a).name).join(' · ')).setColor(first.css).setVisible(true);
+    if (e.shieldMax > 0) e.bubble!.setVisible(true);
+  }
+
+  /** Creates (once per pooled enemy) the glow, name label and shield bubble. */
+  private extras(e: Enemy): void {
+    const scene = this.ctx.scene;
+    e.aura ??= scene.add.image(0, 0, 'shock').setDepth(5).setVisible(false);
+    e.label ??= scene.add
+      .text(0, 0, '', { fontFamily: FONT, fontSize: '34px', fontStyle: '700', color: '#ffffff', stroke: '#2a1f3d', strokeThickness: 8 })
+      .setOrigin(0.5, 1)
+      .setDepth(12)
+      .setVisible(false);
+    e.bubble ??= scene.add.image(0, 0, 'ring').setDepth(11).setTint(0x8ff6ff).setVisible(false);
+  }
+
+  private hideExtras(e: Enemy): void {
+    e.aura?.setVisible(false);
+    e.label?.setVisible(false);
+    e.bubble?.setVisible(false);
+  }
+
+  /** What an elite's powers do each frame: shields come back, vampires heal, summoners call, blinkers jump. */
+  private updateAffixes(e: Enemy, dt: number, d: number): void {
+    const { fx, player, rng } = this.ctx;
+    for (const a of e.affixes) {
+      switch (a) {
+        case 'shielded':
+          e.shieldIdle += dt;
+          if (e.shield < e.shieldMax && e.shieldIdle > AFFIX.shieldBack) {
+            e.shield = e.shieldMax;
+            fx.ring(e.x, e.y, e.radius * 1.8, 0x6ff3ff, 'ring', 35, 320);
+          }
+          break;
+        case 'vampiric':
+          e.vampT += dt;
+          if (e.vampT >= 1) {
+            e.vampT = 0;
+            this.forEachInRadius(e.x, e.y, AFFIX.vampRadius, (o) => {
+              if (!o.isBoss && o.hp < o.maxHp) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * AFFIX.vampHeal);
+            });
+            fx.shockwave(e.x, e.y + e.radius * 0.6, AFFIX.vampRadius * 0.9, 0xff4d6a);
+          }
+          break;
+        case 'summoner':
+          e.summonT += dt;
+          if (e.summonT >= AFFIX.summonEvery && d < 900) {
+            e.summonT = 0;
+            this.summonAround(MAPS[this.ctx.mapIndex].enemies[0], e.x, e.y, AFFIX.summonCount, 110);
+            fx.ring(e.x, e.y, 200, 0x9dff8a);
+          }
+          break;
+        case 'blinker':
+          if (e.blinkWarn > 0) {
+            e.blinkWarn -= dt;
+            if (e.blinkWarn <= 0) {
+              fx.deathPuff(e.x, e.y, 1, 0xc9a8ff);
+              e.x = e.blinkX;
+              e.y = e.blinkY;
+              e.spawnT = 0.5;
+              fx.deathPuff(e.x, e.y, 1, 0xc9a8ff);
+              fx.sparkle(e.x, e.y, 4, 0xe2d0ff);
+              audio.sfx('zap', 0.5);
+            }
+            break;
+          }
+          e.blinkT += dt;
+          if (e.blinkT >= AFFIX.blinkEvery && d > 260) {
+            e.blinkT = 0;
+            const ang = rng() * Math.PI * 2;
+            e.blinkX = player.x + Math.cos(ang) * AFFIX.blinkDistance;
+            e.blinkY = player.y + Math.sin(ang) * AFFIX.blinkDistance;
+            e.blinkWarn = AFFIX.blinkWarn;
+            fx.decal('shock', e.blinkX, e.blinkY + 20, 130, 60, 0xc9a8ff, 0.7, AFFIX.blinkWarn + 0.1);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  /** A telegraphed hit on the ground: a red circle now, and in `delay` seconds it lands. */
+  strike(x: number, y: number, r: number, delay: number, damage: number, color: number): void {
+    this.ctx.fx.decal('shock', x, y, r * 2, r, 0xff5a3c, 0.55, delay + 0.1);
+    this.strikes.push({ x, y, r, t: delay, damage, color });
+  }
+
+  private updateStrikes(dt: number): void {
+    const { player, fx } = this.ctx;
+    for (let i = this.strikes.length - 1; i >= 0; i--) {
+      const s = this.strikes[i];
+      s.t -= dt;
+      if (s.t > 0) continue;
+      fx.shockwave(s.x, s.y, s.r, s.color);
+      fx.sparksAt(s.x, s.y, 6, s.color);
+      fx.decal('splat', s.x, s.y, s.r * 1.6, s.r * 0.8, s.color, 0.35, 1.5);
+      if (Math.hypot(player.x - s.x, player.y - s.y) < s.r + player.radius * 0.6) this.ctx.hurtPlayer(s.damage);
+      this.strikes.splice(i, 1);
+    }
   }
 
   /** A splitter's half: smaller, weaker, worth little, and it won't split again. */
@@ -185,7 +336,7 @@ export class EnemyManager {
     e.ky = (y - parent.y) * 6;
   }
 
-  spawnBoss(id: BossId, x: number, y: number, hpMult: number): Enemy {
+  spawnBoss(id: BossId, x: number, y: number, hpMult: number, enraged = false): Enemy {
     const def = BOSSES[id];
     const e = this.obtain();
     e.def = null;
@@ -204,6 +355,7 @@ export class EnemyManager {
     e.tex = def.texture;
     e.spawnT = 1;
     e.enter = BOSS_DROP;
+    if (enraged) this.enrage(e, false);
     e.sprite.setTexture(def.texture).setDepth(11);
     const sw = e.sprite.displayWidth * 0.75;
     e.shadow.setDisplaySize(sw, sw * 0.28);
@@ -228,7 +380,7 @@ export class EnemyManager {
   ignite(e: Enemy, dps: number): void {
     if (!e.active) return;
     e.burnDps = Math.max(e.burnDps * (e.burnLeft > 0 ? 1 : 0), dps);
-    e.burnLeft = BURN_TIME;
+    e.burnLeft = BURN_TIME * this.ctx.player.stats.durationMult;
   }
 
   /**
@@ -239,13 +391,7 @@ export class EnemyManager {
     const r = this.ctx.runes;
     const rng = this.ctx.rng;
     if (r.burn) this.ignite(e, amount * RUNE_POWER.burn[r.burn - 1]);
-    if (r.freeze && rng() < RUNE_POWER.freeze[r.freeze - 1]) {
-      if (e.isBoss) e.slow = Math.max(e.slow, FREEZE_TIME);
-      else if (e.frozen <= 0) {
-        e.frozen = FREEZE_TIME;
-        this.ctx.fx.sparksAt(e.x, e.y, 4, 0xd4f4ff);
-      }
-    }
+    if (r.freeze && rng() < RUNE_POWER.freeze[r.freeze - 1]) this.freezeSolid(e, FREEZE_TIME);
     if (r.chain && rng() < RUNE_POWER.chain[r.chain - 1]) {
       let from = e;
       const hit = new Set<number>([e.uid]);
@@ -270,6 +416,16 @@ export class EnemyManager {
     }
   }
 
+  /** Freezes an enemy solid for `seconds` (longer with the Moon Charm); bosses are only slowed. */
+  freezeSolid(e: Enemy, seconds: number): void {
+    const t = seconds * this.ctx.player.stats.durationMult;
+    if (e.isBoss) e.slow = Math.max(e.slow, t);
+    else if (e.frozen <= 0) {
+      e.frozen = t;
+      this.ctx.fx.sparksAt(e.x, e.y, 4, 0xd4f4ff);
+    }
+  }
+
   /** Deals damage (sometimes a critical hit, unless `canCrit` is false); returns true if the enemy died. */
   damage(e: Enemy, amount: number, fromX: number, fromY: number, knockback = 1, canCrit = true): boolean {
     if (!e.active || e.enter > 0) return false;
@@ -279,10 +435,23 @@ export class EnemyManager {
       knockback *= 1.5;
       this.ctx.fx.sparksAt(e.x, e.y, 5, 0xffd36b);
     }
+    // A shield soaks up the hit first; the number shows blue while it does.
+    const shown = amount;
+    let soaked = 0;
+    if (e.shield > 0) {
+      soaked = Math.min(e.shield, amount);
+      e.shield -= soaked;
+      e.shieldIdle = 0;
+      amount -= soaked;
+      if (e.shield <= 0) {
+        this.ctx.fx.ring(e.x, e.y, e.radius * 2.2, 0x6ff3ff, 'ring', 35, 260);
+        this.ctx.fx.sparksAt(e.x, e.y, 8, 0x8ff6ff);
+      }
+    }
     e.hp -= amount;
     e.flash = 0.08;
     e.hitSquash = crit ? 1.4 : 1;
-    this.ctx.fx.damageNumber(e.x, e.y - e.radius - 10, amount, 0xffffff, crit);
+    this.ctx.fx.damageNumber(e.x, e.y - e.radius - 10, shown, soaked > 0 ? 0x8ff6ff : 0xffffff, crit);
     if (knockback > 0) {
       const dx = e.x - fromX;
       const dy = e.y - fromY;
@@ -293,6 +462,13 @@ export class EnemyManager {
     }
     audio.sfx('hit');
     if (canCrit && e.hp > 0) this.runeProcs(e, amount);
+    // Reaper Rune: a weapon hit finishes off a monster that is nearly dead.
+    const reaper = this.ctx.runes.reaper;
+    if (reaper && canCrit && e.hp > 0 && !e.isBoss && e.hp < e.maxHp * RUNE_POWER.reaper[reaper - 1]) {
+      e.hp = 0;
+      this.ctx.fx.sparksAt(e.x, e.y - 10, 6, 0xc9a8ff);
+      this.ctx.fx.glow(e.x, e.y - 10, 30, 110, 0xb07aff, 0.2, 0.8);
+    }
     if (e.hp <= 0) {
       this.kill(e);
       return true;
@@ -305,9 +481,16 @@ export class EnemyManager {
     e.active = false;
     e.sprite.setVisible(false);
     e.shadow.setVisible(false);
+    this.hideExtras(e);
     if (!e.isBoss) this.regularCount--;
     const fx = this.ctx.fx;
     const color = e.color;
+    // Volatile: bursts into a ring of shots (from where it died, so there is a moment to step aside).
+    if (e.affixes.includes('volatile') && !e.selfDestructed) {
+      const off = this.ctx.rng() * Math.PI;
+      for (let k = 0; k < AFFIX.volatileShots; k++) this.fireShot('spirit', e.x, e.y, off + (k / AFFIX.volatileShots) * Math.PI * 2);
+      fx.explosion(e.x, e.y, 70);
+    }
     fx.corpse(e.sprite.texture.key, e.sprite.x, e.sprite.y, e.sprite.scaleY, e.sprite.flipX, e.elite ? ELITE_TINT : 0);
     fx.deathPuff(e.x, e.y, e.isBoss ? 3 : e.scale, color);
     if (!e.isBoss) fx.decal('splat', e.x, e.y + e.radius * 0.7, e.radius * 2.2, e.radius * 1.1, color, 0.32, 1.8);
@@ -357,6 +540,7 @@ export class EnemyManager {
     e.active = false;
     e.sprite.setVisible(false);
     e.shadow.setVisible(false);
+    this.hideExtras(e);
     if (!e.isBoss) this.regularCount--;
   }
 
@@ -366,9 +550,11 @@ export class EnemyManager {
       e.active = false;
       e.sprite.setVisible(false);
       e.shadow.setVisible(false);
+      this.hideExtras(e);
     }
     this.compact();
     this.regularCount = 0;
+    this.strikes = [];
     for (const s of this.shots) {
       s.active = false;
       s.sprite.setVisible(false);
@@ -412,6 +598,37 @@ export class EnemyManager {
     s.damage = def.damage * damageMultiplier(this.ctx.runTime) * this.ctx.monsterDamage;
     s.life = 4;
     s.spin = kind === 'fireball' ? 0 : 6;
+  }
+
+  /** Every enemy touching the line from (x1, y1) to (x2, y2), thickened to `halfWidth` either side. */
+  forEachOnSegment(x1: number, y1: number, x2: number, y2: number, halfWidth: number, fn: (e: Enemy) => void): void {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len2 = dx * dx + dy * dy || 1;
+    const alive = this.alive;
+    for (let i = 0; i < alive.length; i++) {
+      const e = alive[i];
+      if (!e.active || e.enter > 0) continue;
+      const t = Phaser.Math.Clamp(((e.x - x1) * dx + (e.y - y1) * dy) / len2, 0, 1);
+      const px = x1 + dx * t - e.x;
+      const py = y1 + dy * t - e.y;
+      const r = halfWidth + e.radius;
+      if (px * px + py * py <= r * r) fn(e);
+    }
+  }
+
+  /** Destroys monster shots within `r` of (x, y) (Ward Orbs), calling `onBlock` with where each one was. */
+  blockShots(x: number, y: number, r: number, onBlock?: (sx: number, sy: number) => void): void {
+    for (const s of this.shots) {
+      if (!s.active) continue;
+      const rr = r + s.radius;
+      if ((s.x - x) ** 2 + (s.y - y) ** 2 > rr * rr) continue;
+      s.active = false;
+      s.sprite.setVisible(false);
+      s.halo.setVisible(false);
+      this.ctx.fx.sparksAt(s.x, s.y, 4, 0xfff1b8);
+      onBlock?.(s.x, s.y);
+    }
   }
 
   forEachInRadius(x: number, y: number, r: number, fn: (e: Enemy) => void): void {
@@ -517,6 +734,7 @@ export class EnemyManager {
         this.animate(e, dt, 0, 0);
         continue;
       }
+      if (e.affixes.length) this.updateAffixes(e, dt, d);
       const speed = e.speed * (e.slow > 0 ? 0.6 : 1);
       let vx = dx * speed;
       let vy = dy * speed;
@@ -654,6 +872,7 @@ export class EnemyManager {
 
     if (contact > 0) this.ctx.hurtPlayer(contact);
     this.updateShots(dt);
+    this.updateStrikes(dt);
     this.compact();
     // Indices changed during compaction: rebuild so weapons query current indices.
     this.hash.clear();
@@ -783,6 +1002,16 @@ export class EnemyManager {
     const wind = e.state === 1 ? Math.sin(e.timer * 60) * 4 : 0;
     e.sprite.setPosition(e.x + wind, e.y + halfH - lift);
     e.shadow.setPosition(e.x, e.y + halfH * 0.84).setAlpha(Phaser.Math.Clamp(1 - lift / 70, 0.4, 1));
+    if (e.aura?.visible) {
+      const r = e.radius * (e.isBoss ? 2.6 : 3);
+      e.aura.setPosition(e.x, e.y + halfH * 0.75).setDisplaySize(r * (1 + 0.08 * Math.sin(e.timer * 6)), r * 0.5).setAlpha(0.75 + 0.25 * Math.sin(e.timer * 6));
+    }
+    if (e.label?.visible) e.label.setPosition(e.x, e.y + halfH - e.sprite.displayHeight - 6 - lift);
+    if (e.bubble) {
+      const on = e.shield > 0;
+      e.bubble.setVisible(on);
+      if (on) e.bubble.setPosition(e.x, e.y + halfH * 0.1 - lift).setDisplaySize(e.radius * 2.7, e.radius * 2.7).setAlpha(0.35 + 0.5 * (e.shield / e.shieldMax));
+    }
   }
 
   /** A boss falling from the sky onto its spot, its shadow growing beneath it. */
@@ -890,6 +1119,10 @@ export class EnemyManager {
       this.ctx.shake(260, 0.01);
       audio.sfx('explosion');
       if (Math.hypot(player.x - e.x, player.y - feet) < R + player.radius) this.ctx.hurtPlayer(e.damage * 1.4);
+      if (e.enraged) {
+        const off = this.ctx.rng() * Math.PI;
+        for (let k = 0; k < 12; k++) this.fireShot('orb', e.x, feet, off + (k / 12) * Math.PI * 2);
+      }
     }
     return { x: 0, y: 0 };
   }
@@ -901,9 +1134,90 @@ export class EnemyManager {
     }
   }
 
+  /** Called once when a boss turns angry (to tell the player). */
+  onEnrage?: (e: Enemy) => void;
+
+  /** A boss turns angry: faster, a red glow underneath, and a new attack (see enragedAttack). */
+  private enrage(e: Enemy, announce = true): void {
+    e.enraged = true;
+    e.speed *= 1.15;
+    e.ptimer = 0;
+    this.extras(e);
+    e.aura!.setTint(ENRAGED_GLOW).setVisible(true);
+    if (announce) {
+      this.ctx.fx.ring(e.x, e.y, e.radius * 2.6, ENRAGED_GLOW);
+      this.ctx.shake(200, 0.006);
+      audio.sfx('boss_warning');
+      this.onEnrage?.(e);
+    }
+  }
+
+  /** Each boss's extra attack while enraged. */
+  private enragedAttack(e: Enemy, dt: number, dx: number, dy: number): void {
+    const { player, rng } = this.ctx;
+    e.ptimer += dt;
+    switch (e.boss!.id) {
+      case 'boss_slime':
+        // Goo rains down around the hero.
+        if (e.ptimer > 5.5) {
+          e.ptimer = 0;
+          for (let k = 0; k < 6; k++) {
+            const a = rng() * Math.PI * 2;
+            const r = k === 0 ? 0 : 90 + rng() * 170;
+            this.strike(player.x + Math.cos(a) * r, player.y + Math.sin(a) * r, 95, 1 + k * 0.08, e.damage * 0.9, 0xff7eb6);
+          }
+        }
+        break;
+      case 'boss_lich':
+        // A two-armed spiral of orbs.
+        if (e.pcount > 0) {
+          if (e.ptimer >= 0.16) {
+            e.ptimer = 0;
+            e.pcount--;
+            e.pangle += 0.42;
+            this.fireShot('orb', e.x, e.y, e.pangle);
+            this.fireShot('orb', e.x, e.y, e.pangle + Math.PI);
+          }
+        } else if (e.ptimer > 5) {
+          e.ptimer = 0;
+          e.pcount = 18;
+          e.pangle = rng() * Math.PI * 2;
+        }
+        break;
+      case 'boss_demon':
+        // A full ring of fireballs.
+        if (e.ptimer > 4.5) {
+          e.ptimer = 0;
+          const off = rng() * Math.PI;
+          for (let k = 0; k < 14; k++) this.fireShot('fireball', e.x, e.y, off + (k / 14) * Math.PI * 2);
+        }
+        break;
+      case 'boss_boar':
+        // Stomps the ground where it stands.
+        if (e.ptimer > 3.2) {
+          e.ptimer = 0;
+          this.strike(e.x, e.y + e.radius * 0.5, 190, 0.65, e.damage * 1.2, 0xc89a5a);
+        }
+        break;
+      case 'boss_captain':
+        // Hurls a fan of spirit shots at the hero.
+        if (e.ptimer > 3.5) {
+          e.ptimer = 0;
+          const base = Math.atan2(dy, dx);
+          for (let k = -2; k <= 2; k++) this.fireShot('spirit', e.x, e.y, base + k * 0.22);
+        }
+        break;
+      default:
+        // The Ogre Warden's slam throws out a ring of shots (see updateSlam).
+        break;
+    }
+  }
+
   private updateBoss(e: Enemy, dt: number, d: number, dx: number, dy: number, speed: number): { x: number; y: number } {
     const id = e.boss!.id;
     const ratio = e.hp / e.maxHp;
+    if (!e.enraged && ratio < 0.5) this.enrage(e);
+    if (e.enraged) this.enragedAttack(e, dt, dx, dy);
     if (id === 'boss_boar') {
       // Charges again and again, faster when hurt.
       const v = this.updateCharge(e, dt, d, dx, dy, 680, 0.5, ratio < 0.5 ? 2 : 2.8);

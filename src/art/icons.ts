@@ -299,6 +299,45 @@ const bowStorm: BowStyle = {
   str: '#d8fcff',
 };
 
+/** A rune stone with a glowing glyph on it (runes added after the painted rune sheet). */
+function runeStone(id: string, glow: string, glyph: string): string {
+  return (
+    radial(`${id}_g`, [
+      [0, glow, 0.8],
+      [1, glow, 0],
+    ]) +
+    `<circle cx="48" cy="50" r="46" fill="url(#${id}_g)"/>` +
+    cel(`${id}_s`, 'M28 12L68 10Q80 10 82 22L86 70Q86 84 72 86L26 88Q12 88 12 74L14 26Q14 12 28 12Z', '#8d96b0', '#5d6684', [-5, -5]) +
+    hl('M21 25L26 20L27 62L21 64Z', 0.35) +
+    tube(glyph, 7, glow, 3) +
+    ln(glyph, '#ffffff', 2.4, 0.9)
+  );
+}
+
+/** A whirlwind funnel with swirling bands; `c` = [light, shade, band shade, top, top shade]. */
+function funnel(id: string, c: [string, string, string, string, string]): string {
+  const body = 'M10 18C12 40 28 54 37 68C41 75 44 82 45 88L53 88C54 82 57 75 61 68C70 54 86 40 88 18Z';
+  const bands = 'M12 32Q49 46 86 32M22 50Q49 60 76 50M33 66Q49 73 65 66M40 79Q49 83 58 79';
+  return (
+    cel(`${id}_b`, body, c[0], c[1], [-5, -4]) +
+    `<clipPath id="${id}_k"><path d="${body}"/></clipPath>` +
+    `<g clip-path="url(#${id}_k)">${ln(bands, c[2], 4.5)}<g transform="translate(0 -3)">${ln(bands, '#ffffff', 3.4)}</g></g>` +
+    cel(`${id}_t`, ell(49, 18, 39, 9), c[3], c[4], [-2, -2], 3.5) +
+    ln('M24 16Q49 9 74 16', '#ffffff', 2.6, 0.9)
+  );
+}
+
+/** A spike trap seen from above; `c` = [spike, spike shade, plate, plate shade, light, light shade]. */
+function trapIcon(id: string, c: [string, string, string, string, string, string]): string {
+  return (
+    cel(`${id}_s`, star(48, 50, 41, 24, 8, -90), c[0], c[1], [-4, -4]) +
+    cel(`${id}_p`, circ(48, 50, 24), c[2], c[3], [-4, -4]) +
+    ln(arc(48, 50, 19, 200, 255), '#ffffff', 3, 0.6) +
+    cel(`${id}_l`, circ(48, 50, 9.5), c[4], c[5], [-2, -2], 3) +
+    hl(circ(45, 47, 2.6), 0.9)
+  );
+}
+
 // ---------- icons ----------
 export const ICONS_ART: ArtSet = {
   // ======================= weapons =======================
@@ -930,5 +969,240 @@ export const ICONS_ART: ArtSet = {
 
   icon_arrow: svg(S, S, tube('M36 16L68 48L36 80', 16, '#ffffff', 5) + ln('M38 21L62 45', WHITE_D, 4, 0.9)),
 
+
+  // ======================= more weapons (drawn here, not painted) =======================
+  icon_beam: svg(
+    S,
+    S,
+    tube('M4 68L28 62', 5, '#ffffff', 3) +
+      tube('M45 57L92 20', 7, '#8fe8ff', 3.5) +
+      tube('M47 61L93 46', 7, '#ffe07a', 3.5) +
+      tube('M47 65L91 72', 7, '#ff8ab0', 3.5) +
+      ln('M45 57L92 20M47 61L93 46M47 65L91 72', '#ffffff', 2, 0.85) +
+      cel('icon_beam_p', 'M12 84L60 84L36 40Z', '#e8fbff', '#93cde6', [-4, -4]) +
+      ln('M36 46L36 80', '#b8e6f6', 2.5) +
+      hl('M33 50L22 76L27 76Z', 0.8),
+  ),
+
+  icon_twister: svg(
+    S,
+    S,
+    cel('icon_twister_d', ell(49, 88, 22, 6), '#d9c9a3', '#b8a27a', [-2, -2], 3) +
+      funnel('icon_twister', ['#f2f7ff', '#a9bfdc', '#93a9cc', '#dfe9f8', '#b9cbe6']) +
+      cel('icon_twister_l1', ell(86, 58, 7, 3.5, -30), '#7ad84e', '#3fa52e', [-1, -1], 2.5) +
+      cel('icon_twister_l2', ell(12, 70, 6, 3, 25), '#7ad84e', '#3fa52e', [-1, -1], 2.5),
+  ),
+
+  icon_traps: svg(S, S, trapIcon('icon_traps', [STEEL, STEEL_D, '#6d7690', '#4a5168', RED, RED_D])),
+
+  icon_ward: svg(
+    S,
+    S,
+    radial('icon_ward_g', [
+      [0, '#bff8ff', 0.9],
+      [1, CYAN, 0],
+    ]) +
+      `<circle cx="48" cy="50" r="31" fill="none" stroke="${O}" stroke-width="7" stroke-dasharray="7 7"/>` +
+      `<circle cx="48" cy="50" r="31" fill="none" stroke="#bff8ff" stroke-width="3.5" stroke-dasharray="7 7"/>` +
+      [-90, 30, 150]
+        .map((a, i) => {
+          const [x, y] = pt(48, 50, 31, a);
+          return (
+            `<circle cx="${x}" cy="${y}" r="20" fill="url(#icon_ward_g)"/>` +
+            cel(`icon_ward_o${i}`, circ(x, y, 12.5), CYAN, CYAN_D, [-3, -3], 3.5) +
+            hl(circ(x - 4, y - 4, 3.4), 0.95)
+          );
+        })
+        .join(''),
+  ),
+
+  // ======================= more evolutions =======================
+  icon_rainbow: svg(
+    S,
+    S,
+    radial('icon_rainbow_g', [
+      [0, '#ffffff', 1],
+      [0.5, '#fff1c8', 0.5],
+      [1, '#ffd36b', 0],
+    ]) +
+      `<circle cx="48" cy="48" r="46" fill="url(#icon_rainbow_g)"/>` +
+      tube('M48 48L90 14', 8, '#ff8ab0', 3.5) +
+      tube('M48 48L82 90', 8, '#ffe07a', 3.5) +
+      tube('M48 48L6 82', 8, '#9dff8a', 3.5) +
+      tube('M48 48L14 6', 8, '#8fe8ff', 3.5) +
+      ln('M48 48L90 14M48 48L82 90M48 48L6 82M48 48L14 6', '#ffffff', 2.6, 0.9) +
+      cel('icon_rainbow_c', poly([[48, 28], [64, 48], [48, 68], [32, 48]]), '#ffffff', '#c9a8ff', [-3, -3]) +
+      hl('M44 36L48 32L50 46L44 48Z', 0.9) +
+      sparkle(84, 50, 7.5),
+  ),
+
+  icon_cyclone: svg(
+    S,
+    S,
+    radial('icon_cyclone_g', [
+      [0, '#c9a8ff', 0.85],
+      [1, '#7a5cf0', 0],
+    ]) +
+      `<circle cx="49" cy="46" r="46" fill="url(#icon_cyclone_g)"/>` +
+      funnel('icon_cyclone', ['#c8cdf6', '#6f76c4', '#545ba8', '#b4baf0', '#8a90d8']) +
+      zap(18, 60, 0.8, 20) +
+      zap(80, 64, 0.8, -15) +
+      sparkle(84, 86, 8),
+  ),
+
+  icon_glacier: svg(
+    S,
+    S,
+    radial('icon_glacier_g', [
+      [0, '#d8f8ff', 0.95],
+      [1, CYAN, 0],
+    ]) +
+      `<circle cx="48" cy="50" r="46" fill="url(#icon_glacier_g)"/>` +
+      trapIcon('icon_glacier', ['#e6f9ff', '#7cc8ef', '#4f8fd0', '#2f62a8', CYAN, CYAN_D]) +
+      `<path d="${star(48, 50, 7, 2.5, 6, -90)}" fill="#ffffff"/>` +
+      sparkle(84, 14, 8) +
+      sparkle(13, 84, 5.5, '#ffffff'),
+  ),
+
+  icon_aegis: svg(
+    S,
+    S,
+    radial('icon_aegis_g', [
+      [0, '#fff6c8', 1],
+      [1, GOLD, 0],
+    ]) +
+      `<circle cx="48" cy="50" r="46" fill="url(#icon_aegis_g)"/>` +
+      cel('icon_aegis_s', 'M48 14L74 23L72 50Q68 70 48 84Q28 70 24 50L22 23Z', '#fff8dc', '#e3b54a', [-5, -5]) +
+      cel('icon_aegis_e', star(48, 48, 15, 6.5, 4, -90), GOLD, GOLD_D, [-2, -2], 3.5) +
+      [200, 340, 90]
+        .map((a, i) => {
+          const [x, y] = pt(48, 50, 39, a);
+          return cel(`icon_aegis_o${i}`, circ(x, y, 8), '#ffe07a', GOLD_D, [-2, -2], 3) + hl(circ(x - 2.5, y - 2.5, 2.2), 0.9);
+        })
+        .join('') +
+      sparkle(84, 14, 8),
+  ),
+
+  // ======================= more passives =======================
+  icon_clover: svg(
+    S,
+    S,
+    tube('M48 50Q52 72 66 88', 5, '#4fbf3a', 3.5) +
+      [0, 90, 180, 270]
+        .map((a, i) =>
+          g(
+            `translate(48 46) rotate(${a})`,
+            cel(
+              `icon_clover_${i}`,
+              'M0 -3C-4 -11 -21 -14 -21 -27C-21 -35 -13 -39 -7 -37C-3 -36 -1 -33 0 -31C1 -33 3 -36 7 -37C13 -39 21 -35 21 -27C21 -14 4 -11 0 -3Z',
+              '#74dc5c',
+              '#3fa52e',
+              lo(a, 4),
+            ),
+          ),
+        )
+        .join('') +
+      `<circle cx="48" cy="46" r="4" fill="#3fa52e"/>` +
+      hl(ell(40, 16, 4, 6.5, -30), 0.75) +
+      hl(ell(16, 40, 4, 6.5, -60), 0.6),
+  ),
+
+  icon_shield: svg(
+    S,
+    S,
+    cel('icon_shield_b', 'M48 8L82 18L80 46Q76 72 48 88Q20 72 16 46L14 18Z', STEEL, STEEL_D, [-6, -6]) +
+      cel('icon_shield_i', 'M48 19L71 26L69 46Q66 64 48 76Q30 64 27 46L25 26Z', BLUE, BLUE_D, [-4, -4], 3.5) +
+      tube('M33 38L48 50L63 38', 7, GOLD, 3.5) +
+      tube('M36 52L48 61L60 52', 6, GOLD, 3) +
+      `<path d="${circ(20, 21, 3)}${circ(76, 21, 3)}${circ(48, 11.5, 3)}" fill="${STEEL_D}"/>` +
+      hl('M21 22L27 21L28 45L23 47Z', 0.55),
+  ),
+
+  icon_spring: svg(
+    S,
+    S,
+    cel('icon_spring_d', 'M48 8C60 26 76 42 76 60C76 76 63 88 48 88C33 88 20 76 20 60C20 42 36 26 48 8Z', '#5fe0c0', '#24a58a', [-6, -6]) +
+      cel('icon_spring_p', 'M43 46H53V56H63V66H53V76H43V66H33V56H43Z', '#ffffff', '#c8f5e8', [-2, -2], 3.5) +
+      hl(ell(33, 54, 4.5, 10, 20), 0.75) +
+      cel('icon_spring_b1', circ(80, 24, 6), '#bff5e6', '#5fe0c0', [-1.5, -1.5], 3) +
+      cel('icon_spring_b2', circ(86, 40, 4), '#bff5e6', '#5fe0c0', [-1, -1], 2.5),
+  ),
+
+  icon_charm: svg(
+    S,
+    S,
+    tube('M24 6Q48 26 72 6', 3, GOLD, 2.5) +
+      cel('icon_charm_r', circ(48, 22, 5.5), GOLD, GOLD_D, [-1.5, -1.5], 3) +
+      cel('icon_charm_m', 'M62 30A30 30 0 1 0 78 70A23 23 0 1 1 62 30Z', '#fff1a8', '#e3b54a', [-5, -5]) +
+      cel('icon_charm_s', star(70, 44, 10, 4.2, 4, -90), '#ffffff', WHITE_D, [-1.5, -1.5], 3) +
+      hl(ell(30, 52, 4, 9, 20), 0.7),
+  ),
+
+  // ======================= more runes =======================
+  icon_rune_split: svg(S, S, runeStone('icon_rune_split', '#ffd36b', 'M48 76L48 52M48 52L31 30M48 52L65 30M25 36L31 30L38 32M58 32L65 30L71 36')),
+  icon_rune_echo: svg(
+    S,
+    S,
+    runeStone('icon_rune_echo', '#c9a8ff', `M29 50L31 50${arc(30, 50, 13, -55, 55)}${arc(30, 50, 26, -50, 50)}${arc(30, 50, 39, -45, 45)}`),
+  ),
+  icon_rune_reaper: svg(S, S, runeStone('icon_rune_reaper', '#ff6b8a', 'M34 80L60 24M60 24Q42 14 24 32Q38 26 52 36')),
+
+  // ======================= curses =======================
+  icon_curse: svg(
+    S,
+    S,
+    cel(
+      'icon_curse_f',
+      'M48 2C56 14 70 18 70 34C76 28 78 22 76 16C86 28 88 42 82 54L14 54C8 42 10 28 20 16C18 22 20 28 26 34C26 18 40 14 48 2Z',
+      '#b07aff',
+      '#7a3fd8',
+      [-4, -4],
+    ) +
+      cel(
+        'icon_curse_s',
+        'M48 26C68 26 80 38 80 54C80 64 74 70 68 72L68 82Q68 88 62 88L34 88Q28 88 28 82L28 72C22 70 16 64 16 54C16 38 28 26 48 26Z',
+        '#f4eaff',
+        '#c9b4ec',
+        [-5, -5],
+      ) +
+      `<path d="${circ(35, 56, 8.5)}${circ(61, 56, 8.5)}" fill="#3a1766"/>` +
+      `<path d="${circ(35, 57, 3.5)}${circ(61, 57, 3.5)}" fill="#d9a8ff"/>` +
+      `<path d="M48 64L44 72L52 72Z" fill="#3a1766"/>` +
+      ln('M40 78L40 86M48 78L48 86M56 78L56 86', '#c9b4ec', 3) +
+      hl(ell(28, 42, 4, 8, 30), 0.7),
+  ),
   icon_banish: svg(S, S, tube(arc(48, 48, 30, 0, 359), 10, '#ff5a5a', 5) + tube('M27 69L69 27', 10, '#ff5a5a', 5)),
 };
+
+/** The painted icons sit on a dark tile lit from the middle; the drawn ones shown among them get one too. */
+function backdrop(id: string, color: string): string {
+  return (
+    radial(`${id}_bd`, [
+      [0, color, 1],
+      [0.72, '#151b36', 1],
+      [1, '#0b1024', 1],
+    ]) + `<path d="${rr(1, 1, 94, 94, 14)}" fill="url(#${id}_bd)"/>`
+  );
+}
+
+const BACKDROPS: Record<string, string> = {
+  icon_beam: '#2f6fa8',
+  icon_twister: '#3c6e8a',
+  icon_traps: '#7a3434',
+  icon_ward: '#1f7fa0',
+  icon_rainbow: '#7a4fc0',
+  icon_cyclone: '#3a2f8a',
+  icon_glacier: '#2a6fb0',
+  icon_aegis: '#a8781e',
+  icon_clover: '#2f7a2f',
+  icon_shield: '#2a4a8a',
+  icon_spring: '#1f7a6a',
+  icon_charm: '#3f3478',
+  icon_rune_split: '#7a5a1a',
+  icon_rune_echo: '#4a2f7a',
+  icon_rune_reaper: '#7a1f3a',
+};
+for (const [key, color] of Object.entries(BACKDROPS)) {
+  const art = ICONS_ART[key];
+  art.svg = art.svg.replace(/(<svg[^>]*>)/, `$1${backdrop(key, color)}`);
+}

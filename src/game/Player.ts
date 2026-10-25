@@ -99,7 +99,7 @@ export class Player {
   }
 
   heal(amount: number): void {
-    this.hp = Math.min(this.stats.maxHp, this.hp + amount);
+    this.hp = Math.min(this.stats.maxHp, this.hp + amount * this.stats.healMult);
   }
 
   hitFlash(): void {

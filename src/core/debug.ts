@@ -7,6 +7,7 @@
  * hero: play as this character (archer, mage) without unlocking it.
  * event: start this run event two seconds in (shrine, goblin, meteors, elites, golden).
  * difficulty: 0 Normal, 1 Hard, 2 Nightmare (ignores what is unlocked). relics: wear these, e.g. `relics=boar,demon`.
+ * curses: play with these curses, e.g. `curses=horde,tyrant` (ignores whether curses are unlocked).
  */
 const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
 const num = (key: string, fallback: number) => {
@@ -31,4 +32,5 @@ export const DEBUG = {
   event: params.get('event') ?? '',
   difficulty: num('difficulty', -1),
   relics: (params.get('relics') ?? '').split(',').filter(Boolean),
+  curses: (params.get('curses') ?? '').split(',').filter(Boolean),
 };

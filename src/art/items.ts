@@ -383,6 +383,76 @@ export const ITEMS_ART: ArtSet = {
       `<circle cx="30" cy="16" r="2" fill="#fff" opacity=".8"/>`,
   ),
 
+  // Whirlwind: a grey-white funnel with swirling bands (spun in game by flipping and wobbling).
+  twister: (() => {
+    const body = 'M6 22C8 48 24 66 33 84C38 95 41 107 43 121L53 121C55 107 58 95 63 84C72 66 88 48 90 22Z';
+    const top = 'M6 22C6 14 26 9 48 9C70 9 90 14 90 22C90 30 70 35 48 35C26 35 6 30 6 22Z';
+    const bands = 'M9 36Q48 50 87 36M17 56Q48 68 79 56M28 76Q48 85 68 76M36 96Q48 102 60 96M40 112Q48 116 56 112';
+    return svg(
+      96,
+      128,
+      `<defs><linearGradient id="twister_g" x1="0" y1="0" x2="0" y2="1">` +
+        `<stop offset="0" stop-color="#f6fbff"/><stop offset="1" stop-color="#b4c8e6"/></linearGradient>` +
+        `<clipPath id="twister_c"><path d="${body}"/></clipPath></defs>` +
+        `<path d="${body}" fill="url(#twister_g)" ${ol(3.5)}/>` +
+        `<g clip-path="url(#twister_c)" fill="none" stroke-linecap="round">` +
+        `<path d="${bands}" stroke="#93a9cc" stroke-width="5" transform="translate(0 4)"/>` +
+        `<path d="${bands}" stroke="#ffffff" stroke-width="4"/>` +
+        `<path d="M70 26C74 50 64 72 54 100" stroke="#93a9cc" stroke-width="4" opacity=".6"/>` +
+        `</g>` +
+        `<path d="${top}" fill="#dfe9f8" ${ol(3.5)}/>` +
+        `<path d="M14 22C20 17 36 14 48 14C60 14 76 17 82 22C76 27 60 30 48 30C36 30 20 27 14 22Z" fill="#c4d4ec"/>` +
+        `<path d="M26 21Q48 13 70 21" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>`,
+    );
+  })(),
+
+  // Spike Trap, seen from above: an iron plate ringed with spikes, a light in the middle. Glacier Mines are icy.
+  ...Object.fromEntries(
+    (
+      [
+        ['trap', '#e3e9f3', '#a9b6cc', '#6d7690', '#545c75', '#ff4d5e', '#ffd1d6'],
+        ['trap_frost', '#eefbff', '#8fd3f2', '#4f8fd0', '#356fb3', '#6ff3ff', '#e8fdff'],
+      ] as const
+    ).map(([key, spike, spikeShade, plate, plateDark, light, glint]) => [
+      key,
+      svg(
+        64,
+        64,
+        `<path d="${star(32, 32, rep(8, 29), 17, -90)}" fill="${spike}" ${ol(3)}/>` +
+          `<path d="${star(32, 32, rep(8, 24), 17, -90)}" fill="${spikeShade}" opacity=".55"/>` +
+          `<circle cx="32" cy="32" r="17" fill="${plate}" ${ol(3)}/>` +
+          `<circle cx="32" cy="32" r="12" fill="${plateDark}"/>` +
+          `<path d="M22 27Q26 21 33 20" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity=".6"/>` +
+          `<circle cx="32" cy="32" r="6.5" fill="${light}" ${ol(2.5)}/>` +
+          `<circle cx="30" cy="30" r="2.2" fill="${glint}"/>`,
+      ),
+    ]),
+  ),
+
+  // Ward Orb: a glassy blue magic orb; the Aegis one is gold.
+  ...Object.fromEntries(
+    (
+      [
+        ['ward', '#f0fdff', '#6ff3ff', '#2aa9d6', '#8ff0ff'],
+        ['ward_holy', '#fffbe0', '#ffd23f', '#e0901b', '#fff1a0'],
+      ] as const
+    ).map(([key, hi, base, dark, glow]) => [
+      key,
+      svg(
+        56,
+        56,
+        `<defs><radialGradient id="${key}_g" cx="28" cy="28" r="28" gradientUnits="userSpaceOnUse">` +
+          `<stop offset=".45" stop-color="${glow}" stop-opacity=".6"/><stop offset="1" stop-color="${glow}" stop-opacity="0"/></radialGradient>` +
+          `<radialGradient id="${key}_b" cx="23" cy="22" r="18" gradientUnits="userSpaceOnUse">` +
+          `<stop offset="0" stop-color="${hi}"/><stop offset=".55" stop-color="${base}"/><stop offset="1" stop-color="${dark}"/></radialGradient></defs>` +
+          `<circle cx="28" cy="28" r="27" fill="url(#${key}_g)"/>` +
+          `<circle cx="28" cy="28" r="15" fill="url(#${key}_b)" ${ol(2.6)}/>` +
+          `<path d="M20 24Q22 18 28 17" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>` +
+          `<path d="${twinkle(35, 33, 5)}" fill="#fff" opacity=".9"/>`,
+      ),
+    ]),
+  ),
+
   spark: svg(
     24,
     24,

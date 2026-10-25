@@ -71,34 +71,39 @@ export function runeLevels(inv: Inventory): Partial<Record<RuneId, number>> {
   return out;
 }
 
+/**
+ * Total weight of all the new weapons, passives and runes on offer, shared out among them: adding more kinds of
+ * item makes each one rarer but doesn't make upgrades for what you already hold any rarer.
+ */
+const NEW_WEIGHT = { weapon: 10, passive: 5.6, rune: 4.2 };
+
 /** Every upgrade currently offerable, with its weight. */
 function upgradePool(inv: Inventory): { item: Choice; weight: number }[] {
   const pool: { item: Choice; weight: number }[] = [];
+  const allowed = (item: Choice) => !inv.banned.includes(choiceKey(item));
+  const addNew = (items: Choice[], total: number) => {
+    const open = items.filter(allowed);
+    for (const item of open) pool.push({ item, weight: total / Math.max(open.length, 8) });
+  };
   for (const w of inv.weapons) {
     if (!w.evolved && w.level < MAX_WEAPON_LEVEL) pool.push({ item: { kind: 'weapon', id: w.id, level: w.level + 1 }, weight: 1.3 });
   }
   if (inv.weapons.length < MAX_WEAPONS) {
-    for (const id of WEAPON_IDS) {
-      if (!inv.weapons.some((w) => w.id === id)) pool.push({ item: { kind: 'weapon', id, level: 1 }, weight: 1 });
-    }
+    addNew(WEAPON_IDS.filter((id) => !inv.weapons.some((w) => w.id === id)).map((id) => ({ kind: 'weapon', id, level: 1 })), NEW_WEIGHT.weapon);
   }
   for (const p of inv.passives) {
     if (p.level < PASSIVES[p.id].maxLevel) pool.push({ item: { kind: 'passive', id: p.id, level: p.level + 1 }, weight: 1.1 });
   }
   if (inv.passives.length < MAX_PASSIVES) {
-    for (const id of PASSIVE_IDS) {
-      if (!inv.passives.some((p) => p.id === id)) pool.push({ item: { kind: 'passive', id, level: 1 }, weight: 0.8 });
-    }
+    addNew(PASSIVE_IDS.filter((id) => !inv.passives.some((p) => p.id === id)).map((id) => ({ kind: 'passive', id, level: 1 })), NEW_WEIGHT.passive);
   }
   for (const r of inv.runes) {
     if (r.level < RUNES[r.id].maxLevel) pool.push({ item: { kind: 'rune', id: r.id, level: r.level + 1 }, weight: 1 });
   }
   if (inv.runes.length < MAX_RUNES) {
-    for (const id of RUNE_IDS) {
-      if (!inv.runes.some((r) => r.id === id)) pool.push({ item: { kind: 'rune', id, level: 1 }, weight: 0.7 });
-    }
+    addNew(RUNE_IDS.filter((id) => !inv.runes.some((r) => r.id === id)).map((id) => ({ kind: 'rune', id, level: 1 })), NEW_WEIGHT.rune);
   }
-  return pool.filter((p) => !inv.banned.includes(choiceKey(p.item)));
+  return pool.filter((p) => allowed(p.item));
 }
 
 /**

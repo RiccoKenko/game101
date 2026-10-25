@@ -17,6 +17,12 @@ export interface PlayerStats {
   critChance: number;
   /** How much more a critical hit deals. */
   critMult: number;
+  /** Share of max HP recovered every second (Life Spring). */
+  regen: number;
+  /** Multiplier on how long effects last: puddles, axe spins, whirlwinds, traps, burns, freezes (Moon Charm). */
+  durationMult: number;
+  /** Multiplier on all healing (a curse can lower it). */
+  healMult: number;
 }
 
 /** The chosen hero's multipliers (see config/characters.ts). */
@@ -36,7 +42,7 @@ export function computeStats(
     maxHp: Math.round(PLAYER_BASE.maxHp * hero.maxHp * (1 + sh('maxhp')) * (1 + pa('heart'))),
     speed: PLAYER_BASE.speed * (1 + sh('speed') + pa('boots')),
     magnet: PLAYER_BASE.magnet * (1 + sh('magnet') + pa('magnet')),
-    armor: PLAYER_BASE.armor + sh('armor'),
+    armor: PLAYER_BASE.armor + sh('armor') + pa('shield'),
     damageMult: 1 + sh('might') + pa('powergem'),
     cooldownMult: Math.max(0.4, 1 - pa('hourglass')),
     areaMult: hero.area * (1 + pa('tome')),
@@ -44,7 +50,10 @@ export function computeStats(
     xpMult: 1 + sh('growth'),
     goldMult: 1 + sh('greed'),
     revivals: sh('revival'),
-    critChance: PLAYER_BASE.critChance,
+    critChance: PLAYER_BASE.critChance + pa('clover'),
     critMult: PLAYER_BASE.critMult,
+    regen: pa('spring'),
+    durationMult: 1 + pa('charm'),
+    healMult: 1,
   };
 }

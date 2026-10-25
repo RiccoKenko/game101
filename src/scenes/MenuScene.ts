@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { audio, AUDIO_ENABLED, MUSIC_KEYS } from '../audio/audio';
 import { CHARACTERS } from '../config/characters';
+import { CURSE_UNLOCK_MAPS, heatOf } from '../config/curses';
 import { DIFFICULTIES, maxDifficulty } from '../config/difficulty';
 import { BOSSES } from '../config/enemies';
 import { MAPS } from '../config/maps';
@@ -106,6 +107,13 @@ export class MenuScene extends Phaser.Scene {
     this.highlight();
 
     this.playButton = new Button(this, width / 2, playY, { w: 640, h: 150, color: BUTTON.primary, label: 'PLAY', fontSize: 76, onClick: () => this.play() });
+    // Curses (after the first boss): a round button beside PLAY, with the heat picked on a badge.
+    if (save.unlockedMaps >= CURSE_UNLOCK_MAPS) {
+      const cx = width / 2 + 320 + (width / 2 - 320) / 2;
+      new Button(this, cx, playY, { w: 150, h: 150, shape: 'round', color: BUTTON.purple, icon: 'icon_curse', iconSize: 92, onClick: () => this.scene.start('Curses') });
+      const heat = heatOf(save.curses);
+      if (heat > 0) badge(this, cx + 52, playY - 52, heat);
+    }
     this.showHero();
     const by = height - bottom - 120;
     const third = (i: number, label: string, icon: string, color: number, scene: string) =>
@@ -200,7 +208,7 @@ export class MenuScene extends Phaser.Scene {
     const info = locked
       ? `Defeat the ${BOSSES[MAPS[index - 1].boss].name} to unlock`
       : best > 0
-        ? `Best time ${formatTime(best)}${save.bossKills[index] > 0 ? '  ·  Boss beaten' : ''}`
+        ? `Best time ${formatTime(best)}${save.bestHeat[index] > 0 ? `  ·  Heat ${save.bestHeat[index]} cleared` : save.bossKills[index] > 0 ? '  ·  Boss beaten' : ''}`
         : `Boss: ${boss.name} at 5:00`;
     const sub = text(this, left, 28, info, 30, { color: locked ? CSS.muted : CSS.soft, weight: '600', originX: 0, align: 'left', wrap: w / 2 - left - 110, shadow: false });
     c.add([bg, back, tile, bossImg, frame, name, sub]);

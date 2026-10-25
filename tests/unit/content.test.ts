@@ -10,6 +10,13 @@ import { bossesDue, leadersDue, swarmSize } from '../../src/core/waves';
 import { DIFFICULTIES, maxDifficulty } from '../../src/config/difficulty';
 import { RELICS, relicFor } from '../../src/config/relics';
 import { EVENT_GAP, EVENT_QUIET, FINAL_TIME, SHRINE_OFFERS } from '../../src/config/events';
+import { AFFIX_IDS, affixCount } from '../../src/config/affixes';
+import { CURSES, CURSE_IDS, MAX_HEAT, heatOf } from '../../src/config/curses';
+import { RUNE_IDS, RUNE_POWER } from '../../src/config/weapons';
+import { ICONS_ART } from '../../src/art/icons';
+import manifest from '../../src/art/manifest.json';
+import { rollChoices } from '../../src/core/progression';
+import { mulberry32 } from '../../src/core/rng';
 
 describe('weapons', () => {
   it('every weapon has five levels and a card line for each upgrade', () => {
@@ -102,5 +109,75 @@ describe('depth: difficulty, relics, events', () => {
     expect(EVENT_GAP[0]).toBeGreaterThan(EVENT_QUIET * 2);
     expect(bossesDue(FINAL_TIME)).toBe(3);
     expect(SHRINE_OFFERS.some((o) => o.pact) && SHRINE_OFFERS.some((o) => !o.pact)).toBe(true);
+  });
+});
+
+describe('more weapons, items and runes', () => {
+  it('every weapon, evolution, passive and rune has an icon', () => {
+    const painted = new Set(manifest.keys);
+    const icons = [
+      ...Object.values(WEAPONS).map((w) => w.icon),
+      ...Object.values(EVOLUTIONS).map((e) => e.icon),
+      ...Object.values(PASSIVES).map((p) => p.icon),
+      ...Object.values(RUNES).map((r) => r.icon),
+    ];
+    // Painted pictures are listed in the art manifest; the rest are drawn in code.
+    for (const icon of icons) expect(painted.has(icon) || icon in ICONS_ART, icon).toBe(true);
+  });
+
+  it('the new weapons evolve with the new passives and the Frost Rune', () => {
+    expect(WEAPONS.beam.evolution).toEqual({ into: 'rainbow', requires: 'clover' });
+    expect(WEAPONS.twister.evolution).toEqual({ into: 'cyclone', requires: 'magnet' });
+    expect(WEAPONS.traps.evolution).toEqual({ into: 'glacier', requires: 'freeze' });
+    expect(WEAPONS.ward.evolution).toEqual({ into: 'aegis', requires: 'shield' });
+  });
+
+  it('every rune has a strength for each of its levels', () => {
+    for (const id of RUNE_IDS) {
+      const power = (RUNE_POWER as Record<string, number[]>)[id];
+      expect(power, id).toHaveLength(RUNES[id].maxLevel);
+      expect(RUNES[id].levels).toHaveLength(RUNES[id].maxLevel);
+    }
+  });
+
+  it('the new passives change crit, armor, regen and how long effects last', () => {
+    const shop = defaultSave().shop;
+    const base = computeStats(shop, {});
+    const st = computeStats(shop, { clover: 2, shield: 3, spring: 1, charm: 2 });
+    expect(st.critChance).toBeCloseTo(base.critChance + 0.1);
+    expect(st.armor).toBe(base.armor + 3);
+    expect(st.regen).toBeCloseTo(0.003);
+    expect(st.durationMult).toBeCloseTo(1.3);
+    expect(base.healMult).toBe(1);
+  });
+
+  it('more kinds of item do not make upgrades for what you hold any rarer', () => {
+    // With just the start weapon, its upgrade still shows up in a fair share of level-ups.
+    let offered = 0;
+    for (let seed = 0; seed < 400; seed++) {
+      if (rollChoices(newInventory('bow'), mulberry32(seed)).some((c) => c.kind === 'weapon' && c.id === 'bow')) offered++;
+    }
+    expect(offered / 400).toBeGreaterThan(0.15);
+  });
+});
+
+describe('elite powers and curses', () => {
+  it('elites get more powers later, on Nightmare and with a curse, never more than three', () => {
+    expect(affixCount(200, 0)).toBe(1);
+    expect(affixCount(480, 0)).toBe(2);
+    expect(affixCount(200, 2)).toBe(2);
+    expect(affixCount(600, 2, 1)).toBe(3);
+    expect(AFFIX_IDS.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('heat adds up, and saves keep only real curses', () => {
+    expect(heatOf([])).toBe(0);
+    expect(heatOf(['horde', 'iron'])).toBe(3);
+    expect(MAX_HEAT).toBe(CURSES.reduce((a, c) => a + c.heat, 0));
+    const s = sanitize({ curses: ['horde', 'nope', 'tyrant'], bestHeat: [3, 99, -1] });
+    expect(s.curses).toEqual(['horde', 'tyrant']);
+    expect(s.bestHeat).toEqual([3, MAX_HEAT, 0]);
+    expect(sanitize({}).curses).toEqual([]);
+    expect(CURSE_IDS).toHaveLength(new Set(CURSE_IDS).size);
   });
 });

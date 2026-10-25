@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
 import { CHARACTERS, characterDef, type CharacterDef, type CharacterId } from '../config/characters';
+import { CURSE, CURSE_IDS, CURSE_UNLOCK_MAPS, HEAT_GOLD, heatOf, type CurseId } from '../config/curses';
 import { DIFFICULTIES, maxDifficulty, type DifficultyDef } from '../config/difficulty';
 import { BOSSES } from '../config/enemies';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
@@ -109,6 +110,9 @@ export interface RunSummary {
   difficulty: number;
   /** A relic won by this clear, by name. */
   relic: string | null;
+  /** Heat of the curses played with (0 = none), and whether this clear set a new best for the map. */
+  heat: number;
+  newBestHeat: boolean;
   /** Daily quests this run finished, and achievement tiers it reached ("Monster Hunter II"). */
   quests: string[];
   achievements: string[];
@@ -137,6 +141,9 @@ export class GameScene extends Phaser.Scene {
   private difficulty = 0;
   private diff!: DifficultyDef;
   private relics = new Set<RelicId>();
+  /** Curses picked in the menu, and their total heat. */
+  private curses = new Set<CurseId>();
+  private heat = 0;
   private rng!: Rng;
   private world!: World;
   private enemies!: EnemyManager;
@@ -185,6 +192,9 @@ export class GameScene extends Phaser.Scene {
     this.difficulty = DEBUG.difficulty >= 0 ? DEBUG.difficulty : Math.min(save.difficulty[this.mapIndex], maxDifficulty(save.clears[this.mapIndex]));
     this.diff = DIFFICULTIES[this.difficulty];
     this.relics = new Set((DEBUG.relics.length ? DEBUG.relics : save.equipped) as RelicId[]);
+    const picked: string[] = DEBUG.curses.length ? DEBUG.curses : save.unlockedMaps >= CURSE_UNLOCK_MAPS ? save.curses : [];
+    this.curses = new Set(CURSE_IDS.filter((id) => picked.includes(id)));
+    this.heat = heatOf([...this.curses]);
     const hero = (this.hero = characterDef((DEBUG.hero || saveStore.data.character) as CharacterId));
     // Each hero's own weapon belongs to that hero: the others are never offered it.
     const inventory = newInventory(hero.start, CHARACTERS.filter((c) => c.start !== hero.start).map((c) => `weapon:${c.start}`));
@@ -245,11 +255,16 @@ export class GameScene extends Phaser.Scene {
     ctx.shake = (ms, k) => this.shake(ms, k);
     ctx.slowMo = (scale, s) => this.slowMo(scale, s);
     ctx.monsterDamage = this.diff.damage;
-    ctx.monsterHp = () => this.diff.hp * (this.run.time < this.run.greedUntil ? GREED_PACT.hp : 1);
+    ctx.difficulty = this.difficulty;
+    ctx.affixBonus = this.curses.has('mutation') ? 1 : 0;
+    ctx.monsterSpeed = this.curses.has('frenzy') ? CURSE.frenzy : 1;
+    const iron = this.curses.has('iron') ? CURSE.iron : 1;
+    ctx.monsterHp = () => this.diff.hp * iron * (this.run.time < this.run.greedUntil ? GREED_PACT.hp : 1);
     ctx.player = this.player = new Player(this, stats, hero);
     ctx.fx = this.fx = new Effects(this);
     this.player.onStep = (x, y) => this.fx.dust(x, y);
     ctx.enemies = this.enemies = new EnemyManager(ctx);
+    this.enemies.onEnrage = (e) => this.events.emit('toast', `${e.boss!.name} is enraged!`);
     ctx.pickups = this.pickups = new PickupManager(ctx, {
       onXp: (v) => this.addXp(v),
       onCoin: (v) => {
@@ -358,7 +373,9 @@ export class GameScene extends Phaser.Scene {
       my = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0);
     }
     this.player.move(mx, my, dt);
-    if (this.weapons.regen > 0) this.player.heal((run.stats.maxHp * this.weapons.regen * dt) / 100);
+    // Sanctuary and the Life Spring slowly heal.
+    const regen = this.weapons.regen / 100 + run.stats.regen;
+    if (regen > 0) this.player.heal(run.stats.maxHp * regen * dt);
     this.player.update(dt);
     this.cameras.main.centerOn(this.player.x, this.player.y);
     this.world.update(dt);
@@ -453,7 +470,7 @@ export class GameScene extends Phaser.Scene {
       }
       this.events.emit('toast', 'They surround you!');
     }
-    this.spawnAcc += spawnRate(t) * (run.boss ? 0.25 : 1) * dt;
+    this.spawnAcc += spawnRate(t) * (run.boss ? 0.25 : 1) * (this.curses.has('horde') ? CURSE.horde : 1) * dt;
     const weights = enemyWeights(t);
     const table = this.map.enemies.map((item, i) => ({ item, weight: weights[i] }));
     for (const x of this.map.extras) {
@@ -465,7 +482,7 @@ export class GameScene extends Phaser.Scene {
       this.spawnAcc -= 1;
       const p = this.spawnPoint();
       const id = weightedPick(this.rng, table);
-      this.enemies.spawn(id, p.x, p.y, this.rng() < eliteChance(t));
+      this.enemies.spawn(id, p.x, p.y, this.rng() < eliteChance(t) * (this.curses.has('mutation') ? CURSE.mutationElites : 1));
     }
   }
 
@@ -473,20 +490,30 @@ export class GameScene extends Phaser.Scene {
   private spawnLeader(k: number): void {
     if (this.run.boss) return;
     const def = BOSSES[this.map.leader];
-    const hp = (1 + 0.35 * (hpMultiplier(this.run.time) - 1)) * bossHpMultiplier(k);
+    const hp = (1 + 0.35 * (hpMultiplier(this.run.time) - 1)) * bossHpMultiplier(k) * this.tyrantHp;
     const a = Math.PI / 2 + (this.rng() - 0.5) * 0.6;
-    this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, hp);
+    this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, hp, this.angryFromStart(k));
     audio.sfx('boss_warning');
     this.events.emit('boss', def.name);
   }
 
+  /** Late bosses and leaders (the third on) come in already enraged; with the Tyrant curse, all of them do. */
+  private angryFromStart(k: number): boolean {
+    return k >= 2 || this.curses.has('tyrant');
+  }
+
+  /** Extra boss and leader HP from the Tyrant curse. */
+  private get tyrantHp(): number {
+    return this.curses.has('tyrant') ? CURSE.tyrantHp : 1;
+  }
+
   private spawnBoss(k: number): void {
     const def = BOSSES[this.map.boss];
-    const hp = (1 + 0.35 * (hpMultiplier(this.run.time) - 1)) * bossHpMultiplier(k);
+    const hp = (1 + 0.35 * (hpMultiplier(this.run.time) - 1)) * bossHpMultiplier(k) * this.tyrantHp;
     // It drops from the sky into the lower half of the screen, clear of the HUD and the boss bar (and mostly
     // above the joystick), where the hero can watch it land.
     const a = Math.PI / 2 + (this.rng() - 0.5) * 0.6;
-    this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, hp);
+    this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, hp, this.angryFromStart(k));
     audio.sfx('boss_warning');
     this.events.emit('boss', def.name);
     // The boss at 15:00 is the last one: beat it and the stage is cleared.
@@ -592,7 +619,7 @@ export class GameScene extends Phaser.Scene {
   hurtPlayer(amount: number): void {
     const run = this.run;
     if (this.player.iframes > 0 || run.ended || DEBUG.god) return;
-    const dmg = Math.max(1, Math.round(amount - run.stats.armor));
+    const dmg = Math.max(1, Math.round(amount * (this.curses.has('fragile') ? CURSE.fragile : 1) - run.stats.armor));
     this.player.hp -= dmg;
     this.player.iframes = PLAYER_BASE.iframes;
     this.player.hitFlash();
@@ -649,7 +676,8 @@ export class GameScene extends Phaser.Scene {
     const run = this.run;
     run.stats = computeStats(saveStore.data.shop, passiveLevels(run.inventory), this.hero);
     const st = run.stats;
-    st.goldMult *= this.diff.gold;
+    st.goldMult *= this.diff.gold * (1 + HEAT_GOLD * this.heat);
+    if (this.curses.has('famine')) st.healMult = CURSE.famine;
     if (this.relics.has('slime')) st.xpMult *= 1.1;
     if (this.relics.has('lich')) {
       st.magnet *= 1.4;
@@ -688,9 +716,14 @@ export class GameScene extends Phaser.Scene {
     if (!this.run.ended) this.scene.resume();
   }
 
+  /** Cards per level-up (the Narrow Path curse deals one fewer). */
+  private get cardCount(): number {
+    return this.curses.has('fewer') ? 2 : 3;
+  }
+
   private openLevelUp(): void {
     this.pendingLevelUps--;
-    const choices = rollChoices(this.run.inventory, this.rng, 3);
+    const choices = rollChoices(this.run.inventory, this.rng, this.cardCount);
     if (DEBUG.bot) {
       this.applyChoiceNow(this.botPick(choices));
       return;
@@ -708,7 +741,7 @@ export class GameScene extends Phaser.Scene {
       reroll: (current: Choice[]) => {
         if (run.rerolls <= 0) return null;
         run.rerolls--;
-        return rollChoices(run.inventory, this.rng, 3, current);
+        return rollChoices(run.inventory, this.rng, this.cardCount, current);
       },
       banish: (c: Choice, current: Choice[]) => {
         if (run.banishes <= 0) return null;
@@ -760,6 +793,10 @@ export class GameScene extends Phaser.Scene {
     }
     this.refreshStats();
     [...this.relics].forEach((id, i) => this.time.delayedCall(1200 + i * 2900, () => this.events.emit('toast', `${relicDef(id).name}: ${relicDef(id).text}`)));
+    if (this.heat > 0) {
+      const msg = `Cursed run: heat ${this.heat}, gold +${Math.round(HEAT_GOLD * this.heat * 100)}%`;
+      this.time.delayedCall(1200 + this.relics.size * 2900, () => this.events.emit('toast', msg));
+    }
   }
 
   // ---------------------------------------------------------------- shrine
@@ -893,6 +930,8 @@ export class GameScene extends Phaser.Scene {
     const total = collected + bonus + victoryBonus;
     // A clear opens the next difficulty and may win a relic (worn at once if a slot is free).
     let relic: string | null = null;
+    const newBestHeat = run.won && this.heat > save.bestHeat[this.mapIndex];
+    if (newBestHeat) save.bestHeat[this.mapIndex] = this.heat;
     if (run.won) {
       save.clears[this.mapIndex] = Math.max(save.clears[this.mapIndex], this.difficulty + 1);
       const r = relicFor(this.mapIndex, this.difficulty);
@@ -932,6 +971,8 @@ export class GameScene extends Phaser.Scene {
       victoryBonus,
       difficulty: this.difficulty,
       relic,
+      heat: this.heat,
+      newBestHeat,
     };
     audio.stopMusic();
     if (run.won) {

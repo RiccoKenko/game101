@@ -1,4 +1,5 @@
 import { CHARACTER_IDS, type CharacterId } from '../config/characters';
+import { CURSE_IDS, MAX_HEAT, type CurseId } from '../config/curses';
 import { maxDifficulty } from '../config/difficulty';
 import { MAX_RELICS, RELIC_IDS, type RelicId } from '../config/relics';
 import { MAPS } from '../config/maps';
@@ -67,6 +68,9 @@ export interface SaveData {
   /** The hero picked in the menu, and the heroes unlocked (the archer always is). */
   character: CharacterId;
   characters: CharacterId[];
+  /** Curses picked for the next runs, and per map the most heat a clear was won with. */
+  curses: CurseId[];
+  bestHeat: number[];
 }
 
 export interface KeyValueStorage {
@@ -96,6 +100,8 @@ export function defaultSave(): SaveData {
     equipped: [],
     character: 'archer',
     characters: ['archer'],
+    curses: [],
+    bestHeat: MAPS.map(() => 0),
   };
 }
 
@@ -142,6 +148,8 @@ export function sanitize(raw: unknown): SaveData {
     out.characters = CHARACTER_IDS.filter((id) => id === 'archer' || (r.characters as unknown[]).includes(id));
   }
   if (out.characters.includes(r.character as CharacterId)) out.character = r.character as CharacterId;
+  if (Array.isArray(r.curses)) out.curses = CURSE_IDS.filter((id) => (r.curses as unknown[]).includes(id));
+  if (Array.isArray(r.bestHeat)) out.bestHeat = MAPS.map((_, i) => Math.floor(num((r.bestHeat as unknown[])[i], 0, 0, MAX_HEAT)));
   return out;
 }
 
