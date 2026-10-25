@@ -93,3 +93,41 @@ test('a finished daily quest pays out from the Quests screen', async ({ page }) 
     .toBe(65);
   expect(errors).toEqual([]);
 });
+
+test('a run that defeats enough slimes unlocks the Lucky Clover and earns mastery', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('little-archer-save-v1')) localStorage.setItem('little-archer-save-v1', JSON.stringify({ version: 1, bestiary: { slime: 398 } }));
+  });
+  await page.goto('/?autostart&bot&speed=8&seed=4');
+  type G = { scene: { getScene(k: string): { run?: { kills: number }; endRun?: (quit: boolean) => void }; isActive(k: string): boolean } };
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __game?: G }).__game?.scene.getScene('Game')?.run?.kills ?? 0), { timeout: 60_000 })
+    .toBeGreaterThanOrEqual(3);
+  // End the run as if the hero fell.
+  await page.evaluate(() => (window as unknown as { __game: G }).__game.scene.getScene('Game').endRun!(false));
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __game: G }).__game.scene.isActive('GameOver')), { timeout: 10_000 }).toBe(true);
+  const save = await page.evaluate(() => JSON.parse(localStorage.getItem('little-archer-save-v1')!));
+  expect(save.unlocked).toContain('passive:clover');
+  expect(save.bestiary.slime).toBeGreaterThanOrEqual(400);
+  expect(save.stats.deaths).toBe(1);
+  expect(save.mastery.archer).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
+test('the Collection opens from the menu and every tab draws', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/');
+  await expect.poll(() => scenes(page), { timeout: 30_000 }).toContain('Menu');
+  const box = (await page.locator('canvas').boundingBox())!;
+  const scale = box.width / 1080;
+  // The round book button sits left of PLAY, at the same height.
+  await page.touchscreen.tap(box.x + 110 * scale, box.y + box.height - 300 * scale);
+  await expect.poll(() => scenes(page), { timeout: 10_000 }).toContain('Collection');
+  for (const tab of ['runes', 'items', 'monsters', 'heroes', 'weapons']) {
+    await page.evaluate((t) => (window as unknown as { __game: { scene: { getScene(k: string): { show(t: string): void } } } }).__game.scene.getScene('Collection').show(t), tab);
+  }
+  expect(errors).toEqual([]);
+});

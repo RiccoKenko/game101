@@ -1412,6 +1412,21 @@ export const ICONS_ART: ArtSet = {
   icon_rune_giant: svg(S, S, runeStone('icon_rune_giant', '#ffb36b', 'M48 22L68 46L56 46L56 76L40 76L40 46L28 46Z')),
   icon_rune_nova: svg(S, S, runeStone('icon_rune_nova', '#ffe07a', `M48 26L48 74M24 50L72 50M31 33L65 67M65 33L31 67`)),
   icon_banish: svg(S, S, tube(arc(48, 48, 30, 0, 359), 10, '#ff5a5a', 5) + tube('M27 69L69 27', 10, '#ff5a5a', 5)),
+
+  // ======================= v9 collection =======================
+  icon_book: svg(
+    S,
+    S,
+    cel('icon_book_p', rr(22, 16, 62, 72, 6), '#fff4dc', '#e2c99a', [-3, -3]) +
+      ln('M80 24L80 82M76 84L28 84', '#d9bd8a', 2) +
+      cel('icon_book_c', rr(12, 8, 64, 72, 7), '#2fae96', '#1d7563', [-5, -5]) +
+      cel('icon_book_s', rr(12, 8, 13, 72, 6), '#1f8a76', '#145a4c', [-2, -2], 3.5) +
+      ln('M12 20L25 20M12 68L25 68', GOLD, 3.5) +
+      `<path d="${star(51, 44, 21, 9, 5, -90)}" fill="${GOLD}" stroke="${O}" stroke-width="4" stroke-linejoin="round"/>` +
+      hl('M48 30L51 25L53 31Z', 0.9) +
+      cel('icon_book_r', 'M58 78L66 78L66 92L62 88L58 92Z', RED, RED_D, [-1.5, -1.5], 3) +
+      hl(rr(30, 13, 26, 3.5, 1.75), 0.5),
+  ),
 };
 
 /** The painted icons sit on a dark tile lit from the middle; the drawn ones shown among them get one too. */

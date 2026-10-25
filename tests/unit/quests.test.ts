@@ -26,6 +26,9 @@ const run = (r: Partial<RunReport> = {}): RunReport => ({
   gold: 40,
   chests: 0,
   evolutions: 0,
+  monsters: {},
+  shrines: 0,
+  died: false,
   ...r,
 });
 
@@ -147,12 +150,12 @@ describe('achievements', () => {
   it('a finished run updates the lifetime numbers', () => {
     const save = defaultSave();
     applyRun(save, run({ kills: 100, eliteKills: 3, chests: 1, evolutions: 1, gold: 55.7, level: 14 }), 20, MONDAY);
-    expect(save.stats).toEqual({ runs: 1, kills: 100, eliteKills: 3, chests: 1, evolutions: 1, gold: 75, bestLevel: 14 });
+    expect(save.stats).toEqual({ runs: 1, kills: 100, eliteKills: 3, chests: 1, evolutions: 1, gold: 75, bestLevel: 14, shrines: 0, deaths: 0 });
   });
 
   it('old saves keep their kills and runs and get the new fields', () => {
     const s = sanitize({ stats: { runs: 4, kills: 900 }, achievements: { hunter: 9, bogus: 2 } });
-    expect(s.stats).toEqual({ runs: 4, kills: 900, eliteKills: 0, chests: 0, evolutions: 0, gold: 0, bestLevel: 0 });
+    expect(s.stats).toEqual({ runs: 4, kills: 900, eliteKills: 0, chests: 0, evolutions: 0, gold: 0, bestLevel: 0, shrines: 0, deaths: 0 });
     expect(s.achievements.hunter).toBe(4);
     expect(s.daily.day).toBe('');
   });

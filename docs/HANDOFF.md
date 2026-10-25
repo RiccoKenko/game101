@@ -2,7 +2,40 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 สถานะล่าสุด (25 ต.ค. 2026, v8)
+## 📍 สถานะล่าสุด (25 ต.ค. 2026, v9)
+- **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุค "MMORPG เกาหลียุค 2000"
+- **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`)
+  - Test: typecheck, unit 80 ข้อ, e2e 6 ข้อ, build ผ่าน
+- **ลิงก์ทดสอบ (Artifact เดิม, ตอนนี้ version 9):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
+  - สร้างใหม่: `node scripts/build-artifact.mjs <scratchpad>/monster-rush.html` แล้ว publish ทับโดยใส่ `url` นี้ (session ใหม่ต้อง `action: read` ลิงก์ก่อน ไม่งั้นจะได้ลิงก์ใหม่)
+  - มีลิงก์ซ้ำที่สร้างพลาดตอน v7: https://claude.ai/artifact/DaeJvjMYDtgQqPh675dMmy (ลบได้ถ้าเจ้านายสั่ง)
+- **ลิงก์หลัก little-archer.vercel.app ยังเป็นภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`) ⚠️ รอเจ้านายสั่ง
+  - วิธี deploy: Vercel MCP `create_deployment` (project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`)
+- **ที่มาของ v9:** เจ้านายขอให้คิดว่าจะทำให้เล่นหลายรอบแล้วไม่เบื่อ มีเป้าหมาย เล่นได้ยาว มีการพัฒนา → ผมเสนอแผน 4 ช่วง ("วงจร 3 ชั้น": ในตา / ระหว่างตา / ระยะยาว) เจ้านายเลือก **ช่วง 1 แบบ (ก) ล็อกของแล้วปลดด้วยภารกิจ** ทำด้วยโค้ดทั้งหมด $0
+- **รอบ v9 = สมุดสะสม + ระดับฮีโร่**
+  - **ของล็อก 26 ชิ้น** `config/collection.ts` (`UNLOCKS`): อาวุธ 11, ไอเทม 9, รูน 6 (ของรุ่น v5 ขึ้นไป); ของพื้นฐานที่เปิดตั้งแต่แรกวิวัฒนาการได้ด้วยของที่เปิดอยู่ (มี unit test)
+    - เงื่อนไข: ฆ่ามอนชนิดนั้น (`bestiary`), ล้มบอส/หัวหน้า, หรือสถิติ (`level`, `time`, `chests`, `elites`, `evolutions`, `shrines`, `deaths`) — Meadow ได้ 15 ชิ้น, Graveyard 6, Castle 5
+    - ล็อกด้วยการใส่ key (`weapon:shuriken`) ลง `Inventory.banned` ตอนเริ่มรอบ (`GameScene.create`) จึงไม่ต้องแก้ระบบสุ่มการ์ด
+    - ทำได้กลางรอบมีป้าย "Unlocked!" (`GameScene.checkQuests`) แต่ได้จริงตอนจบรอบ (`claimUnlocks` หลัง `applyRun`) → ออกในการ์ดรอบถัดไป; เมนูเรียก `claimUnlocks` ด้วย (เซฟเก่าได้ของตามสถิติที่เคยทำ)
+  - **เซฟใหม่** (`core/save.ts`): `bestiary`, `unlocked`, `seen` (ดูแล้ว → ป้าย NEW หาย), `mastery` (XP ต่อฮีโร่), `stats.shrines`, `stats.deaths`; `RunReport` มี `monsters`, `shrines`, `died`
+  - **ระดับฮีโร่** `config/mastery.ts` + `core/collection.ts`: Lv 1-15, XP ต่อเลเวล 300+150×(lv-1) (รวม ~17,850 ต่อตัว), XP/รอบ = วินาที + kill/25 + 60×บอส/หัวหน้า; ทุกเลเวล ดาเมจ/HP +1%; รางวัล: พรสวรรค์ Lv 3/7/11 (archer: rain, trick, mark; mage: stars, stormcall, arcecho), Reroll Lv 5, Banish Lv 9, อาวุธเริ่ม +1 ขั้น Lv 13 (ซ้อนกับ Boar Tusk), Master + เหรียญ +10% Lv 15 (`masteryPerks` ใช้ใน `refreshStats`)
+  - **หน้า Collection** `scenes/CollectionScene.ts`: แท็บ Weapons/Runes/Items/Monsters/Heroes, ช่องที่ล็อกมีแม่กุญแจ + หลอดความคืบหน้า, แตะช่องดูรายละเอียด/วิธีปลดล็อก/วิวัฒนาการ, แท็บ Heroes แสดงเส้นทางรางวัล
+  - **เมนู:** ปุ่มหนังสือ (`icon_book` SVG ใหม่) ซ้ายของ PLAY + ป้ายตัวเลขของใหม่ที่ยังไม่ดู; แผ่นชื่อฮีโร่มีแถบ Mastery + รางวัลถัดไป (แตะเปิดแท็บ Heroes)
+  - **หน้าจบเกม:** แถว "<ฮีโร่> mastery +XP" (LEVEL UP สีเขียว), แถบ "N NEW UNLOCKS!" พร้อมไอคอน; ข่าวด้านล่างย่อขนาดเองถ้าไม่พอที่
+  - สวิตช์ทดสอบ: `?unlock` ปลดทุกอย่าง (รวมของในสมุด), `?mastery=15`
+- **ข้อสังเกต:** ฮีโร่ทั้งสองเริ่ม Mastery 1 ในเซฟเดิมของเจ้านาย (ไม่มีประวัติแยกตัว) แต่ Lv 3 ได้ภายใน 2-3 รอบสั้น; ของที่สถิติเก่าถึงแล้ว (เช่น Wisdom Cap, Prism Beam, Giant Rune) จะปลดทันทีพร้อมป้าย NEW
+- **รอเจ้านาย:**
+  1. ลองเล่น v9 แล้วบอกว่าเงื่อนไขปลดล็อกเร็ว/ช้าไป และอยากให้ของไหนเปิดตั้งแต่แรก
+  2. ทำช่วงถัดไปไหม (จากแผนที่เสนอ): **ช่วง 2** การ์ดโชคชะตาก่อนเริ่มตา + ปุ่มพุ่งหลบ/ท่าไม้ตาย, **ช่วง 3** โหมดเล่นต่อหลัง 15:00 + โจทย์ประจำวัน (ตารางอันดับออนไลน์ทีหลัง), **ช่วง 4** อุปกรณ์สวมใส่แบบ Archero (ตัวดูดเงินระยะยาว)
+  3. คำถามค้างจาก v8: ฮีโร่ใหม่ (OpenAI ~$0.6/ตัว, วิธีอยู่ในหัวข้อ v8 ด้านล่าง), ขึ้นลิงก์หลัก
+- **ของชั่วคราวใน container (หายได้):** dev server `npx vite --port 5181`; สคริปต์ `scratchpad/v9/ui.cjs` (ถ่ายเมนู/Collection ทุกแท็บ/หน้าจบเกม/ป้ายปลดล็อกกลางรอบ, `SKIP4=1` หรือ `ONLY4=1`), `scratchpad/v9/artifact.cjs` (เปิดไฟล์ Artifact ออฟไลน์), สคริปต์ v7/v8 ใน `scratchpad/v7/`
+- **งบ OpenAI:** ใช้ไป **$3.53 จาก $5** (เหลือ $1.47) ตาม `art/openai-log.jsonl` (v7-v9 ไม่ได้ใช้)
+  - ⚠️ commit log ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไป/เหลือเท่าไร; ห้ามเพิ่ม `OPENAI_BUDGET_USD` ถ้าเจ้านายไม่สั่ง
+- **บทเรียน:** ถึงข้อ 53 แล้ว (ข้อต่อไปคือ 54)
+- **ภาษา:** เจ้านายขอให้ตอบเป็น**ภาษาไทย** (ใช้ศัพท์อังกฤษให้น้อย)
+- **ทดสอบ:** เครื่องใน container ช้า (เกมเดิน ~0.5 วินาทีต่อวินาทีจริงตอนบอท speed=8) ใช้ worktree แช่แข็ง (`git worktree add <scratchpad>/after HEAD` + symlink node_modules + vite port อื่น) ตอนวัดสมดุล เพราะ dev server รีโหลดเมื่อแก้โค้ด; สคริปต์ที่ใช้ `?autostart` ห้ามรอฉาก Menu
+
+## รอบ v8 (25 ต.ค. 2026)
 - **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุค "MMORPG เกาหลียุค 2000"
 - **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`)
   - Test: typecheck, unit 67 ข้อ, e2e 4 ข้อ, build ผ่าน

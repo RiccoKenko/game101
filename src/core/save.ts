@@ -1,4 +1,5 @@
 import { CHARACTER_IDS, type CharacterId } from '../config/characters';
+import { BESTIARY, UNLOCK_KEYS, type MonsterId } from '../config/collection';
 import { CURSE_IDS, MAX_HEAT, type CurseId } from '../config/curses';
 import { maxDifficulty } from '../config/difficulty';
 import { MAX_RELICS, RELIC_IDS, type RelicId } from '../config/relics';
@@ -42,6 +43,9 @@ export interface LifetimeStats {
   /** All gold earned, end-of-run bonus included (quest rewards not). */
   gold: number;
   bestLevel: number;
+  /** Shrine offers accepted, and runs that ended with the hero falling. */
+  shrines: number;
+  deaths: number;
 }
 
 export interface SaveData {
@@ -71,6 +75,13 @@ export interface SaveData {
   /** Curses picked for the next runs, and per map the most heat a clear was won with. */
   curses: CurseId[];
   bestHeat: number[];
+  /** Kills per kind of monster, for the Collection. */
+  bestiary: Partial<Record<MonsterId, number>>;
+  /** Weapons, items and runes opened (keys like 'weapon:shuriken'), and those already looked at in the Collection. */
+  unlocked: string[];
+  seen: string[];
+  /** Mastery XP earned with each hero. */
+  mastery: Record<CharacterId, number>;
 }
 
 export interface KeyValueStorage {
@@ -79,6 +90,7 @@ export interface KeyValueStorage {
 }
 
 const KEY = 'little-archer-save-v1';
+const MONSTER_IDS = BESTIARY.flatMap((g) => g.ids);
 
 export function defaultSave(): SaveData {
   const shop = {} as Record<ShopId, number>;
@@ -91,7 +103,7 @@ export function defaultSave(): SaveData {
     bestTimes: MAPS.map(() => 0),
     bossKills: MAPS.map(() => 0),
     settings: { music: true, sfx: true, shake: true },
-    stats: { runs: 0, kills: 0, eliteKills: 0, chests: 0, evolutions: 0, gold: 0, bestLevel: 0 },
+    stats: { runs: 0, kills: 0, eliteKills: 0, chests: 0, evolutions: 0, gold: 0, bestLevel: 0, shrines: 0, deaths: 0 },
     daily: { day: '', quests: [], bonus: 0, bonusClaimed: false },
     achievements: Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, 0])) as Record<AchievementId, number>,
     clears: MAPS.map(() => 0),
@@ -102,6 +114,10 @@ export function defaultSave(): SaveData {
     characters: [...CHARACTER_IDS],
     curses: [],
     bestHeat: MAPS.map(() => 0),
+    bestiary: {},
+    unlocked: [],
+    seen: [],
+    mastery: Object.fromEntries(CHARACTER_IDS.map((id) => [id, 0])) as Record<CharacterId, number>,
   };
 }
 
@@ -147,6 +163,21 @@ export function sanitize(raw: unknown): SaveData {
   if (CHARACTER_IDS.includes(r.character as CharacterId)) out.character = r.character as CharacterId;
   if (Array.isArray(r.curses)) out.curses = CURSE_IDS.filter((id) => (r.curses as unknown[]).includes(id));
   if (Array.isArray(r.bestHeat)) out.bestHeat = MAPS.map((_, i) => Math.floor(num((r.bestHeat as unknown[])[i], 0, 0, MAX_HEAT)));
+  if (r.bestiary && typeof r.bestiary === 'object') {
+    const b = r.bestiary as Record<string, unknown>;
+    for (const id of MONSTER_IDS) {
+      const n = Math.floor(num(b[id], 0));
+      if (n > 0) out.bestiary[id] = n;
+    }
+  }
+  for (const key of ['unlocked', 'seen'] as const) {
+    const arr = r[key];
+    if (Array.isArray(arr)) out[key] = UNLOCK_KEYS.filter((k) => arr.includes(k));
+  }
+  if (r.mastery && typeof r.mastery === 'object') {
+    const m = r.mastery as Record<string, unknown>;
+    for (const id of CHARACTER_IDS) out.mastery[id] = Math.floor(num(m[id], 0));
+  }
   return out;
 }
 

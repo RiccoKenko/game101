@@ -1,17 +1,20 @@
 import Phaser from 'phaser';
 import { audio, AUDIO_ENABLED, MUSIC_KEYS } from '../audio/audio';
 import { CHARACTERS } from '../config/characters';
+import { UNLOCK_KEYS } from '../config/collection';
+import { describeReward, MASTERY, MASTERY_REWARDS } from '../config/mastery';
 import { CURSE_UNLOCK_MAPS, heatOf } from '../config/curses';
 import { DIFFICULTIES, maxDifficulty } from '../config/difficulty';
 import { BOSSES } from '../config/enemies';
 import { MAPS } from '../config/maps';
 import { DEBUG } from '../core/debug';
 import { formatTime } from '../core/format';
+import { claimUnlocks, masteryState, unseen, xpForLevel } from '../core/collection';
 import { claimableCount, ensureDaily } from '../core/quests';
 import { saveStore } from '../core/save';
 import { safeInsets } from '../ui/safe';
 import { BUTTON, CSS } from '../ui/theme';
-import { badge, Button, gradientText, panel, panelTexture, ribbon, slotTexture, text } from '../ui/widgets';
+import { badge, Bar, Button, gradientText, panel, panelTexture, ribbon, slotTexture, text } from '../ui/widgets';
 
 const CARD_W = 960;
 const CARD_H = 152;
@@ -34,6 +37,10 @@ export class MenuScene extends Phaser.Scene {
   private heroName!: Phaser.GameObjects.Text;
   private heroPros!: Phaser.GameObjects.Text;
   private heroCons!: Phaser.GameObjects.Text;
+  /** The hero's mastery on the plate: level, bar, and what the next level brings. */
+  private heroLevel!: Phaser.GameObjects.Text;
+  private heroNext!: Phaser.GameObjects.Text;
+  private heroBar!: Bar;
   private heroBox = { x: 0, top: 0, bottom: 0 };
 
   constructor() {
@@ -43,7 +50,13 @@ export class MenuScene extends Phaser.Scene {
   create(): void {
     const save = saveStore.data;
     if (DEBUG.gold >= 0) save.gold = DEBUG.gold;
-    if (DEBUG.unlock) save.unlockedMaps = MAPS.length;
+    if (DEBUG.unlock) {
+      save.unlockedMaps = MAPS.length;
+      save.unlocked = [...UNLOCK_KEYS];
+    }
+    if (DEBUG.mastery > 0) for (const c of CHARACTERS) save.mastery[c.id] = xpForLevel(DEBUG.mastery);
+    // Anything the lifetime numbers already earn (old saves, or a run that ended in a way that skipped it).
+    claimUnlocks(save);
     // New day: new quests (and any reward left unclaimed yesterday is paid now, so the gold shown is right).
     ensureDaily(save);
     saveStore.save();
@@ -112,6 +125,14 @@ export class MenuScene extends Phaser.Scene {
       const heat = heatOf(save.curses);
       if (heat > 0) badge(this, cx + 52, playY - 52, heat);
     }
+    // The Collection: a round button on the other side of PLAY, with the number of new unlocks not yet looked at.
+    const bx = (width / 2 - 320) / 2;
+    new Button(this, bx, playY, { w: 150, h: 150, shape: 'round', color: BUTTON.secondary, icon: 'icon_book', iconSize: 96, onClick: () => this.scene.start('Collection') });
+    const fresh = unseen(save).length;
+    if (fresh > 0) {
+      const b = badge(this, bx + 52, playY - 52, fresh);
+      this.tweens.add({ targets: b, scale: 1.15, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
     this.showHero();
     const by = height - bottom - 120;
     const third = (i: number, label: string, icon: string, color: number, scene: string) =>
@@ -139,16 +160,22 @@ export class MenuScene extends Phaser.Scene {
    * hero when there is no painted art.
    */
   private hero(x: number, areaTop: number, areaBottom: number): void {
-    const plateH = 136;
+    const plateH = 196;
     const bottom = areaBottom - plateH - 6;
     this.heroBox = { x, top: areaTop, bottom };
     if (this.textures.exists('hero_menu')) {
       this.add.ellipse(x, bottom - 14, 300, 46, 0x050a18, 0.35);
       const py = areaBottom - plateH / 2;
-      panel(this, x, py, 960, plateH, { radius: 28 });
-      this.heroName = text(this, x, py - 40, '', 40, { color: CSS.gold });
-      this.heroPros = text(this, x, py + 4, '', 27, { color: '#b4f0a0', weight: '600', shadow: false });
-      this.heroCons = text(this, x, py + 40, '', 27, { color: '#ffb0a0', weight: '600', shadow: false });
+      const plate = panel(this, x, py, 960, plateH, { radius: 28 });
+      // Tapping the plate opens the heroes' mastery page.
+      plate.setInteractive({ useHandCursor: true }).on('pointerup', () => this.scene.start('Collection', { tab: 'heroes' }));
+      this.heroName = text(this, x, py - 70, '', 40, { color: CSS.gold });
+      this.heroPros = text(this, x, py - 26, '', 27, { color: '#b4f0a0', weight: '600', shadow: false });
+      this.heroCons = text(this, x, py + 10, '', 27, { color: '#ffb0a0', weight: '600', shadow: false });
+      const my = py + 58;
+      this.heroLevel = text(this, x - 450, my, '', 30, { color: CSS.gold, originX: 0 });
+      this.heroBar = new Bar(this, x - 250, my - 10, 200, 20, 0x5ad15a);
+      this.heroNext = text(this, x - 30, my, '', 25, { color: CSS.soft, weight: '600', originX: 0, shadow: false, align: 'left' });
       const ay = bottom - Math.min(HERO_H, bottom - areaTop - 6) / 2;
       for (const dir of [-1, 1]) {
         const b = new Button(this, x + dir * 410, ay, {
@@ -281,9 +308,15 @@ export class MenuScene extends Phaser.Scene {
     img.setScale(Math.min(HERO_H, bottom - top - 6) / img.height);
     this.tweens.add({ targets: img, x, alpha: 1, duration: 220, ease: 'Quad.easeOut' });
     this.tweens.add({ targets: img, y: img.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.heroName.setText(`${c.name} · ${c.title}`);
+    const st = masteryState(saveStore.data.mastery[c.id]);
+    const master = st.level >= MASTERY.maxLevel;
+    this.heroName.setText(`${master ? 'Master ' : ''}${c.name} · ${c.title}`);
     this.heroPros.setText(`Strong: ${c.pros}`);
     this.heroCons.setText(`Weak: ${c.cons}`);
+    this.heroLevel.setText(`Mastery ${st.level}`);
+    this.heroBar.set(master ? 1 : st.into / st.need);
+    const next = MASTERY_REWARDS[c.id].find((r) => r.level > st.level);
+    this.heroNext.setText(master ? 'Fully mastered!' : next ? `Lv ${next.level}: ${describeReward(next)}` : `Next level: +${Math.round(MASTERY.damage * 100)}% damage and HP`);
   }
 
   private play(): void {

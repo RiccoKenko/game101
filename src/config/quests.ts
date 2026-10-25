@@ -1,4 +1,5 @@
 import { formatTime } from '../core/format';
+import { type MonsterId } from './collection';
 
 /** What one run did, measured when it ends (or live, for the "quest complete" toasts during a run). */
 export interface RunReport {
@@ -13,6 +14,11 @@ export interface RunReport {
   gold: number;
   chests: number;
   evolutions: number;
+  /** Kills by kind of monster (bosses and leaders too), for the Collection. */
+  monsters: Partial<Record<MonsterId, number>>;
+  /** Shrine offers accepted, and whether the run ended with the hero falling (not a clear, not a quit). */
+  shrines: number;
+  died: boolean;
 }
 
 /** A run only counts for "play N runs" if it lasted this long (so quitting at once doesn't farm it). */

@@ -3,15 +3,18 @@ import { audio } from '../audio/audio';
 import { CHARACTERS, characterDef, type CharacterDef, type CharacterId } from '../config/characters';
 import { CURSE, CURSE_IDS, CURSE_UNLOCK_MAPS, HEAT_GOLD, heatOf, type CurseId } from '../config/curses';
 import { DIFFICULTIES, maxDifficulty, type DifficultyDef } from '../config/difficulty';
+import { UNLOCKS, unlockKey, type MonsterId } from '../config/collection';
 import { BOSSES } from '../config/enemies';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
 import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
+import { MASTERY } from '../config/mastery';
 import { TALENT, TALENT_LEVELS, type TalentId } from '../config/talents';
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
-import { EVOLUTIONS, MAX_WEAPON_LEVEL, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
+import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
+import { claimUnlocks, lockedKeys, lockedTalents, masteryPerks, masteryState, masteryXp, reachedUnlocks, records } from '../core/collection';
 import { DEBUG } from '../core/debug';
 import {
   applyChoice,
@@ -64,6 +67,9 @@ export interface RunState {
   eliteKills: number;
   chests: number;
   evolutions: number;
+  /** Kills by kind of monster, and shrine offers accepted. */
+  monsters: Partial<Record<MonsterId, number>>;
+  shrines: number;
   gold: number;
   level: number;
   xp: number;
@@ -124,6 +130,10 @@ export interface RunSummary {
   /** Daily quests this run finished, and achievement tiers it reached ("Monster Hunter II"). */
   quests: string[];
   achievements: string[];
+  /** Weapons, items and runes this run unlocked. */
+  unlocks: { name: string; icon: string }[];
+  /** The hero's mastery: XP earned, and the level before and after. */
+  mastery: { hero: string; xp: number; from: number; to: number };
 }
 
 /** Something to celebrate in the HUD: a daily quest or an achievement tier finished during the run. */
@@ -176,6 +186,11 @@ export class GameScene extends Phaser.Scene {
   private tiersAtStart = {} as Record<AchievementId, number>;
   private tiersShown = {} as Record<AchievementId, number>;
   private questCheck = 0;
+  /** Unlocks already announced this run. */
+  private unlocksShown = new Set<string>();
+  /** The hero's mastery level for this run, and what it adds. */
+  private mastery = 1;
+  private perks!: ReturnType<typeof masteryPerks>;
   private keys?: Record<string, Phaser.Input.Keyboard.Key>;
 
   constructor() {
@@ -190,6 +205,7 @@ export class GameScene extends Phaser.Scene {
     this.freeze = this.slowLeft = this.levelUpWait = 0;
     this.questCheck = 0;
     this.questsShown = new Set();
+    this.unlocksShown = new Set();
   }
 
   create(): void {
@@ -204,8 +220,14 @@ export class GameScene extends Phaser.Scene {
     this.curses = new Set(CURSE_IDS.filter((id) => picked.includes(id)));
     this.heat = heatOf([...this.curses]);
     const hero = (this.hero = characterDef((DEBUG.hero || saveStore.data.character) as CharacterId));
-    // Each hero's own weapon belongs to that hero: the others are never offered it.
-    const inventory = newInventory(hero.start, CHARACTERS.filter((c) => c.start !== hero.start).map((c) => `weapon:${c.start}`));
+    this.mastery = DEBUG.mastery > 0 ? Math.min(MASTERY.maxLevel, DEBUG.mastery) : masteryState(save.mastery[hero.id]).level;
+    this.perks = masteryPerks(hero.id, this.mastery);
+    // Each hero's own weapon belongs to that hero: the others are never offered it. Nor is anything still locked:
+    // items not yet unlocked in the Collection, talents not yet earned with mastery.
+    const inventory = newInventory(hero.start, [
+      ...CHARACTERS.filter((c) => c.start !== hero.start).map((c) => `weapon:${c.start}`),
+      ...(DEBUG.unlock ? [] : [...lockedKeys(save), ...lockedTalents(hero.id, this.mastery).map((t) => `talent:${t}`)]),
+    ]);
     for (const g of DEBUG.give) {
       const rune = g.replace(/\d+$/, '') as RuneId;
       if (RUNES[rune]) {
@@ -228,6 +250,8 @@ export class GameScene extends Phaser.Scene {
       eliteKills: 0,
       chests: 0,
       evolutions: 0,
+      monsters: {},
+      shrines: 0,
       gold: 0,
       level: 1,
       xp: 0,
@@ -239,8 +263,8 @@ export class GameScene extends Phaser.Scene {
       bossesKilled: 0,
       leadersSpawned: leadersDue(DEBUG.startTime),
       leadersKilled: 0,
-      rerolls: BASE_REROLLS + saveStore.data.shop.reroll,
-      banishes: BASE_BANISHES + saveStore.data.shop.banish,
+      rerolls: BASE_REROLLS + saveStore.data.shop.reroll + this.perks.rerolls,
+      banishes: BASE_BANISHES + saveStore.data.shop.banish + this.perks.banishes,
       blessings: { damage: 0, speed: 0, maxHp: 0 },
       greedUntil: -1,
       finalBoss: null,
@@ -542,6 +566,8 @@ export class GameScene extends Phaser.Scene {
     if (e.selfDestructed) return;
     this.runEvents.onKilled(e);
     run.kills++;
+    const kind = e.boss?.id ?? e.def?.id;
+    if (kind) run.monsters[kind] = (run.monsters[kind] ?? 0) + 1;
     if (e.elite) run.eliteKills++;
     if (e.boss?.leader) {
       this.onLeaderDefeated(e);
@@ -755,9 +781,11 @@ export class GameScene extends Phaser.Scene {
       st.critMult = 2.5;
     }
     const b = run.blessings;
-    run.stats.damageMult *= 1 + b.damage;
-    run.stats.speed *= 1 + b.speed;
-    run.stats.maxHp = Math.round(run.stats.maxHp * (1 + b.maxHp));
+    const m = this.perks;
+    st.goldMult *= 1 + m.gold;
+    st.damageMult *= (1 + b.damage) * (1 + m.damage);
+    st.speed *= 1 + b.speed;
+    st.maxHp = Math.round(st.maxHp * (1 + b.maxHp) * (1 + m.maxHp));
     this.ctx.runes = runeLevels(run.inventory);
     this.player.setStats(run.stats);
     this.weapons.talents = run.inventory.talents;
@@ -867,9 +895,12 @@ export class GameScene extends Phaser.Scene {
     if (this.relics.has('boar')) {
       const inv = run.inventory;
       inv.weapons[0].level = Math.max(inv.weapons[0].level, 2);
-      const free = RUNE_IDS.filter((id) => !inv.runes.some((r) => r.id === id));
+      const free = RUNE_IDS.filter((id) => !inv.runes.some((r) => r.id === id) && !inv.banned.includes(`rune:${id}`));
       if (free.length && inv.runes.length < 3) inv.runes.push({ id: free[Math.floor(this.rng() * free.length)], level: 1 });
     }
+    // Mastery: the hero's own weapon starts a level higher (on top of the Boar Tusk).
+    const own = run.inventory.weapons[0];
+    own.level = Math.min(MAX_WEAPON_LEVEL, own.level + this.perks.startLevels);
     this.refreshStats();
     [...this.relics].forEach((id, i) => this.time.delayedCall(1200 + i * 2900, () => this.events.emit('toast', `${relicDef(id).name}: ${relicDef(id).text}`)));
     if (this.heat > 0) {
@@ -906,6 +937,7 @@ export class GameScene extends Phaser.Scene {
     const { x, y } = this.player;
     this.fx.ring(x, y, 220, o.pact ? 0xff5a5a : 0x8fd8ff);
     this.fx.sparkle(x, y - 20, 8, 0xffffff);
+    run.shrines++;
     switch (o.id) {
       case 'might':
         run.blessings.damage += 0.15;
@@ -972,6 +1004,9 @@ export class GameScene extends Phaser.Scene {
       gold: Math.floor(r.gold),
       chests: r.chests,
       evolutions: r.evolutions,
+      monsters: r.monsters,
+      shrines: r.shrines,
+      died: false,
     };
   }
 
@@ -989,6 +1024,14 @@ export class GameScene extends Phaser.Scene {
       if (reached[a.id] <= this.tiersShown[a.id]) continue;
       this.tiersShown[a.id] = reached[a.id];
       this.notice({ title: 'Achievement!', line: `${a.name} ${ROMAN[reached[a.id] - 1]}`, icon: a.icon });
+    }
+    if (DEBUG.unlock) return;
+    for (const u of reachedUnlocks(save, records(save, report))) {
+      const key = unlockKey(u);
+      if (this.unlocksShown.has(key)) continue;
+      this.unlocksShown.add(key);
+      const item = unlockInfo(u);
+      this.notice({ title: 'Unlocked!', line: `${item.name} (from your next run)`, icon: item.icon });
     }
   }
 
@@ -1024,7 +1067,12 @@ export class GameScene extends Phaser.Scene {
     const newBest = run.time > prevBest;
     save.gold += total;
     if (newBest) save.bestTimes[this.mapIndex] = run.time;
-    const quests = applyRun(save, this.report(), bonus + victoryBonus).map(describeQuest);
+    const report = { ...this.report(), died: !run.won && !quit };
+    const quests = applyRun(save, report, bonus + victoryBonus).map(describeQuest);
+    const unlocks = claimUnlocks(save).map(unlockInfo);
+    const from = masteryState(save.mastery[this.hero.id]).level;
+    const xp = masteryXp(run.time, run.kills, run.bossesKilled + run.leadersKilled);
+    save.mastery[this.hero.id] += xp;
     const reached = tiersReached(lifetime(save));
     const achievements = ACHIEVEMENTS.flatMap((a) =>
       Array.from({ length: Math.max(0, reached[a.id] - this.tiersAtStart[a.id]) }, (_, k) => `${a.name} ${ROMAN[this.tiersAtStart[a.id] + k]}`),
@@ -1052,6 +1100,8 @@ export class GameScene extends Phaser.Scene {
       relic,
       heat: this.heat,
       newBestHeat,
+      unlocks,
+      mastery: { hero: this.hero.name, xp, from, to: masteryState(save.mastery[this.hero.id]).level },
     };
     audio.stopMusic();
     if (run.won) {
@@ -1070,4 +1120,10 @@ export class GameScene extends Phaser.Scene {
       this.scene.launch('GameOver', summary);
     });
   }
+}
+
+/** Name and icon of an unlocked weapon, item or rune. */
+function unlockInfo(u: (typeof UNLOCKS)[number]): { name: string; icon: string } {
+  const def = u.kind === 'weapon' ? WEAPONS[u.id] : u.kind === 'rune' ? RUNES[u.id] : PASSIVES[u.id];
+  return { name: def.name, icon: def.icon };
 }

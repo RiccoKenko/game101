@@ -1,3 +1,4 @@
+import { type MonsterId } from '../config/collection';
 import { MAPS } from '../config/maps';
 import {
   ACHIEVEMENTS,
@@ -138,6 +139,9 @@ export function applyRun(save: SaveData, run: RunReport, bonus = 0, now = new Da
   s.evolutions += run.evolutions;
   s.gold += Math.floor(run.gold) + bonus;
   s.bestLevel = Math.max(s.bestLevel, run.level);
+  s.shrines += run.shrines;
+  if (run.died) s.deaths++;
+  for (const [id, n] of Object.entries(run.monsters) as [MonsterId, number][]) save.bestiary[id] = (save.bestiary[id] ?? 0) + n;
   return finished;
 }
 
