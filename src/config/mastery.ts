@@ -5,8 +5,8 @@ import { talentDef, type TalentId } from './talents';
 export const MASTERY = {
   maxLevel: 15,
   /** Damage and max HP per level above 1. */
-  damage: 0.01,
-  maxHp: 0.01,
+  damage: 0.02,
+  maxHp: 0.02,
   /** Mastery XP from a run: per second survived, one per this many monsters, per boss or leader defeated. */
   perSecond: 1,
   killsPerPoint: 25,
@@ -17,7 +17,7 @@ export const MASTERY = {
 
 /** Mastery XP needed to go from `level` to `level + 1`. */
 export function masteryToNext(level: number): number {
-  return 300 + 150 * (level - 1);
+  return 200 + 150 * (level - 1);
 }
 
 export type MasteryReward =

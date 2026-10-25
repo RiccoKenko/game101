@@ -650,7 +650,11 @@ export class GameScene extends Phaser.Scene {
       run.level++;
       run.xpNext = xpToNext(run.level);
       this.pendingLevelUps++;
-      if (TALENT_LEVELS.includes(run.level)) run.talentsDue++;
+      // A talent level brings the hero's talent cards on top of the usual upgrade.
+      if (TALENT_LEVELS.includes(run.level)) {
+        run.talentsDue++;
+        this.pendingLevelUps++;
+      }
     }
   }
 

@@ -28,14 +28,15 @@ export const UNLOCKS: UnlockDef[] = [
   { kind: 'weapon', id: 'flask', goal: { monster: 'mushroom', n: 600 } },
   { kind: 'rune', id: 'split', goal: { monster: 'puff', n: 300 } },
   { kind: 'weapon', id: 'beam', goal: { stat: 'chests', n: 5 } },
+  // Falling in battle opens the defensive items: a struggling player gets help soonest.
+  { kind: 'passive', id: 'spring', goal: { stat: 'deaths', n: 1 } },
+  { kind: 'passive', id: 'shield', goal: { stat: 'deaths', n: 3 } },
   { kind: 'passive', id: 'feather', goal: { stat: 'deaths', n: 5 } },
   { kind: 'passive', id: 'charm', goal: { stat: 'shrines', n: 3 } },
   { kind: 'weapon', id: 'twister', goal: { monster: 'bee', n: 200 } },
   { kind: 'rune', id: 'homing', goal: { monster: 'goblin', n: 2 } },
   { kind: 'weapon', id: 'turret', goal: { monster: 'boss_boar', n: 3 } },
   { kind: 'rune', id: 'giant', goal: { monster: 'boss_slime', n: 1 } },
-  { kind: 'passive', id: 'spring', goal: { stat: 'time', n: 600 } },
-  { kind: 'passive', id: 'ring', goal: { stat: 'elites', n: 60 } },
   { kind: 'rune', id: 'echo', goal: { stat: 'evolutions', n: 3 } },
   // Spooky Graveyard
   { kind: 'weapon', id: 'traps', goal: { monster: 'skeleton', n: 1000 } },
@@ -48,7 +49,7 @@ export const UNLOCKS: UnlockDef[] = [
   { kind: 'rune', id: 'nova', goal: { monster: 'imp', n: 1000 } },
   { kind: 'weapon', id: 'spear', goal: { monster: 'knight', n: 800 } },
   { kind: 'passive', id: 'thorns', goal: { monster: 'gargoyle', n: 800 } },
-  { kind: 'passive', id: 'shield', goal: { monster: 'mimic', n: 5 } },
+  { kind: 'passive', id: 'ring', goal: { monster: 'mimic', n: 5 } },
   { kind: 'weapon', id: 'quake', goal: { monster: 'boss_demon', n: 1 } },
 ];
 

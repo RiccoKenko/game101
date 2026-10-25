@@ -87,10 +87,11 @@ describe('unlocking', () => {
   });
 
   it('old saves get what their lifetime numbers already earned', () => {
-    const save = sanitize({ stats: { chests: 7, bestLevel: 22, eliteKills: 80 }, bossKills: [2, 0, 0], bestTimes: [640, 0, 0] });
+    const save = sanitize({ stats: { chests: 7, bestLevel: 22, deaths: 1 }, bossKills: [2, 0, 0], bestTimes: [640, 0, 0] });
     const got = claimUnlocks(save).map((u) => u.id);
-    expect(got).toEqual(expect.arrayContaining(['cap', 'beam', 'giant', 'spring', 'ring']));
+    expect(got).toEqual(expect.arrayContaining(['cap', 'beam', 'giant', 'spring']));
     expect(got).not.toContain('reaper');
+    expect(got).not.toContain('shield');
     expect(lockedKeys(save)).not.toContain('weapon:beam');
     expect(claimUnlocks(save)).toEqual([]);
   });
@@ -114,9 +115,9 @@ describe('unlocking', () => {
 
 describe('hero mastery', () => {
   it('levels up with XP and stops at the top', () => {
-    expect(masteryState(0)).toEqual({ level: 1, into: 0, need: 300 });
-    expect(masteryState(299).level).toBe(1);
-    expect(masteryState(300)).toEqual({ level: 2, into: 0, need: 450 });
+    expect(masteryState(0)).toEqual({ level: 1, into: 0, need: 200 });
+    expect(masteryState(199).level).toBe(1);
+    expect(masteryState(200)).toEqual({ level: 2, into: 0, need: 350 });
     expect(masteryState(10_000_000)).toEqual({ level: MASTERY.maxLevel, into: 0, need: 0 });
   });
 
@@ -140,7 +141,7 @@ describe('hero mastery', () => {
   it('adds a little power per level and the rewards reached', () => {
     expect(masteryPerks('archer', 1)).toEqual({ damage: 0, maxHp: 0, rerolls: 0, banishes: 0, startLevels: 0, gold: 0 });
     const top = masteryPerks('mage', MASTERY.maxLevel);
-    expect(top.damage).toBeCloseTo(0.14);
+    expect(top.damage).toBeCloseTo(0.28);
     expect(top).toMatchObject({ rerolls: 1, banishes: 1, startLevels: 1, gold: MASTERY.masterGold });
   });
 });
