@@ -213,9 +213,11 @@ describe('more weapons, items and runes', () => {
 
 describe('elite powers and curses', () => {
   it('elites get more powers later, on Nightmare and with a curse, never more than three', () => {
-    expect(affixCount(200, 0)).toBe(1);
+    expect(affixCount(200, 0)).toBe(0);
+    expect(affixCount(300, 0)).toBe(1);
     expect(affixCount(480, 0)).toBe(2);
-    expect(affixCount(200, 2)).toBe(2);
+    expect(affixCount(200, 2)).toBe(1);
+    expect(affixCount(200, 0, 1)).toBe(1);
     expect(affixCount(600, 2, 1)).toBe(3);
     expect(AFFIX_IDS.length).toBeGreaterThanOrEqual(3);
   });

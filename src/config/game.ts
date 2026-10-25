@@ -43,6 +43,6 @@ export const BOSS_GOLD = [100, 160, 240];
 export const VICTORY_GOLD = [250, 400, 600];
 
 export const DROP_CHANCE = {
-  meat: 0.006,
+  meat: 0.008,
   magnet: 0.003,
 };

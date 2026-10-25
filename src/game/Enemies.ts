@@ -211,6 +211,7 @@ export class EnemyManager {
     if (b === 'ambush' || b === 'flee' || b === 'exploder') return;
     const pool = [...AFFIX_IDS];
     const n = affixCount(this.ctx.runTime, this.ctx.difficulty, this.ctx.affixBonus);
+    if (n === 0) return;
     for (let k = 0; k < n && pool.length; k++) e.affixes.push(pool.splice(Math.floor(this.ctx.rng() * pool.length), 1)[0]);
     if (e.affixes.includes('swift')) e.speed *= AFFIX.swift;
     if (e.affixes.includes('shielded')) e.shield = e.shieldMax = e.maxHp * AFFIX.shield;

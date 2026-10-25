@@ -47,7 +47,10 @@ export const AFFIX = {
   blinkDistance: 170,
 };
 
-/** How many affixes an elite carries: one, two after 8:00, one more on Nightmare (and a curse can add one). */
+/**
+ * How many affixes an elite carries: none before the first boss (5:00), one after, two after 8:00, one more on
+ * Nightmare (and a curse can add one).
+ */
 export function affixCount(t: number, difficulty: number, extra = 0): number {
-  return Math.min(3, 1 + (t >= 480 ? 1 : 0) + (difficulty >= 2 ? 1 : 0) + extra);
+  return Math.min(3, (t >= 300 ? 1 : 0) + (t >= 480 ? 1 : 0) + (difficulty >= 2 ? 1 : 0) + extra);
 }
