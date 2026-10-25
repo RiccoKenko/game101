@@ -2,22 +2,34 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 จุดที่หยุดไว้ก่อน compact (25 ต.ค. 2026)
+## 📍 สถานะล่าสุด (25 ต.ค. 2026, v7)
 - **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุค "MMORPG เกาหลียุค 2000"
 - **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`)
-  - Test: typecheck, unit 54 ข้อ, e2e 4 ข้อ, build ผ่าน
-- **ลิงก์ทดสอบ (Artifact เดิม, v6 = ความลึกครบ):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
+  - Test: typecheck, unit 61 ข้อ, e2e 4 ข้อ, build ผ่าน
+- **ลิงก์ทดสอบ (Artifact เดิม, v7):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
   - สร้างใหม่: `node scripts/build-artifact.mjs <scratchpad>/monster-rush.html` แล้ว publish ทับ path เดิม (หรือใส่ `url` ถ้า session ใหม่)
 - **ลิงก์หลัก little-archer.vercel.app ยังเป็น Monster Rush ภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`)
-  - ⚠️ ยังไม่ deploy: รอเจ้านายสั่ง (ถามไปหลายรอบ ยังไม่ได้คำตอบ)
+  - ⚠️ ยังไม่ deploy: รอเจ้านายสั่ง
   - วิธี deploy: Vercel MCP `create_deployment` (project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`) แล้วเช็กลิงก์จริง
-- **รอเจ้านายตอบ 2 ข้อ (checkpoint ล่าสุด, หลังส่ง v6):**
-  1. ลองเล่น v6 แล้วยังรู้สึกจำเจไหม ตรงไหนยังขาด ยาก/ง่ายไป
-  2. ให้ขึ้นลิงก์หลัก little-archer.vercel.app เลยไหม (deploy ได้ทันทีตามวิธีด้านบน)
-- **ไอเดียถัดไป (ยังไม่ได้ทำ, เสนอได้ถ้าเจ้านายยังรู้สึกจำเจ):** ปุ่มพุ่งหลบ + ท่าไม้ตายต่อตัวละคร (เจ้านายยังไม่เลือกในรอบที่แล้ว), ตัวละครที่ 3 (สายประชิด), Talent tree ต่อตัวละคร, ความยากแต่ละระดับมีกติกาพิเศษ (mutator)
-- **ทดสอบหลังสุด (บอท 7 นาที, ไม่มีอัปเกรด, v6):** Meadow รอดเต็มเลือด, Graveyard รอดเหลือเลือด 10, ไม่มี error
-- **ของชั่วคราวใน container (หายได้):** dev server `npx vite --port 5181` (ใช้กับสคริปต์ทดสอบใน `scratchpad/q/*.cjs`), worktree `scratchpad/old` (build เก่า e5eaf15 ไว้เทียบสมดุล), `scratchpad/sp` (sky-pirates-td สำหรับ bake ฮีโร่; มีไฟล์ mage ที่ยังไม่ commit ในนั้น แต่สำเนาครบอยู่ใน `scripts/art/hero-bake/` แล้ว)
-- **รอบล่าสุด (เจ้านายลองเล่น v5 แล้วติ 6 ข้อ + "เล่น 4-5 ตาก็เบื่อ อยากให้มีความลึก")** เจ้านายเลือก 3 ชุด: สกิลเปลี่ยนวิธียิง, แต่ละรอบไม่ซ้ำ, เป้าหมายระยะยาว (ไม่เลือก dash/ท่าไม้ตาย)
+- **รอบ v7 (เจ้านายบอก "พอมีของระดับนึงแล้วเริ่มง่าย" + ขอสกิล/ไอเทมหลากหลายขึ้น + ไม่อยากใช้เครดิต OpenAI ทุกอย่าง)** ทำทั้งหมดด้วยโค้ด **ไม่ใช้ OpenAI ($0)**
+  - **อาวุธใหม่ 4** (`config/weapons.ts`, ทำงานใน `game/Weapons.ts`): Prism Beam (ลำแสงทะลุแนว, `fireBeams`), Whirlwind (พายุดูดมอน, `addTwister/updateTwisters/whirl`), Spike Traps (กับดักรอบตัว, `setTrap/updateTraps`), Ward Orbs (ลูกแก้วหมุนใกล้ตัว + บังกระสุน `EnemyManager.blockShots`)
+    - วิวัฒนาการ: Rainbow Ray (+Lucky Clover, ลำแสง 4 เส้นหมุนตลอด), Cyclone (+Magnet, พายุ 2 ลูกหมุนรอบตัว), Glacier Mines (+Frost Rune, แช่แข็ง), Aegis (+Iron Shield, สะท้อนกระสุนเป็นลูกเวททอง)
+  - **ไอเทมเสริมใหม่ 4:** Lucky Clover (คริ +5%), Iron Shield (เกราะ +1, max 3), Life Spring (ฟื้น 0.3%/วิ), Moon Charm (ระยะเวลาเอฟเฟกต์ +15%: `stats.durationMult` ใช้กับ duration อาวุธ, ไฟ, น้ำแข็ง)
+  - **รูนใหม่ 3:** Split (กระสุนแตกเป็นเศษตอนโดนครั้งแรก, `WeaponSystem.splinter`), Echo (โจมตีซ้ำ `fireOnCooldown/rollEcho`), Reaper (ประหารมอนเลือดน้อยใน `EnemyManager.damage`)
+  - **น้ำหนักการ์ด** (`core/progression.ts` `NEW_WEIGHT`): ของใหม่แต่ละประเภทแบ่งน้ำหนักรวมกัน เพื่อให้การ์ดอัปเกรดของที่ถืออยู่ไม่หายากขึ้นเมื่อมีของเยอะขึ้น
+  - **ไอคอนใหม่ 16 อัน** วาดเป็น SVG ใน `src/art/icons.ts` (ท้ายไฟล์ + `BACKDROPS` พื้นเข้มให้เข้ากับไอคอนวาด); ภาพในเกม `twister`, `trap`, `trap_frost`, `ward`, `ward_holy` ใน `src/art/items.ts`; ลำแสง `beam` เป็น canvas ใน `textures.ts`
+  - **มอนหัวกะทิมีพลัง** `config/affixes.ts` (Shielded, Swift, Vampiric, Volatile, Summoner, Blinker): ชื่อบนหัว + วงสีใต้ตัว + ฟองโล่; 1 พลัง, 2 หลัง 8:00, +1 บน Nightmare; โอกาสเกิดอีลีทสูงสุด 6% (`core/waves.ts eliteChance`)
+  - **บอสคลั่ง** (`EnemyManager.enrage/enragedAttack`): เลือดต่ำกว่าครึ่ง หรือบอส/หัวหน้าตัวที่ 3 ขึ้นไปคลั่งตั้งแต่ลง; ท่าใหม่ต่อบอส (สไลม์โปรยเมือกวงแดง `strike`, ลิชยิงเกลียว, จอมมารยิงไฟรอบทิศ, หมูป่ากระทืบ, กัปตันยิงพัด, ยักษ์ทุบแล้วกระสุนรอบทิศ)
+  - **คำสาป** `config/curses.ts` + `CursesScene` (ปุ่มกะโหลกม่วงข้าง PLAY เปิดเมื่อ `unlockedMaps >= 2`): 8 แบบ, Heat รวมสูงสุด 11, เหรียญ +15%/Heat; เซฟ `curses`, `bestHeat`; ความสำเร็จ Curse Breaker (heat 2/5/8/11); หน้าจบเกมแสดง Heat
+  - สวิตช์ทดสอบใหม่: `?curses=horde,tyrant`, `?give=beam5,twister5,traps5,ward5` หรือ `rainbow,cyclone,glacier,aegis`, รูน `split2,echo3,reaper1`
+- **รอเจ้านาย:** ลองเล่น v7 แล้วบอกว่ายังง่าย/จำเจไหม และจะให้ขึ้นลิงก์หลักเมื่อไร
+- **ไอเดียถัดไป (ยังไม่ได้ทำ):** ปุ่มพุ่งหลบ + ท่าไม้ตาย, ตัวละครที่ 3 (สายประชิด), Talent tree ต่อตัวละคร, อันตรายบนแมพ (เช่น วงไฟ/มือโผล่จากดิน), โหมดไม่มีที่สิ้นสุดหลัง 15:00
+- **ของชั่วคราวใน container (หายได้):** dev server `npx vite --port 5181`, สคริปต์ทดสอบ `scratchpad/v7/*.cjs` (weap, scene, menu, balance, artifact) และ `scratchpad/q/*.cjs`
+- **งบ OpenAI:** ใช้ไป **$3.53 จาก $5** (เหลือ $1.47) ตาม `art/openai-log.jsonl` (รอบ v7 ไม่ได้ใช้)
+  - ⚠️ commit log ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไป/เหลือเท่าไร; ห้ามเพิ่ม `OPENAI_BUDGET_USD` ถ้าเจ้านายไม่สั่ง
+- **บทเรียน:** ถึงข้อ 50 แล้ว (ข้อต่อไปคือ 51)
+- **ภาษา:** เจ้านายขอให้ตอบเป็น**ภาษาไทย** (ใช้ศัพท์อังกฤษให้น้อย)
+- **รอบ v6 (เจ้านายลองเล่น v5 แล้วติ 6 ข้อ + "เล่น 4-5 ตาก็เบื่อ อยากให้มีความลึก")** เจ้านายเลือก 3 ชุด: สกิลเปลี่ยนวิธียิง, แต่ละรอบไม่ซ้ำ, เป้าหมายระยะยาว (ไม่เลือก dash/ท่าไม้ตาย)
   - **แก้ 6 ข้อ:** ลูกเวทกลับด้าน (ภาพวาดหันซ้าย → `flip` ใน `mr-sheets.json`), นักเวทได้การ์ด Bow (อาวุธประจำตัวละครเป็นของตัวนั้นเท่านั้น `Inventory.banned`), เอฟเฟกต์ร่ายเวท `fx.cast` + ประกายที่ลูกเวท, Spell Tome ทำให้กระสุนใหญ่ขึ้นจริง, กดการ์ดแล้วเลื่อนนิ้วออก = ยกเลิก, กระสุนมอนสีแดงชมพู + วงแสงแดง
   - **รูน 6 แบบ** (`RUNES`, `RUNE_POWER` ใน `config/weapons.ts`; ทำงานใน `EnemyManager.runeProcs/kill`, ลูกเด้งใน `WeaponSystem.bounce`) ช่องรูน 3, ปุ่ม Reroll/Banish (shop `reroll`, `banish`), ร่างวิวัฒนาการใหม่ 5 แบบที่ต้องใช้รูน (thunder, meteor, twinmoon, flameslash, plague)
   - **เหตุการณ์สุ่ม** `game/RunEvents.ts` + `config/events.ts` + `ShrineScene` (พร 3 แบบ, คำสาป 3 แบบ), ก็อบลิน behavior `flee`, ตัวนับเวลาและลูกศรใน HUD; **บอสนาที 15:00 = บอสสุดท้าย** ชนะแล้ว STAGE CLEAR
