@@ -396,9 +396,9 @@ export class GameScene extends Phaser.Scene {
     let mx = 0;
     let my = 0;
     if (DEBUG.bot) {
-      const v = DEBUG.still ? { x: 0, y: 0 } : botSteer(this.ctx, run.time);
-      mx = v.x;
-      my = v.y;
+      const v = botSteer(this.ctx, run.time);
+      mx = v.x * DEBUG.skill;
+      my = v.y * DEBUG.skill;
     } else if (stick.active) {
       mx = stick.x;
       my = stick.y;

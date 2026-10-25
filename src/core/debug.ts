@@ -1,7 +1,7 @@
 /**
  * URL switches for testing, e.g. `/?debug&time=290&map=2&god`.
  * debug: show FPS. time: start the run at this many seconds. map: 1-3. bot: autopilot.
- * still: with bot, the hero picks cards but never moves (a stand-in for a player who gets caught).
+ * skill: with bot, how fast it dodges (0-1; 0.5 = half speed, a stand-in for a player who gets caught).
  * speed: simulation speed multiplier. god: can't die. gold: set gold. unlock: unlock all maps and every weapon, item and rune.
  * autostart: skip the menu. seed: RNG seed. level: start at this level (picks upgrades for you).
  * give: weapons to start with, e.g. `give=slash5,flask3,starfall` (an evolution gives its weapon, evolved).
@@ -22,7 +22,7 @@ export const DEBUG = {
   startTime: num('time', 0),
   map: num('map', 0),
   bot: params.has('bot'),
-  still: params.has('still'),
+  skill: Math.max(0, Math.min(1, num('skill', 1))),
   speed: Math.max(1, Math.min(16, Math.floor(num('speed', 1)))),
   god: params.has('god'),
   gold: num('gold', -1),
