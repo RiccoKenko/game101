@@ -1413,6 +1413,36 @@ export const ICONS_ART: ArtSet = {
   icon_rune_nova: svg(S, S, runeStone('icon_rune_nova', '#ffe07a', `M48 26L48 74M24 50L72 50M31 33L65 67M65 33L31 67`)),
   icon_banish: svg(S, S, tube(arc(48, 48, 30, 0, 359), 10, '#ff5a5a', 5) + tube('M27 69L69 27', 10, '#ff5a5a', 5)),
 
+  // ======================= v11 hero buttons =======================
+  icon_dash: svg(
+    S,
+    S,
+    tube('M6 34L26 34', 7, '#bff6ff') +
+      tube('M2 50L22 50', 7, '#bff6ff') +
+      tube('M6 66L26 66', 7, '#bff6ff') +
+      cel('icon_dash_a', 'M46 14L90 50L46 86L46 66L28 66L28 34L46 34Z', CYAN, CYAN_D, [-5, -5]) +
+      hl('M50 26L78 49L72 50L50 32Z', 0.7),
+  ),
+  icon_arrowstorm: svg(
+    S,
+    S,
+    [
+      [30, 22, 0.85],
+      [62, 30, 1],
+      [40, 58, 0.95],
+    ]
+      .map(([x, y, k], i) =>
+        g(
+          `translate(${x} ${y}) rotate(120) scale(${k})`,
+          tube('M-30 0L18 0', 5, '#f2dfb4', 3.5) +
+            cel(`icon_arrowstorm_h${i}`, 'M14 -10L36 0L14 10Z', GOLD, GOLD_D, [-1, -1], 3.5) +
+            cel(`icon_arrowstorm_f${i}`, 'M-36 -9L-24 0L-36 9L-29 0Z', RED, RED_D, [-1, -1], 3),
+        ),
+      )
+      .join('') +
+      ln('M70 70L84 84M78 60L90 72M58 78L68 88', '#fff1a0', 3.5, 0.9),
+  ),
+
   // ======================= v9 collection =======================
   icon_book: svg(
     S,
@@ -1476,6 +1506,8 @@ const BACKDROPS: Record<string, string> = {
   icon_rune_homing: '#1f5f7a',
   icon_rune_giant: '#7a4a1a',
   icon_rune_nova: '#7a6a1a',
+  icon_dash: '#1f5f7a',
+  icon_arrowstorm: '#7a5a1a',
 };
 for (const [key, color] of Object.entries(BACKDROPS)) {
   const art = ICONS_ART[key];

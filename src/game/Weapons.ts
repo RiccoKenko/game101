@@ -1199,6 +1199,12 @@ export class WeaponSystem {
     });
   }
 
+  /** Arrows streak down onto monsters on screen and burst: the Archer's Arrow Storm. */
+  rain(damage: number, count: number, texture = 'arrow'): void {
+    const area = this.ctx.player.stats.areaMult;
+    this.starfall({ damage, cooldown: 0, amount: count, pierce: 0, area, speed: 0, duration: 0 }, texture);
+  }
+
   /** Starfall: stars streak down from the sky onto enemies on screen (the boss first) and burst. */
   private starfall(s: WeaponStats, texture = 'star_bolt'): void {
     const { enemies, player } = this.ctx;

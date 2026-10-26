@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { DASH, ULTIMATES } from '../config/abilities';
 import { DEBUG } from '../core/debug';
 import { formatTime } from '../core/format';
 import { resetStick, stick } from '../game/stick';
@@ -15,6 +16,9 @@ const STICK_GRAB = 250;
 const PANEL_H = 132;
 const PAUSE_D = 116;
 const SLOT = 62;
+/** The round dash and ultimate buttons either side of the joystick. */
+const ABILITY_D = 164;
+const ABILITY_X = 150;
 
 export class HudScene extends Phaser.Scene {
   private game_!: GameScene;
@@ -46,6 +50,13 @@ export class HudScene extends Phaser.Scene {
   private redEdge!: Phaser.GameObjects.Image;
   private hurt = 0;
   private clock = 0;
+  private dashBtn!: Button;
+  private ultBtn!: Button;
+  private dashRing!: Phaser.GameObjects.Graphics;
+  private ultRing!: Phaser.GameObjects.Graphics;
+  private dashText!: Phaser.GameObjects.Text;
+  private ultPulse?: Phaser.Tweens.Tween;
+  private rings = { dash: -1, ult: -1 };
 
   constructor() {
     super('Hud');
@@ -119,6 +130,35 @@ export class HudScene extends Phaser.Scene {
     const joyY = this.scale.height - safeInsets(this).bottom - 270;
     this.joyBase = this.add.image(width / 2, joyY, 'joy_base').setDepth(100).setAlpha(0.6);
     this.joyKnob = this.add.image(width / 2, joyY, 'joy_knob').setDepth(101).setAlpha(0.75);
+    // Ultimate on the left, dash on the right, level with the joystick (a second finger can press them).
+    const ult = ULTIMATES[this.game_.heroId];
+    this.ultBtn = new Button(this, ABILITY_X, joyY, {
+      w: ABILITY_D,
+      h: ABILITY_D,
+      shape: 'round',
+      color: BUTTON.warning,
+      icon: ult.icon,
+      iconSize: 104,
+      onClick: () => this.game_.ultimate(),
+    }).setDepth(100);
+    this.dashBtn = new Button(this, width - ABILITY_X, joyY, {
+      w: ABILITY_D,
+      h: ABILITY_D,
+      shape: 'round',
+      color: BUTTON.secondary,
+      icon: 'icon_dash',
+      iconSize: 100,
+      onClick: () => this.game_.dash(),
+    }).setDepth(100);
+    this.ultRing = this.add.graphics().setDepth(102);
+    this.dashRing = this.add.graphics().setDepth(102);
+    this.dashText = text(this, width - ABILITY_X, joyY - 2, '', 60).setDepth(103);
+    const cap = { color: CSS.cream, weight: '600' } as const;
+    text(this, ABILITY_X, joyY + ABILITY_D / 2 + 38, ult.name, 28, cap).setDepth(100);
+    text(this, width - ABILITY_X, joyY + ABILITY_D / 2 + 38, 'Dash', 28, cap).setDepth(100);
+    this.ultPulse = undefined;
+    this.rings = { dash: -1, ult: -1 };
+
     this.input.on('pointerdown', this.onDown, this);
     this.input.on('pointermove', this.onMove, this);
     this.input.on('pointerup', this.onUp, this);
@@ -294,6 +334,33 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
+  /** Cooldown on the dash button, charge on the ultimate, and a pulse when the ultimate is ready. */
+  private updateAbilities(): void {
+    const ab = this.game_.abilities;
+    if (!ab) return;
+    const r = ABILITY_D / 2 + 10;
+    const dash = Math.round((1 - ab.dashWait / DASH.cooldown) * 60) / 60;
+    if (dash !== this.rings.dash) {
+      this.rings.dash = dash;
+      chargeRing(this.dashRing, this.dashBtn.x, this.dashBtn.y, r, dash, 0x8fe8ff);
+      this.dashText.setText(ab.dashWait > 0 ? String(Math.ceil(ab.dashWait)) : '');
+      this.dashBtn.iconImage?.setAlpha(ab.dashWait > 0 ? 0.35 : 1);
+    }
+    const ult = Math.round(Math.min(1, ab.energy / ab.cost) * 60) / 60;
+    if (ult !== this.rings.ult) {
+      this.rings.ult = ult;
+      chargeRing(this.ultRing, this.ultBtn.x, this.ultBtn.y, r, ult, ab.ready ? 0xffe27a : 0xffb347);
+      this.ultBtn.iconImage?.setAlpha(ab.ready ? 1 : 0.45);
+    }
+    if (ab.ready && !this.ultPulse) {
+      this.ultPulse = this.tweens.add({ targets: this.ultBtn, scale: 1.1, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    } else if (!ab.ready && this.ultPulse) {
+      this.ultPulse.stop();
+      this.ultPulse = undefined;
+      this.ultBtn.setScale(1);
+    }
+  }
+
   update(_time: number, delta: number): void {
     const g = this.game_;
     const run = g.run;
@@ -344,8 +411,19 @@ export class HudScene extends Phaser.Scene {
       if (tm) t.setText(`${tm.label} ${Math.ceil(tm.until - run.time)}s`).setColor(tm.color);
     });
     this.pointAtGoblin();
+    this.updateAbilities();
     if (this.fpsText) this.fpsText.setText(`${Math.round(this.game.loop.actualFps)} fps · ${g.ctx.enemies.alive.length} foes`);
   }
+}
+
+/** A ring around a round button that fills up clockwise from the top. */
+function chargeRing(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number, ratio: number, color: number): void {
+  g.clear();
+  g.lineStyle(11, 0x0b1430, 0.85).strokeCircle(x, y, r);
+  if (ratio <= 0) return;
+  g.lineStyle(9, color, 1).beginPath();
+  g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, ratio));
+  g.strokePath();
 }
 
 /** Thin vertical gold line that fades at both ends. */

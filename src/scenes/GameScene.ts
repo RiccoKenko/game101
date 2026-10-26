@@ -48,6 +48,7 @@ import {
   spawnRate,
   swarmSize,
 } from '../core/waves';
+import { Abilities } from '../game/Abilities';
 import { Ambience } from '../game/Ambience';
 import { botSteer } from '../game/Bot';
 import { type GameCtx } from '../game/context';
@@ -169,6 +170,10 @@ export class GameScene extends Phaser.Scene {
   private fx!: Effects;
   private weapons!: WeaponSystem;
   private ambience!: Ambience;
+  /** The dash and the ultimate (the HUD's two round buttons). */
+  abilities!: Abilities;
+  /** Where the hero was last steered: the dash goes this way. */
+  private steer = { x: 0, y: 0 };
   /** Shrines, goblins, meteor showers... (see game/RunEvents.ts). */
   runEvents!: RunEvents;
   private spawnAcc = 0;
@@ -340,6 +345,7 @@ export class GameScene extends Phaser.Scene {
     this.tiersShown = { ...this.tiersAtStart };
     this.weapons = new WeaponSystem(ctx);
     this.weapons.sync(inventory.weapons, stats);
+    this.abilities = new Abilities(ctx, hero, this.weapons);
     // Relics, the difficulty's gold and anything else that changes stats, once everything exists.
     this.applyRelicsAtStart();
     this.cameras.main.centerOn(0, 0);
@@ -352,6 +358,8 @@ export class GameScene extends Phaser.Scene {
     this.run.xpNext = xpToNext(this.run.level);
 
     this.keys = this.input.keyboard?.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT') as Record<string, Phaser.Input.Keyboard.Key> | undefined;
+    this.input.keyboard?.on('keydown-SPACE', () => this.dash());
+    this.input.keyboard?.on('keydown-E', () => this.ultimate());
     resetStick();
     this.scene.launch('Hud');
     audio.playMusic(this, this.map.music as Parameters<typeof audio.playMusic>[1]);
@@ -407,7 +415,11 @@ export class GameScene extends Phaser.Scene {
       mx = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0);
       my = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0);
     }
-    this.player.move(mx, my, dt);
+    this.steer = { x: mx, y: my };
+    if (DEBUG.bot) this.botAbilities();
+    if (this.abilities.dashing) this.player.moving = true;
+    else this.player.move(mx, my, dt);
+    this.abilities.update(dt);
     // Sanctuary and the Life Spring slowly heal.
     const regen = this.weapons.regen / 100 + run.stats.regen;
     if (regen > 0) this.player.heal(run.stats.maxHp * regen * dt);
@@ -565,6 +577,7 @@ export class GameScene extends Phaser.Scene {
     // An exploder that blew itself up: no reward.
     if (e.selfDestructed) return;
     this.runEvents.onKilled(e);
+    this.abilities.onKill(e);
     run.kills++;
     const kind = e.boss?.id ?? e.def?.id;
     if (kind) run.monsters[kind] = (run.monsters[kind] ?? 0) + 1;
@@ -720,6 +733,28 @@ export class GameScene extends Phaser.Scene {
     p.iframes = Math.max(p.iframes, 1);
     this.fx.deathPuff(p.x, p.y, 1.2, 0xc9a8ff);
     this.fx.sparkle(p.x, p.y - 20, 6, 0xe2d0ff);
+  }
+
+  get heroId(): CharacterId {
+    return this.hero.id;
+  }
+
+  /** The HUD's dash button (or Space): a burst the way the hero is steering. */
+  dash(): void {
+    if (this.modalOpen || this.run.ended) return;
+    this.abilities.dash(this.steer.x, this.steer.y);
+  }
+
+  /** The HUD's ultimate button (or E), once it is charged. */
+  ultimate(): void {
+    if (this.modalOpen || this.run.ended) return;
+    if (this.abilities.ultimate()) this.player.cheer();
+  }
+
+  /** The autopilot fires the ultimate as soon as it can, and dashes when a monster gets close. */
+  private botAbilities(): void {
+    if (this.abilities.ready) this.ultimate();
+    if (this.abilities.dashWait <= 0 && this.enemies.nearest(this.player.x, this.player.y, 100)) this.dash();
   }
 
   private onPlayerDown(): void {
