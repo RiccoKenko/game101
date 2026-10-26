@@ -8,12 +8,14 @@ import { BOSSES } from '../config/enemies';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
 import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
+import { GEAR, type GearType } from '../config/gear';
 import { MASTERY } from '../config/mastery';
 import { TALENT, TALENT_LEVELS, type TalentId } from '../config/talents';
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
 import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
+import { addItem, gearBonus, runDrops, type GearBonus } from '../core/gear';
 import { claimUnlocks, lockedKeys, lockedTalents, masteryPerks, masteryState, masteryXp, reachedUnlocks, records } from '../core/collection';
 import { DEBUG } from '../core/debug';
 import {
@@ -135,6 +137,9 @@ export interface RunSummary {
   unlocks: { name: string; icon: string }[];
   /** The hero's mastery: XP earned, and the level before and after. */
   mastery: { hero: string; xp: number; from: number; to: number };
+  /** Equipment found (put in the bag), and gold for drops that didn't fit. */
+  loot: { name: string; type: GearType; rarity: number }[];
+  lootGold: number;
 }
 
 /** Something to celebrate in the HUD: a daily quest or an achievement tier finished during the run. */
@@ -196,6 +201,8 @@ export class GameScene extends Phaser.Scene {
   /** The hero's mastery level for this run, and what it adds. */
   private mastery = 1;
   private perks!: ReturnType<typeof masteryPerks>;
+  /** What the worn equipment adds. */
+  private gear!: GearBonus;
   private keys?: Record<string, Phaser.Input.Keyboard.Key>;
 
   constructor() {
@@ -227,6 +234,7 @@ export class GameScene extends Phaser.Scene {
     const hero = (this.hero = characterDef((DEBUG.hero || saveStore.data.character) as CharacterId));
     this.mastery = DEBUG.mastery > 0 ? Math.min(MASTERY.maxLevel, DEBUG.mastery) : masteryState(save.mastery[hero.id]).level;
     this.perks = masteryPerks(hero.id, this.mastery);
+    this.gear = gearBonus(save.gear);
     // Each hero's own weapon belongs to that hero: the others are never offered it. Nor is anything still locked:
     // items not yet unlocked in the Collection, talents not yet earned with mastery.
     const inventory = newInventory(hero.start, [
@@ -821,10 +829,18 @@ export class GameScene extends Phaser.Scene {
     }
     const b = run.blessings;
     const m = this.perks;
-    st.goldMult *= 1 + m.gold;
-    st.damageMult *= (1 + b.damage) * (1 + m.damage);
-    st.speed *= 1 + b.speed;
-    st.maxHp = Math.round(st.maxHp * (1 + b.maxHp) * (1 + m.maxHp));
+    const gb = this.gear;
+    st.goldMult *= (1 + m.gold) * (1 + gb.gold);
+    st.damageMult *= (1 + b.damage) * (1 + m.damage) * (1 + gb.damage);
+    st.speed *= (1 + b.speed) * (1 + gb.speed);
+    st.maxHp = Math.round(st.maxHp * (1 + b.maxHp) * (1 + m.maxHp) * (1 + gb.maxHp));
+    st.cooldownMult = Math.max(0.4, st.cooldownMult * (1 - gb.haste));
+    st.critChance += gb.crit;
+    st.areaMult *= 1 + gb.area;
+    st.xpMult += gb.xp;
+    st.armor += gb.armor;
+    st.durationMult += gb.duration;
+    st.magnet *= 1 + gb.magnet;
     this.ctx.runes = runeLevels(run.inventory);
     this.player.setStats(run.stats);
     this.weapons.talents = run.inventory.talents;
@@ -1112,6 +1128,22 @@ export class GameScene extends Phaser.Scene {
     const from = masteryState(save.mastery[this.hero.id]).level;
     const xp = masteryXp(run.time, run.kills, run.bossesKilled + run.leadersKilled);
     save.mastery[this.hero.id] += xp;
+    // Equipment found on the way.
+    const loot: RunSummary['loot'] = [];
+    let lootGold = 0;
+    const drops = runDrops(this.rng, {
+      map: this.mapIndex,
+      difficulty: this.difficulty,
+      time: run.time,
+      bosses: run.bossesKilled,
+      leaders: run.leadersKilled,
+      won: run.won,
+    });
+    for (const d of drops) {
+      const got = addItem(save.gear, d, save);
+      if (typeof got === 'number') lootGold += got;
+      else loot.push({ name: GEAR[got.type].name, type: got.type, rarity: got.rarity });
+    }
     const reached = tiersReached(lifetime(save));
     const achievements = ACHIEVEMENTS.flatMap((a) =>
       Array.from({ length: Math.max(0, reached[a.id] - this.tiersAtStart[a.id]) }, (_, k) => `${a.name} ${ROMAN[this.tiersAtStart[a.id] + k]}`),
@@ -1140,6 +1172,8 @@ export class GameScene extends Phaser.Scene {
       heat: this.heat,
       newBestHeat,
       unlocks,
+      loot,
+      lootGold,
       mastery: { hero: this.hero.name, xp, from, to: masteryState(save.mastery[this.hero.id]).level },
     };
     audio.stopMusic();

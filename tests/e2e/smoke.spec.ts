@@ -131,3 +131,47 @@ test('the Collection opens from the menu and every tab draws', async ({ page }) 
   }
   expect(errors).toEqual([]);
 });
+
+test('the Gear screen equips and levels an item', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => {
+    if (localStorage.getItem('little-archer-save-v1')) return;
+    const items = [{ uid: 1, type: 'hunterGloves', rarity: 2, level: 1, spent: 0, fresh: true }];
+    localStorage.setItem('little-archer-save-v1', JSON.stringify({ version: 1, gold: 500, gear: { items, equipped: {}, next: 2 } }));
+  });
+  await page.goto('/');
+  await expect.poll(() => scenes(page), { timeout: 30_000 }).toContain('Menu');
+  const box = (await page.locator('canvas').boundingBox())!;
+  const scale = box.width / 1080;
+  const tap = (x: number, y: number) => page.touchscreen.tap(box.x + x * scale, box.y + y * scale);
+  // Gear is the right-hand button of the bottom row.
+  await tap(870, box.height / scale - 120);
+  await expect.poll(() => scenes(page), { timeout: 10_000 }).toContain('Gear');
+  type Obj = { type: string; x: number; y: number; opts?: { label?: string } };
+  type GS = { content: Obj[]; popup: Obj[] };
+  const gearScene = () => (window as unknown as { __game: { scene: { getScene(k: string): GS } } }).__game.scene.getScene('Gear');
+  // Nothing is worn, so the first tap zone is the item in the bag.
+  const [ix, iy] = await page.evaluate((fn) => {
+    const z = (eval(fn) as () => GS)().content.find((o) => o.type === 'Zone')!;
+    return [z.x, z.y];
+  }, `(${gearScene})`);
+  await tap(ix, iy);
+  const button = (label: string) =>
+    page.evaluate(
+      ([fn, l]) => {
+        const b = (eval(fn) as () => GS)().popup.find((o) => o.opts?.label?.startsWith(l))!;
+        return [b.x, b.y];
+      },
+      [`(${gearScene})`, label] as const,
+    );
+  const [ex, ey] = await button('Equip');
+  await tap(ex, ey);
+  await page.waitForTimeout(300);
+  const [ux, uy] = await button('Level up');
+  await tap(ux, uy);
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('little-archer-save-v1')!).gear), { timeout: 5_000 })
+    .toMatchObject({ equipped: { gloves: 1 }, items: [{ uid: 1, level: 2 }] });
+  expect(errors).toEqual([]);
+});

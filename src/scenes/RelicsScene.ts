@@ -17,6 +17,13 @@ export class RelicsScene extends Phaser.Scene {
     super('Relics');
   }
 
+  /** Where Back goes (the Gear screen opens this one). */
+  private back = 'Menu';
+
+  init(data: { back?: string }): void {
+    this.back = data.back ?? 'Menu';
+  }
+
   create(): void {
     const { width, height } = this.scale;
     const { top, bottom } = safeInsets(this);
@@ -32,7 +39,7 @@ export class RelicsScene extends Phaser.Scene {
       color: BUTTON.secondary,
       label: 'Back',
       icon: 'icon_home',
-      onClick: () => this.scene.start('Menu'),
+      onClick: () => this.scene.start(this.back),
     });
     this.draw(winTop + 24, winBottom - 24);
   }

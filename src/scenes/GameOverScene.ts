@@ -5,6 +5,8 @@ import { MAPS } from '../config/maps';
 import { formatTime } from '../core/format';
 import { safeInsets } from '../ui/safe';
 import { BUTTON, CSS } from '../ui/theme';
+import { RARITIES } from '../config/gear';
+import { gearTile } from '../ui/gear';
 import { Button, dimmer, dividerTexture, gradientText, panel, slotIcon, text } from '../ui/widgets';
 import { type RunSummary } from './GameScene';
 
@@ -90,6 +92,10 @@ export class GameOverScene extends Phaser.Scene {
       this.tweens.add({ targets: u, scale: 1.07, duration: 500, yoyo: true, repeat: -1 });
       y += 116 + gap;
     }
+    if (s.loot.length || s.lootGold) {
+      this.lootNote(news, y + 75);
+      y += 150 + gap;
+    }
     if (s.unlocks.length) {
       this.unlockNote(news, y + 75);
       y += 150 + gap;
@@ -143,6 +149,39 @@ export class GameOverScene extends Phaser.Scene {
       icon,
       text(this, -w / 2 + 132, y - 24, bits.join('  ·  '), 40, { color: CSS.gold, originX: 0 }),
       text(this, -w / 2 + 132, y + 28, 'Claim your gold in Quests', 32, { color: CSS.cream, weight: '600', originX: 0 }),
+    ]);
+  }
+
+  /** Equipment found this run: rarity-framed icons, and a pointer to the Gear screen. */
+  private lootNote(c: Phaser.GameObjects.Container, y: number): void {
+    const s = this.summary;
+    const w = 860;
+    c.add(panel(this, 0, y, w, 150, { style: 'selected', radius: 30 }));
+    const shown = [...s.loot].sort((a, b) => b.rarity - a.rarity).slice(0, 4);
+    const size = 84;
+    const step = 70;
+    shown.forEach((it, i) => {
+      const parts = gearTile(this, -w / 2 + 28 + size / 2 + i * step, y, size, it.type, it.rarity);
+      c.add(parts);
+    });
+    const tx = -w / 2 + 28 + (shown.length ? size + (shown.length - 1) * step : 0) + 24;
+    const best = shown[0];
+    const title = s.loot.length ? (s.loot.length === 1 ? 'GEAR FOUND!' : `${s.loot.length} GEAR FOUND!`) : 'BAG FULL';
+    c.add([
+      text(this, tx, y - 38, title, 42, { color: CSS.gold, originX: 0 }),
+      text(this, tx, y + 8, best ? `Best: ${RARITIES[best.rarity].name} ${best.name}` : `Salvaged for ${s.lootGold} gold`, 30, {
+        color: best ? RARITIES[best.rarity].css : CSS.cream,
+        weight: '600',
+        originX: 0,
+        shadow: false,
+      }),
+      text(this, tx, y + 46, s.lootGold && best ? `Bag full: +${s.lootGold} gold for the rest` : 'Equip it in Gear', 28, {
+        color: CSS.soft,
+        weight: '600',
+        originX: 0,
+        shadow: false,
+        stroke: false,
+      }),
     ]);
   }
 

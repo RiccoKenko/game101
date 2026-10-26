@@ -139,7 +139,13 @@ export class MenuScene extends Phaser.Scene {
       new Button(this, width / 2 + (i - 1) * 330, by, { w: 310, h: 110, color, label, icon, iconSize: 66, fontSize: 40, onClick: () => this.scene.start(scene) });
     third(0, 'Shop', 'icon_shop', BUTTON.warning, 'Shop');
     const quests = third(1, 'Quests', 'icon_scroll', BUTTON.purple, 'Quests');
-    third(2, 'Relics', save.equipped.length ? `relic_${save.equipped[0]}` : 'relic_slime', BUTTON.system, 'Relics');
+    // Gear (equipment, with the relics inside), and how many items are new since the last look.
+    const gearBtn = third(2, 'Gear', 'gear_helm', BUTTON.system, 'Gear');
+    const newGear = save.gear.items.filter((i) => i.fresh).length;
+    if (newGear > 0) {
+      const b = badge(this, gearBtn.x + 155 - 16, by - 55 + 4, newGear);
+      this.tweens.add({ targets: b, scale: 1.15, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
     const waiting = claimableCount(save);
     if (waiting > 0) {
       const b = badge(this, quests.x + 155 - 16, by - 55 + 4, waiting);

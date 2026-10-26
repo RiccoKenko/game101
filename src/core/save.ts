@@ -1,5 +1,6 @@
 import { CHARACTER_IDS, type CharacterId } from '../config/characters';
 import { BESTIARY, UNLOCK_KEYS, type MonsterId } from '../config/collection';
+import { emptyGear, sanitizeGear, type GearState } from './gear';
 import { CURSE_IDS, MAX_HEAT, type CurseId } from '../config/curses';
 import { maxDifficulty } from '../config/difficulty';
 import { MAX_RELICS, RELIC_IDS, type RelicId } from '../config/relics';
@@ -82,6 +83,8 @@ export interface SaveData {
   seen: string[];
   /** Mastery XP earned with each hero. */
   mastery: Record<CharacterId, number>;
+  /** Equipment: the bag, and what is worn in each slot. */
+  gear: GearState;
 }
 
 export interface KeyValueStorage {
@@ -118,6 +121,7 @@ export function defaultSave(): SaveData {
     unlocked: [],
     seen: [],
     mastery: Object.fromEntries(CHARACTER_IDS.map((id) => [id, 0])) as Record<CharacterId, number>,
+    gear: emptyGear(),
   };
 }
 
@@ -178,6 +182,7 @@ export function sanitize(raw: unknown): SaveData {
     const m = r.mastery as Record<string, unknown>;
     for (const id of CHARACTER_IDS) out.mastery[id] = Math.floor(num(m[id], 0));
   }
+  out.gear = sanitizeGear(r.gear);
   return out;
 }
 
