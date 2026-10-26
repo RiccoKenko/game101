@@ -1443,6 +1443,203 @@ export const ICONS_ART: ArtSet = {
       ln('M70 70L84 84M78 60L90 72M58 78L68 88', '#fff1a0', 3.5, 0.9),
   ),
 
+  // ======================= v11 equipment =======================
+  gear_gloves: svg(
+    S,
+    S,
+    (() => {
+      const L = '#cf8f52';
+      const LD = '#94592e';
+      const fingers: [number, number, number, number][] = [
+        [24.5, 25, 10.5, 36],
+        [37.5, 15, 10.5, 44],
+        [50.5, 19, 10.5, 40],
+        [63.5, 29, 9.5, 32],
+      ];
+      const fd = fingers.map(([x, y, w, h]) => rr(x, y, w, h, w / 2));
+      const thumb = ell(23, 57, 14, 7, 50);
+      const palm = rr(24, 42, 49, 34, 12);
+      return (
+        under(thumb + fd.join('') + palm) +
+        paint('gear_gloves_t', thumb, L, LD, [-3, -3]) +
+        fd.map((d, i) => paint(`gear_gloves_f${i}`, d, L, LD, [-2.5, -2.5])).join('') +
+        paint('gear_gloves_p', palm, L, LD, [-4, -4]) +
+        ln('M36.3 43L36.3 48M49.3 43L49.3 48M62.3 43L62.3 48', LD, 2.5) +
+        `<path d="M31 56Q48 62 66 56" fill="none" stroke="#f3c58c" stroke-width="2.2" stroke-dasharray="3.5 3" stroke-linecap="round"/>` +
+        hl(rr(40.5, 20, 3.2, 16, 1.6), 0.55) +
+        hl(rr(27.5, 30, 3, 11, 1.5), 0.45) +
+        hl(rr(53.5, 24, 3, 11, 1.5), 0.4) +
+        cel('gear_gloves_c', 'M23 70L74 70L78 86L19 86Z', '#4caf50', '#2e7a35', [-3, -3]) +
+        cel('gear_gloves_r', rr(20, 65, 57, 9, 4.5), '#7fd36a', '#3f9a44', [-2, -2], 3.5) +
+        cel('gear_gloves_s', circ(48.5, 79.5, 4.5), GOLD, GOLD_D, [-1.5, -1.5], 3) +
+        hl(circ(47.3, 78.3, 1.3), 0.9)
+      );
+    })(),
+  ),
+  gear_bracers: svg(
+    S,
+    S,
+    g(
+      'translate(57 45) rotate(-30)',
+      (() => {
+        const M = '#8d9cc4';
+        const MD = '#5a6894';
+        const body = 'M-36 -32Q-30 -27 -22 -26L20 -18A7 18 0 0 1 20 18L-26 26Q-36 4 -36 -32Z';
+        const edge = 'M-36 -32Q-36 4 -26 26';
+        const glyph = 'M-5 -13L-5 13M-5 -1L-14 -12M-5 -1L4 -12M-11 13L1 13';
+        const rivets = [
+          [-31.5, -15],
+          [-29.5, 0.5],
+          [-26.5, 13.5],
+          [23, -9],
+          [23.7, 0],
+          [23, 9],
+        ]
+          .map(([x, y]) => circ(x, y, 2.6))
+          .join('');
+        return (
+          radial('gear_bracers_g', [
+            [0, CYAN, 0.9],
+            [0.55, CYAN, 0.35],
+            [1, CYAN, 0],
+          ]) +
+          cel('gear_bracers_b', body, M, MD, lo(-30, 4)) +
+          `<clipPath id="gear_bracers_k"><path d="${body}"/></clipPath>` +
+          `<g clip-path="url(#gear_bracers_k)">${ln(edge, O, 21)}${ln(edge, '#c3cfea', 16)}` +
+          `<circle cx="-5" cy="0" r="19" fill="url(#gear_bracers_g)"/></g>` +
+          cel('gear_bracers_w', 'M12 -19.5L22 -20.5A7 20.5 0 0 1 22 20.5L12 19.5A6.5 19.5 0 0 0 12 -19.5Z', '#c3cfea', M, lo(-30, 2), 3.5) +
+          tube(glyph, 4, CYAN, 2.2) +
+          ln(glyph, '#ffffff', 1.6, 0.9) +
+          cel('gear_bracers_r', rivets, GOLD, GOLD_D, lo(-30, 1), 2) +
+          ln('M-20 -22L8 -17.5', '#ffffff', 3, 0.55)
+        );
+      })(),
+    ),
+  ),
+  gear_hat: svg(
+    S,
+    S,
+    cel('gear_hat_b', ell(48, 66, 38, 14, -5), '#e2384a', '#a51f36', [-4, -4]) +
+      cel('gear_hat_c', 'M21 62C18 36 32 18 48 18C64 18 77 34 74 60Q48 70 21 62Z', RED, RED_D, [-5, -5]) +
+      g(
+        'translate(66 38) rotate(30) scale(0.72)',
+        cel('gear_hat_f', 'M0 -42C18 -26 18 10 4 34L-4 34C-18 10 -18 -26 0 -42Z', '#ffffff', '#bfc7d6', lo(30, 4), 5.5) +
+          ln('M0 -36L0 44', '#8792a8', 3.5) +
+          ln('M0 -20L-9 -26M0 -6L-11 -12M0 8L-10 2M0 -20L9 -26M0 -6L11 -12M0 8L10 2', '#aab3c6', 2.5),
+      ) +
+      cel('gear_hat_band', 'M20.5 52Q47 61 74.5 50L74.2 60Q47 71 21 62Z', GOLD, GOLD_D, [-2, -2], 3.5) +
+      ln('M26 56Q34 59 42 60', '#fff6c8', 2, 0.8) +
+      hl(ell(32, 36, 4, 9, 25), 0.5) +
+      ln('M18 72Q30 78 44 79', '#ffffff', 2.5, 0.45),
+  ),
+  gear_helm: svg(
+    S,
+    S,
+    cel(
+      'gear_helm_p',
+      'M40 30C34 18 42 9 56 9C70 9 82 15 88 28C83 25 79 27 77 31C73 27 68 28 65 33C61 29 55 30 52 34C47 33 42 33 40 30Z',
+      RED,
+      RED_D,
+      [-3, -3],
+      3.5,
+    ) +
+      ln('M47 22Q60 15 76 20M52 28Q62 23 70 26', RED_D, 2.2) +
+      hl('M44 22C44 16 50 13 56 13C50 15 47 18 46 23Z', 0.6) +
+      cel('gear_helm_h', 'M48 25C69 25 80 38 80 55L81 73Q81 85 68 87L28 87Q15 85 15 73L16 55C16 38 27 25 48 25Z', STEEL, STEEL_D, [-6, -6]) +
+      cel('gear_helm_r', rr(44, 26, 8, 25, 4), STEEL, STEEL_D, [-2, -2], 3) +
+      `<path d="${rr(22, 51, 52, 9, 4.5)}" fill="${O}"/>` +
+      `<path d="${[30, 36, 60, 66].map((x) => circ(x, 69, 2.2) + circ(x, 76, 2.2)).join('')}" fill="${O}"/>` +
+      ln('M17 81Q48 87 79 81', STEEL_D, 3) +
+      hl('M24 50C22 40 30 31 40 29C33 34 29 41 29 50Z', 0.65),
+  ),
+  gear_cloak: svg(
+    S,
+    S,
+    tube('M8 34Q21 30 24 38Q26 46 18 46Q13 45 15 40', 3.5, '#d6fff7', 2) +
+      tube('M7 60Q17 56 20 64Q22 72 14 71', 3.5, '#d6fff7', 2) +
+      cel(
+        'gear_cloak_b',
+        'M52 9C66 9 74 19 72 33C78 47 84 59 89 73Q82 73 78 81Q72 75 66 85Q58 79 50 87Q42 79 34 85Q28 79 22 83C26 65 28 51 34 39C30 23 38 9 52 9Z',
+        '#2fbfa8',
+        '#1b8576',
+        [-5, -5],
+      ) +
+      ln('M42 54Q38 70 36 80M62 52Q67 66 71 76', '#1b8576', 3) +
+      cel('gear_cloak_l', ell(52, 31, 13, 15), '#8ff0dc', '#3fbfa8', [-2, -2], 3.5) +
+      `<path d="${ell(52, 32, 9, 11)}" fill="#123b3a"/>` +
+      cel('gear_cloak_c', circ(52, 51, 6), GOLD, GOLD_D, [-1.5, -1.5], 3) +
+      hl(circ(50.5, 49.5, 1.6), 0.9) +
+      hl('M37 40L41 38L33 78L29 79Z', 0.35),
+  ),
+  gear_robe: svg(
+    S,
+    S,
+    (() => {
+      const body = 'M36 12L22 18L8 52Q17 58 26 52L28 48L20 84Q48 90 76 84L68 48L70 52Q79 58 88 52L74 18L60 12Q48 22 36 12Z';
+      const trims = 'M14 80.5Q48 86.5 82 80.5M5 47Q17 54 29 47M91 47Q79 54 67 47M36 12L48 30L60 12';
+      return (
+        cel('gear_robe_b', body, '#8a52e0', '#5a2fa8', [-5, -5]) +
+        ln('M28 48L31 30M68 48L65 30M40 54L37 78M56 54L59 78', '#5a2fa8', 2.5) +
+        `<clipPath id="gear_robe_k"><path d="${body}"/></clipPath>` +
+        `<g clip-path="url(#gear_robe_k)">${ln(trims, O, 10.5)}${ln(trims, GOLD, 6)}</g>` +
+        cel('gear_robe_s', star(48, 44, 10, 4.3), GOLD, GOLD_D, [-1.5, -1.5], 3) +
+        hl('M24 22L30 20L17 47L12 46Z', 0.35)
+      );
+    })(),
+  ),
+  gear_boots: svg(
+    S,
+    S,
+    tube('M9 60L22 60M12 70L25 70M8 80L20 80', 4, '#bff6ff', 2.5) +
+      cel(
+        'gear_boots_b',
+        'M32 14L56 14Q59 14 59 18L60 48Q74 50 82 57Q88 62 88 70L88 74Q88 80 82 80L36 80Q30 80 30 74L28 18Q28 14 32 14Z',
+        '#b8683a',
+        '#7e4020',
+        [-5, -5],
+      ) +
+      cel('gear_boots_s', 'M30 71L88 71L88 74Q88 80 82 80L36 80Q30 80 30 74Z', '#5a3420', '#3c2214', [-2, -2], 3.5) +
+      ln('M70 52Q65 62 70 71', '#7e4020', 2.5) +
+      tube('M48 26L58 26M48 34L58 34M48 42L59 42', 3, '#f6e7c8', 1.8) +
+      cel('gear_boots_c', rr(26, 10, 37, 11, 5), '#e8c08a', '#b88a52', [-2, -2], 4) +
+      hl('M33 26L37 26L37 60L33 60Z', 0.4) +
+      hl(ell(78, 63, 2.6, 5, -50), 0.45) +
+      g(
+        'translate(33 54) scale(0.8)',
+        cel(
+          'gear_boots_w',
+          'M0 0C-8 0 -14 -2 -20 -8C-16 -8 -14 -9 -13 -10C-20 -12 -24 -18 -26 -26C-21 -23 -16 -22 -13 -22C-18 -26 -20 -30 -20 -36C-12 -32 -4 -26 2 -14Z',
+          '#ffffff',
+          WHITE_D,
+          [-3, -3],
+          5,
+        ) + ln('M-14 -22C-9 -18 -5 -14 -2 -10M-13 -10C-8 -8 -4 -6 -1 -4', WHITE_D, 2.8),
+      ),
+  ),
+  gear_boots_lucky: svg(
+    S,
+    S,
+    (() => {
+      const boot = 'M28 16L56 16Q59 16 59 20L58 50C66 56 76 56 83 42C91 48 92 64 82 72Q76 78 66 78L30 80Q24 80 24 74L25 20Q25 16 28 16Z';
+      const leaf =
+        'M0 -3C-4 -11 -21 -14 -21 -27C-21 -35 -13 -39 -7 -37C-3 -36 -1 -33 0 -31C1 -33 3 -36 7 -37C13 -39 21 -35 21 -27C21 -14 4 -11 0 -3Z';
+      return (
+        cel('gear_boots_lucky_b', boot, '#4cc35a', '#2a8a3c', [-5, -5]) +
+        `<clipPath id="gear_boots_lucky_k"><path d="${boot}"/></clipPath>` +
+        `<g clip-path="url(#gear_boots_lucky_k)"><path d="M0 71H96V96H0Z" fill="#7a4a28"/>${ln('M0 71H96', O, 3)}</g>` +
+        hl(rr(28.5, 28, 3.5, 10, 1.75), 0.45) +
+        hl(ell(74, 60, 2.6, 5, 60), 0.45) +
+        cel('gear_boots_lucky_s', 'M25 41L59 39L59 53L25 55Z', '#2f8a3e', '#21602b', [-2, -2], 3.5) +
+        cel('gear_boots_lucky_c', 'M21 10L63 10L61 26L55 22L49 28L43 22L37 28L31 22L23 26Z', '#9be37f', '#58b04a', [-2, -2]) +
+        cel('gear_boots_lucky_k1', circ(42, 47, 11.5), GOLD, GOLD_D, [-2.5, -2.5], 3.5) +
+        [0, 90, 180, 270]
+          .map((a) => g(`translate(42 47) rotate(${a}) scale(0.2)`, `<path d="${leaf}" fill="#3fbf4a" stroke="${O}" stroke-width="7" stroke-linejoin="round"/>`))
+          .join('') +
+        hl(circ(38, 42, 1.6), 0.9)
+      );
+    })(),
+  ),
+
   // ======================= v9 collection =======================
   icon_book: svg(
     S,

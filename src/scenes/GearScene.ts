@@ -24,7 +24,7 @@ import { saveStore } from '../core/save';
 import { gearTile } from '../ui/gear';
 import { safeInsets } from '../ui/safe';
 import { BUTTON, CSS } from '../ui/theme';
-import { Button, dimmer, gradientText, panel, text } from '../ui/widgets';
+import { Button, dimmer, gradientText, panel, slotTexture, text } from '../ui/widgets';
 import { menuBackground } from './MenuScene';
 
 const COLS = 6;
@@ -150,10 +150,15 @@ export class GearScene extends Phaser.Scene {
     const rows = Math.ceil(BAG_SIZE / COLS);
     const rowH = Math.min(pitch, (bagBottom - 20 - gridTop) / rows);
     const tile = Math.min(150, pitch - 16, rowH - 12);
-    if (!items.length) this.keep(text(this, width / 2, (gridTop + bagBottom) / 2, 'Empty: gear drops at the end of a run', 32, { color: CSS.muted }));
+    const at = (i: number) => [48 + pitch * ((i % COLS) + 0.5), gridTop + Math.floor(i / COLS) * rowH + rowH / 2];
+    // Faint empty sockets show how much room is left.
+    for (let i = items.length; i < BAG_SIZE; i++) {
+      const [x, y] = at(i);
+      this.keep(this.add.image(x, y, slotTexture(this, tile, 'weapon', 'back')).setAlpha(0.35));
+    }
+    if (!items.length) this.keep(text(this, width / 2, gridTop + rowH * 2.5, 'Empty: gear drops at the end of a run', 32, { color: CSS.soft }));
     items.forEach((item, i) => {
-      const x = 48 + pitch * ((i % COLS) + 0.5);
-      const y = gridTop + Math.floor(i / COLS) * rowH + rowH / 2;
+      const [x, y] = at(i);
       gearTile(this, x, y, tile, item.type, item.rarity).forEach((o) => this.keep(o));
       this.keep(text(this, x + tile / 2 - 8, y + tile / 2 - 18, `${item.level}`, 26, { originX: 1 }));
       if (isEquipped(gear, item)) this.keep(this.add.image(x - tile / 2 + 22, y - tile / 2 + 22, 'icon_check').setDisplaySize(40, 40));
@@ -215,7 +220,7 @@ export class GearScene extends Phaser.Scene {
     dim.on('pointerup', () => this.closePopup());
     const cy = height / 2 - 40;
     const w = 940;
-    const h = 900;
+    const h = 800;
     const x0 = width / 2 - w / 2;
     const top = cy - h / 2;
     const def = GEAR[item.type];
@@ -267,8 +272,8 @@ export class GearScene extends Phaser.Scene {
     const bw = 400;
     const bh = 112;
     const bx = (i: number) => width / 2 + (i === 0 ? -1 : 1) * (bw / 2 + 14);
-    const row1 = top + h - 230;
-    const row2 = top + h - 96;
+    const row1 = top + h - 220;
+    const row2 = top + h - 90;
     const act = (fn: () => boolean | number) => () => {
       if (!fn()) return;
       saveStore.save();
@@ -350,8 +355,8 @@ export class GearScene extends Phaser.Scene {
         h: 84,
         shape: 'round',
         color: BUTTON.system,
-        icon: 'icon_banish',
-        iconSize: 46,
+        label: 'X',
+        fontSize: 46,
         onClick: () => this.time.delayedCall(1, () => this.closePopup()),
       }),
     );
