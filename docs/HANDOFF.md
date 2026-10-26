@@ -9,7 +9,8 @@
 - **ลิงก์ทดสอบ (Artifact เดิม, ตอนนี้ version 11):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ไม่มีเสียง)
   - สร้างใหม่: `node scripts/build-artifact.mjs <scratchpad>/monster-rush.html` แล้ว publish ทับโดยใส่ `url` นี้ (session ใหม่ต้อง `action: read` ลิงก์ก่อน ไม่งั้นจะได้ลิงก์ใหม่)
   - มีลิงก์ซ้ำที่สร้างพลาดตอน v7: https://claude.ai/artifact/DaeJvjMYDtgQqPh675dMmy (ลบได้ถ้าเจ้านายสั่ง)
-- **ลิงก์หลัก little-archer.vercel.app ยังเป็นภาพเวกเตอร์เดิม** (deploy `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c`) ⚠️ รอเจ้านายสั่ง
+- **ลิงก์หลัก little-archer.vercel.app = v11 แล้ว** (26 ต.ค. 2026, deploy `dpl_5xYkEZsB43S3HWT7TdsDPGErrows`, commit 5278b6d; ตรวจแล้วหน้าเว็บโหลด `index-CEv05ZS6.js` ตรงกับ build ในเครื่อง) เจ้านายสั่งเอง ("ทำข้อ 2 5 6"); รอบหน้าขึ้นใหม่เมื่อเจ้านายสั่งเท่านั้น
+  - deploy เก่า (ภาพเวกเตอร์): `dpl_Gc51ujWdFnwVWVSTFkqK8uyQPw3c` (ย้อนกลับได้ใน Vercel ถ้าจำเป็น)
   - วิธี deploy: Vercel MCP `create_deployment` (project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, slug `cat-team5`, target production, gitSource `{type:'github', org:'RiccoKenko', repo:'game101', ref:'claude/compassionate-dirac-2wzrb3', sha:<HEAD>}`)
 - **รอบ v11 (เจ้านายสั่ง "ทำข้อ 2 5 6": ปุ่มพุ่งหลบ + ท่าไม้ตาย, อุปกรณ์แบบ Archero, ขึ้นลิงก์หลัก)** ทำด้วยโค้ดทั้งหมด $0
   - **พุ่งหลบ + ท่าไม้ตาย** `config/abilities.ts` + `game/Abilities.ts`: ปุ่มกลมซ้าย/ขวาของจอยใน `HudScene` (`ABILITY_X/D`, วงชาร์จ `chargeRing`), คีย์ Space/E, `GameScene.dash()/ultimate()`, บอทใช้เอง (`botAbilities`)
@@ -41,7 +42,7 @@
 - **รอเจ้านาย:**
   1. ลองเล่น v11 แล้วบอกว่าปุ่มพุ่ง/ท่าไม้ตายกดง่ายไหม แรงไป/อ่อนไป และของสวมใส่ดรอปบ่อยพอไหม; ความยากหลังแก้ v10 พอดีหรือยัง
   2. ทำช่วงถัดไปไหม (จากแผนที่เสนอ): **ช่วง 2** การ์ดโชคชะตาก่อนเริ่มตา + ปุ่มพุ่งหลบ/ท่าไม้ตาย, **ช่วง 3** โหมดเล่นต่อหลัง 15:00 + โจทย์ประจำวัน (ตารางอันดับออนไลน์ทีหลัง), **ช่วง 4** อุปกรณ์สวมใส่แบบ Archero (ตัวดูดเงินระยะยาว)
-  3. คำถามค้างจาก v8: ฮีโร่ใหม่ (OpenAI ~$0.6/ตัว, วิธีอยู่ในหัวข้อ v8 ด้านล่าง), ขึ้นลิงก์หลัก
+  3. คำถามค้างจาก v8: ฮีโร่ใหม่ (OpenAI ~$0.6/ตัว, วิธีอยู่ในหัวข้อ v8 ด้านล่าง)
 - **ของชั่วคราวใน container (หายได้):** dev server `npx vite --port 5181`; สคริปต์ `scratchpad/v9/ui.cjs` (ถ่ายเมนู/Collection ทุกแท็บ/หน้าจบเกม/ป้ายปลดล็อกกลางรอบ, `SKIP4=1` หรือ `ONLY4=1`), `scratchpad/v9/artifact.cjs` (เปิดไฟล์ Artifact ออฟไลน์), สคริปต์ v7/v8 ใน `scratchpad/v7/`
 - **งบ OpenAI:** ใช้ไป **$3.53 จาก $5** (เหลือ $1.47) ตาม `art/openai-log.jsonl` (v7-v9 ไม่ได้ใช้)
   - ⚠️ commit log ทุกครั้งหลังวาด แล้วบอกเจ้านายว่าใช้ไป/เหลือเท่าไร; ห้ามเพิ่ม `OPENAI_BUDGET_USD` ถ้าเจ้านายไม่สั่ง
