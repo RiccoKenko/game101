@@ -27,8 +27,8 @@ import { menuBackground } from './MenuScene';
 export type CollectionTab = 'weapons' | 'runes' | 'items' | 'monsters' | 'heroes';
 
 const TABS: { tab: CollectionTab; label: string }[] = [
-  { tab: 'weapons', label: 'Weapons' },
-  { tab: 'runes', label: 'Runes' },
+  { tab: 'weapons', label: 'Skills' },
+  { tab: 'runes', label: 'Cards' },
   { tab: 'items', label: 'Items' },
   { tab: 'monsters', label: 'Monsters' },
   { tab: 'heroes', label: 'Heroes' },
@@ -125,7 +125,7 @@ export class CollectionScene extends Phaser.Scene {
     const met = BESTIARY.flatMap((g) => g.ids).filter((id) => (this.rec.monsters[id] ?? 0) > 0).length;
     this.subtitle.setText(
       tab === 'heroes'
-        ? 'Play a hero to raise its mastery'
+        ? 'Play a hero to raise its Job Lv'
         : `Unlocked ${open} / ${UNLOCKS.length}  ·  Monsters met ${met} / ${BESTIARY.flatMap((g) => g.ids).length}`,
     );
     if (tab === 'heroes') this.drawHeroes();
@@ -166,23 +166,25 @@ export class CollectionScene extends Phaser.Scene {
       });
     };
     if (tab === 'weapons') {
-      for (const id of WEAPON_IDS) {
-        const w = WEAPONS[id];
-        const owner = CHARACTERS.find((c) => c.start === id);
-        add('weapon', id, w.name, w.icon, 'weapon', (locked) => {
-          const evo = w.evolution!;
-          return {
-            title: w.name,
-            sub: owner ? `${owner.name}'s own weapon` : locked ? 'Weapon · locked' : 'Weapon',
-            body: w.description,
-            extra: { icon: EVOLUTIONS[evo.into].icon, text: `Evolves into ${EVOLUTIONS[evo.into].name} with ${requirementName(evo.requires)}` },
-          };
-        });
+      // Skill by skill, class by class (a mechanic no class uses stays out of the book).
+      for (const owner of CHARACTERS) {
+        for (const id of owner.skills) {
+          const w = WEAPONS[id];
+          add('weapon', id, w.name, w.icon, 'weapon', (locked) => {
+            const evo = w.evolution!;
+            return {
+              title: w.name,
+              sub: `${owner.name} skill${id === owner.start ? ' · start' : locked ? ' · locked' : ''}`,
+              body: w.description,
+              extra: { icon: EVOLUTIONS[evo.into].icon, text: `Evolves into ${EVOLUTIONS[evo.into].name} with ${requirementName(evo.requires)}` },
+            };
+          });
+        }
       }
     } else if (tab === 'runes') {
       for (const id of RUNE_IDS) {
         const r = RUNES[id];
-        add('rune', id, r.name, r.icon, 'rune', (locked) => ({ title: r.name, sub: locked ? 'Rune · locked' : 'Rune: changes every weapon\'s hits', body: r.levels[0], extra: this.evolves(id) }));
+        add('rune', id, r.name, r.icon, 'rune', (locked) => ({ title: r.name, sub: locked ? 'Card · locked' : 'Card: changes every skill\'s hits', body: r.levels[0], extra: this.evolves(id) }));
       }
     } else {
       for (const id of PASSIVE_IDS) {
@@ -403,7 +405,7 @@ export class CollectionScene extends Phaser.Scene {
     const tx = x0 + 270;
     const tw = x0 + w - 28 - tx;
     this.keep(text(this, tx, top + 42, `${master ? 'Master ' : ''}${c.name}`, 40, { color: master ? CSS.gold : ink, stroke: master, originX: 0 }));
-    this.keep(text(this, tx, top + 88, `Mastery ${st.level}${master ? ' (max)' : ''}`, 32, { color: master ? CSS.gold : '#7a4a10', stroke: master, originX: 0 }));
+    this.keep(text(this, tx, top + 88, `Job Lv ${st.level}${master ? ' (max)' : ''}`, 32, { color: master ? CSS.gold : '#7a4a10', stroke: master, originX: 0 }));
     this.keep(text(this, x0 + w - 28, top + 90, master ? 'MAX' : `${count(st.into)} / ${count(st.need)} XP`, 27, { color: soft, stroke: false, weight: '600', originX: 1, shadow: false }));
     const bar = new Bar(this, tx, top + 116, tw, 22, master ? 0xf2c14e : 0x5ad15a);
     bar.set(master ? 1 : st.into / st.need);

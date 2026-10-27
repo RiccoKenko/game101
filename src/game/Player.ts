@@ -53,13 +53,18 @@ export class Player {
   private readonly muzzle: [number, number];
   /** Mana Shield (the mage): up and ready to block a hit, or seconds until it comes back. */
   shieldUp = false;
+  /** Seconds of the Swordman's Berserk left: more damage, a red glow. */
+  berserk = 0;
   private shieldWait = 0;
   private bubble: Phaser.GameObjects.Image;
+  /** The colour a hero borrowing another's sheet is drawn in (0 = none). */
+  private readonly tint: number;
 
   constructor(scene: Phaser.Scene, public stats: PlayerStats, character: CharacterDef) {
     this.hp = stats.maxHp;
     this.primary = character.start;
     this.muzzle = character.muzzle;
+    this.tint = character.tint ?? 0;
     this.shadow = scene.add.image(0, 0, 'shadow').setDisplaySize(84, 26).setDepth(4);
     // Anchored at the feet so the run bounce and squash pivot on the ground. A character whose sheet didn't load
     // falls back to the archer's.
@@ -79,6 +84,7 @@ export class Player {
       this.baseScale = 1;
       this.sprite = scene.add.sprite(0, 0, 'hero_0').setDepth(20).setOrigin(0.5, 1);
     }
+    this.restoreTint();
     this.bubble = scene.add.image(0, 0, 'ring').setDepth(23).setTint(0x8fd8ff).setVisible(false);
     this.shieldUp = stats.shieldTime > 0;
     // A small HP gauge under the hero: dark frame, green fill that turns red when low.
@@ -248,15 +254,24 @@ export class Player {
         this.onStep?.(this.x - this.faceX * 18, this.y + 40);
       }
     }
+    const calmed = this.berserk > 0 && this.berserk <= dt;
+    this.berserk = Math.max(0, this.berserk - dt);
     if (this.flash > 0) {
       this.flash -= dt;
       this.sprite.setTintFill(0xffffff);
-      if (this.flash <= 0) this.sprite.clearTint();
-    }
+      if (this.flash <= 0) this.restoreTint();
+    } else if (this.berserk > 0) this.sprite.setTint(Math.floor(this.berserk * 8) % 2 ? 0xff6a4a : 0xff9a6a);
+    else if (calmed) this.restoreTint();
     // Blink while invulnerable.
     this.sprite.setAlpha(this.iframes > 0 && this.flash <= 0 ? (Math.floor(this.iframes * 20) % 2 ? 0.55 : 1) : 1);
     const ratio = Phaser.Math.Clamp(this.hp / this.stats.maxHp, 0, 1);
     this.hpBack.setPosition(this.x, this.y + 62);
     this.hpFill.setPosition(this.x - 45, this.y + 62).setDisplaySize(90 * ratio, 9).setTint(ratio < 0.3 ? 0xff4d5e : 0x5ad15a);
+  }
+
+  /** Back to normal colours after a hit flash (or the borrowed sheet's colour). */
+  private restoreTint(): void {
+    if (this.tint) this.sprite.setTint(this.tint);
+    else this.sprite.clearTint();
   }
 }

@@ -36,10 +36,10 @@ export interface SlotDef {
 }
 
 export const SLOTS: SlotDef[] = [
-  { id: 'gloves', name: 'Gloves', main: 'damage', base: 0.012 },
-  { id: 'helmet', name: 'Helmet', main: 'maxHp', base: 0.015 },
-  { id: 'cloak', name: 'Cloak', main: 'haste', base: 0.008 },
-  { id: 'boots', name: 'Boots', main: 'speed', base: 0.008 },
+  { id: 'gloves', name: 'Headgear', main: 'damage', base: 0.012 },
+  { id: 'helmet', name: 'Armor', main: 'maxHp', base: 0.015 },
+  { id: 'cloak', name: 'Garment', main: 'haste', base: 0.008 },
+  { id: 'boots', name: 'Shoes', main: 'speed', base: 0.008 },
 ];
 
 export interface GearDef {
@@ -53,13 +53,13 @@ export interface GearDef {
 }
 
 export const GEAR: Record<GearType, GearDef> = {
-  hunterGloves: { id: 'hunterGloves', slot: 'gloves', name: "Hunter's Gloves", icon: 'gear_gloves', bonus: 'crit', bonusValues: [0.02, 0.035, 0.05] },
-  runeBracers: { id: 'runeBracers', slot: 'gloves', name: 'Rune Bracers', icon: 'gear_bracers', bonus: 'area', bonusValues: [0.04, 0.07, 0.1] },
-  featherHat: { id: 'featherHat', slot: 'helmet', name: 'Feather Hat', icon: 'gear_hat', bonus: 'xp', bonusValues: [0.05, 0.08, 0.12] },
-  ironHelm: { id: 'ironHelm', slot: 'helmet', name: 'Iron Helm', icon: 'gear_helm', bonus: 'armor', bonusValues: [1, 1, 2] },
-  windCloak: { id: 'windCloak', slot: 'cloak', name: 'Wind Cloak', icon: 'gear_cloak', bonus: 'speed', bonusValues: [0.03, 0.05, 0.08] },
-  mysticRobe: { id: 'mysticRobe', slot: 'cloak', name: 'Mystic Robe', icon: 'gear_robe', bonus: 'duration', bonusValues: [0.06, 0.1, 0.15] },
-  sprintBoots: { id: 'sprintBoots', slot: 'boots', name: 'Sprint Boots', icon: 'gear_boots', bonus: 'magnet', bonusValues: [0.1, 0.18, 0.25] },
+  hunterGloves: { id: 'hunterGloves', slot: 'gloves', name: 'Horned Helm', icon: 'gear_gloves', bonus: 'crit', bonusValues: [0.02, 0.035, 0.05] },
+  runeBracers: { id: 'runeBracers', slot: 'gloves', name: 'Magic Circlet', icon: 'gear_bracers', bonus: 'area', bonusValues: [0.04, 0.07, 0.1] },
+  featherHat: { id: 'featherHat', slot: 'helmet', name: 'Sage Robe', icon: 'gear_hat', bonus: 'xp', bonusValues: [0.05, 0.08, 0.12] },
+  ironHelm: { id: 'ironHelm', slot: 'helmet', name: 'Plate Mail', icon: 'gear_helm', bonus: 'armor', bonusValues: [1, 1, 2] },
+  windCloak: { id: 'windCloak', slot: 'cloak', name: 'Wind Muffler', icon: 'gear_cloak', bonus: 'speed', bonusValues: [0.03, 0.05, 0.08] },
+  mysticRobe: { id: 'mysticRobe', slot: 'cloak', name: 'Mystic Manteau', icon: 'gear_robe', bonus: 'duration', bonusValues: [0.06, 0.1, 0.15] },
+  sprintBoots: { id: 'sprintBoots', slot: 'boots', name: 'Sprint Sandals', icon: 'gear_boots', bonus: 'magnet', bonusValues: [0.1, 0.18, 0.25] },
   luckyBoots: { id: 'luckyBoots', slot: 'boots', name: 'Lucky Boots', icon: 'gear_boots_lucky', bonus: 'gold', bonusValues: [0.05, 0.08, 0.12] },
 };
 export const GEAR_TYPES = Object.keys(GEAR) as GearType[];
@@ -71,7 +71,7 @@ export const BAG_SIZE = 30;
 /** A gear chest in the Gear screen: its price and rarity odds (Common..Legendary). */
 export const CHEST = { price: 300, weights: [60, 30, 9, 1, 0] };
 
-/** Rarity odds of a drop, by tier (the map's number plus the difficulty: Meadow Normal 0 ... Castle Nightmare 4). */
+/** Rarity odds of a drop, by tier (the map's number plus the difficulty: Greenhill Normal 0 ... Sunscar Nightmare 4). */
 export const DROP_WEIGHTS = [
   [70, 25, 5, 0, 0],
   [50, 35, 13, 2, 0],

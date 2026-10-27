@@ -155,7 +155,7 @@ export class HudScene extends Phaser.Scene {
     this.dashText = text(this, width - ABILITY_X, joyY - 2, '', 60).setDepth(103);
     const cap = { color: CSS.cream, weight: '600' } as const;
     text(this, ABILITY_X, joyY + ABILITY_D / 2 + 38, ult.name, 28, cap).setDepth(100);
-    text(this, width - ABILITY_X, joyY + ABILITY_D / 2 + 38, 'Dash', 28, cap).setDepth(100);
+    text(this, width - ABILITY_X, joyY + ABILITY_D / 2 + 38, ULTIMATES[this.game_.heroId].dash, 28, cap).setDepth(100);
     this.ultPulse = undefined;
     this.rings = { dash: -1, ult: -1 };
 

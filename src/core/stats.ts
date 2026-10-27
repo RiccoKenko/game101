@@ -27,7 +27,7 @@ export interface PlayerStats {
   healMult: number;
   /** Run and Gun: attacks come this much faster while moving. */
   moveHaste: number;
-  /** Mana Shield: seconds it takes to come back after blocking a hit (0 = no shield). */
+  /** Safety Wall: seconds it takes to come back after blocking a hit (0 = no shield). */
   shieldTime: number;
   /** Extra enemies every projectile goes through, and extra shots from the hero's own weapon (talents). */
   pierceBonus: number;
@@ -43,9 +43,9 @@ export interface PlayerStats {
 }
 
 /** The chosen hero's multipliers (see config/characters.ts). */
-export type CharacterMods = Pick<CharacterDef, 'maxHp' | 'area' | 'speed' | 'cooldown' | 'crit' | 'moveHaste' | 'shield'>;
+export type CharacterMods = Pick<CharacterDef, 'maxHp' | 'area' | 'speed' | 'cooldown' | 'crit' | 'armor' | 'moveHaste' | 'shield'>;
 
-const PLAIN_HERO: CharacterMods = { maxHp: 1, area: 1, speed: 1, cooldown: 1, crit: 0, moveHaste: 0, shield: 0 };
+const PLAIN_HERO: CharacterMods = { maxHp: 1, area: 1, speed: 1, cooldown: 1, crit: 0, armor: 0, moveHaste: 0, shield: 0 };
 
 export function computeStats(
   shop: Record<ShopId, number>,
@@ -57,20 +57,20 @@ export function computeStats(
   const pa = (id: PassiveId) => (passives[id] ?? 0) * PASSIVES[id].perLevel;
   const has = (id: TalentId) => talents.includes(id);
   return {
-    maxHp: Math.round(PLAYER_BASE.maxHp * hero.maxHp * (1 + sh('maxhp')) * (1 + pa('heart'))),
+    maxHp: Math.round(PLAYER_BASE.maxHp * hero.maxHp * (1 + sh('maxhp')) * (1 + pa('heart')) * (has('vitality') ? 1 + TALENT.vitality : 1)),
     speed: PLAYER_BASE.speed * hero.speed * (1 + sh('speed') + pa('boots') + (has('tailwind') ? TALENT.tailwindSpeed : 0)),
     magnet: PLAYER_BASE.magnet * (1 + sh('magnet') + pa('magnet')),
-    armor: PLAYER_BASE.armor + sh('armor') + pa('shield'),
-    damageMult: 1 + sh('might') + pa('powergem'),
-    cooldownMult: Math.max(0.4, (1 - pa('hourglass')) * hero.cooldown * (has('surge') ? TALENT.surge : 1)),
-    areaMult: hero.area * (1 + pa('tome')) * (has('grand') ? TALENT.grand : 1),
+    armor: PLAYER_BASE.armor + hero.armor + sh('armor') + pa('shield') + (has('endure') ? TALENT.endureArmor : 0),
+    damageMult: 1 + sh('might') + pa('powergem') + (has('swordmastery') ? TALENT.swordMastery : 0),
+    cooldownMult: Math.max(0.4, (1 - pa('hourglass')) * hero.cooldown * (has('surge') ? TALENT.surge : 1) * (has('quicken') ? TALENT.quicken : 1)),
+    areaMult: hero.area * (1 + pa('tome')) * (has('grand') || has('spirit') ? TALENT.grand : 1),
     amountBonus: pa('quiver'),
     xpMult: 1 + sh('growth') + pa('cap') + (has('wisdom') ? TALENT.wisdom : 0),
     goldMult: 1 + sh('greed'),
     revivals: sh('revival') + pa('feather'),
-    critChance: PLAYER_BASE.critChance + hero.crit + pa('clover') + (has('eagle') ? TALENT.eagleCrit : 0),
-    critMult: has('eagle') ? TALENT.eagleCritMult : PLAYER_BASE.critMult,
-    regen: pa('spring'),
+    critChance: PLAYER_BASE.critChance + hero.crit + pa('clover') + (has('eagle') || has('concentration') ? TALENT.eagleCrit : 0),
+    critMult: has('eagle') || has('concentration') ? TALENT.eagleCritMult : PLAYER_BASE.critMult,
+    regen: pa('spring') + (has('hprecovery') ? TALENT.hpRecovery : 0),
     durationMult: 1 + pa('charm'),
     healMult: 1,
     moveHaste: hero.moveHaste * (has('tailwind') ? 2 : 1),

@@ -54,6 +54,9 @@ export function bonusStat(item: GearItem): { stat: GearStat; value: number } | n
 
 export const maxLevel = (item: GearItem): number => RARITIES[item.rarity].maxLevel;
 
+/** Levels are shown as refining, the way the classic games count it: level 1 is +0. */
+export const refine = (level: number): string => `+${level - 1}`;
+
 /** Gold to raise the item one level, or null at its highest level. */
 export function upgradeCost(item: GearItem): number | null {
   if (item.level >= maxLevel(item)) return null;

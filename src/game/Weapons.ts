@@ -188,6 +188,9 @@ const BEAM_WIDTH = 34;
 const RAINBOW_LENGTH = 520;
 /** Beam colours, one per beam. */
 const PRISM = [0x8fe8ff, 0xff8ab0, 0xffe07a, 0x9dff8a, 0xc9a8ff];
+/** Bash reaches monsters this close, and each blow also hits those this near the one it lands on. */
+const BASH_REACH = 330;
+const BASH_SPLASH = 80;
 const TWISTER_RADIUS = 85;
 /** Monsters this many radii from a whirlwind's middle are dragged in, this hard (px/s of pull). */
 const TWISTER_PULL = 2.3;
@@ -659,12 +662,15 @@ export class WeaponSystem {
         this.fireBeams(s);
         break;
       case 'twister': {
-        // Each whirlwind heads for a different enemy on screen (or off in a random direction).
+        // Ankle Snare: each snare is set under a different monster on screen (or a little way off in a random
+        // direction) and stays there, pulling in and holding what comes near.
         const inView = enemies.inRect(this.ctx.view());
         for (let i = 0; i < s.amount; i++) {
           const target: Enemy | null = inView.length ? inView[Math.floor(this.ctx.rng() * inView.length)] : null;
           const a = target ? Math.atan2(target.y - player.y, target.x - player.x) : this.ctx.rng() * Math.PI * 2;
-          this.addTwister(player.x, player.y + 10, a, s, target);
+          const x = target ? target.x : player.x + Math.cos(a) * 220;
+          const y = target ? target.y : player.y + Math.sin(a) * 220;
+          this.addTwister(x, y, a, s, target);
         }
         audio.sfx('shoot', 0.5);
         break;
@@ -696,6 +702,9 @@ export class WeaponSystem {
       }
       case 'quake':
         for (let i = 0; i < s.amount; i++) this.ctx.scene.time.delayedCall(i * 320, () => this.shockwave(s, !!evolved));
+        break;
+      case 'bash':
+        this.bash(s, !!evolved);
         break;
       case 'firetrail':
         this.dropFlame(s, !!evolved);
@@ -745,6 +754,38 @@ export class WeaponSystem {
     });
     this.ctx.shake(quake ? 160 : 90, quake ? 0.006 : 0.003);
     audio.sfx('explosion', quake ? 0.7 : 0.4);
+  }
+
+  // ---------------------------------------------------------------- Bash / Aura Blade
+
+  /**
+   * Bash: heavy blows on the `amount` nearest monsters in reach (the boss first when it is close), each one also
+   * hurting the monsters around it for half and stunning them all for `duration` seconds.
+   */
+  private bash(s: WeaponStats, aura: boolean): void {
+    const { player, enemies, fx } = this.ctx;
+    const near: { e: Enemy; d: number }[] = [];
+    enemies.forEachInRadius(player.x, player.y, BASH_REACH, (e) => near.push({ e, d: (e.x - player.x) ** 2 + (e.y - player.y) ** 2 }));
+    if (!near.length) return;
+    near.sort((a, b) => Number(b.e.isBoss) - Number(a.e.isBoss) || a.d - b.d);
+    const r = BASH_SPLASH * s.area;
+    near.slice(0, s.amount).forEach(({ e: target }, i) => {
+      this.ctx.scene.time.delayedCall(i * 90, () => {
+        if (!target.active) return;
+        const { x, y } = target;
+        player.faceX = x < player.x ? -1 : 1;
+        fx.shockwave(x, y + 20, r, aura ? 0xffe08a : 0xfff1b8);
+        fx.sparksAt(x, y - 20, 7, aura ? 0xffd34d : 0xffffff);
+        enemies.forEachInRadius(x, y, r, (e) => {
+          const main = e === target;
+          enemies.damage(e, main ? s.damage : s.damage * 0.5, player.x, player.y, main ? 1.4 : 0.8);
+          if (e.active) enemies.stun(e, s.duration);
+        });
+        this.ctx.shake(70, 0.003);
+        this.ctx.hitStop(0.03);
+        audio.sfx('hit', 0.9);
+      });
+    });
   }
 
   // ---------------------------------------------------------------- Flame Trail / Inferno Road

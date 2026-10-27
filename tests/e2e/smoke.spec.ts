@@ -71,7 +71,7 @@ test('a finished daily quest pays out from the Quests screen', async ({ page }) 
       { id: 'level', map: 0, target: 10, reward: 60, progress: 2, claimed: false },
       { id: 'runs', map: 0, target: 3, reward: 40, progress: 0, claimed: false },
     ];
-    localStorage.setItem('little-archer-save-v1', JSON.stringify({ version: 1, gold: 5, daily: { day, quests, bonus: 80, bonusClaimed: false } }));
+    localStorage.setItem('ricco-rush-save-v1', JSON.stringify({ version: 1, gold: 5, daily: { day, quests, bonus: 80, bonusClaimed: false } }));
   });
   await page.goto('/');
   await expect.poll(() => scenes(page), { timeout: 30_000 }).toContain('Menu');
@@ -89,16 +89,16 @@ test('a finished daily quest pays out from the Quests screen', async ({ page }) 
   });
   await page.touchscreen.tap(box.x + x * scale, box.y + y * scale);
   await expect
-    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('little-archer-save-v1')!).gold), { timeout: 5_000 })
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('ricco-rush-save-v1')!).gold), { timeout: 5_000 })
     .toBe(65);
   expect(errors).toEqual([]);
 });
 
-test('a run that defeats enough slimes unlocks the Lucky Clover and earns mastery', async ({ page }) => {
+test('a run that defeats enough slimes unlocks LUK and earns Job EXP', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.addInitScript(() => {
-    if (!localStorage.getItem('little-archer-save-v1')) localStorage.setItem('little-archer-save-v1', JSON.stringify({ version: 1, bestiary: { slime: 398 } }));
+    if (!localStorage.getItem('ricco-rush-save-v1')) localStorage.setItem('ricco-rush-save-v1', JSON.stringify({ version: 1, bestiary: { slime: 398 } }));
   });
   await page.goto('/?autostart&bot&speed=8&seed=4');
   type G = { scene: { getScene(k: string): { run?: { kills: number }; endRun?: (quit: boolean) => void }; isActive(k: string): boolean } };
@@ -108,7 +108,7 @@ test('a run that defeats enough slimes unlocks the Lucky Clover and earns master
   // End the run as if the hero fell.
   await page.evaluate(() => (window as unknown as { __game: G }).__game.scene.getScene('Game').endRun!(false));
   await expect.poll(() => page.evaluate(() => (window as unknown as { __game: G }).__game.scene.isActive('GameOver')), { timeout: 10_000 }).toBe(true);
-  const save = await page.evaluate(() => JSON.parse(localStorage.getItem('little-archer-save-v1')!));
+  const save = await page.evaluate(() => JSON.parse(localStorage.getItem('ricco-rush-save-v1')!));
   expect(save.unlocked).toContain('passive:clover');
   expect(save.bestiary.slime).toBeGreaterThanOrEqual(400);
   expect(save.stats.deaths).toBe(1);
@@ -136,9 +136,9 @@ test('the Gear screen equips and levels an item', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.addInitScript(() => {
-    if (localStorage.getItem('little-archer-save-v1')) return;
+    if (localStorage.getItem('ricco-rush-save-v1')) return;
     const items = [{ uid: 1, type: 'hunterGloves', rarity: 2, level: 1, spent: 0, fresh: true }];
-    localStorage.setItem('little-archer-save-v1', JSON.stringify({ version: 1, gold: 500, gear: { items, equipped: {}, next: 2 } }));
+    localStorage.setItem('ricco-rush-save-v1', JSON.stringify({ version: 1, gold: 500, gear: { items, equipped: {}, next: 2 } }));
   });
   await page.goto('/');
   await expect.poll(() => scenes(page), { timeout: 30_000 }).toContain('Menu');
@@ -168,10 +168,10 @@ test('the Gear screen equips and levels an item', async ({ page }) => {
   const [ex, ey] = await button('Equip');
   await tap(ex, ey);
   await page.waitForTimeout(300);
-  const [ux, uy] = await button('Level up');
+  const [ux, uy] = await button('Refine');
   await tap(ux, uy);
   await expect
-    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('little-archer-save-v1')!).gear), { timeout: 5_000 })
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('ricco-rush-save-v1')!).gear), { timeout: 5_000 })
     .toMatchObject({ equipped: { gloves: 1 }, items: [{ uid: 1, level: 2 }] });
   expect(errors).toEqual([]);
 });

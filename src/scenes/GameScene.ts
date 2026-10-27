@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
-import { CHARACTERS, characterDef, type CharacterDef, type CharacterId } from '../config/characters';
+import { characterDef, type CharacterDef, type CharacterId } from '../config/characters';
 import { CURSE, CURSE_IDS, CURSE_UNLOCK_MAPS, HEAT_GOLD, heatOf, type CurseId } from '../config/curses';
 import { DIFFICULTIES, maxDifficulty, type DifficultyDef } from '../config/difficulty';
 import { UNLOCKS, unlockKey, type MonsterId } from '../config/collection';
@@ -14,7 +14,7 @@ import { TALENT, TALENT_LEVELS, type TalentId } from '../config/talents';
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
-import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
+import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPON_IDS, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
 import { addItem, gearBonus, runDrops, type GearBonus } from '../core/gear';
 import { claimUnlocks, lockedKeys, lockedTalents, masteryPerks, masteryState, masteryXp, reachedUnlocks, records } from '../core/collection';
 import { DEBUG } from '../core/debug';
@@ -235,10 +235,10 @@ export class GameScene extends Phaser.Scene {
     this.mastery = DEBUG.mastery > 0 ? Math.min(MASTERY.maxLevel, DEBUG.mastery) : masteryState(save.mastery[hero.id]).level;
     this.perks = masteryPerks(hero.id, this.mastery);
     this.gear = gearBonus(save.gear);
-    // Each hero's own weapon belongs to that hero: the others are never offered it. Nor is anything still locked:
-    // items not yet unlocked in the Collection, talents not yet earned with mastery.
+    // Each class only learns its own skills: the rest are never offered. Nor is anything still locked: items not yet
+    // unlocked in the Collection, talents not yet earned with Job Lv.
     const inventory = newInventory(hero.start, [
-      ...CHARACTERS.filter((c) => c.start !== hero.start).map((c) => `weapon:${c.start}`),
+      ...WEAPON_IDS.filter((id) => !hero.skills.includes(id)).map((id) => `weapon:${id}`),
       ...(DEBUG.unlock ? [] : [...lockedKeys(save), ...lockedTalents(hero.id, this.mastery).map((t) => `talent:${t}`)]),
     ]);
     for (const g of DEBUG.give) {
@@ -342,7 +342,7 @@ export class GameScene extends Phaser.Scene {
       goblinCaught: (x, y) => {
         this.pickups.burstCoins(x, y, 16, COIN_VALUE[this.mapIndex] * 3);
         this.pickups.drop('chest', x + 30, y);
-        this.events.emit('toast', 'Goblin caught! Treasure!');
+        this.events.emit('toast', 'Coin Thief caught! Treasure!');
         audio.sfx('victory');
       },
     });
@@ -412,7 +412,7 @@ export class GameScene extends Phaser.Scene {
     let mx = 0;
     let my = 0;
     if (DEBUG.bot) {
-      const v = botSteer(this.ctx, run.time);
+      const v = botSteer(this.ctx, run.time, !!this.hero.melee);
       mx = v.x * DEBUG.skill;
       my = v.y * DEBUG.skill;
     } else if (stick.active) {
@@ -708,7 +708,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     // Second Wind: a burst of health when it gets low.
-    if (this.has('secondwind') && run.time >= run.secondWindAt && this.player.hp < run.stats.maxHp * TALENT.secondWindAt) {
+    if ((this.has('secondwind') || this.has('guts')) && run.time >= run.secondWindAt && this.player.hp < run.stats.maxHp * TALENT.secondWindAt) {
       run.secondWindAt = run.time + TALENT.secondWindEvery;
       this.player.heal(run.stats.maxHp * TALENT.secondWindHeal);
       this.fx.ring(x, y, 200, 0x7dff8a);

@@ -16,16 +16,17 @@ export type UnlockDef =
   | { kind: 'rune'; id: RuneId; goal: Goal };
 
 /**
- * Weapons, items and runes that start locked, and what opens each one, in about the order a new player gets them.
- * Everything else is open from the first run. The first ones come from the Meadow within a run or two; then each
+ * Skills, items and cards (runes in the code) that start locked, and what opens each one, in about the order a new
+ * player gets them. Everything else is open from the first run: each class starts with four of its seven skills and
+ * opens the other three across the maps. The first unlocks come from Greenhill Fields within a run or two; then each
  * map has its own, so reaching a new map opens a new batch to chase.
  */
 export const UNLOCKS: UnlockDef[] = [
-  // Sunny Meadow
+  // Greenhill Fields: one skill for each class, and the first items and cards.
   { kind: 'passive', id: 'clover', goal: { monster: 'slime', n: 400 } },
   { kind: 'passive', id: 'cap', goal: { stat: 'level', n: 15 } },
   { kind: 'weapon', id: 'shuriken', goal: { monster: 'bat', n: 800 } },
-  { kind: 'weapon', id: 'flask', goal: { monster: 'mushroom', n: 600 } },
+  { kind: 'weapon', id: 'spear', goal: { monster: 'mushroom', n: 600 } },
   { kind: 'rune', id: 'split', goal: { monster: 'puff', n: 300 } },
   { kind: 'weapon', id: 'beam', goal: { stat: 'chests', n: 5 } },
   // Falling in battle opens the defensive items: a struggling player gets help soonest.
@@ -35,22 +36,19 @@ export const UNLOCKS: UnlockDef[] = [
   { kind: 'passive', id: 'charm', goal: { stat: 'shrines', n: 3 } },
   { kind: 'weapon', id: 'twister', goal: { monster: 'bee', n: 200 } },
   { kind: 'rune', id: 'homing', goal: { monster: 'goblin', n: 2 } },
-  { kind: 'weapon', id: 'turret', goal: { monster: 'boss_boar', n: 3 } },
   { kind: 'rune', id: 'giant', goal: { monster: 'boss_slime', n: 1 } },
   { kind: 'rune', id: 'echo', goal: { stat: 'evolutions', n: 3 } },
-  // Spooky Graveyard
-  { kind: 'weapon', id: 'traps', goal: { monster: 'skeleton', n: 1000 } },
-  { kind: 'weapon', id: 'wisps', goal: { monster: 'ghost', n: 1200 } },
-  { kind: 'passive', id: 'mask', goal: { monster: 'zombie', n: 1000 } },
+  // Lantern Pines
+  { kind: 'weapon', id: 'axes', goal: { monster: 'skeleton', n: 1000 } },
+  { kind: 'weapon', id: 'traps', goal: { monster: 'ghost', n: 1200 } },
+  { kind: 'passive', id: 'ring', goal: { monster: 'zombie', n: 1000 } },
   { kind: 'weapon', id: 'firetrail', goal: { monster: 'pumpkin', n: 200 } },
-  { kind: 'weapon', id: 'ward', goal: { monster: 'wraith', n: 150 } },
+  { kind: 'weapon', id: 'wisps', goal: { monster: 'wraith', n: 150 } },
   { kind: 'rune', id: 'reaper', goal: { monster: 'boss_lich', n: 1 } },
-  // Dark Castle
+  // Sunscar Desert
   { kind: 'rune', id: 'nova', goal: { monster: 'imp', n: 1000 } },
-  { kind: 'weapon', id: 'spear', goal: { monster: 'knight', n: 800 } },
+  { kind: 'weapon', id: 'ward', goal: { monster: 'knight', n: 800 } },
   { kind: 'passive', id: 'thorns', goal: { monster: 'gargoyle', n: 800 } },
-  { kind: 'passive', id: 'ring', goal: { monster: 'mimic', n: 5 } },
-  { kind: 'weapon', id: 'quake', goal: { monster: 'boss_demon', n: 1 } },
 ];
 
 /** The same key a level-up card has ('weapon:shuriken'), so locked items can simply be left out of the deal. */
@@ -71,13 +69,15 @@ export const monsterName = (id: MonsterId): string => (isBoss(id) ? BOSSES[id].n
 export const monsterTexture = (id: MonsterId): string => (isBoss(id) ? BOSSES[id].texture : `${ENEMIES[id].texture}_0`);
 
 const count = (n: number) => n.toLocaleString('en-US');
+/** "Gummies", "Greyfangs". */
+const plural = (name: string) => (/[^aeiou]y$/.test(name) ? `${name.slice(0, -1)}ies` : `${name}s`);
 
 export function describeGoal(g: Goal): string {
   if ('monster' in g) {
     const name = monsterName(g.monster);
-    if (g.monster === 'goblin') return g.n === 1 ? 'Catch a Treasure Goblin' : `Catch ${g.n} Treasure Goblins`;
+    if (g.monster === 'goblin') return g.n === 1 ? 'Catch a Coin Thief' : `Catch ${g.n} Coin Thieves`;
     if (isBoss(g.monster)) return g.n === 1 ? `Defeat the ${name}` : `Defeat the ${name} ${g.n} times`;
-    return `Defeat ${count(g.n)} ${name}s`;
+    return `Defeat ${count(g.n)} ${plural(name)}`;
   }
   switch (g.stat) {
     case 'level':
@@ -89,7 +89,7 @@ export function describeGoal(g: Goal): string {
     case 'elites':
       return `Defeat ${g.n} elite monsters`;
     case 'evolutions':
-      return `Evolve weapons ${g.n} times`;
+      return `Evolve skills ${g.n} times`;
     case 'shrines':
       return `Accept ${g.n} shrine offers`;
     case 'deaths':

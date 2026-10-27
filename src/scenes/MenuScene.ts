@@ -68,10 +68,10 @@ export class MenuScene extends Phaser.Scene {
     menuBackground(this);
 
     // Title block.
-    const title = gradientText(text(this, width / 2, top + 178, 'Little Archer', 128, { strokeColor: '#2a1606' }));
+    const title = gradientText(text(this, width / 2, top + 178, 'Ricco Rush', 128, { strokeColor: '#2a1606' }));
     this.tweens.add({ targets: title, angle: { from: -1.5, to: 1.5 }, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     ribbon(this, width / 2, top + 300, 660, 92);
-    gradientText(text(this, width / 2, top + 298, 'MONSTER RUSH', 58), ['#ffffff', '#fff1c8', '#f2c25a']);
+    gradientText(text(this, width / 2, top + 298, 'SWORD · BOW · MAGIC', 58), ['#ffffff', '#fff1c8', '#f2c25a']);
 
     // Bottom buttons first: the map cards and the hero fill the space between them and the title.
     const playY = height - bottom - 300;
@@ -312,6 +312,7 @@ export class MenuScene extends Phaser.Scene {
     const key = this.textures.exists(c.menu) ? c.menu : 'hero_menu';
     const img = (this.heroImg = this.add.image(x + dir * 120, bottom - 6, key).setOrigin(0.5, 1).setAlpha(dir ? 0 : 1));
     img.setScale(Math.min(HERO_H, bottom - top - 6) / img.height);
+    if (c.tint) img.setTint(c.tint);
     this.tweens.add({ targets: img, x, alpha: 1, duration: 220, ease: 'Quad.easeOut' });
     this.tweens.add({ targets: img, y: img.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const st = masteryState(saveStore.data.mastery[c.id]);
@@ -319,7 +320,7 @@ export class MenuScene extends Phaser.Scene {
     this.heroName.setText(`${master ? 'Master ' : ''}${c.name} · ${c.title}`);
     this.heroPros.setText(`Strong: ${c.pros}`);
     this.heroCons.setText(`Weak: ${c.cons}`);
-    this.heroLevel.setText(`Mastery ${st.level}`);
+    this.heroLevel.setText(`Job Lv ${st.level}`);
     this.heroBar.set(master ? 1 : st.into / st.need);
     const next = MASTERY_REWARDS[c.id].find((r) => r.level > st.level);
     this.heroNext.setText(master ? 'Fully mastered!' : next ? `Lv ${next.level}: ${describeReward(next)}` : `Next level: +${Math.round(MASTERY.damage * 100)}% damage and HP`);

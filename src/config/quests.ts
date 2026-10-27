@@ -130,7 +130,7 @@ export const QUESTS: QuestDef[] = [
     rewards: [120, 120, 150],
     minMaps: 2,
     measure: (r) => r.evolutions,
-    describe: () => 'Evolve a weapon',
+    describe: () => 'Evolve a skill',
   },
 ];
 
@@ -235,11 +235,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   },
   {
     id: 'evolve',
-    name: 'Weapon Master',
+    name: 'Skill Master',
     icon: 'icon_stormbow',
     stat: 'evolutions',
     tiers: tiers([1, 5, 20], [120, 300, 700]),
-    describe: (n) => (n === 1 ? 'Evolve a weapon' : `Evolve weapons ${n} times`),
+    describe: (n) => (n === 1 ? 'Evolve a skill' : `Evolve skills ${n} times`),
   },
   {
     id: 'gold',

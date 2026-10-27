@@ -5,7 +5,7 @@ import { BOSSES, ENEMIES } from '../../src/config/enemies';
 import { MASTERY, MASTERY_REWARDS } from '../../src/config/mastery';
 import { type RunReport } from '../../src/config/quests';
 import { TALENTS, TALENT_LEVELS } from '../../src/config/talents';
-import { PASSIVES, RUNES, WEAPON_IDS, WEAPONS } from '../../src/config/weapons';
+import { PASSIVES, RUNES, WEAPONS } from '../../src/config/weapons';
 import {
   claimUnlocks,
   isUnlocked,
@@ -46,9 +46,9 @@ describe('collection content', () => {
     for (const c of CHARACTERS) expect(UNLOCK_KEYS).not.toContain(`weapon:${c.start}`);
   });
 
-  it('every weapon open from the start can evolve with things also open from the start', () => {
+  it('every skill open from the start can evolve with things also open from the start', () => {
     const save = defaultSave();
-    for (const id of WEAPON_IDS) {
+    for (const id of CHARACTERS.flatMap((c) => c.skills)) {
       if (!isUnlocked(save, { kind: 'weapon', id })) continue;
       const req = WEAPONS[id].evolution!.requires;
       expect(isUnlocked(save, { kind: req in RUNES ? 'rune' : 'passive', id: req }), `${id} needs ${req}`).toBe(true);
@@ -63,11 +63,12 @@ describe('collection content', () => {
   });
 
   it('describes goals in plain words', () => {
-    expect(describeGoal({ monster: 'bat', n: 800 })).toBe('Defeat 800 Bats');
-    expect(describeGoal({ monster: 'skeleton', n: 1000 })).toBe('Defeat 1,000 Skeletons');
-    expect(describeGoal({ monster: 'boss_slime', n: 1 })).toBe('Defeat the King Slime');
-    expect(describeGoal({ monster: 'boss_boar', n: 3 })).toBe('Defeat the Boar Chief 3 times');
-    expect(describeGoal({ monster: 'goblin', n: 2 })).toBe('Catch 2 Treasure Goblins');
+    expect(describeGoal({ monster: 'bat', n: 800 })).toBe('Defeat 800 Fluffbuns');
+    expect(describeGoal({ monster: 'slime', n: 400 })).toBe('Defeat 400 Gummies');
+    expect(describeGoal({ monster: 'skeleton', n: 1000 })).toBe('Defeat 1,000 Greyfangs');
+    expect(describeGoal({ monster: 'boss_slime', n: 1 })).toBe('Defeat the Jelly Monarch');
+    expect(describeGoal({ monster: 'boss_boar', n: 3 })).toBe('Defeat the Ironhide Boar 3 times');
+    expect(describeGoal({ monster: 'goblin', n: 2 })).toBe('Catch 2 Coin Thieves');
     expect(describeGoal({ stat: 'time', n: 600 })).toBe('Survive 10:00 in one run');
   });
 });
@@ -109,7 +110,7 @@ describe('unlocking', () => {
     const s = sanitize({ bestiary: { slime: 12.7, dragon: 5, bat: -3 }, unlocked: ['weapon:beam', 'weapon:nope', 3], mastery: { archer: 500, mage: 'x' } });
     expect(s.bestiary).toEqual({ slime: 12 });
     expect(s.unlocked).toEqual(['weapon:beam']);
-    expect(s.mastery).toEqual({ archer: 500, mage: 0 });
+    expect(s.mastery).toEqual({ swordman: 0, archer: 500, mage: 0 });
   });
 });
 

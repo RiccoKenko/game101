@@ -1,5 +1,6 @@
 /**
- * Relics are won by clearing maps (Normal, then Hard) and change the rules of every run. Two can be worn.
+ * MVP Cards (relics in the code) are won by clearing maps (Normal, then Hard) and change the rules of every run.
+ * Two can be worn.
  */
 export type RelicId = 'slime' | 'lich' | 'demon' | 'boar' | 'captain' | 'ogre';
 
@@ -14,12 +15,12 @@ export interface RelicDef {
 }
 
 export const RELICS: RelicDef[] = [
-  { id: 'slime', name: 'Slime Crown', icon: 'relic_slime', text: '+1 card reroll each run, XP +10%', map: 0, difficulty: 0 },
-  { id: 'lich', name: 'Lich Lantern', icon: 'relic_lich', text: 'Pickup range +40%, gold +15%', map: 1, difficulty: 0 },
-  { id: 'demon', name: 'Demon Horn', icon: 'relic_demon', text: 'Crit chance +8%, critical hits deal x2.5', map: 2, difficulty: 0 },
-  { id: 'boar', name: 'Boar Tusk', icon: 'relic_boar', text: 'Start with your weapon at Lv 2 and a random rune', map: 0, difficulty: 1 },
-  { id: 'captain', name: "Captain's Medal", icon: 'relic_captain', text: 'Once a run, rise again with full HP', map: 1, difficulty: 1 },
-  { id: 'ogre', name: 'Ogre Key', icon: 'relic_ogre', text: 'Chests give one more upgrade and double gold', map: 2, difficulty: 1 },
+  { id: 'slime', name: 'Jelly Monarch Card', icon: 'relic_slime', text: '+1 card reroll each run, XP +10%', map: 0, difficulty: 0 },
+  { id: 'lich', name: 'Shrine Oni Card', icon: 'relic_lich', text: 'Pickup range +40%, gold +15%', map: 1, difficulty: 0 },
+  { id: 'demon', name: 'Sunscar Pharaoh Card', icon: 'relic_demon', text: 'Crit chance +8%, critical hits deal x2.5', map: 2, difficulty: 0 },
+  { id: 'boar', name: 'Ironhide Boar Card', icon: 'relic_boar', text: 'Start with your skill at Lv 2 and a random monster card', map: 0, difficulty: 1 },
+  { id: 'captain', name: 'Bigpaw Card', icon: 'relic_captain', text: 'Once a run, rise again with full HP', map: 1, difficulty: 1 },
+  { id: 'ogre', name: 'Sandstone Golem Card', icon: 'relic_ogre', text: 'Chests give one more upgrade and double gold', map: 2, difficulty: 1 },
 ];
 
 export const RELIC_IDS = RELICS.map((r) => r.id);

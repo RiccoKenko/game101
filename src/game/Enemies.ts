@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
+import { BERSERK } from '../config/abilities';
 import { AFFIX, AFFIX_IDS, affixCount, affixDef, type AffixId } from '../config/affixes';
 import { MAX_ENEMIES } from '../config/game';
 import { MAPS } from '../config/maps';
@@ -65,6 +66,8 @@ export class Enemy {
   burnTick = 0;
   /** Frozen solid for this many seconds (Frost Rune): can't move or hurt. */
   frozen = 0;
+  /** The hold is a stun (Bash), not ice: shown yellow instead of blue. */
+  stunned = false;
   /** An elite's powers (config/affixes.ts) and their state. */
   affixes: AffixId[] = [];
   shield = 0;
@@ -161,6 +164,7 @@ export class EnemyManager {
     e.hitSquash = e.enter = e.lean = 0;
     e.small = e.selfDestructed = false;
     e.burnDps = e.burnLeft = e.burnTick = e.frozen = 0;
+    e.stunned = false;
     e.affixes = [];
     e.shield = e.shieldMax = e.shieldIdle = e.vampT = e.summonT = e.blinkT = e.blinkWarn = 0;
     e.enraged = false;
@@ -426,7 +430,18 @@ export class EnemyManager {
     if (e.isBoss) e.slow = Math.max(e.slow, t);
     else if (e.frozen <= 0) {
       e.frozen = t;
+      e.stunned = false;
       this.ctx.fx.sparksAt(e.x, e.y, 4, 0xd4f4ff);
+    }
+  }
+
+  /** Stuns an enemy (Bash): held still like a freeze, but not ice; bosses are only slowed. */
+  stun(e: Enemy, seconds: number): void {
+    const t = seconds * this.ctx.player.stats.durationMult;
+    if (e.isBoss) e.slow = Math.max(e.slow, t);
+    else if (e.frozen < t) {
+      e.frozen = t;
+      e.stunned = true;
     }
   }
 
@@ -437,6 +452,8 @@ export class EnemyManager {
     // Hunter's Ring / Hunter's Mark against the big ones; the Berserker Mask when the hero is hurt.
     if (st.bigGame > 0 && (e.elite || e.isBoss)) amount *= 1 + st.bigGame;
     if (st.rage > 0 && this.ctx.player.hp < st.maxHp * 0.5) amount *= 1 + st.rage;
+    // The Swordman's Berserk.
+    if (this.ctx.player.berserk > 0) amount *= BERSERK.damage;
     const crit = canCrit && this.ctx.rng() < st.critChance;
     if (crit) {
       amount *= this.ctx.player.stats.critMult;
@@ -1019,7 +1036,7 @@ export class EnemyManager {
     }
     // Ice blue while frozen, a flickering orange while on fire, back to normal (or elite gold) after.
     if (e.flash <= 0) {
-      if (e.frozen > 0) e.sprite.setTint(0x9fdcff);
+      if (e.frozen > 0) e.sprite.setTint(e.stunned ? 0xfff0a0 : 0x9fdcff);
       else if (e.burnLeft > 0) e.sprite.setTint(Math.floor(e.timer * 10) % 2 ? 0xffb38a : 0xff8a5a);
       else if (e.elite) {
         if (e.sprite.tintTopLeft !== ELITE_TINT) e.sprite.setTint(ELITE_TINT);

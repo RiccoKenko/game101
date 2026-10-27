@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
-import { ARROW_STORM, DASH, METEOR, ULT, ultCost } from '../config/abilities';
+import { ARROW_STORM, BERSERK, DASH, METEOR, SHIELD_CHARGE, ULT, ultCost } from '../config/abilities';
 import { type CharacterDef } from '../config/characters';
 import { hpMultiplier } from '../core/waves';
 import { type GameCtx } from './context';
@@ -21,6 +21,10 @@ export class Abilities {
   private stormT = 0;
   /** Seconds the ultimate is still going: what it defeats doesn't charge the next one. */
   private ulting = 0;
+  /** Until the Swordman's next Berserk sweep. */
+  private sweepT = 0;
+  /** Monsters the Swordman's Shield Charge has already hit on this dash. */
+  private charged = new Set<number>();
 
   constructor(
     private ctx: GameCtx,
@@ -68,6 +72,7 @@ export class Abilities {
       return true;
     }
     this.dashLeft = DASH.time;
+    this.charged.clear();
     this.dashVX = (ux * DASH.distance) / DASH.time;
     this.dashVY = (uy * DASH.distance) / DASH.time;
     this.ghostT = 0;
@@ -85,15 +90,22 @@ export class Abilities {
     this.ctx.slowMo(ULT.slowScale, ULT.slowTime);
     this.ctx.shake(380, 0.01);
     scene.cameras.main.flash(220, 255, 244, 214);
-    fx.ring(p.x, p.y, 420, this.hero.id === 'mage' ? 0xff9a3d : 0xfff1b8);
+    fx.ring(p.x, p.y, 420, this.hero.id === 'archer' ? 0xfff1b8 : 0xff9a3d);
     audio.sfx('levelup');
     // Leaders and bosses in sight take a share of their health at once, so the ultimate matters against them too.
     for (const e of enemies.inRect(this.ctx.view())) {
       if (e.isBoss) enemies.damage(e, e.maxHp * ULT.bossShare, p.x, p.y, 0, false);
     }
-    this.ulting = this.hero.id === 'mage' ? METEOR.fall + 0.6 : ARROW_STORM.time + 0.6;
-    if (this.hero.id === 'mage') this.meteor();
-    else {
+    if (this.hero.id === 'mage') {
+      this.ulting = METEOR.fall + 0.6;
+      this.meteor();
+    } else if (this.hero.id === 'swordman') {
+      // Berserk: a red rage, double damage and sword sweeps all around for a few seconds.
+      this.ulting = BERSERK.time + 0.6;
+      p.berserk = BERSERK.time;
+      this.sweepT = 0;
+    } else {
+      this.ulting = ARROW_STORM.time + 0.6;
       this.stormLeft = ARROW_STORM.time;
       this.stormT = 0;
     }
@@ -151,6 +163,14 @@ export class Abilities {
         this.ghostT = 0.035;
         this.ghost();
       }
+      if (this.hero.id === 'swordman') this.shieldCharge();
+    }
+    if (p.berserk > 0) {
+      this.sweepT -= dt;
+      if (this.sweepT <= 0) {
+        this.sweepT = BERSERK.every;
+        this.sweep();
+      }
     }
     if (this.stormLeft > 0) {
       this.stormLeft -= dt;
@@ -162,6 +182,29 @@ export class Abilities {
     }
   }
 
+  /** Shield Charge: monsters in the Swordman's way are hit once and shoved aside. */
+  private shieldCharge(): void {
+    const { player: p, enemies, fx } = this.ctx;
+    const damage = this.hit() * SHIELD_CHARGE.hits;
+    enemies.forEachInRadius(p.x, p.y, SHIELD_CHARGE.radius, (e) => {
+      if (this.charged.has(e.uid)) return;
+      this.charged.add(e.uid);
+      enemies.damage(e, damage, p.x - this.dashVX * 0.05, p.y - this.dashVY * 0.05, SHIELD_CHARGE.knockback, false);
+      fx.sparksAt(e.x, e.y - 20, 4, 0xd8e6ff);
+    });
+  }
+
+  /** One Berserk sweep: a red ring of sword cuts all around the Swordman. */
+  private sweep(): void {
+    const { player: p, enemies, fx } = this.ctx;
+    const damage = this.hit() * BERSERK.hits;
+    fx.ring(p.x, p.y - 20, BERSERK.radius, 0xff5a3c, 'ring', 35, 300);
+    enemies.forEachInRadius(p.x, p.y, BERSERK.radius, (e) => {
+      enemies.damage(e, damage, p.x, p.y, 1.2, false);
+    });
+    audio.sfx('hit', 0.6);
+  }
+
   /** A fading copy of the hero left behind on the dash. */
   private ghost(): void {
     const s = this.ctx.player.sprite;
@@ -171,7 +214,7 @@ export class Abilities {
       .setScale(s.scaleX, s.scaleY)
       .setFlipX(s.flipX)
       .setDepth(19)
-      .setTint(0x8fd8ff)
+      .setTint(this.hero.id === 'swordman' ? 0xd8e6ff : 0x8fd8ff)
       .setAlpha(0.55);
     g.setBlendMode(Phaser.BlendModes.ADD);
     this.ctx.scene.tweens.add({ targets: g, alpha: 0, duration: 260, onComplete: () => g.destroy() });

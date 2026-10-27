@@ -49,11 +49,11 @@ export class GameOverScene extends Phaser.Scene {
     const levelUp = m.to > m.from;
     const rows: { label: string; value: string; note?: string; good?: boolean }[] = [
       { label: 'Time survived', value: formatTime(s.time), note: s.newBest ? 'NEW BEST!' : `Best ${formatTime(s.bestTime)}`, good: s.newBest },
-      { label: 'Level reached', value: String(s.level) },
+      { label: 'Base Lv reached', value: String(s.level) },
       { label: 'Monsters defeated', value: String(s.kills) },
       { label: 'Gold collected', value: String(s.collected) },
       s.won ? { label: 'Survival + victory bonus', value: `+${s.bonus + s.victoryBonus}` } : { label: 'Survival bonus', value: `+${s.bonus}` },
-      { label: `${m.hero} mastery`, value: `+${m.xp} XP`, note: levelUp ? `LEVEL UP! Mastery ${m.to}` : `Mastery ${m.to}`, good: levelUp },
+      { label: `${m.hero} Job EXP`, value: `+${m.xp}`, note: levelUp ? `JOB LEVEL UP! Job Lv ${m.to}` : `Job Lv ${m.to}`, good: levelUp },
     ];
     rows.forEach(({ label, value, note, good }, i) => {
       const y = cy - 372 + i * 100;
@@ -86,7 +86,7 @@ export class GameOverScene extends Phaser.Scene {
     const gap = 18;
     if (s.relic || s.unlockedMap !== null) {
       const u = s.relic
-        ? text(this, 0, y + 58, `New relic: ${s.relic}!\nWear it from the Relics menu`, 46, { color: CSS.gold })
+        ? text(this, 0, y + 58, `New ${s.relic}!\nWear it from the MVP Cards menu`, 46, { color: CSS.gold })
         : text(this, 0, y + 58, `New map unlocked:\n${MAPS[s.unlockedMap!].name}!`, 50, { color: CSS.green });
       news.add(u);
       this.tweens.add({ targets: u, scale: 1.07, duration: 500, yoyo: true, repeat: -1 });

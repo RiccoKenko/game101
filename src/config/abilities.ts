@@ -30,15 +30,28 @@ export const ULT = {
 export const ARROW_STORM = { time: 3, every: 0.12, arrows: 5 };
 export const METEOR = { radius: 560, fall: 0.75, hits: 3, freeze: 2.5 };
 
+/** The Swordman's Berserk: damage multiplied and a sword sweep all around every `every` seconds, for `time`. */
+export const BERSERK = { time: 6, every: 0.45, damage: 2, radius: 300, hits: 0.6 };
+/** The Swordman's Shield Charge dash: monsters in the way are hit and shoved aside. */
+export const SHIELD_CHARGE = { radius: 90, hits: 0.5, knockback: 2.2 };
+
 export interface UltimateDef {
   name: string;
   icon: string;
   text: string;
+  /** The dash button's name for this hero. */
+  dash: string;
 }
 
 export const ULTIMATES: Record<CharacterId, UltimateDef> = {
-  archer: { name: 'Arrow Storm', icon: 'icon_arrowstorm', text: 'Arrows rain on the monsters on screen for 3 seconds' },
-  mage: { name: 'Meteor', icon: 'icon_meteor', text: 'A huge meteor crashes down around you, freezing what survives' },
+  swordman: {
+    name: 'Berserk',
+    icon: 'icon_titanaxes',
+    text: 'Fly into a rage for 6 seconds: double damage and a sword sweep all around you',
+    dash: 'Shield Charge',
+  },
+  archer: { name: 'Arrow Storm', icon: 'icon_arrowstorm', text: 'Arrows rain on the monsters on screen for 3 seconds', dash: 'Back Slide' },
+  mage: { name: 'Meteor Storm', icon: 'icon_meteor', text: 'A huge meteor crashes down around you, freezing what survives', dash: 'Teleport' },
 };
 
 /** Energy one ultimate costs at time t (seconds). */

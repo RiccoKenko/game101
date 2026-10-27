@@ -22,7 +22,7 @@ export interface MapDef {
 export const MAPS: MapDef[] = [
   {
     index: 0,
-    name: 'Sunny Meadow',
+    name: 'Greenhill Fields',
     ground: 'ground_meadow',
     decor: ['tree', 'bush', 'rock', 'flowers', 'flowers'],
     music: 'music_meadow',
@@ -35,7 +35,7 @@ export const MAPS: MapDef[] = [
   },
   {
     index: 1,
-    name: 'Spooky Graveyard',
+    name: 'Lantern Pines',
     ground: 'ground_graveyard',
     decor: ['grave', 'grave_cross', 'dead_tree', 'bones', 'grave'],
     music: 'music_graveyard',
@@ -50,14 +50,14 @@ export const MAPS: MapDef[] = [
   },
   {
     index: 2,
-    name: 'Dark Castle',
+    name: 'Sunscar Desert',
     ground: 'ground_castle',
     decor: ['pillar', 'pillar_broken', 'brazier', 'rubble', 'rubble'],
     music: 'music_castle',
     enemies: ['imp', 'knight', 'gargoyle'],
     boss: 'boss_demon',
     leader: 'boss_ogre',
-    // Mimics wait in the world looking like treasure: a few at a time, never a crowd.
+    // Treasure Urns wait in the world looking like treasure: a few at a time, never a crowd.
     extras: [{ id: 'mimic', from: 80, weight: 0.012, max: 2 }],
     swarm: { id: 'wisp', from: 50, every: 30, size: 6 },
     color: 0x6a5a8a,

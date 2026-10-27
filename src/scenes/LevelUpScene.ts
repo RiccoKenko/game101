@@ -42,7 +42,7 @@ export function describeChoice(c: Choice): { icon: string; name: string; tag: st
   }
   if (c.kind === 'might') return { icon: 'icon_might', name: 'Power Up', tag: '', desc: `Damage +${MAXED.might * 100}% for the rest of the run` };
   if (c.kind === 'tough') return { icon: 'icon_heart', name: 'Toughness', tag: '', desc: `Max HP +${MAXED.tough * 100}% for the rest of the run` };
-  return { icon: 'meat', name: 'Roast Meat', tag: '', desc: 'Restore 30% of your HP' };
+  return { icon: 'meat', name: 'White Potion', tag: '', desc: 'Restore 30% of your HP' };
 }
 
 /** A tappable upgrade card on parchment: framed icon on the left, name + tag + description on the right. */

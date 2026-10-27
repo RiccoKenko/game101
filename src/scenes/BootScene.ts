@@ -19,7 +19,7 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     const { width, height } = this.scale;
     this.add
-      .text(width / 2, height / 2 - 90, 'Little Archer', { fontFamily: 'Fredoka, sans-serif', fontSize: '72px', fontStyle: '700', color: '#ffcc33' })
+      .text(width / 2, height / 2 - 90, 'Ricco Rush', { fontFamily: 'Fredoka, sans-serif', fontSize: '72px', fontStyle: '700', color: '#ffcc33' })
       .setOrigin(0.5);
     this.bar = this.add.graphics();
     this.drawBar();

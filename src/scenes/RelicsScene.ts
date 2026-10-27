@@ -9,7 +9,7 @@ import { BUTTON, CSS } from '../ui/theme';
 import { Button, gradientText, panel, panelTexture, slotIcon, text } from '../ui/widgets';
 import { menuBackground } from './MenuScene';
 
-/** Relics won from clearing maps: tap one to wear it (two at most) or take it off. */
+/** MVP Cards (relics in the code) won from clearing maps: tap one to wear it (two at most) or take it off. */
 export class RelicsScene extends Phaser.Scene {
   private content: Phaser.GameObjects.GameObject[] = [];
 
@@ -28,8 +28,8 @@ export class RelicsScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const { top, bottom } = safeInsets(this);
     menuBackground(this);
-    gradientText(text(this, width / 2, top + 88, 'RELICS', 92, { strokeColor: '#2a1606' }));
-    text(this, width / 2, top + 166, `Clear maps to win relics. Wear up to ${MAX_RELICS}.`, 36, { color: CSS.cream, weight: '600' });
+    gradientText(text(this, width / 2, top + 88, 'MVP CARDS', 92, { strokeColor: '#2a1606' }));
+    text(this, width / 2, top + 166, `Clear maps to win MVP cards. Wear up to ${MAX_RELICS}.`, 36, { color: CSS.cream, weight: '600' });
     const winTop = top + 220;
     const winBottom = height - bottom - 222;
     panel(this, width / 2, (winTop + winBottom) / 2, width - 36, winBottom - winTop, { gem: true });

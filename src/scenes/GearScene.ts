@@ -8,6 +8,7 @@ import {
   isEquipped,
   mainStat,
   maxLevel,
+  refine,
   merge,
   mergePartners,
   openChest,
@@ -91,7 +92,7 @@ export class GearScene extends Phaser.Scene {
       const item = gear.items.find((it) => it.uid === gear.equipped[slot.id]);
       const type = item ? item.type : GEAR_TYPES.find((t) => GEAR[t].slot === slot.id)!;
       gearTile(this, x, sy, size, type, item ? item.rarity : -1).forEach((o) => this.keep(o));
-      if (item) this.keep(text(this, x + size / 2 - 12, sy + size / 2 - 22, `Lv${item.level}`, 28, { originX: 1 }));
+      if (item) this.keep(text(this, x + size / 2 - 12, sy + size / 2 - 22, refine(item.level), 28, { originX: 1 }));
       this.keep(text(this, x, sy + size / 2 + 34, slot.name, 32, { color: item ? RARITIES[item.rarity].css : CSS.muted }));
       if (item) {
         const hit = this.keep(this.add.zone(x, sy, size, size).setInteractive({ useHandCursor: true }));
@@ -132,7 +133,7 @@ export class GearScene extends Phaser.Scene {
         color: BUTTON.system,
         icon: save.equipped.length ? `relic_${save.equipped[0]}` : 'relic_slime',
         iconSize: 76,
-        label: 'Relics',
+        label: 'MVP Cards',
         fontSize: 40,
         onClick: () => this.scene.start('Relics', { back: 'Gear' }),
       }),
@@ -160,7 +161,7 @@ export class GearScene extends Phaser.Scene {
     items.forEach((item, i) => {
       const [x, y] = at(i);
       gearTile(this, x, y, tile, item.type, item.rarity).forEach((o) => this.keep(o));
-      this.keep(text(this, x + tile / 2 - 8, y + tile / 2 - 18, `${item.level}`, 26, { originX: 1 }));
+      this.keep(text(this, x + tile / 2 - 8, y + tile / 2 - 18, refine(item.level), 26, { originX: 1 }));
       if (isEquipped(gear, item)) this.keep(this.add.image(x - tile / 2 + 22, y - tile / 2 + 22, 'icon_check').setDisplaySize(40, 40));
       if (this.fresh.has(item.uid)) this.newTag(x + tile / 2 - 30, y - tile / 2 + 6);
       const hit = this.keep(this.add.zone(x, y, tile, tile).setInteractive({ useHandCursor: true }));
@@ -237,7 +238,7 @@ export class GearScene extends Phaser.Scene {
     d(text(this, tx, top + 80, def.name, 48, { color: rar.css, originX: 0 }));
     const slotName = SLOTS.find((s) => s.id === def.slot)!.name;
     d(text(this, tx, top + 134, `${rar.name} ${slotName}`, 32, { color: CSS.soft, weight: '600', originX: 0, shadow: false }));
-    d(text(this, tx, top + 186, `Level ${item.level} / ${maxLevel(item)}`, 34, { color: CSS.cream, originX: 0 }));
+    d(text(this, tx, top + 186, `Refine ${refine(item.level)} / ${refine(maxLevel(item))}`, 34, { color: CSS.cream, originX: 0 }));
     if (isEquipped(gear, item)) d(text(this, tx, top + 232, 'Worn', 30, { color: CSS.green, originX: 0 }));
 
     const m = mainStat(item);
@@ -257,8 +258,8 @@ export class GearScene extends Phaser.Scene {
     const cost = upgradeCost(item);
     if (cost !== null) {
       const next = mainStat({ ...item, level: item.level + 1 });
-      d(text(this, x0 + 60, y, `Next level: ${describeStat(next.stat, next.value)}`, 30, { color: CSS.soft, weight: '600', originX: 0, shadow: false }));
-    } else d(text(this, x0 + 60, y, 'Highest level for this rarity: merge to go further', 30, { color: CSS.soft, weight: '600', originX: 0, shadow: false }));
+      d(text(this, x0 + 60, y, `Next refine: ${describeStat(next.stat, next.value)}`, 30, { color: CSS.soft, weight: '600', originX: 0, shadow: false }));
+    } else d(text(this, x0 + 60, y, 'Highest refine for this rarity: merge to go further', 30, { color: CSS.soft, weight: '600', originX: 0, shadow: false }));
     y += 50;
     const partners = mergePartners(gear, item);
     const same = gear.items.filter((i) => slotOf(i) === slotOf(item) && i.rarity === item.rarity).length;
@@ -306,7 +307,7 @@ export class GearScene extends Phaser.Scene {
         color: BUTTON.warning,
         icon: 'icon_coin',
         iconSize: 52,
-        label: cost === null ? 'Max level' : `Level up  ${cost}`,
+        label: cost === null ? 'Max refine' : `Refine  ${cost}`,
         fontSize: 38,
         onClick: act(() => {
           const ok = upgrade(save, item);

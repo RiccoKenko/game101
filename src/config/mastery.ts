@@ -1,7 +1,7 @@
 import { type CharacterId } from './characters';
 import { talentDef, type TalentId } from './talents';
 
-/** A hero's lasting rank, earned by playing that hero, and what each level adds. */
+/** A hero's lasting rank (shown as Job Lv), earned by playing that hero, and what each level adds. */
 export const MASTERY = {
   maxLevel: 15,
   /** Damage and max HP per level above 1. */
@@ -32,6 +32,15 @@ export type MasteryReward =
   | { level: number; kind: 'master' };
 
 export const MASTERY_REWARDS: Record<CharacterId, MasteryReward[]> = {
+  swordman: [
+    { level: 3, kind: 'talent', talent: 'concentration' },
+    { level: 5, kind: 'reroll' },
+    { level: 7, kind: 'talent', talent: 'spirit' },
+    { level: 9, kind: 'banish' },
+    { level: 11, kind: 'talent', talent: 'guts' },
+    { level: 13, kind: 'start' },
+    { level: 15, kind: 'master' },
+  ],
   archer: [
     { level: 3, kind: 'talent', talent: 'rain' },
     { level: 5, kind: 'reroll' },
@@ -61,7 +70,7 @@ export function describeReward(r: MasteryReward): string {
     case 'banish':
       return '+1 card banish every run';
     case 'start':
-      return 'Weapon starts a level higher';
+      return 'Start skill begins a level higher';
     case 'master':
       return `Master title, gold +${Math.round(MASTERY.masterGold * 100)}%`;
   }

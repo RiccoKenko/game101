@@ -92,7 +92,7 @@ export interface KeyValueStorage {
   setItem(key: string, value: string): void;
 }
 
-const KEY = 'little-archer-save-v1';
+const KEY = 'ricco-rush-save-v1';
 const MONSTER_IDS = BESTIARY.flatMap((g) => g.ids);
 
 export function defaultSave(): SaveData {

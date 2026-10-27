@@ -163,7 +163,7 @@ describe('more weapons, items and runes', () => {
 
   it('the newest weapons evolve with the newest items and runes', () => {
     expect(WEAPONS.shuriken.evolution).toEqual({ into: 'starstorm', requires: 'homing' });
-    expect(WEAPONS.quake.evolution).toEqual({ into: 'earthquake', requires: 'thorns' });
+    expect(WEAPONS.quake.evolution).toEqual({ into: 'earthquake', requires: 'powergem' });
     expect(WEAPONS.firetrail.evolution).toEqual({ into: 'inferno', requires: 'charm' });
     expect(WEAPONS.turret.evolution).toEqual({ into: 'ballista', requires: 'echo' });
     expect(WEAPONS.spear.evolution).toEqual({ into: 'lance', requires: 'reaper' });

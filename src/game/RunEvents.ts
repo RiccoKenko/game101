@@ -57,7 +57,7 @@ export class RunEvents {
     host.ctx.enemies.onEscape = (e) => {
       if (e === this.goblin) {
         this.goblin = null;
-        this.host.toast('The goblin got away!');
+        this.host.toast('The Coin Thief got away!');
       }
     };
   }
@@ -185,7 +185,7 @@ export class RunEvents {
     const { enemies, spawnPoint } = this.host.ctx;
     const p = spawnPoint();
     this.goblin = enemies.spawn('goblin', p.x, p.y);
-    if (this.goblin) this.timers.push({ label: 'Goblin escapes', until: this.host.ctx.runTime + 16, color: '#c8f08a' });
+    if (this.goblin) this.timers.push({ label: 'Coin Thief escapes', until: this.host.ctx.runTime + 16, color: '#c8f08a' });
   }
 
   /** The goblin while it is around (the HUD points an arrow at it). */
