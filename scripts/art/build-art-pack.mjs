@@ -2,7 +2,8 @@
  * node scripts/art/build-art-pack.mjs <out.html>
  *
  * Builds the "Ricco Rush Art Pack" page for the boss: one Copy button per Gemini chat (the master prompts in
- * art/prompts/rr_*.txt), the style reference to attach, and what each chat paints. Publish it as an Artifact.
+ * art/prompts/rr_*.txt) and what each chat paints. Publish it as an Artifact. There is no reference picture: the prompts
+ * describe the classic look in words, because a picture of our old game pulled Gemini back to the old style.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -77,7 +78,6 @@ const ROOMS = [
 
 for (const r of ROOMS) r.prompt = readFileSync(join(ROOT, 'art/prompts', r.file), 'utf8').trim();
 const total = ROOMS.reduce((a, r) => a + r.count, 0);
-const ref = readFileSync(join(ROOT, 'art/prompts/ref/rr_style_reference.jpg')).toString('base64');
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // JSON inside <script>: "</" must not close the tag.
@@ -168,8 +168,8 @@ h1 { font-size: clamp(30px, 8vw, 42px); line-height: 1.1; }
 .words { display: flex; flex-wrap: wrap; gap: 8px; }
 .word { display: inline-flex; gap: 6px; align-items: baseline; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-size: 14px; color: var(--muted); }
 .word b { font-family: var(--display); font-weight: 500; color: var(--ink); font-size: 16px; }
-.ref img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
-.ref p { margin: 0; color: var(--muted); font-size: 14px; }
+.update { border-color: var(--gold); background: var(--gold-soft); }
+.update p { margin: 0; font-size: 15px; }
 .room { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; min-width: 0; }
 .bar { background: var(--bar); color: var(--bar-ink); display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; flex-wrap: wrap; }
 .bar .num { font: 500 13px/1 var(--display); letter-spacing: 0.06em; opacity: 0.85; }
@@ -209,8 +209,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
   <section class="card">
     <h3>วิธีใช้</h3>
     <ol class="steps">
-      <li><span>บันทึก <b>ภาพอ้างอิง</b> ด้านล่างเก็บไว้ในเครื่อง (ใช้ภาพเดียวกันทุกห้อง)</span></li>
-      <li><span>เปิด <b>แชตใหม่</b> ใน Gemini เลือกโหมดสร้างรูปภาพ แนบภาพอ้างอิง แล้วกดปุ่ม Copy ของห้องนั้นมาวาง แล้วส่ง</span></li>
+      <li><span>เปิด <b>แชตใหม่</b> ใน Gemini เลือกโหมดสร้างรูปภาพ แล้วกดปุ่ม Copy ของห้องนั้นมาวาง แล้วส่ง <b>ไม่ต้องแนบภาพ</b></span></li>
       <li><span>Gemini วาดภาพที่ 1 แล้วหยุดรอ พิมพ์ "ต่อ" ไปเรื่อย ๆ จนครบทุกภาพของห้อง</span></li>
       <li><span>ดาวน์โหลดภาพทั้งหมด แล้วแปะกลับมาในแชต Claude <b>เรียงตามลำดับ</b> พร้อมบอกว่าเป็นห้องไหน</span></li>
     </ol>
@@ -221,10 +220,10 @@ details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
     </div>
   </section>
 
-  <section class="card ref">
-    <h3>ภาพอ้างอิง (แนบทุกห้อง)</h3>
-    <img src="data:image/jpeg;base64,${ref}" alt="ภาพอ้างอิงสไตล์: ฮีโร่ ภาพตัวอย่างในเกม มอนสเตอร์ และไอคอน จากเกมเดิม" width="2448" height="1200">
-    <p>กดค้างที่ภาพแล้วเลือกบันทึกภาพ หรือบันทึกจากไฟล์ที่ผมส่งไว้ในแชต Claude ก็ได้ Gemini จะใช้ดูแค่สไตล์ ไม่ลอกหน้าตา</p>
+  <section class="card update">
+    <h3>อัปเดต: ปรับสไตล์ให้เป็นเกมออนไลน์เกาหลียุคเก่า</h3>
+    <p>คำสั่งชุดใหม่บอก Gemini ให้วาดแบบสไปรต์ 2D ของเกมออนไลน์แฟนตาซีเกาหลียุคปลาย 90 (ตัวสูงราว 3 หัว สีหม่นนุ่ม เส้นบาง) แทนแบบชิบิมือถือยุคใหม่ และเลิกใช้ภาพอ้างอิงของเกมเดิมแล้ว</p>
+    <p><b>ถ้าเคยเปิดห้องไปแล้ว ให้เปิดแชตใหม่</b> แล้ว Copy คำสั่งใหม่ไปวาง เพราะแชตเดิมจำสไตล์เก่าไว้</p>
   </section>
 ${rooms}
 
@@ -233,6 +232,7 @@ ${rooms}
     <ul class="tips">
       <li><b>ทำห้อง 2-5 พร้อมกันได้</b> แต่ละห้องเป็นแชตแยกกัน ไม่ต้องรอกัน</li>
       <li><b>ลายน้ำของ Gemini</b> ที่มุมภาพไม่ต้องลบ ผมจัดการเอง</li>
+      <li><b>ถ้าภาพออกมาเป็นการ์ตูนมือถือมันวาว</b> พิมพ์ "วาดใหม่ แบบเกมออนไลน์เกาหลียุค 90 สีหม่น เส้นบาง ตัวสูง 3 หัว"</li>
       <li><b>ถ้า Gemini วาดหลายภาพรวมกันในภาพเดียว หรือข้ามลำดับ</b> พิมพ์ "วาดใหม่ เฉพาะภาพที่ N"</li>
       <li><b>ถ้าแปะภาพกลับมาในข้อความเดียวไม่หมด</b> แบ่งเป็นหลายข้อความได้ ขอแค่เรียงลำดับเดิม</li>
       <li><b>ถ้าพื้นหลังไม่ใช่สีเรียบ</b> (มีลาย มีเงา หรือเป็นตาราง) พิมพ์ "พื้นหลังต้องเป็นสีเรียบสีเดียว วาดใหม่"</li>

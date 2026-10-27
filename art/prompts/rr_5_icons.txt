@@ -7,22 +7,24 @@ HOW WE WORK
 - Any other message from me is a correction: repaint the current sheet with that change (for example "fix only icon 6").
 - Start every reply with the sheet number and name, for example "SHEET 2 / 5 – Archer skills".
 - One image per reply, never a collage of several images.
+- If an image drifts toward a glossy modern mobile-game look, redraw it in the classic style described below.
 
-REFERENCE (the one picture attached to this message: four panels from our previous game; left: a hero's master illustration; middle: a gameplay mock-up; top right: a monster sheet; bottom right: an icon sheet)
-- Match the bottom-right panel's tile style, painting style, emblem size and level of detail. Do NOT copy its emblems.
-
-STYLE (every sheet)
-- Cute early-2000s Korean fantasy MMORPG charm, repainted at modern quality: soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), rich colours, light from the upper left.
-- Every design is ORIGINAL. Do not imitate any existing game, anime or brand: no existing logos, symbols or interface.
+STYLE (every image): the look of a classic late-1990s Korean 2D online fantasy RPG, remastered in high resolution
+- A cosy, nostalgic, gentle and cute online fantasy world full of friendly adventurers: 2D character sprites walking over hand-painted 3D fields, seen from about 45 degrees above.
+- Everything looks like classic hand-pixelled 2D game sprites redrawn cleanly at high resolution (smooth, not blocky): small, precise shapes; soft 3- or 4-tone shading per material with a light dithered texture; thin outlines in a darker shade of each colour (dark brown on skin and leather, dark navy on blue cloth), never thick black lines.
+- NOT a modern mobile-game look: no glossy plastic rendering, no airbrushed gradients, no thick outlines, no 3D render, no flat vector style.
+- Colours: a muted, slightly desaturated medieval-fantasy palette (dusty navy, slate blue, khaki, leather brown, ivory, moss green, burgundy, old brass), soft warm daylight from the upper left.
+- Every design is ORIGINAL. Do not copy any existing game's characters, monsters, items, logos or interface, and do not use any existing game's name.
+- Icons look like the small inventory and skill icons of that era, remastered: one bold, simple object or symbol with an instantly readable silhouette, 3-tone shading, thin dark outlines, muted colours with one bright accent.
 
 SHEET RULES (every sheet)
-- Square 1:1 image with a grid of 4 columns x 4 rows = 16 square icon tiles, all exactly the same size, evenly spaced, with a gap of solid magenta #FF00FF between the tiles and around the outer edge (a gap about one fifth of a tile wide).
-- Each tile is a complete square painting with slightly rounded corners: a rich, dark background (deep navy, teal, wine red, forest green or deep purple, with a soft radial glow behind the emblem) and ONE bold, simple emblem in the centre, clear and recognisable even when the icon is shown very small.
-- No frame or border around the tiles (the game adds its own gold frame). No text, numbers or letters anywhere.
-- Icons are numbered left to right, top to bottom (1-4 the top row, 13-16 the bottom row).
-- Within a sheet, give every icon a clearly different emblem and colour so no two look alike.
+- Square 1:1 image: a grid of 4 columns x 4 rows of equal square cells = 16 icons, numbered left to right, top to bottom (1-4 the top row, 13-16 the bottom row).
+- Background: a perfectly flat, solid colour everywhere (given for each sheet); never use that colour, or anything close to it, inside the icons.
+- Each icon is ONE object or symbol alone, centred in its cell and filling about 70% of it, with NO tile, panel, frame, badge, background colour or glow behind it, and plenty of plain background between icons; nothing touching the cell edges or the image edge.
+- No text, numbers or letters anywhere.
+- Within a sheet, give every icon a clearly different shape and colour so no two look alike.
 
-SHEET 1 – SWORDMAN SKILLS (tiles mostly steel-blue and fiery orange; row 3 and 4 icons are the stronger "advanced" versions: make them golden and radiant)
+SHEET 1 – SWORDMAN SKILLS (background solid magenta #FF00FF; never magenta, pink or purple inside the icons; icons mostly steel blue and fiery orange; rows 3 and 4 are the stronger advanced versions: golden and radiant)
 1 Slash: a short sword sweeping a white crescent arc.
 2 Bash: a sword striking down onto the ground with a big star-shaped impact and three little dizzy stars.
 3 Magnum Break: a sword plunged into the ground with a ring of fire bursting outward.
@@ -40,7 +42,7 @@ SHEET 1 – SWORDMAN SKILLS (tiles mostly steel-blue and fiery orange; row 3 and
 15 Clashing Spiral: swords whirling inside a golden tornado.
 16 Berserk (ultimate): a sword engulfed in roaring red flames, with a fierce glowing aura, the most dramatic icon of the sheet.
 
-SHEET 2 – ARCHER SKILLS (tiles mostly forest green and sky blue; rows 3 and 4 are the advanced versions: golden and radiant)
+SHEET 2 – ARCHER SKILLS (background solid magenta #FF00FF; never magenta, pink or purple inside the icons; icons mostly forest green, wood brown and sky blue; rows 3 and 4 are the advanced versions: golden and radiant)
 1 Arrow Shot: a bow with a nocked arrow.
 2 Double Strafe: two arrows flying side by side.
 3 Arrow Shower: many arrows falling from the sky in an arc onto a target spot.
@@ -58,7 +60,7 @@ SHEET 2 – ARCHER SKILLS (tiles mostly forest green and sky blue; rows 3 and 4 
 15 Shockwave Trap: two crackling snare rings circling around a glowing centre.
 16 Arrow Storm (ultimate): hundreds of glowing arrows swirling in a vortex, the most dramatic icon of the sheet.
 
-SHEET 3 – MAGE SKILLS (tiles mostly deep purple and midnight blue; rows 3 and 4 are the advanced versions: radiant and grander)
+SHEET 3 – MAGE SKILLS (background solid pure green #00FF00; never bright green inside the icons; icons mostly fire orange, ice blue, violet and gold; rows 3 and 4 are the advanced versions: radiant and grander)
 1 Soul Strike: three glowing white-blue spirit orbs with short tails.
 2 Fire Bolt: spears of flame falling from above.
 3 Cold Bolt: three sharp spears of blue ice.
@@ -67,7 +69,7 @@ SHEET 3 – MAGE SKILLS (tiles mostly deep purple and midnight blue; rows 3 and 
 6 Fire Wall: a low wall of flames.
 7 Frost Diver: a line of ice crystals bursting up from the ground.
 8 Teleport (dash): a glowing blue magic circle with a swirl of light where someone vanished.
-9 Napalm Vulcan: three ghostly white-violet flames rushing forward.
+9 Napalm Vulcan: three ghostly pale-blue spirit flames rushing forward.
 10 Fire Pillar: a tall pillar of fire erupting from a glowing circle on the ground.
 11 Storm Gust: a swirling blizzard tornado full of snowflakes.
 12 Lord of Vermilion: many lightning bolts striking down from a crimson storm cloud.
@@ -76,7 +78,7 @@ SHEET 3 – MAGE SKILLS (tiles mostly deep purple and midnight blue; rows 3 and 
 15 Frost Nova: a starburst of ice spikes radiating from the centre.
 16 Meteor Storm (ultimate): huge flaming meteors crashing down, the most dramatic icon of the sheet.
 
-SHEET 4 – ITEMS
+SHEET 4 – ITEMS (background solid magenta #FF00FF; never magenta, pink or purple inside the icons)
 1 STR: a red leather power glove clenched into a fist.
 2 AGI: a light-blue feather with speed streaks.
 3 VIT: a big glowing red heart.
@@ -94,13 +96,13 @@ SHEET 4 – ITEMS
 15 Slayer Ring: a gold ring set with a red fang-shaped gem.
 16 Yggdrasil Leaf: a large glowing golden-green leaf.
 
-SHEET 5 – EQUIPMENT AND MENU ICONS
+SHEET 5 – EQUIPMENT AND MENU ICONS (background solid magenta #FF00FF; never magenta, pink or purple inside the icons)
 1 Horned Helm: a steel helmet with two small curved horns.
 2 Magic Circlet: a gold circlet with a blue gem.
 3 Plate Mail: a shiny steel chest armour.
 4 Sage Robe: a folded cream-and-blue robe with gold trim.
 5 Wind Muffler: a flowing green scarf.
-6 Mystic Manteau: a purple hooded cloak with small gold stars.
+6 Mystic Manteau: a deep-blue hooded cloak with small gold stars.
 7 Sprint Sandals: light leather sandals with straps.
 8 Lucky Boots: brown leather boots with a gold clover buckle.
 9 Gold: a small pile of gold coins.

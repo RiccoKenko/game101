@@ -14,7 +14,8 @@
   - สรุปการออกแบบทั้งหมดอยู่ใน **`docs/art/RICCO_RUSH_BRIEF.md`** (design bible)
 - **ภาพวาดโดยเจ้านายเองด้วย Gemini** (ไม่ใช้งบ OpenAI)
   - prompt หลัก 5 อัน (1 ห้องแชตต่อ 1 อัน) ได้ภาพรวม 35 ภาพ ระหว่างภาพพิมพ์แค่ "ต่อ": `art/prompts/rr_1_heroes.txt` … `rr_5_icons.txt`
-  - ภาพอ้างอิงภาพเดียวแนบทุกห้อง: `art/prompts/ref/rr_style_reference.jpg`
+  - **27 ต.ค. ปรับ prompt:** เจ้านายบอกว่าภาพที่ได้ "ไม่เหมือน RO เลย" เลยบรรยายลุคเกมออนไลน์เกาหลียุคปลาย 90 เป็นคำพูด (ตัวสูง 3 หัว สีหม่น เส้นบาง สไปรต์ 2D บนแมพ 3D ทาสีมือ ไอคอนเป็นวัตถุไม่มีกรอบ) และเลิกแนบภาพอ้างอิง (`ref/rr_style_reference.jpg` เลิกใช้แล้ว) รายละเอียดอยู่ใน brief หัวข้อสไตล์ภาพ
+  - Art Pack เวอร์ชัน 3
   - **หน้า Art Pack (Artifact):** https://claude.ai/artifact/TSRuyfHLoK59rLL62LiMNP มีปุ่ม Copy 5 อัน
     - สร้างใหม่: `node scripts/art/build-art-pack.mjs <scratchpad>/rr/ricco-rush-art-pack.html` แล้ว publish ทับลิงก์นี้ (session ใหม่ต้อง `action: read` ก่อน)
   - **ภาพที่เจ้านายแปะในแชต:** อยู่ที่ `/root/.claude/uploads/<session>/*.png` ขนาดเต็ม → คัดลอกไป `art/incoming/rr/<ห้อง>_<ลำดับ>.png`

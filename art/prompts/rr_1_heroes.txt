@@ -7,22 +7,23 @@ HOW WE WORK
 - Any other message from me is a correction: repaint the current image with that change.
 - Start every reply with the image number and name, for example "IMAGE 4 / 16 – Swordman rig pose".
 - One image per reply, never a collage of several images.
+- If an image drifts toward a glossy modern mobile-game look, redraw it in the classic style described below.
 - Images 1-3 are the master designs. In every later image each hero must look EXACTLY like their latest master: the same face, hair, outfit, colours, proportions, outline weight and painting style. Look back at the master every time.
 
-REFERENCE (the one picture attached to this message: four panels from our previous game; left: a hero's master illustration; middle: a gameplay mock-up; top right: a monster sheet; bottom right: an icon sheet)
-- Match the left panel's proportions, head size, outline weight, painting style and level of detail exactly. Do NOT copy its design or colours.
-- The middle panel shows the overall look of the game.
-
-STYLE (every image)
-- Cute early-2000s Korean fantasy MMORPG charm, repainted at modern quality: chunky chibi proportions (about 2.5 heads tall, big head, big friendly eyes), clean warm dark-brown outlines (never pure black), soft cel shading with gentle gradients, light from the upper left.
-- Rich detail that stays clean and readable at small size: fabric weave and stitched seams, leather grain, brushed steel with small bright highlights, wood grain, felt fuzz, shiny gold and brass.
-- Every design is ORIGINAL. Do not imitate any existing game, anime or brand: no existing characters, logos, crests or emblems.
+STYLE (every image): the look of a classic late-1990s Korean 2D online fantasy RPG, remastered in high resolution
+- A cosy, nostalgic, gentle and cute online fantasy world full of friendly adventurers: 2D character sprites walking over hand-painted 3D fields, seen from about 45 degrees above.
+- Everything looks like classic hand-pixelled 2D game sprites redrawn cleanly at high resolution (smooth, not blocky): small, precise shapes; soft 3- or 4-tone shading per material with a light dithered texture; thin outlines in a darker shade of each colour (dark brown on skin and leather, dark navy on blue cloth), never thick black lines.
+- NOT a modern mobile-game look: no glossy plastic rendering, no airbrushed gradients, no thick outlines, no 3D render, no flat vector style.
+- Colours: a muted, slightly desaturated medieval-fantasy palette (dusty navy, slate blue, khaki, leather brown, ivory, moss green, burgundy, old brass), soft warm daylight from the upper left.
+- Every design is ORIGINAL. Do not copy any existing game's characters, monsters, items, logos or interface, and do not use any existing game's name.
+- Character proportions like the sprites of that era: about 3 heads tall: a big head with spiky, layered manhwa-style anime hair, large almond-shaped eyes with one bright highlight, a small pointed nose and a small mouth; a slim body with fairly long legs, small hands and feet. NOT a round, chubby, super-deformed chibi.
+- Outfits are practical, simple adventurer gear with a few clear colour blocks, like the beginner classes of an old online RPG, not ornate.
 
 THE THREE HEROES
 In the three-quarter view turned toward the RIGHT, the hero's RIGHT arm is the near arm and the LEFT arm is the far arm.
 
 SWORDMAN (id: swordman)
-- A brave, cheerful boy of about 12. Round face, big amber eyes, thick determined eyebrows, rosy cheeks, a small adhesive bandage on the left cheek. Short spiky auburn (red-brown) hair.
+- A brave, cheerful boy of about 12. Soft oval face, big amber eyes, thick determined eyebrows, rosy cheeks, a small adhesive bandage on the left cheek. Short spiky auburn (red-brown) hair.
 - A navy-blue cloth headband tied at the back, its two short tails fluttering behind the head.
 - A polished steel breastplate with brass rivets over a royal-blue padded tunic to mid-thigh with a cream trim along the hem.
 - One rounded steel pauldron with a brass rim on the RIGHT shoulder (near).
@@ -33,7 +34,7 @@ SWORDMAN (id: swordman)
 - Shield: a round wooden shield with a steel rim, steel rivets and a round steel boss in the middle, painted royal blue with one simple gold four-pointed star; worn on the LEFT forearm (far).
 
 ARCHER (id: archer)
-- A quick, cheerful girl of about 11. Round face, big emerald-green eyes, light freckles across the nose, rosy cheeks. Wavy chestnut (red-brown) hair in a high ponytail tied with a brown leather cord and a small white feather, plus a short side fringe.
+- A quick, cheerful girl of about 11. Soft oval face, big emerald-green eyes, light freckles across the nose, rosy cheeks. Wavy chestnut (red-brown) hair in a high ponytail tied with a brown leather cord and a small white feather, plus a short side fringe.
 - A forest-green leather vest with brass buttons over a cream linen blouse with short puffed sleeves.
 - A brown leather strap across the chest holding a brown leather quiver on her back, full of arrows with red-and-white fletching.
 - Brown leather belt with a brass buckle and a small pouch; a short brown leather skirt over dark-brown leggings.
@@ -42,7 +43,7 @@ ARCHER (id: archer)
 - Bow: a wooden longbow with gently curved limbs, small brass tips and a grip wrapped in green cloth, held in the LEFT hand (far).
 
 MAGE (id: mage)
-- A clever, cheerful boy of about 11. Round face, big sky-blue eyes, rosy cheeks, a calm confident smile. Soft, slightly messy silver-blue hair falling over the forehead.
+- A clever, cheerful boy of about 11. Soft oval face, big sky-blue eyes, rosy cheeks, a calm confident smile. Soft, slightly messy silver-blue hair falling over the forehead.
 - A big pointed wizard hat of deep purple felt with a wide floppy brim, a gold band and three tiny gold stars on the band; the soft tip flops backwards.
 - A purple robe-tunic to just above the knees with a gold-embroidered hem, a white collar, and wide sleeves ending in gold cuffs at the wrists.
 - A long red scarf wrapped around the neck, its two ends trailing behind him.
@@ -89,4 +90,4 @@ IMAGE 14 – Mage BODY PARTS SHEET: 1 torso: the upper robe with the white colla
 IMAGE 15 – Mage HANDS AND GEAR SHEET: 1 the staff alone, standing perfectly vertically, the red gem at the top; 2 left hand open; 3 left hand gripping: a fist seen from the thumb side, closed around an empty round gap where the staff goes; 4 right hand open, palm forward, fingers spread as if casting a spell; 5 right hand pointing forward with the index finger, the other fingers curled. Green background.
 
 PART C – TITLE PICTURE
-IMAGE 16 – Title screen painting (portrait 9:16), a complete scene WITH a painted background (no flat colour): the three heroes together in a heroic group pose on a grassy hilltop on a sunny day, the Swordman in front in the middle raising his sword, the Archer on the left drawing her bow, the Mage on the right raising his glowing staff; behind them rolling green hills, a winding dirt road and a small fairy-tale castle town far away, a bright blue sky with soft clouds. Keep the top quarter calm, open sky (the game puts its logo there). No text, no logo.
+IMAGE 16 – Title screen painting (portrait 9:16), a complete scene WITH a painted background (no flat colour), painted like the soft manhwa-style key art of an old Korean online RPG: the three heroes together in a heroic group pose on a grassy hilltop on a sunny day, the Swordman in front in the middle raising his sword, the Archer on the left drawing her bow, the Mage on the right raising his glowing staff; behind them rolling green hills, a winding dirt road and a small fairy-tale castle town far away, a bright blue sky with soft clouds. Keep the top quarter calm, open sky (the game puts its logo there). No text, no logo.

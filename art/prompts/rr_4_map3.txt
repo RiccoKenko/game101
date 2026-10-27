@@ -7,14 +7,16 @@ HOW WE WORK
 - Any other message from me is a correction: repaint the current image with that change (for example "fix only the top-left monster").
 - Start every reply with the image number and name, for example "IMAGE 3 / 4 – Monsters".
 - One image per reply, never a collage of several images.
+- If an image drifts toward a glossy modern mobile-game look, redraw it in the classic style described below.
 
-REFERENCE (the one picture attached to this message: four panels from our previous game; left: a hero's master illustration; middle: a gameplay mock-up; top right: a monster sheet; bottom right: an icon sheet)
-- Match the middle panel's painting style, camera angle and scale, and the top-right panel's monster painting style and level of detail. Do NOT copy those monsters or objects.
-
-STYLE (every image)
-- Cute early-2000s Korean fantasy MMORPG charm, repainted at modern quality: chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), warm pastel colours, light from the upper left.
-- Monsters are cute and a little silly, never scary or gory.
-- Every design is ORIGINAL. Do not imitate any existing game, anime or brand: no existing characters, monsters, logos or interface.
+STYLE (every image): the look of a classic late-1990s Korean 2D online fantasy RPG, remastered in high resolution
+- A cosy, nostalgic, gentle and cute online fantasy world full of friendly adventurers: 2D character sprites walking over hand-painted 3D fields, seen from about 45 degrees above.
+- Everything looks like classic hand-pixelled 2D game sprites redrawn cleanly at high resolution (smooth, not blocky): small, precise shapes; soft 3- or 4-tone shading per material with a light dithered texture; thin outlines in a darker shade of each colour (dark brown on skin and leather, dark navy on blue cloth), never thick black lines.
+- NOT a modern mobile-game look: no glossy plastic rendering, no airbrushed gradients, no thick outlines, no 3D render, no flat vector style.
+- Colours: a muted, slightly desaturated medieval-fantasy palette (dusty navy, slate blue, khaki, leather brown, ivory, moss green, burgundy, old brass), soft warm daylight from the upper left.
+- Every design is ORIGINAL. Do not copy any existing game's characters, monsters, items, logos or interface, and do not use any existing game's name.
+- Monsters are drawn like the field monsters of that era: simple rounded shapes, big glossy eyes, small mouths, cute and a little silly, never scary or gory; small and readable, like 2D sprites about 100 pixels tall shown larger.
+- Map pieces look like the hand-painted 3D fields of that era: ground textures are soft, painterly and a little hazy, in muted greens, ochres and browns, low in contrast so characters stand out; trees, rocks and props look like simple 3D shapes with hand-painted textures, seen from about 45 degrees above.
 
 SHEET RULES (images 2-4)
 - Background: a perfectly flat, solid colour (given for each image) everywhere: no gradient, texture, floor, horizon, shadow or vignette. Never use that colour, or anything close to it, inside the drawings.
