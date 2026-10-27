@@ -87,7 +87,9 @@ export class HudScene extends Phaser.Scene {
     this.add.image(62, rowB, starTexture(this, 50));
     this.hpBar = new Bar(this, 100, rowA - 13, 420, 26, COLORS.hp);
     this.xpBar = new Bar(this, 100, rowB - 13, 420, 26, COLORS.xp);
-    this.levelText = text(this, 612, cy, 'Lv 1', 50, { color: CSS.cream });
+    // Base Lv, the classic way: the run's level (Job Lv is the hero's lasting rank, shown in the menu).
+    text(this, 612, cy - 30, 'BASE', 22, { color: CSS.soft, shadow: false });
+    this.levelText = text(this, 612, cy + 12, 'Lv 1', 46, { color: CSS.cream });
     this.add.image(688, cy, vDivider(this, 78));
     this.add.image(734, cy, 'icon_clock').setDisplaySize(50, 50);
     this.timeText = text(this, 764, cy + 1, '00:00', 52, { color: CSS.cream, originX: 0 });
@@ -165,7 +167,7 @@ export class HudScene extends Phaser.Scene {
     this.input.on('pointerupoutside', this.onUp, this);
 
     const ev = this.game_.events;
-    const onBoss = (name: string) => this.warning(name);
+    const onBoss = (name: string, mvp: boolean) => this.warning(name, mvp);
     const onToast = (msg: string) => this.toast(msg);
     const onInv = () => this.rebuildRows();
     const onHurt = () => (this.hurt = 1);
@@ -231,12 +233,13 @@ export class HudScene extends Phaser.Scene {
     resetStick();
   }
 
-  private warning(name: string): void {
+  /** The big banner when a leader comes ("WARNING!") or the map's boss, an MVP ("MVP!"). */
+  private warning(name: string, mvp: boolean): void {
     const { width, height } = this.scale;
     const y = height * 0.34;
     const band = this.add.image(width / 2, y, warningBand(this, width, 200)).setDepth(50);
-    const t1 = gradientText(text(this, width / 2, y - 34, 'WARNING!', 84, { strokeColor: '#3a0610' }), ['#fff6c8', '#ffd84a', '#ff9a2a']).setDepth(51);
-    const t2 = text(this, width / 2, y + 48, `${name} approaches!`, 46, { strokeColor: '#3a0610' }).setDepth(51);
+    const t1 = gradientText(text(this, width / 2, y - 34, mvp ? 'MVP!' : 'WARNING!', 84, { strokeColor: '#3a0610' }), ['#fff6c8', '#ffd84a', '#ff9a2a']).setDepth(51);
+    const t2 = text(this, width / 2, y + 48, mvp ? `MVP ${name} has appeared!` : `${name} approaches!`, 46, { strokeColor: '#3a0610' }).setDepth(51);
     const all = [band, t1, t2];
     this.tweens.add({ targets: t1, alpha: 0.3, duration: 250, yoyo: true, repeat: 4 });
     this.tweens.add({

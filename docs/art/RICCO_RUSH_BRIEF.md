@@ -41,14 +41,20 @@
 | # | Swordman (กลไกเดิม) → อาชีพ 2 | Archer (กลไกเดิม) → อาชีพ 2 | Mage (กลไกเดิม) → อาชีพ 2 |
 |---|---|---|---|
 | เริ่ม | Slash (slash) → Bowling Bash | Arrow Shot (bow) → Sharp Shooting | Soul Strike (bolt) → Napalm Vulcan |
-| 2 | Bash (ใหม่: ฟาดเป้าใกล้สุด + มึน) → Aura Blade | Double Strafe (daggers) → Arrow Vulcan | Fire Bolt (ไฟตกจากฟ้า) → Fire Pillar |
-| 3 | Magnum Break (quake) → Grand Cross | Arrow Shower (ฝนธนู) → Arrow Rain | Cold Bolt (frost) → Storm Gust |
-| 4 | Provoke (aura + ศัตรูรับดาเมจเพิ่ม) → Devotion | Charge Arrow (boomerang ปรับเป็นยิงผลัก) → Phantasmic Arrow | Lightning Bolt (lightning) → Lord of Vermilion |
-| 5 | Pierce (spear) → Spiral Pierce | Ankle Snare (traps) → Freezing Trap | Fire Ball (bomb) → Sightrasher |
-| 6 | Auto Guard (ward) → Shield Reflect | Blitz Beat (wisps → เหยี่ยว) → Falcon Assault | Fire Wall (firetrail) → Volcano |
-| 7 | Brandish (axes) → Clashing Spiral | Land Mine (bomb) → Claymore Trap | Frost Diver (beam ปรับเป็นแช่แข็งเป็นแนว) → Frost Nova |
+| 2 | Bash (`bash` ใหม่: ฟาดเป้าใกล้สุด + มึน) → Aura Blade | Double Strafe (daggers) → Arrow Vulcan | Fire Bolt (lightning: ไฟตกจากฟ้า) → Fire Pillar |
+| 3 | Magnum Break (quake) → Grand Cross | Arrow Shower (flask: ฝนธนูตกเป็นจุด) → Arrow Rain | Cold Bolt (frost) → Storm Gust |
+| 4 | Provoke (aura) → Devotion | Charge Arrow (boomerang) → Phantasmic Arrow | Lightning Bolt (shuriken: กระโดดจากตัวไปตัว) → Lord of Vermilion |
+| 5 | Pierce (spear) → Spiral Pierce | Ankle Snare (twister ความเร็ว 0: วางกับดักดูดมอน) → Shockwave Trap | Fire Ball (bomb) → Sightrasher |
+| 6 | Auto Guard (ward) → Shield Reflect | Land Mine (traps) → Freezing Trap | Fire Wall (firetrail) → Volcano |
+| 7 | Brandish (axes) → Clashing Spiral | Blitz Beat (wisps) → Falcon Assault | Frost Diver (beam) → Frost Nova |
 | พุ่ง | Shield Charge (พุ่งชนดันมอน) | Back Slide | Teleport |
 | ท่าไม้ตาย | Berserk (ร่างไฟ แรง ×2 + ฟันรอบตัว 6 วิ) | Arrow Storm | Meteor Storm |
+
+- **เปิดตั้งแต่แรกอาชีพละ 4 สกิล** อีก 3 ปลดล็อกตามแมพ (`config/collection.ts`)
+  - Swordman ปลด Pierce, Brandish, Auto Guard
+  - Archer ปลด Ankle Snare, Land Mine, Blitz Beat
+  - Mage ปลด Lightning Bolt, Frost Diver, Fire Wall
+- **`turret` ไม่มีอาชีพไหนใช้:** ห้ามออกในการ์ดทุกอาชีพ
 
 ### พรสวรรค์ (Job skill)
 - กลไกเดิมจาก `config/talents.ts` เปลี่ยนชื่อ
@@ -56,9 +62,9 @@
 
 | อาชีพ | พรสวรรค์ |
 |---|---|
-| Swordman | Sword Mastery, Endure, HP Recovery, Two-Hand Quicken (และเพิ่มให้ครบจำนวนเท่าอาชีพอื่น) |
-| Archer | Owl's Eye, Vulture's Eye, Improve Concentration (และชุดเดิมที่เปลี่ยนชื่อ) |
-| Mage | SP Recovery, Energy Coat, Sight (และชุดเดิมที่เปลี่ยนชื่อ) |
+| Swordman | Sword Mastery, Endure, HP Recovery, Two-Hand Quicken, Vitality, Concentration, Fighting Spirit, Guts |
+| Archer | Volley, Vulture's Eye, Owl's Eye, Sky Volley, Hunter's Mark, Wind Walk, Trick Shot, Second Wind |
+| Mage | Double Casting, Pyromancy, Cryomancy, Stormcalling, SP Recovery, Mystical Amplification, Blink, Starcaller, Wisdom, Energy Coat |
 
 ## ไอเทมและระบบ (ของเดิม → ของใหม่)
 | ของเดิม | ของใหม่ |

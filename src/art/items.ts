@@ -544,34 +544,22 @@ export const ITEMS_ART: ArtSet = {
       `<path d="M8.3 13A8.5 8.5 0 0 1 13 7.9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".85"/>`,
   ),
 
-  meat: (() => {
-    const M = 'M6 27C2 17 9 8 20 7C27 6.5 32 10 34.5 14.5L37 18.5C35.5 23 32 27 27.5 30C20 35 10 35 6 27Z';
-    return svg(
-      52,
-      40,
-      `<defs><clipPath id="meat_c"><path d="${M}"/></clipPath></defs>` +
-        // bone (outline pass, then fill pass)
-        `<g stroke="${O}" stroke-linecap="round" fill="${O}">` +
-        `<path d="M30 20L42 13.5" stroke-width="10"/>` +
-        `<circle cx="44.6" cy="17" r="5.6" stroke="none"/><circle cx="41.2" cy="9.6" r="5.6" stroke="none"/>` +
-        `</g>` +
-        `<g stroke="#fff6e0" stroke-linecap="round" fill="#fff6e0">` +
-        `<path d="M30 20L42 13.5" stroke-width="4.5"/>` +
-        `<circle cx="44.6" cy="17" r="3.8" stroke="none"/><circle cx="41.2" cy="9.6" r="3.8" stroke="none"/>` +
-        `</g>` +
-        `<path d="M42.5 18.6A3 3 0 0 0 47.4 17" fill="none" stroke="#e0cca6" stroke-width="1.6" stroke-linecap="round"/>` +
-        `<circle cx="40" cy="8.6" r="1.2" fill="#fff"/>` +
-        // meat
-        `<path d="${M}" fill="#d0682e"/>` +
-        `<g clip-path="url(#meat_c)">` +
-        `<path d="M0 26C10 33 24 30 40 16L40 40L0 40Z" fill="#a4471f"/>` +
-        `<ellipse cx="15" cy="15" rx="8" ry="4.5" transform="rotate(-20 15 15)" fill="#f2a466"/>` +
-        `</g>` +
-        `<path d="M15 21.5Q18 19 21 21.5M23 15.5Q26 13 29 15.5M11 27Q13.5 25 16 27" fill="none" stroke="#8c3a18" stroke-width="1.5" stroke-linecap="round"/>` +
-        `<path d="${M}" fill="none" ${ol(3)}/>` +
-        `<ellipse cx="12.5" cy="13.5" rx="3" ry="1.8" transform="rotate(-30 12.5 13.5)" fill="#fff" opacity=".8"/>`,
-    );
-  })(),
+  // A red potion (the key stays "meat": the healing pickup).
+  meat: svg(
+    40,
+    48,
+    `<defs><clipPath id="potion_c"><circle cx="20" cy="31" r="11.6"/></clipPath></defs>` +
+      `<rect x="15.5" y="9" width="9" height="10" rx="1.5" fill="#e6f3ff" ${ol(2.6)}/>` +
+      `<circle cx="20" cy="31" r="13.5" fill="#e6f3ff" ${ol(3)}/>` +
+      `<g clip-path="url(#potion_c)">` +
+      `<rect x="6" y="26" width="28" height="20" fill="#e8343f"/>` +
+      `<rect x="6" y="36" width="28" height="10" fill="#b81f2d"/>` +
+      `<ellipse cx="20" cy="26.4" rx="12" ry="2.2" fill="#ff7b80"/>` +
+      `</g>` +
+      `<rect x="13.5" y="3" width="13" height="7.5" rx="2.2" fill="#c08a52" ${ol(2.6)}/>` +
+      `<path d="M10.5 27.5A10 10 0 0 1 16 21.6" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".9"/>` +
+      `<circle cx="13" cy="35.5" r="1.6" fill="#fff" opacity=".7"/>`,
+  ),
 
   magnet: (() => {
     const U = 'M8 21A16 16 0 0 1 40 21L40 43L30.5 43L30.5 21A6.5 6.5 0 0 0 17.5 21L17.5 43L8 43Z';

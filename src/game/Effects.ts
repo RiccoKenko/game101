@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FONT } from '../ui/theme';
 
 interface Floater {
   text: Phaser.GameObjects.BitmapText;
@@ -143,6 +144,17 @@ export class Effects {
       .setScale(f.pop)
       .setAlpha(1)
       .setVisible(true);
+  }
+
+  /** A skill's name called out over the hero's head, the classic way ("Bash!!"), rising and fading. */
+  skillCall(x: number, y: number, name: string, color = '#ffffff', suffix = '!!'): void {
+    const t = this.scene.add
+      .text(x, y, `${name}${suffix}`, { fontFamily: FONT, fontSize: '40px', fontStyle: '700', color, stroke: '#1b1030', strokeThickness: 9 })
+      .setOrigin(0.5, 1)
+      .setDepth(62)
+      .setScale(0.6);
+    this.scene.tweens.add({ targets: t, scale: 1, duration: 140, ease: 'Back.easeOut' });
+    this.scene.tweens.add({ targets: t, y: y - 70, alpha: 0, delay: 650, duration: 450, ease: 'Quad.easeIn', onComplete: () => t.destroy() });
   }
 
   sparksAt(x: number, y: number, count = 5, color = 0xffffff): void {

@@ -55,7 +55,7 @@ SHEET 2 – ARCHER SKILLS (tiles mostly forest green and sky blue; rows 3 and 4 
 12 Phantasmic Arrow: a ghostly, see-through blue spectral arrow.
 13 Freezing Trap: a steel jaw trap covered in frost and ice crystals.
 14 Falcon Assault: a falcon wrapped in golden light, diving.
-15 Claymore Trap: a big trap bursting in a fiery explosion.
+15 Shockwave Trap: two crackling snare rings circling around a glowing centre.
 16 Arrow Storm (ultimate): hundreds of glowing arrows swirling in a vortex, the most dramatic icon of the sheet.
 
 SHEET 3 – MAGE SKILLS (tiles mostly deep purple and midnight blue; rows 3 and 4 are the advanced versions: radiant and grander)

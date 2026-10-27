@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
+import { ULTIMATES } from '../config/abilities';
 import { characterDef, type CharacterDef, type CharacterId } from '../config/characters';
 import { CURSE, CURSE_IDS, CURSE_UNLOCK_MAPS, HEAT_GOLD, heatOf, type CurseId } from '../config/curses';
 import { DIFFICULTIES, maxDifficulty, type DifficultyDef } from '../config/difficulty';
@@ -10,7 +11,7 @@ import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOL
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
 import { GEAR, type GearType } from '../config/gear';
 import { MASTERY } from '../config/mastery';
-import { TALENT, TALENT_LEVELS, type TalentId } from '../config/talents';
+import { TALENT, TALENT_LEVELS, talentDef, type TalentId } from '../config/talents';
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
@@ -358,6 +359,7 @@ export class GameScene extends Phaser.Scene {
     this.applyRelicsAtStart();
     this.cameras.main.centerOn(0, 0);
     this.ambience = new Ambience(this, this.mapIndex);
+    this.warpIn();
 
     for (let i = 1; i < DEBUG.level; i++) {
       this.run.level++;
@@ -472,12 +474,22 @@ export class GameScene extends Phaser.Scene {
     if (saveStore.data.settings.shake) this.cameras.main.shake(ms, intensity);
   }
 
+  /** The hero arrives through a warp portal: blue rings on the ground and a burst of light. */
+  private warpIn(): void {
+    const { x, y } = this.player;
+    for (let i = 0; i < 3; i++) this.time.delayedCall(i * 140, () => this.fx.ring(x, y + 30, 150 + i * 40, 0x7fc8ff, 'ring', 3, 520));
+    this.fx.glow(x, y, 40, 220, 0x9fd8ff, 0.5, 0.6);
+    this.fx.sparkle(x, y - 40, 10, 0xd8f0ff);
+    audio.sfx('zap', 0.5);
+  }
+
   /** A golden burst and a breath of slow motion before the upgrade cards open. */
   private levelUpBurst(): void {
     const { x, y } = this.player;
     this.fx.glow(x, y, 80, 420, 0xffd36b, 0.4);
     this.fx.ring(x, y, 300, 0xffcc33);
     this.fx.sparkle(x, y - 20, 12, 0xffe9a3);
+    this.fx.skillCall(x, y - 150, 'Base Lv Up', '#ffd34d', '!');
     this.slowMo(0.25, 0.4);
     this.player.cheer();
     this.levelUpWait = 0.4;
@@ -549,7 +561,7 @@ export class GameScene extends Phaser.Scene {
     const a = Math.PI / 2 + (this.rng() - 0.5) * 0.6;
     this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, hp, this.angryFromStart(k));
     audio.sfx('boss_warning');
-    this.events.emit('boss', def.name);
+    this.events.emit('boss', def.name, false);
   }
 
   /** Late bosses and leaders (the third on) come in already enraged; with the Tyrant curse, all of them do. */
@@ -570,7 +582,7 @@ export class GameScene extends Phaser.Scene {
     const a = Math.PI / 2 + (this.rng() - 0.5) * 0.6;
     this.run.boss = this.enemies.spawnBoss(def.id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, hp, this.angryFromStart(k));
     audio.sfx('boss_warning');
-    this.events.emit('boss', def.name);
+    this.events.emit('boss', def.name, true);
     // The boss at 15:00 is the last one: beat it and the stage is cleared.
     if (this.run.time >= FINAL_TIME - 1 && !this.run.finalBoss) {
       this.run.finalBoss = this.run.boss;
@@ -750,13 +762,21 @@ export class GameScene extends Phaser.Scene {
   /** The HUD's dash button (or Space): a burst the way the hero is steering. */
   dash(): void {
     if (this.modalOpen || this.run.ended) return;
-    this.abilities.dash(this.steer.x, this.steer.y);
+    if (this.abilities.dash(this.steer.x, this.steer.y)) this.callSkill(ULTIMATES[this.hero.id].dash);
+  }
+
+  /** Calls a skill's name out over the hero's head. */
+  private callSkill(name: string, color?: string): void {
+    this.fx.skillCall(this.player.x, this.player.y - 150, name, color);
   }
 
   /** The HUD's ultimate button (or E), once it is charged. */
   ultimate(): void {
     if (this.modalOpen || this.run.ended) return;
-    if (this.abilities.ultimate()) this.player.cheer();
+    if (this.abilities.ultimate()) {
+      this.player.cheer();
+      this.callSkill(ULTIMATES[this.hero.id].name, '#ffd34d');
+    }
   }
 
   /** The autopilot fires the ultimate as soon as it can, and dashes when a monster gets close. */
@@ -809,6 +829,8 @@ export class GameScene extends Phaser.Scene {
       run.blessings.maxHp += MAXED.tough;
       this.player.heal(run.stats.maxHp * MAXED.tough);
     } else applyChoice(run.inventory, choice);
+    if (choice.kind === 'weapon' && choice.level === 1) this.callSkill(WEAPONS[choice.id].name);
+    if (choice.kind === 'talent') this.callSkill(talentDef(choice.id).name, '#9fe8ff');
     this.refreshStats();
   }
 
@@ -923,6 +945,7 @@ export class GameScene extends Phaser.Scene {
     if (evolvable.length) {
       reward = { kind: 'evolution', evolution: evolve(inv, evolvable[0])! };
       this.run.evolutions++;
+      this.callSkill(EVOLUTIONS[reward.evolution].name, '#ffd34d');
     } else {
       const count = 1 + (this.rng() < 0.6 ? 1 : 0) + (this.rng() < 0.3 ? 1 : 0) + (this.relics.has('ogre') ? 1 : 0);
       const choices = rollChoices(inv, this.rng, 3)
