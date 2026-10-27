@@ -43,6 +43,39 @@ test('autopilot survives a minute without errors', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('every class plays: its own start skill, kills, the dash and the ultimate, no errors', async ({ page }) => {
+  type G = {
+    scene: {
+      getScene(k: string): {
+        run?: { time: number; kills: number; inventory: { weapons: { id: string }[] } };
+        abilities?: { energy: number; dashWait: number };
+        dash(): void;
+        ultimate(): void;
+      };
+    };
+  };
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  for (const [hero, start] of [['swordman', 'slash'], ['archer', 'bow'], ['mage', 'bolt']]) {
+    await page.goto(`/?autostart&bot&speed=8&seed=7&god&hero=${hero}`);
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __game?: G }).__game?.scene.getScene('Game')?.run?.time ?? 0), { timeout: 60_000, intervals: [1000] })
+      .toBeGreaterThan(20);
+    const r = await page.evaluate(() => {
+      const g = (window as unknown as { __game: G }).__game.scene.getScene('Game');
+      g.abilities!.energy = 1e4;
+      g.ultimate();
+      g.abilities!.dashWait = 0;
+      g.dash();
+      return { kills: g.run!.kills, first: g.run!.inventory.weapons[0].id };
+    });
+    expect(r.first, hero).toBe(start);
+    expect(r.kills, hero).toBeGreaterThan(5);
+    await page.waitForTimeout(1500);
+  }
+  expect(errors).toEqual([]);
+});
+
 test('boss appears at 5:00', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));

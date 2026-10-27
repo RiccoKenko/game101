@@ -1,4 +1,4 @@
-import { type WeaponId } from './weapons';
+import { WEAPON_IDS, type WeaponId } from './weapons';
 
 export type CharacterId = 'swordman' | 'archer' | 'mage';
 
@@ -104,6 +104,11 @@ export const CHARACTERS: CharacterDef[] = [
 ];
 
 export const CHARACTER_IDS = CHARACTERS.map((c) => c.id);
+
+/** Every skill this class doesn't learn: its level-up cards never offer them. */
+export function otherSkills(c: CharacterDef): WeaponId[] {
+  return WEAPON_IDS.filter((id) => !c.skills.includes(id));
+}
 
 export function characterDef(id: CharacterId): CharacterDef {
   return CHARACTERS.find((c) => c.id === id) ?? CHARACTERS.find((c) => c.id === 'archer')!;

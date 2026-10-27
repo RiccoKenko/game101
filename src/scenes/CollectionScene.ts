@@ -401,6 +401,7 @@ export class CollectionScene extends Phaser.Scene {
     if (this.textures.exists(key)) {
       const img = this.keep(this.add.image(x0 + 130, top + h - 18, key).setOrigin(0.5, 1));
       img.setScale(Math.min((h - 40) / img.height, 240 / img.width));
+      if (c.tint) img.setTint(c.tint);
     }
     const tx = x0 + 270;
     const tw = x0 + w - 28 - tx;

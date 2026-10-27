@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHARACTERS, characterDef } from '../../src/config/characters';
+import { CHARACTERS, characterDef, otherSkills } from '../../src/config/characters';
 import { BOSSES, ENEMIES } from '../../src/config/enemies';
 import { MAPS } from '../../src/config/maps';
 import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNES, WEAPONS, WEAPON_IDS } from '../../src/config/weapons';
@@ -94,6 +94,41 @@ describe('characters', () => {
       if (cards[0]) applyChoice(inv, cards[0]);
     }
     expect(new Set(inv.talents).size).toBe(inv.talents.length);
+  });
+
+  it('each class has seven skills of its own, starting with its start skill', () => {
+    const all = CHARACTERS.flatMap((c) => c.skills);
+    expect(new Set(all).size).toBe(all.length);
+    for (const c of CHARACTERS) {
+      expect(c.skills).toHaveLength(7);
+      expect(c.skills[0]).toBe(c.start);
+      for (const id of c.skills) expect(WEAPONS[id].evolution, id).toBeDefined();
+      expect(otherSkills(c).some((id) => c.skills.includes(id))).toBe(false);
+      expect(otherSkills(c).length + c.skills.length).toBe(WEAPON_IDS.length);
+    }
+  });
+
+  it('level-up cards only ever offer the class\'s own skills', () => {
+    for (const c of CHARACTERS) {
+      const inv = newInventory(c.start, otherSkills(c).map((id) => `weapon:${id}`));
+      for (let i = 0; i < 40; i++) {
+        for (const card of rollChoices(inv, mulberry32(i), 4)) {
+          if (card.kind === 'weapon') expect(c.skills, `${c.id} offered ${card.id}`).toContain(card.id);
+        }
+      }
+    }
+  });
+
+  it('the Swordman is the sturdy one: more HP and armor; his Sword Mastery and Endure stack on', () => {
+    const shop = defaultSave().shop;
+    const sword = characterDef('swordman');
+    const st = computeStats(shop, {}, sword);
+    expect(st.maxHp).toBe(130);
+    expect(st.armor).toBe(computeStats(shop, {}).armor + 1);
+    const trained = computeStats(shop, {}, sword, ['swordmastery', 'endure', 'vitality']);
+    expect(trained.damageMult).toBeCloseTo(st.damageMult + 0.2);
+    expect(trained.armor).toBe(st.armor + 2);
+    expect(trained.maxHp).toBe(Math.round(130 * 1.3));
   });
 
   it('every hero is open to play; old saves keep the picked hero', () => {

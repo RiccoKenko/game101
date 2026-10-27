@@ -19,8 +19,37 @@
     - สร้างใหม่: `node scripts/art/build-art-pack.mjs <scratchpad>/rr/ricco-rush-art-pack.html` แล้ว publish ทับลิงก์นี้ (session ใหม่ต้อง `action: read` ก่อน)
   - **ภาพที่เจ้านายแปะในแชต:** อยู่ที่ `/root/.claude/uploads/<session>/*.png` ขนาดเต็ม → คัดลอกไป `art/incoming/rr/<ห้อง>_<ลำดับ>.png`
     - Gemini มีลายน้ำมุมขวาล่าง ต้องลบก่อนตัด
-- **เกมเดิม:** เก็บไว้ที่ git tag `v11-little-archer`
+- **เกมเดิม:** commit `b94b926` (สร้าง tag `v11-little-archer` ในเครื่องได้ แต่ push tag ไม่ได้ เพราะ proxy ให้ push เฉพาะ branch นี้ (403))
   - ลิงก์หลัก little-archer.vercel.app ยังเป็น v11 จนกว่าเจ้านายจะสั่ง
+- **งานโค้ดที่ทำแล้ว (ใช้ภาพเดิมไปก่อน)**
+  - **ชื่อและเซฟ:** ชื่อ Ricco Rush, เซฟคีย์ใหม่ `ricco-rush-save-v1` (เซฟเก่าไม่ถูกลบ)
+  - **Swordman** (`config/characters.ts`)
+    - ค่าพลัง: HP ×1.3, เกราะ +1, `melee: true`
+    - ภาพชั่วคราว: ยืมชีต `hero` ย้อมสี `tint` (Player/Menu ใส่สีให้เอง)
+    - สกิลใหม่ `bash` ใน `Weapons.bash()`: ฟาดเป้าใกล้สุด + มอนรอบ ๆ แล้วมึน (`Enemies.stun`, ตัวมอนเป็นสีเหลือง) วิวัฒนาการเป็น `aurablade`
+    - ท่าไม้ตาย Berserk: `Player.berserk`, ดาเมจ ×2 ใน `Enemies.damage` และฟันวนรอบตัว (`Abilities.sweep`)
+    - พุ่ง Shield Charge: `Abilities.shieldCharge` ชนแล้วดันมอนออก
+  - **สกิลเฉพาะอาชีพ:** `CharacterDef.skills` อาชีพละ 7 สกิล อาชีพอื่นเลือกไม่ได้ (`otherSkills` → `Inventory.banned`)
+    - เปลี่ยนแค่ชื่อที่แสดง (id เดิม)
+    - ตาราง สกิล → กลไก → สกิลอาชีพ 2 อยู่ใน brief
+    - `turret` ไม่มีอาชีพไหนใช้
+  - **ชื่อแบบ RO:**
+    - รูน → การ์ดมอน
+    - ไอเทมเสริม → STR AGI VIT INT DEX LUK + ของ 10 ชิ้น
+    - เครื่องราง → MVP Card
+    - Mastery → Job Lv
+    - อุปกรณ์ → Headgear / Armor / Garment / Shoes และแสดงเลเวลเป็นตีบวก +N (`refine`)
+    - มอน แมพ และบอส ใช้ชื่อใหม่ทั้งหมด
+  - **ปลดล็อก:** แต่ละอาชีพเริ่มมีสกิลเปิด 4 อัน อีก 3 อันปลดตามแมพ (มี unit test)
+  - **ความรู้สึกแบบ RO:**
+    - ชื่อสกิลเด้งเหนือหัว (`Effects.skillCall`)
+    - ป้าย "MVP!" ตอนบอส
+    - HUD แสดง BASE Lv
+    - "Base Lv Up!" ตอนเลเวลอัป
+    - วงวาร์ปตอนเริ่มรอบ
+    - ยาแดงแทนเนื้อ (เอา `meat` ออกจาก manifest แล้ววาด SVG ขวดยา)
+  - **บอท:** หากเป็นอาชีพประชิด บอทจะเดินเข้าหามอน (`botSteer(..., melee)`)
+  - **ยังไม่ทำ:** โทนหน้าต่าง UI แบบ RO (ฟ้าเทา-ขาว) รอทำพร้อมภาพจริง
 - **ลำดับงาน**
   1. ✅ design bible + Art Pack
   2. เจ้านายวาดห้อง 1 ภาพ 1-3 (หน้าตาหลัก 3 อาชีพ) → ผมตรวจ

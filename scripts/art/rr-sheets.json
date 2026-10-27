@@ -1,0 +1,911 @@
+{
+  "_note": "Ricco Rush pictures from Gemini (art/incoming/rr/<chat>_<n>.png, see docs/art/RICCO_RUSH_BRIEF.md). Keys reuse the texture each picture replaces; new keys (fx_*, fence, cub_0, ...) still need wiring in code.",
+  "2_1": {
+    "tile": {
+      "key": "ground_meadow",
+      "size": 512
+    }
+  },
+  "2_2": {
+    "keys": [
+      "tree",
+      "bush",
+      "rock",
+      "flowers",
+      "fence",
+      "sign"
+    ],
+    "sizes": {
+      "tree": [
+        210,
+        260
+      ],
+      "bush": [
+        124,
+        96
+      ],
+      "rock": [
+        100,
+        80
+      ],
+      "flowers": [
+        88,
+        60
+      ],
+      "fence": [
+        150,
+        90
+      ],
+      "sign": [
+        90,
+        120
+      ]
+    },
+    "watermark": 0.06
+  },
+  "2_3": {
+    "keys": [
+      "slime_0",
+      "bat_0",
+      "mushroom_0",
+      "puff_0",
+      "puff_small_0",
+      "bee_0"
+    ],
+    "sizes": {
+      "slime_0": [
+        108,
+        92
+      ],
+      "bat_0": [
+        124,
+        96
+      ],
+      "mushroom_0": [
+        104,
+        120
+      ],
+      "puff_0": [
+        104,
+        96
+      ],
+      "puff_small_0": [
+        64,
+        60
+      ],
+      "bee_0": [
+        112,
+        96
+      ]
+    },
+    "watermark": 0.06
+  },
+  "2_4": {
+    "keys": [
+      "boss_boar",
+      "boss_slime"
+    ],
+    "sizes": {
+      "boss_boar": [
+        300,
+        240
+      ],
+      "boss_slime": [
+        340,
+        300
+      ]
+    },
+    "watermark": 0.06
+  },
+  "2_5": {
+    "grid": [
+      4,
+      4
+    ],
+    "watermark": 0.06,
+    "keys": [
+      "arrow",
+      "fx_charge_arrow",
+      "fx_sword_wave",
+      "fx_lance",
+      "fx_soul",
+      "fx_fire_bolt",
+      "fx_cold_bolt",
+      "fx_fireball",
+      "fx_flame_pillar",
+      "fx_ice_crystals",
+      "meteor",
+      "fx_falcon",
+      "fx_snare",
+      "fx_mine",
+      "fireball",
+      "fx_ghostfire"
+    ],
+    "sizes": {
+      "arrow": [
+        74,
+        22
+      ],
+      "fx_charge_arrow": [
+        96,
+        40
+      ],
+      "fx_sword_wave": [
+        110,
+        200
+      ],
+      "fx_lance": [
+        160,
+        40
+      ],
+      "fx_soul": [
+        56,
+        40
+      ],
+      "fx_fire_bolt": [
+        90,
+        36
+      ],
+      "fx_cold_bolt": [
+        80,
+        26
+      ],
+      "fx_fireball": [
+        70,
+        70
+      ],
+      "fx_flame_pillar": [
+        80,
+        120
+      ],
+      "fx_ice_crystals": [
+        110,
+        90
+      ],
+      "meteor": [
+        100,
+        60
+      ],
+      "fx_falcon": [
+        90,
+        70
+      ],
+      "fx_snare": [
+        80,
+        60
+      ],
+      "fx_mine": [
+        64,
+        48
+      ],
+      "fireball": [
+        46,
+        46
+      ],
+      "fx_ghostfire": [
+        48,
+        48
+      ]
+    }
+  },
+  "2_6": {
+    "grid": [
+      4,
+      3
+    ],
+    "watermark": 0.06,
+    "keys": [
+      "gem_s",
+      "gem_m",
+      "gem_l",
+      "coin",
+      "meat",
+      "potion_orange",
+      "potion_white",
+      "magnet",
+      "chest",
+      "card_drop",
+      "warp",
+      "shrine"
+    ],
+    "sizes": {
+      "gem_s": [
+        28,
+        34
+      ],
+      "gem_m": [
+        34,
+        42
+      ],
+      "gem_l": [
+        42,
+        54
+      ],
+      "coin": [
+        38,
+        38
+      ],
+      "magnet": [
+        52,
+        52
+      ],
+      "chest": [
+        96,
+        84
+      ],
+      "shrine": [
+        170,
+        170
+      ],
+      "meat": [
+        40,
+        50
+      ],
+      "potion_orange": [
+        40,
+        50
+      ],
+      "potion_white": [
+        46,
+        58
+      ],
+      "card_drop": [
+        44,
+        58
+      ],
+      "warp": [
+        220,
+        120
+      ]
+    }
+  },
+  "3_1": {
+    "tile": {
+      "key": "ground_graveyard",
+      "size": 512
+    }
+  },
+  "3_2": {
+    "keys": [
+      "dead_tree",
+      "grave",
+      "grave_cross",
+      "shrine_small",
+      "bones",
+      "rock_moss"
+    ],
+    "sizes": {
+      "dead_tree": [
+        180,
+        280
+      ],
+      "grave": [
+        90,
+        110
+      ],
+      "grave_cross": [
+        80,
+        150
+      ],
+      "shrine_small": [
+        100,
+        140
+      ],
+      "bones": [
+        100,
+        80
+      ],
+      "rock_moss": [
+        110,
+        80
+      ]
+    },
+    "watermark": 0.06
+  },
+  "3_3": {
+    "keys": [
+      "skeleton_0",
+      "ghost_0",
+      "zombie_0",
+      "pumpkin_0",
+      "wraith_0",
+      "cub_0"
+    ],
+    "sizes": {
+      "skeleton_0": [
+        108,
+        136
+      ],
+      "ghost_0": [
+        108,
+        124
+      ],
+      "zombie_0": [
+        112,
+        140
+      ],
+      "pumpkin_0": [
+        100,
+        100
+      ],
+      "wraith_0": [
+        116,
+        128
+      ],
+      "cub_0": [
+        84,
+        80
+      ]
+    },
+    "watermark": 0.06
+  },
+  "3_4": {
+    "keys": [
+      "boss_captain",
+      "boss_lich"
+    ],
+    "sizes": {
+      "boss_captain": [
+        280,
+        300
+      ],
+      "boss_lich": [
+        300,
+        370
+      ]
+    },
+    "watermark": 0.06
+  },
+  "4_1": {
+    "tile": {
+      "key": "ground_castle",
+      "size": 512
+    }
+  },
+  "4_2": {
+    "keys": [
+      "pillar",
+      "brazier",
+      "pillar_broken",
+      "statue",
+      "rubble",
+      "pots"
+    ],
+    "sizes": {
+      "pillar": [
+        170,
+        280
+      ],
+      "brazier": [
+        90,
+        110
+      ],
+      "pillar_broken": [
+        112,
+        136
+      ],
+      "statue": [
+        150,
+        110
+      ],
+      "rubble": [
+        100,
+        70
+      ],
+      "pots": [
+        110,
+        90
+      ]
+    },
+    "watermark": 0.06
+  },
+  "4_3": {
+    "keys": [
+      "imp_0",
+      "knight_0",
+      "gargoyle_0",
+      "mimic_0",
+      "wisp_0",
+      "goblin_0"
+    ],
+    "sizes": {
+      "imp_0": [
+        108,
+        116
+      ],
+      "knight_0": [
+        128,
+        152
+      ],
+      "gargoyle_0": [
+        136,
+        124
+      ],
+      "mimic_0": [
+        124,
+        112
+      ],
+      "wisp_0": [
+        104,
+        100
+      ],
+      "goblin_0": [
+        120,
+        120
+      ]
+    },
+    "watermark": 0.06
+  },
+  "4_4": {
+    "keys": [
+      "boss_ogre",
+      "boss_demon"
+    ],
+    "sizes": {
+      "boss_ogre": [
+        330,
+        340
+      ],
+      "boss_demon": [
+        390,
+        390
+      ]
+    },
+    "watermark": 0.06
+  },
+  "5_1": {
+    "grid": [
+      4,
+      4
+    ],
+    "keys": [
+      "icon_slash",
+      "icon_bash",
+      "icon_quake",
+      "icon_aura",
+      "icon_spear",
+      "icon_ward",
+      "icon_axes",
+      "icon_dash_swordman",
+      "icon_flameslash",
+      "icon_aurablade",
+      "icon_earthquake",
+      "icon_sanctuary",
+      "icon_lance",
+      "icon_aegis",
+      "icon_titanaxes",
+      "icon_berserk"
+    ],
+    "sizes": {
+      "icon_slash": [
+        128,
+        128
+      ],
+      "icon_bash": [
+        128,
+        128
+      ],
+      "icon_quake": [
+        128,
+        128
+      ],
+      "icon_aura": [
+        128,
+        128
+      ],
+      "icon_spear": [
+        128,
+        128
+      ],
+      "icon_ward": [
+        128,
+        128
+      ],
+      "icon_axes": [
+        128,
+        128
+      ],
+      "icon_dash_swordman": [
+        128,
+        128
+      ],
+      "icon_flameslash": [
+        128,
+        128
+      ],
+      "icon_aurablade": [
+        128,
+        128
+      ],
+      "icon_earthquake": [
+        128,
+        128
+      ],
+      "icon_sanctuary": [
+        128,
+        128
+      ],
+      "icon_lance": [
+        128,
+        128
+      ],
+      "icon_aegis": [
+        128,
+        128
+      ],
+      "icon_titanaxes": [
+        128,
+        128
+      ],
+      "icon_berserk": [
+        128,
+        128
+      ]
+    },
+    "watermark": 0.06
+  },
+  "5_2": {
+    "grid": [
+      4,
+      4
+    ],
+    "keys": [
+      "icon_bow",
+      "icon_daggers",
+      "icon_flask",
+      "icon_boomerang",
+      "icon_twister",
+      "icon_wisps",
+      "icon_traps",
+      "icon_dash_archer",
+      "icon_stormbow",
+      "icon_blades",
+      "icon_plague",
+      "icon_twinmoon",
+      "icon_glacier",
+      "icon_soulharvest",
+      "icon_cyclone",
+      "icon_arrowstorm"
+    ],
+    "sizes": {
+      "icon_bow": [
+        128,
+        128
+      ],
+      "icon_daggers": [
+        128,
+        128
+      ],
+      "icon_flask": [
+        128,
+        128
+      ],
+      "icon_boomerang": [
+        128,
+        128
+      ],
+      "icon_twister": [
+        128,
+        128
+      ],
+      "icon_wisps": [
+        128,
+        128
+      ],
+      "icon_traps": [
+        128,
+        128
+      ],
+      "icon_dash_archer": [
+        128,
+        128
+      ],
+      "icon_stormbow": [
+        128,
+        128
+      ],
+      "icon_blades": [
+        128,
+        128
+      ],
+      "icon_plague": [
+        128,
+        128
+      ],
+      "icon_twinmoon": [
+        128,
+        128
+      ],
+      "icon_glacier": [
+        128,
+        128
+      ],
+      "icon_soulharvest": [
+        128,
+        128
+      ],
+      "icon_cyclone": [
+        128,
+        128
+      ],
+      "icon_arrowstorm": [
+        128,
+        128
+      ]
+    },
+    "watermark": 0.06
+  },
+  "5_3": {
+    "grid": [
+      4,
+      4
+    ],
+    "keys": [
+      "icon_bolt",
+      "icon_lightning",
+      "icon_frost",
+      "icon_shuriken",
+      "icon_bomb",
+      "icon_firetrail",
+      "icon_beam",
+      "icon_dash_mage",
+      "icon_starfall",
+      "icon_thunder",
+      "icon_blizzard",
+      "icon_starstorm",
+      "icon_meteor",
+      "icon_inferno",
+      "icon_rainbow",
+      "icon_meteorstorm"
+    ],
+    "sizes": {
+      "icon_bolt": [
+        128,
+        128
+      ],
+      "icon_lightning": [
+        128,
+        128
+      ],
+      "icon_frost": [
+        128,
+        128
+      ],
+      "icon_shuriken": [
+        128,
+        128
+      ],
+      "icon_bomb": [
+        128,
+        128
+      ],
+      "icon_firetrail": [
+        128,
+        128
+      ],
+      "icon_beam": [
+        128,
+        128
+      ],
+      "icon_dash_mage": [
+        128,
+        128
+      ],
+      "icon_starfall": [
+        128,
+        128
+      ],
+      "icon_thunder": [
+        128,
+        128
+      ],
+      "icon_blizzard": [
+        128,
+        128
+      ],
+      "icon_starstorm": [
+        128,
+        128
+      ],
+      "icon_meteor": [
+        128,
+        128
+      ],
+      "icon_inferno": [
+        128,
+        128
+      ],
+      "icon_rainbow": [
+        128,
+        128
+      ],
+      "icon_meteorstorm": [
+        128,
+        128
+      ]
+    },
+    "watermark": 0.06
+  },
+  "5_4": {
+    "grid": [
+      4,
+      4
+    ],
+    "keys": [
+      "icon_powergem",
+      "icon_hourglass",
+      "icon_heart",
+      "icon_tome",
+      "icon_quiver",
+      "icon_clover",
+      "icon_boots",
+      "icon_magnet",
+      "icon_shield",
+      "icon_spring",
+      "icon_charm",
+      "icon_cap",
+      "icon_mask",
+      "icon_thorns",
+      "icon_ring",
+      "icon_feather"
+    ],
+    "sizes": {
+      "icon_powergem": [
+        128,
+        128
+      ],
+      "icon_hourglass": [
+        128,
+        128
+      ],
+      "icon_heart": [
+        128,
+        128
+      ],
+      "icon_tome": [
+        128,
+        128
+      ],
+      "icon_quiver": [
+        128,
+        128
+      ],
+      "icon_clover": [
+        128,
+        128
+      ],
+      "icon_boots": [
+        128,
+        128
+      ],
+      "icon_magnet": [
+        128,
+        128
+      ],
+      "icon_shield": [
+        128,
+        128
+      ],
+      "icon_spring": [
+        128,
+        128
+      ],
+      "icon_charm": [
+        128,
+        128
+      ],
+      "icon_cap": [
+        128,
+        128
+      ],
+      "icon_mask": [
+        128,
+        128
+      ],
+      "icon_thorns": [
+        128,
+        128
+      ],
+      "icon_ring": [
+        128,
+        128
+      ],
+      "icon_feather": [
+        128,
+        128
+      ]
+    },
+    "watermark": 0.06
+  },
+  "5_5": {
+    "grid": [
+      4,
+      4
+    ],
+    "keys": [
+      "gear_gloves",
+      "gear_bracers",
+      "gear_helm",
+      "gear_hat",
+      "gear_cloak",
+      "gear_robe",
+      "gear_boots",
+      "gear_boots_lucky",
+      "icon_gold",
+      "icon_quest",
+      "icon_book",
+      "icon_gearchest",
+      "icon_mvp",
+      "icon_cards",
+      "icon_joblv",
+      "icon_warp"
+    ],
+    "sizes": {
+      "gear_gloves": [
+        128,
+        128
+      ],
+      "gear_bracers": [
+        128,
+        128
+      ],
+      "gear_helm": [
+        128,
+        128
+      ],
+      "gear_hat": [
+        128,
+        128
+      ],
+      "gear_cloak": [
+        128,
+        128
+      ],
+      "gear_robe": [
+        128,
+        128
+      ],
+      "gear_boots": [
+        128,
+        128
+      ],
+      "gear_boots_lucky": [
+        128,
+        128
+      ],
+      "icon_gold": [
+        128,
+        128
+      ],
+      "icon_quest": [
+        128,
+        128
+      ],
+      "icon_book": [
+        128,
+        128
+      ],
+      "icon_gearchest": [
+        128,
+        128
+      ],
+      "icon_mvp": [
+        128,
+        128
+      ],
+      "icon_cards": [
+        128,
+        128
+      ],
+      "icon_joblv": [
+        128,
+        128
+      ],
+      "icon_warp": [
+        128,
+        128
+      ]
+    },
+    "watermark": 0.06
+  }
+}

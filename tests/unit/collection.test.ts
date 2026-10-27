@@ -46,6 +46,14 @@ describe('collection content', () => {
     for (const c of CHARACTERS) expect(UNLOCK_KEYS).not.toContain(`weapon:${c.start}`);
   });
 
+  it('each class starts with four skills open and three to unlock', () => {
+    const save = defaultSave();
+    for (const c of CHARACTERS) {
+      const open = c.skills.filter((id) => isUnlocked(save, { kind: 'weapon', id }));
+      expect(open, c.id).toHaveLength(4);
+    }
+  });
+
   it('every skill open from the start can evolve with things also open from the start', () => {
     const save = defaultSave();
     for (const id of CHARACTERS.flatMap((c) => c.skills)) {

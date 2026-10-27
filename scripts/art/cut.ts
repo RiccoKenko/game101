@@ -1,11 +1,15 @@
 /**
- * npm run art:cut [-- <sheet> ...]
+ * npm run art:cut [-- [--set rr] <sheet> ...]
  *
  * Cuts the painted sheets in art/incoming/mr/ into the game's textures: public/art/<key>.webp, sized in game
  * pixels, and lists every key in src/art/manifest.json (the boot scene loads those in place of the SVG art drawn
  * in code). Which parts each sheet holds, in reading order, and how big each one is in the game is set in
  * scripts/art/mr-sheets.json. A ground sheet (`tile`) becomes a seamless repeating tile instead.
  * For checking by eye: art/sliced/mr/<sheet>.check.png shows the results on grey.
+ *
+ * `--set rr` cuts the Ricco Rush pictures instead: art/incoming/rr/ with scripts/art/rr-sheets.json (checks in
+ * art/sliced/rr/). Those were painted in Gemini, which stamps a small sparkle in the bottom-right corner: a sheet
+ * with `watermark` clears that corner first.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -28,9 +32,12 @@ import {
 } from './slicer';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
-const IN = join(ROOT, 'art/incoming/mr');
+const args = process.argv.slice(2);
+const setAt = args.indexOf('--set');
+const SET = setAt >= 0 ? args.splice(setAt, 2)[1] : 'mr';
+const IN = join(ROOT, `art/incoming/${SET}`);
 const OUT = join(ROOT, 'public/art');
-const CHECK = join(ROOT, 'art/sliced/mr');
+const CHECK = join(ROOT, `art/sliced/${SET}`);
 const MANIFEST = join(ROOT, 'src/art/manifest.json');
 
 interface SheetConfig {
@@ -52,6 +59,8 @@ interface SheetConfig {
   tile?: { key: string; size: number };
   /** Parts drawn facing the wrong way (a projectile must point right): mirrored left to right. */
   flip?: string[];
+  /** Clear the bottom-right corner (this share of the picture's width, square) where Gemini puts its sparkle. */
+  watermark?: number;
 }
 
 async function load(file: string): Promise<RgbaImage> {
@@ -93,7 +102,12 @@ async function cutSheet(name: string, cfg: SheetConfig): Promise<string[]> {
   const removed = removeBackground(sheet, cfg.tolerance);
   let { image } = removed;
   if (cfg.spill && removed.background) image = unmixSpill(image, removed.background, cfg.spill.colour, 48, cfg.spill.everywhere);
-  for (const [x0, y0, w, h] of cfg.erase ?? [])
+  const erase = [...(cfg.erase ?? [])];
+  if (cfg.watermark) {
+    const s = Math.round(image.width * cfg.watermark);
+    erase.push([image.width - s, image.height - s, s, s]);
+  }
+  for (const [x0, y0, w, h] of erase)
     for (let y = y0; y < y0 + h; y++) image.data.fill(0, (y * image.width + x0) * 4, (y * image.width + x0 + w) * 4);
   if (cfg.despeck) image = despeck(image, cfg.despeck);
   const keys = cfg.keys ?? [];
@@ -136,14 +150,14 @@ async function cutSheet(name: string, cfg: SheetConfig): Promise<string[]> {
 }
 
 async function main() {
-  const config = JSON.parse(readFileSync(join(ROOT, 'scripts/art/mr-sheets.json'), 'utf8')) as Record<string, SheetConfig>;
-  const only = process.argv.slice(2);
+  const config = JSON.parse(readFileSync(join(ROOT, `scripts/art/${SET}-sheets.json`), 'utf8')) as Record<string, SheetConfig>;
+  const only = args;
   mkdirSync(OUT, { recursive: true });
   mkdirSync(CHECK, { recursive: true });
   const manifest = existsSync(MANIFEST) ? (JSON.parse(readFileSync(MANIFEST, 'utf8')) as { keys: string[] }) : { keys: [] };
   const keys = new Set(manifest.keys);
   for (const [name, cfg] of Object.entries(config)) {
-    if (only.length && !only.includes(name)) continue;
+    if (name.startsWith('_') || (only.length && !only.includes(name))) continue;
     for (const key of await cutSheet(name, cfg)) keys.add(key);
   }
   writeFileSync(MANIFEST, JSON.stringify({ keys: [...keys].sort() }, null, 2) + '\n');

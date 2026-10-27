@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
 import { ULTIMATES } from '../config/abilities';
-import { characterDef, type CharacterDef, type CharacterId } from '../config/characters';
+import { characterDef, otherSkills, type CharacterDef, type CharacterId } from '../config/characters';
 import { CURSE, CURSE_IDS, CURSE_UNLOCK_MAPS, HEAT_GOLD, heatOf, type CurseId } from '../config/curses';
 import { DIFFICULTIES, maxDifficulty, type DifficultyDef } from '../config/difficulty';
 import { UNLOCKS, unlockKey, type MonsterId } from '../config/collection';
@@ -15,7 +15,7 @@ import { TALENT, TALENT_LEVELS, talentDef, type TalentId } from '../config/talen
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
-import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPON_IDS, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
+import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
 import { addItem, gearBonus, runDrops, type GearBonus } from '../core/gear';
 import { claimUnlocks, lockedKeys, lockedTalents, masteryPerks, masteryState, masteryXp, reachedUnlocks, records } from '../core/collection';
 import { DEBUG } from '../core/debug';
@@ -239,7 +239,7 @@ export class GameScene extends Phaser.Scene {
     // Each class only learns its own skills: the rest are never offered. Nor is anything still locked: items not yet
     // unlocked in the Collection, talents not yet earned with Job Lv.
     const inventory = newInventory(hero.start, [
-      ...WEAPON_IDS.filter((id) => !hero.skills.includes(id)).map((id) => `weapon:${id}`),
+      ...otherSkills(hero).map((id) => `weapon:${id}`),
       ...(DEBUG.unlock ? [] : [...lockedKeys(save), ...lockedTalents(hero.id, this.mastery).map((t) => `talent:${t}`)]),
     ]);
     for (const g of DEBUG.give) {
