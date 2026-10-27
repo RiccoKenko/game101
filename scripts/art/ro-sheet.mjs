@@ -25,18 +25,33 @@ const DIRS = ['s', 'se', 'e', 'ne', 'n'];
 
 /**
  * Heroes: which sheet and column each pose comes from, and the animations made of them (a frame list may repeat a
- * pose to hold it). Every animation exists once per facing.
+ * pose to hold it). Every animation exists once per facing, its row in the sheet, unless `sides` names another
+ * sheet's row for that facing.
  */
 const HEROES = {
   archer: {
     // archer_walk.png (the first walk) was redrawn as archer_walk2.png: its legs barely moved.
     sheets: { walk: 'archer_walk2.png', walkshoot: 'archer_walkshoot.png', attack: 'archer_attack.png', misc: 'archer_misc.png' },
+    // The front shots redrawn aiming down the picture (the attack and walk-shoot sheets aim sideways there):
+    // rows standing and walking toward the viewer, then standing and walking down-right.
+    // `like`: drawn bigger than the others, so it is scaled to match that sheet's typical height.
+    extra: { front: { file: 'archer_frontshot.png', rows: 4, like: 'attack' } },
     animations: {
       idle: { fps: 2, loop: true, frames: [['misc', 0]] },
       run: { fps: 9, loop: true, frames: [['walk', 0], ['walk', 1], ['walk', 2], ['walk', 3]] },
       // Walking while the bow keeps firing: the legs match run frame for frame.
-      runshoot: { fps: 9, loop: true, frames: [['walkshoot', 0], ['walkshoot', 1], ['walkshoot', 2], ['walkshoot', 3]] },
-      shoot: { fps: 14, loop: false, frames: [['attack', 0], ['attack', 1], ['attack', 2], ['attack', 3]] },
+      runshoot: {
+        fps: 9,
+        loop: true,
+        frames: [['walkshoot', 0], ['walkshoot', 1], ['walkshoot', 2], ['walkshoot', 3]],
+        sides: { s: ['front', 1], se: ['front', 3] },
+      },
+      shoot: {
+        fps: 14,
+        loop: false,
+        frames: [['attack', 0], ['attack', 1], ['attack', 2], ['attack', 3]],
+        sides: { s: ['front', 0], se: ['front', 2] },
+      },
       hurt: { fps: 8, loop: false, frames: [['misc', 1], ['misc', 1], ['misc', 1]] },
       ko: { fps: 6, loop: false, frames: [['misc', 1], ['misc', 2], ['misc', 2]] },
       cheer: { fps: 6, loop: false, frames: [['misc', 3], ['misc', 0], ['misc', 3], ['misc', 3]] },
@@ -232,16 +247,20 @@ async function buildHero(id, preview) {
   const h = HEROES[id];
   const sheets = {};
   for (const [name, file] of Object.entries(h.sheets)) sheets[name] = poses(await keyed(join(IN, file)), 4, 5);
+  for (const [name, x] of Object.entries(h.extra ?? {})) sheets[name] = poses(await keyed(join(IN, x.file)), 4, x.rows);
   const pose = (sheet, col, row) => sheets[sheet][row][col];
   // How tall each sheet draws her (median over its poses), to check the sheets agree on her size.
+  const median = {};
   for (const [name, grid] of Object.entries(sheets)) {
     const hs = grid.flat().map((p) => {
       const f = feetOf(p);
       return f.y - f.top;
     });
     hs.sort((a, b) => a - b);
-    console.log(`  ${name}: median height ${hs[Math.floor(hs.length / 2)]} px`);
+    median[name] = hs[Math.floor(hs.length / 2)];
+    console.log(`  ${name}: median height ${median[name]} px`);
   }
+  const scaleOf = (sheet) => (h.extra?.[sheet]?.like ? median[h.extra[sheet].like] / median[sheet] : 1);
   // Scale: the standing front pose ends up `BODY` px tall (the game shows heroes 150 px tall).
   const BODY = 176;
   const stand = feetOf(pose(...h.stand));
@@ -253,7 +272,12 @@ async function buildHero(id, preview) {
   for (const [name, a] of Object.entries(h.animations))
     for (const [row, dir] of DIRS.entries()) {
       meta.animations[`${name}_${dir}`] = { start: frames.length, count: a.frames.length, fps: a.fps, loop: a.loop };
-      for (const [sheet, col] of a.frames) frames.push(await place(pose(sheet, col, row), k, FW, FH, FEET));
+      // `sides` swaps in another sheet's row for some sides (same columns).
+      const side = a.sides?.[dir];
+      for (const [sheet, col] of a.frames) {
+        const [from, r] = side ? [side[0], side[1]] : [sheet, row];
+        frames.push(await place(pose(from, col, r), k * scaleOf(from), FW, FH, FEET));
+      }
     }
   const cols = 8;
   const rows = Math.ceil(frames.length / cols);

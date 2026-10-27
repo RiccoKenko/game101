@@ -1,0 +1,29 @@
+Draw ONE character sprite sheet for an original 2D fantasy online RPG (a top-down action game). The look is the classic late-1990s / early-2000s Korean 2D online RPG character sprite: a small chibi-anime character about 2.5 to 3 heads tall, a cute anime face with large glossy eyes and a small mouth, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted earthy palette, light from the upper left, seen from slightly above (about 30 degrees), like hand-polished game sprites.
+
+REFERENCE: the attached image is her bow-shot sheet from the game. Match her design exactly: the same girl, face, hair, outfit, colours, bow, proportions, outline weight and shading, and the same size (about 280 px tall). Its front rows aim sideways, which is wrong: in this sheet the arrow must point DOWN the picture, at the viewer.
+
+CHARACTER (our own original design; exactly the same in every drawing):
+- "Archer", a cheerful teenage girl with chestnut red-brown hair tied in a high ponytail with a small white feather in the tie, short side bangs, green eyes.
+- A moss-green leather vest laced at the front over a cream shirt with short puffed sleeves; a brown leather belt with a small pouch; a short tan leather skirt over dark leggings; tall brown leather boots with folded cuffs.
+- A leather bracer on her left forearm and a fingerless glove on her right hand; a brown leather quiver with white-fletched arrows on her back (its strap crosses her chest).
+- A plain wooden longbow with small brass tips, carried in her left hand, held low and relaxed while she walks.
+
+SHEET LAYOUT (portrait 1024 x 1536):
+- A grid of 4 columns x 4 rows of equal cells. One full-body drawing per cell, centred in its cell, the foot that carries her weight on the same baseline near the bottom of every cell.
+- She shoots DOWN THE PICTURE (toward the viewer) in rows 1-2 and DOWN TO THE BOTTOM-RIGHT CORNER in rows 3-4. Draw it the way top-down games show a shot toward the camera: the bow tilted almost flat (turned on its side) and held low in front of her, her bow arm stretched downward, the arrow lying on the bow pointing down. In EVERY drawing of rows 1-2 the bow is flat and the arrow (when there is one) points STRAIGHT DOWN; in EVERY drawing of rows 3-4 it points DIAGONALLY DOWN TO THE BOTTOM-RIGHT. Never left, never level, never sideways.
+- The four COLUMNS of every row (her arms and bow):
+  Column 1: nocking: the flat bow low in front of her, an arrow laid on it pointing down, the string only half drawn.
+  Column 2: full draw: the flat bow pushed further down and out, the string pulled back up to her chest, the arrow pointing down, aiming.
+  Column 3: release: the string snapped straight, the arrow gone (do not draw the flying arrow), her string hand flung open beside her shoulder.
+  Column 4: follow-through: the flat bow still low in front, reaching back to her quiver for the next arrow.
+- Row 1: FACING THE VIEWER, standing still.
+- Row 2: FACING THE VIEWER and WALKING toward the viewer, with the same arms and bow as row 1, while the legs walk: column 1 left leg forward (the forward foot lower and bigger), column 2 legs together with the right knee raised, column 3 right leg forward, column 4 legs together with the left knee raised.
+- Row 3: a three-quarter front view turned toward the RIGHT side of the image, standing still.
+- Row 4: the same three-quarter front view, WALKING down and to the right, legs as in row 2.
+- The four frames of each row must look clearly different from each other, even at a small size.
+
+TECHNICAL:
+- Background: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink or purple inside the drawings.
+- No text, numbers, labels, grid lines, frames, borders, ground shadows, glows, motion lines, sparkles or watermarks.
+- Every drawing is complete (nothing cut off by its cell or the image edge) and separated from its neighbours by plain background.
+- Keep her design, colours, proportions and size identical in all 16 drawings and identical to the reference.
