@@ -24,6 +24,11 @@
     - ห้อง 1 เลิกหยุดตรวจหลังภาพ 3
     - เพดาน: บุคคลที่สามวัดได้ราว 10 ภาพต่อคำตอบ (Google ไม่ประกาศ) บัญชีฟรีราววันละ 20 ภาพ
   - Art Pack เวอร์ชัน 5
+  - **27 ต.ค. เครดิต Gemini หมด → ผมวาดตัวอย่างเองด้วยโค้ด** (`scripts/art/pixel/`: `engine.mjs` เครื่องวาดจากรูปทรง, `heroes.mjs` ตัวละคร, `sample.mjs` ภาพตัวอย่าง + หน้า preview)
+    - รอบแรกเป็น pixel art แตก ๆ (`art/samples/pixel_*.png`) เจ้านายบอก "pixel เกิน ดูเป็นเกมกาก" ขอแบบยุค 2000
+    - รอบสอง (`art/samples/smooth_*.png`): วาดละเอียดขึ้น 3 เท่า ลบรอยหยัก ไล่แสงเงานุ่ม เส้นขอบบาง ผมเป็นปอยแหลม (`taper`) ตามีประกาย แก้มแดง พื้นหญ้าทาสี
+    - สร้างใหม่: `node scripts/art/pixel/sample.mjs <scratchpad>/px2` แล้วคัดลอก `preview.html` ไป `<scratchpad>/px/preview.html` publish ทับ https://claude.ai/artifact/8m8QAvXQExpz17fr7Fv7Mo (เวอร์ชัน 2)
+    - รอเจ้านายเลือก: ผมวาดต่อแบบนี้ทั้งเกม หรือใช้เป็นภาพอ้างอิงให้ Gemini ตอนโควตาคืน
   - **หน้า Art Pack (Artifact):** https://claude.ai/artifact/TSRuyfHLoK59rLL62LiMNP มีปุ่ม Copy 5 อัน
     - สร้างใหม่: `node scripts/art/build-art-pack.mjs <scratchpad>/rr/ricco-rush-art-pack.html` แล้ว publish ทับลิงก์นี้ (session ใหม่ต้อง `action: read` ก่อน)
   - **ภาพที่เจ้านายแปะในแชต:** อยู่ที่ `/root/.claude/uploads/<session>/*.png` ขนาดเต็ม → คัดลอกไป `art/incoming/rr/<ห้อง>_<ลำดับ>.png`
