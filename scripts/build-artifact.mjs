@@ -30,7 +30,7 @@ const walk = (dir, rel) => {
   }
 };
 walk(join(process.cwd(), 'public/art'), 'art');
-const page = `<title>Little Archer: Monster Rush</title>
+const page = `<title>Ricco Rush</title>
 <meta name="theme-color" content="#1d1630">
 <style>
 :root { color-scheme: dark; }

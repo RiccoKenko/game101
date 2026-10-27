@@ -50,6 +50,20 @@
     - ยาแดงแทนเนื้อ (เอา `meat` ออกจาก manifest แล้ววาด SVG ขวดยา)
   - **บอท:** หากเป็นอาชีพประชิด บอทจะเดินเข้าหามอน (`botSteer(..., melee)`)
   - **ยังไม่ทำ:** โทนหน้าต่าง UI แบบ RO (ฟ้าเทา-ขาว) รอทำพร้อมภาพจริง
+  - **ตัดภาพชุดใหม่:** `npm run art:cut:rr` (อ่าน `art/incoming/rr/<ห้อง>_<ลำดับ>.png` ตาม `scripts/art/rr-sheets.json`)
+    - ภาพที่ใช้ชื่อ texture เดิมจะแทนที่ภาพเดิมได้ทันที
+    - key ใหม่ (`fx_*`, `fence`, `sign`, `cub_0`, `icon_bash`, `icon_berserk` ...) ต้องต่อเข้าโค้ดเอง
+  - **ทดสอบแล้ว (27 ต.ค.)**
+    - typecheck ผ่าน, unit 95 ข้อผ่าน, e2e 8 ข้อผ่าน (มีข้อใหม่ที่เล่นครบ 3 อาชีพ), build ผ่าน
+    - บอทหลบครึ่งความเร็ว (`skill=0.5`, Greenhill, seed 5, จำกัด 8:00) รอดครบ 8:00 และเลือดเต็มทุกอาชีพ ใกล้เคียง v10 (~5,000 ตัว)
+
+      | อาชีพ | ฆ่า (ตัว) | Base Lv |
+      |---|---|---|
+      | Swordman | 4,910 | 37 |
+      | Archer | 5,013 | 37 |
+      | Mage | 5,087 | 40 |
+  - **ลิงก์ทดสอบ:** Artifact เดิม https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH ตอนนี้เป็น **version 12 = Ricco Rush**
+    - สร้างไฟล์: `node scripts/build-artifact.mjs <scratchpad>/ricco-rush.html`
 - **ลำดับงาน**
   1. ✅ design bible + Art Pack
   2. เจ้านายวาดห้อง 1 ภาพ 1-3 (หน้าตาหลัก 3 อาชีพ) → ผมตรวจ
