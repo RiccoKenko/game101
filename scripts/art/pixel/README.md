@@ -1,9 +1,9 @@
 # Code-drawn art (Ricco Rush)
 
-The heroes and monsters are rendered from free 3D models (see `scripts/art/render3d/`); the map grounds,
-decorations, pickups and MVP card frames are drawn by code here, from simple shapes, in the look of a 2000s Korean online RPG: small,
-smooth sprites (anti-aliased, not blocky), soft light from the upper left, thin outlines in each colour's own dark
-tone, and muted earthy colours with a few warm accents. The game only borrows that era's look and systems: every
+The heroes and monsters are rendered from free 3D models (see `scripts/art/render3d/`). The map grounds,
+decorations, pickups and MVP card frames are drawn by code here, from simple shapes, in the look of a 2000s Korean
+online RPG: small, smooth sprites (anti-aliased, not blocky), soft light from the upper left, thin outlines in each
+colour's own dark tone, and muted earthy colours with a few warm accents. The game only borrows that era's look and systems: every
 character, monster, place and item is our own design. Never copy or name a real game's monsters, characters, towns,
 logos or items.
 
@@ -15,7 +15,6 @@ logos or items.
 - `build.mjs`: `node scripts/art/pixel/build.mjs [set ...] [--preview sheet.png] [--dry]` writes each key to
   `public/art/<key>.webp` (sprites trimmed to what was drawn) and lists it in `src/art/manifest.json`.
   `--dry --preview <png>` only draws a contact sheet to look at.
-- `sample.mjs`: the style sample page shown to the boss.
 
 ## Sizes
 - `new Sprite(w, h)` is `w` x `h` sprite pixels, written 3 times larger: one sprite pixel is 3 game pixels.
@@ -40,5 +39,5 @@ logos or items.
 
 ## Look
 - Faces: small dark eyes with a white glint, a soft blush, a tiny mouth (see `heroes.mjs` and `gummy.mjs`).
-- Draw anything that faces a way facing right or the viewer; the game mirrors it.
+- Draw anything with a front facing right or the viewer; the game mirrors it.
 - Stay in the palette's muted tones; save the bright colours (ruby, brass, leaf) for small accents.
