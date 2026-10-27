@@ -2,7 +2,36 @@
 
 > สรุปสำหรับเริ่มงานต่อในแชตหรือ session ใหม่: สถานะล่าสุด, ลิงก์, งานที่รอ, และสิ่งที่ต้องรู้ก่อนลงมือ
 
-## 📍 สถานะล่าสุด (26 ต.ค. 2026, v11)
+## 📍 สถานะล่าสุด (27 ต.ค. 2026): เริ่มรอบ Ricco Rush
+- **งานรอบนี้:** เจ้านายสั่งโละธีมเดิม แล้วทำเกมใหม่ชื่อ **Ricco Rush**
+  - แนวเกมเดิม (survivor แนวตั้ง) แต่ธีมแฟนตาซีแบบ MMORPG เกาหลียุค 2000 (ความรู้สึกแบบ RO classic PC)
+  - เริ่ม 3 อาชีพ: Swordman (ใหม่), Archer, Mage
+- **ตกลงแล้ว**
+  - ใช้ลุคและระบบแบบ RO และชื่อสกิลที่คุ้นหูได้
+  - หน้าตา ชื่อมอน ชื่อแมพ และเพลง ออกแบบใหม่ทั้งหมด
+  - ภาพเป็นชิบิละเอียดแบบเดิม
+- **แผนเต็ม:** `/root/.claude/plans/cheerful-swimming-brook.md` (อาจหายเมื่อ container ใหม่)
+  - สรุปการออกแบบทั้งหมดอยู่ใน **`docs/art/RICCO_RUSH_BRIEF.md`** (design bible)
+- **ภาพวาดโดยเจ้านายเองด้วย Gemini** (ไม่ใช้งบ OpenAI)
+  - prompt หลัก 5 อัน (1 ห้องแชตต่อ 1 อัน) ได้ภาพรวม 35 ภาพ ระหว่างภาพพิมพ์แค่ "ต่อ": `art/prompts/rr_1_heroes.txt` … `rr_5_icons.txt`
+  - ภาพอ้างอิงภาพเดียวแนบทุกห้อง: `art/prompts/ref/rr_style_reference.jpg`
+  - **หน้า Art Pack (Artifact):** https://claude.ai/artifact/TSRuyfHLoK59rLL62LiMNP มีปุ่ม Copy 5 อัน
+    - สร้างใหม่: `node scripts/art/build-art-pack.mjs <scratchpad>/rr/ricco-rush-art-pack.html` แล้ว publish ทับลิงก์นี้ (session ใหม่ต้อง `action: read` ก่อน)
+  - **ภาพที่เจ้านายแปะในแชต:** อยู่ที่ `/root/.claude/uploads/<session>/*.png` ขนาดเต็ม → คัดลอกไป `art/incoming/rr/<ห้อง>_<ลำดับ>.png`
+    - Gemini มีลายน้ำมุมขวาล่าง ต้องลบก่อนตัด
+- **เกมเดิม:** เก็บไว้ที่ git tag `v11-little-archer`
+  - ลิงก์หลัก little-archer.vercel.app ยังเป็น v11 จนกว่าเจ้านายจะสั่ง
+- **ลำดับงาน**
+  1. ✅ design bible + Art Pack
+  2. เจ้านายวาดห้อง 1 ภาพ 1-3 (หน้าตาหลัก 3 อาชีพ) → ผมตรวจ
+     - ระหว่างนั้นผมทำงานโค้ดด้วยภาพชั่วคราว: ชื่อใหม่, เซฟใหม่ `ricco-rush-save-v1`, Swordman, สกิลเฉพาะอาชีพ, ความรู้สึก RO
+  3. ห้อง 2 → แมพ 1 ใช้ภาพจริง
+  4. ห้อง 1 ครบ → ฮีโร่ 3 ตัวขยับได้
+  5. ห้อง 3-5 → ครบทุกแมพ ไอคอน และหน้าเมนู
+- **บทเรียน:** ถึงข้อ 56 แล้ว (ข้อต่อไปคือ 57)
+
+## รอบ v11 (26 ต.ค. 2026)
+
 - **เกม:** Little Archer: Monster Rush (survivor แนวตั้ง, Phaser 3) ลุค "MMORPG เกาหลียุค 2000"
 - **สถานะ:** งานทุกอย่าง commit + push แล้ว (HEAD ล่าสุดดูด้วย `git log -1`)
   - Test: typecheck, unit 91 ข้อ, e2e 7 ข้อ, build ผ่าน (v11)

@@ -1,0 +1,50 @@
+You are the lead artist for "Ricco Rush", a cute fantasy action game for phones, seen from a high three-quarter top-down angle. In this chat we will paint 4 images for map 3, "Sunscar Desert" (golden dunes around an ancient sandstone pyramid), ONE image per reply, in the order of the list below.
+
+HOW WE WORK
+- Right now, paint IMAGE 1 only, then stop and wait for me.
+- When I reply "ต่อ" (or "next"), paint the next image on the list.
+- When I reply "วาดใหม่" (or "redo"), paint the same image again, following every rule more closely.
+- Any other message from me is a correction: repaint the current image with that change (for example "fix only the top-left monster").
+- Start every reply with the image number and name, for example "IMAGE 3 / 4 – Monsters".
+- One image per reply, never a collage of several images.
+
+REFERENCE (the one picture attached to this message: four panels from our previous game; left: a hero's master illustration; middle: a gameplay mock-up; top right: a monster sheet; bottom right: an icon sheet)
+- Match the middle panel's painting style, camera angle and scale, and the top-right panel's monster painting style and level of detail. Do NOT copy those monsters or objects.
+
+STYLE (every image)
+- Cute early-2000s Korean fantasy MMORPG charm, repainted at modern quality: chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), warm pastel colours, light from the upper left.
+- Monsters are cute and a little silly, never scary or gory.
+- Every design is ORIGINAL. Do not imitate any existing game, anime or brand: no existing characters, monsters, logos or interface.
+
+SHEET RULES (images 2-4)
+- Background: a perfectly flat, solid colour (given for each image) everywhere: no gradient, texture, floor, horizon, shadow or vignette. Never use that colour, or anything close to it, inside the drawings.
+- No text, numbers, letters, labels, frames, borders, grid lines, signatures or watermarks.
+- No ground shadows, glows, auras, motion lines, sparkles or particles around the drawings.
+- Arrange the drawings in the grid given: every cell the same size, each drawing centred in its own cell, complete (nothing cut off), never touching another drawing or the image edge, with plenty of plain background around each one. Each drawing exactly once.
+- Creatures and objects are seen from the game's high three-quarter top-down angle; creatures are full body, in a three-quarter view turned toward the RIGHT side of the image, in a lively ready pose, the way they will look on the game map.
+
+IMAGE 1 – GROUND TILE (square 1:1)
+- Warm golden desert sand with soft wind ripples, small pebbles, a few small cracked sandstone patches and tiny dry grass tufts, all scattered evenly.
+- Seen from the game's high top-down angle, at the same scale as the grass in the mock-up (a pebble is about 2% of the image width).
+- Seamless and tileable: the left edge continues naturally into the right edge, and the top edge into the bottom edge.
+- Even detail and lighting across the whole square: no large features, no dunes, no paths, no objects, no shadows, no vignette, no border. No characters, no text.
+
+IMAGE 2 – MAP DECORATIONS (landscape 3:2, background solid magenta #FF00FF; never magenta, pink or purple inside the drawings; grid of 3 columns x 2 rows, the objects in each row standing on the same invisible ground line)
+1. A tall date palm tree with a curved trunk (the tallest object, filling most of its cell's height).
+2. A round green cactus with a small yellow flower on top.
+3. A broken sandstone pillar with simple carved bands (no symbols or letters).
+4. A weathered sandstone lion statue lying down on a low block.
+5. A cute sun-bleached animal skull with a few small bones, half in the sand.
+6. A group of three clay pots, one tipped over, with a striped cloth.
+
+IMAGE 3 – MONSTERS (landscape 3:2, background solid magenta #FF00FF; never magenta, pink or purple inside the drawings; grid of 3 columns x 2 rows, all about the same size)
+1. Dust Imp: a small imp made of swirling orange-tan sand, with two little horns, glowing amber eyes and a mischievous grin, one hand raised ready to throw. (It keeps its distance and throws fireballs.)
+2. Wrapped One: a short, stubby mummy wrapped in loose cream bandages with one long trailing end, one glowing yellow eye peeking through, arms reaching forward. It shuffles slowly.
+3. Stingtail: a sandy-gold scorpion with big pincers, a raised curled tail with a stinger and a cheeky face. (It dashes at the hero.)
+4. Treasure Urn: a round clay urn painted with gold bands, stuffed with gold coins, sneaky eyes peeking out from the gap under its lid and tiny stubby legs. (It hides among the treasure.)
+5. Gold Scarab: a small, shiny gold beetle with its wing cases open and little see-through wings. (It flies in swarms.)
+6. Coin Thief: a small sneaky raccoon-like rascal with a black eye mask, a brown hooded cloak, running and carrying a huge bulging sack of gold coins over its shoulder.
+
+IMAGE 4 – LEADER AND BOSS (landscape 3:2, background solid magenta #FF00FF; never magenta, pink or purple inside the drawings; two drawings side by side, the left one about two thirds the size of the right one)
+1. (left) Sandstone Golem: a hulking golem made of stacked sandstone blocks with glowing amber cracks, a small head with two glowing eyes and huge fists. (It slams the ground.)
+2. (right, the biggest drawing) Sunscar Pharaoh: a giant floating mummy king in loose bandages, wearing a golden mask with a calm painted face, a striped blue-and-gold headdress, a broad golden collar, a tattered red cape, holding a golden crook staff; one eye glowing behind the mask.

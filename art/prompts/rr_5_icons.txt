@@ -1,0 +1,113 @@
+You are the lead artist for "Ricco Rush", a cute fantasy action game for phones. In this chat we will paint 5 sheets of square icons for the game's interface (skills, items and equipment), ONE sheet per reply, in the order of the list below.
+
+HOW WE WORK
+- Right now, paint SHEET 1 only, then stop and wait for me.
+- When I reply "ต่อ" (or "next"), paint the next sheet on the list.
+- When I reply "วาดใหม่" (or "redo"), paint the same sheet again, following every rule more closely.
+- Any other message from me is a correction: repaint the current sheet with that change (for example "fix only icon 6").
+- Start every reply with the sheet number and name, for example "SHEET 2 / 5 – Archer skills".
+- One image per reply, never a collage of several images.
+
+REFERENCE (the one picture attached to this message: four panels from our previous game; left: a hero's master illustration; middle: a gameplay mock-up; top right: a monster sheet; bottom right: an icon sheet)
+- Match the bottom-right panel's tile style, painting style, emblem size and level of detail. Do NOT copy its emblems.
+
+STYLE (every sheet)
+- Cute early-2000s Korean fantasy MMORPG charm, repainted at modern quality: soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), rich colours, light from the upper left.
+- Every design is ORIGINAL. Do not imitate any existing game, anime or brand: no existing logos, symbols or interface.
+
+SHEET RULES (every sheet)
+- Square 1:1 image with a grid of 4 columns x 4 rows = 16 square icon tiles, all exactly the same size, evenly spaced, with a gap of solid magenta #FF00FF between the tiles and around the outer edge (a gap about one fifth of a tile wide).
+- Each tile is a complete square painting with slightly rounded corners: a rich, dark background (deep navy, teal, wine red, forest green or deep purple, with a soft radial glow behind the emblem) and ONE bold, simple emblem in the centre, clear and recognisable even when the icon is shown very small.
+- No frame or border around the tiles (the game adds its own gold frame). No text, numbers or letters anywhere.
+- Icons are numbered left to right, top to bottom (1-4 the top row, 13-16 the bottom row).
+- Within a sheet, give every icon a clearly different emblem and colour so no two look alike.
+
+SHEET 1 – SWORDMAN SKILLS (tiles mostly steel-blue and fiery orange; row 3 and 4 icons are the stronger "advanced" versions: make them golden and radiant)
+1 Slash: a short sword sweeping a white crescent arc.
+2 Bash: a sword striking down onto the ground with a big star-shaped impact and three little dizzy stars.
+3 Magnum Break: a sword plunged into the ground with a ring of fire bursting outward.
+4 Provoke: a gauntlet beckoning "come here", with a red cartoon anger mark.
+5 Pierce: a sword thrusting forward, leaving a long straight beam of light.
+6 Auto Guard: a round blue shield surrounded by a protective glowing ring.
+7 Brandish: three swords spinning in a circle.
+8 Shield Charge (dash): a round shield rushing forward with dust clouds behind it.
+9 Bowling Bash: a giant golden sword swing with a huge curved shockwave.
+10 Aura Blade: a sword blazing with a white-gold aura.
+11 Grand Cross: a huge cross of golden light bursting up from the ground.
+12 Devotion: a radiant golden aura ring around a glowing heart-shaped shield.
+13 Spiral Pierce: a sword drilling forward inside a spiral of golden wind.
+14 Shield Reflect: a golden shield with arrows bouncing off it.
+15 Clashing Spiral: swords whirling inside a golden tornado.
+16 Berserk (ultimate): a sword engulfed in roaring red flames, with a fierce glowing aura, the most dramatic icon of the sheet.
+
+SHEET 2 – ARCHER SKILLS (tiles mostly forest green and sky blue; rows 3 and 4 are the advanced versions: golden and radiant)
+1 Arrow Shot: a bow with a nocked arrow.
+2 Double Strafe: two arrows flying side by side.
+3 Arrow Shower: many arrows falling from the sky in an arc onto a target spot.
+4 Charge Arrow: an arrow wrapped in a swirling golden wind blast.
+5 Ankle Snare: an open steel jaw trap.
+6 Blitz Beat: a falcon diving with its wings spread.
+7 Land Mine: a round mine half-buried in dirt with a small glowing red dot.
+8 Back Slide (dash): a boot leaping backwards with dust puffs.
+9 Sharp Shooting: a single glowing arrow piercing through the centre of a bullseye target.
+10 Arrow Vulcan: a wide fan of glowing arrows.
+11 Arrow Rain: a dark cloud raining glowing arrows.
+12 Phantasmic Arrow: a ghostly, see-through blue spectral arrow.
+13 Freezing Trap: a steel jaw trap covered in frost and ice crystals.
+14 Falcon Assault: a falcon wrapped in golden light, diving.
+15 Claymore Trap: a big trap bursting in a fiery explosion.
+16 Arrow Storm (ultimate): hundreds of glowing arrows swirling in a vortex, the most dramatic icon of the sheet.
+
+SHEET 3 – MAGE SKILLS (tiles mostly deep purple and midnight blue; rows 3 and 4 are the advanced versions: radiant and grander)
+1 Soul Strike: three glowing white-blue spirit orbs with short tails.
+2 Fire Bolt: spears of flame falling from above.
+3 Cold Bolt: three sharp spears of blue ice.
+4 Lightning Bolt: a lightning bolt striking down from a dark cloud.
+5 Fire Ball: a big blazing fireball.
+6 Fire Wall: a low wall of flames.
+7 Frost Diver: a line of ice crystals bursting up from the ground.
+8 Teleport (dash): a glowing blue magic circle with a swirl of light where someone vanished.
+9 Napalm Vulcan: three ghostly white-violet flames rushing forward.
+10 Fire Pillar: a tall pillar of fire erupting from a glowing circle on the ground.
+11 Storm Gust: a swirling blizzard tornado full of snowflakes.
+12 Lord of Vermilion: many lightning bolts striking down from a crimson storm cloud.
+13 Sightrasher: a ring of fire bursting outward in every direction.
+14 Volcano: a small erupting volcano with glowing lava.
+15 Frost Nova: a starburst of ice spikes radiating from the centre.
+16 Meteor Storm (ultimate): huge flaming meteors crashing down, the most dramatic icon of the sheet.
+
+SHEET 4 – ITEMS
+1 STR: a red leather power glove clenched into a fist.
+2 AGI: a light-blue feather with speed streaks.
+3 VIT: a big glowing red heart.
+4 INT: an open spell book with a glowing blue rune circle above it (a circle of simple shapes, no letters).
+5 DEX: a bullseye target with an arrow in the centre.
+6 LUK: a four-leaf clover in front of a gold coin.
+7 Wind Shoes: a pair of leather shoes with small white wings.
+8 Lodestone: a red-and-silver horseshoe magnet.
+9 Buckler: a small round steel buckler shield.
+10 Healing Herb: a bundle of green healing herbs tied with string.
+11 Moon Pendant: a beaded necklace with a silver crescent-moon charm.
+12 Scholar's Glasses: round gold-rimmed glasses resting on a small book.
+13 Berserk Potion: a bottle of fizzing crimson potion with a little horned stopper.
+14 Spiked Mail: a leather armour vest covered in steel spikes.
+15 Slayer Ring: a gold ring set with a red fang-shaped gem.
+16 Yggdrasil Leaf: a large glowing golden-green leaf.
+
+SHEET 5 – EQUIPMENT AND MENU ICONS
+1 Horned Helm: a steel helmet with two small curved horns.
+2 Magic Circlet: a gold circlet with a blue gem.
+3 Plate Mail: a shiny steel chest armour.
+4 Sage Robe: a folded cream-and-blue robe with gold trim.
+5 Wind Muffler: a flowing green scarf.
+6 Mystic Manteau: a purple hooded cloak with small gold stars.
+7 Sprint Sandals: light leather sandals with straps.
+8 Lucky Boots: brown leather boots with a gold clover buckle.
+9 Gold: a small pile of gold coins.
+10 Quests: a rolled parchment scroll with a red wax seal.
+11 Monster Book: a thick book with a cute round monster face on its cover.
+12 Equipment Chest: an ornate treasure chest with blue-steel trim, slightly open, golden light inside.
+13 MVP: a gold medal with a small crown on a red ribbon.
+14 Card Album: a fanned stack of three cards with ornate gold-and-red backs.
+15 Job Level: a gold star badge with small wings.
+16 Map Select: a floating blue warp crystal.

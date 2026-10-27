@@ -1,0 +1,92 @@
+You are the lead character artist for "Ricco Rush", a cute fantasy action game for phones: a top-down survivor game where a kid hero fights waves of cute monsters. In this chat we will paint 16 images together, ONE image per reply, in the order of the list below.
+
+HOW WE WORK
+- Right now, paint IMAGE 1 only, then stop and wait for me.
+- When I reply "ต่อ" (or "next"), paint the next image on the list.
+- When I reply "วาดใหม่" (or "redo"), paint the same image again, following every rule more closely.
+- Any other message from me is a correction: repaint the current image with that change.
+- Start every reply with the image number and name, for example "IMAGE 4 / 16 – Swordman rig pose".
+- One image per reply, never a collage of several images.
+- Images 1-3 are the master designs. In every later image each hero must look EXACTLY like their latest master: the same face, hair, outfit, colours, proportions, outline weight and painting style. Look back at the master every time.
+
+REFERENCE (the one picture attached to this message: four panels from our previous game; left: a hero's master illustration; middle: a gameplay mock-up; top right: a monster sheet; bottom right: an icon sheet)
+- Match the left panel's proportions, head size, outline weight, painting style and level of detail exactly. Do NOT copy its design or colours.
+- The middle panel shows the overall look of the game.
+
+STYLE (every image)
+- Cute early-2000s Korean fantasy MMORPG charm, repainted at modern quality: chunky chibi proportions (about 2.5 heads tall, big head, big friendly eyes), clean warm dark-brown outlines (never pure black), soft cel shading with gentle gradients, light from the upper left.
+- Rich detail that stays clean and readable at small size: fabric weave and stitched seams, leather grain, brushed steel with small bright highlights, wood grain, felt fuzz, shiny gold and brass.
+- Every design is ORIGINAL. Do not imitate any existing game, anime or brand: no existing characters, logos, crests or emblems.
+
+THE THREE HEROES
+In the three-quarter view turned toward the RIGHT, the hero's RIGHT arm is the near arm and the LEFT arm is the far arm.
+
+SWORDMAN (id: swordman)
+- A brave, cheerful boy of about 12. Round face, big amber eyes, thick determined eyebrows, rosy cheeks, a small adhesive bandage on the left cheek. Short spiky auburn (red-brown) hair.
+- A navy-blue cloth headband tied at the back, its two short tails fluttering behind the head.
+- A polished steel breastplate with brass rivets over a royal-blue padded tunic to mid-thigh with a cream trim along the hem.
+- One rounded steel pauldron with a brass rim on the RIGHT shoulder (near).
+- Brown leather belt with a square brass buckle and a small leather pouch on the hip.
+- Brown leather gloves with short steel cuffs on both forearms.
+- Grey trousers; sturdy brown leather boots with steel toe caps and folded cuffs.
+- Sword: a broad one-handed short sword (steel blade with a groove down the middle, brass crossguard, brown leather-wrapped grip, round brass pommel), held in the RIGHT hand (near).
+- Shield: a round wooden shield with a steel rim, steel rivets and a round steel boss in the middle, painted royal blue with one simple gold four-pointed star; worn on the LEFT forearm (far).
+
+ARCHER (id: archer)
+- A quick, cheerful girl of about 11. Round face, big emerald-green eyes, light freckles across the nose, rosy cheeks. Wavy chestnut (red-brown) hair in a high ponytail tied with a brown leather cord and a small white feather, plus a short side fringe.
+- A forest-green leather vest with brass buttons over a cream linen blouse with short puffed sleeves.
+- A brown leather strap across the chest holding a brown leather quiver on her back, full of arrows with red-and-white fletching.
+- Brown leather belt with a brass buckle and a small pouch; a short brown leather skirt over dark-brown leggings.
+- A leather bracer on the LEFT forearm (bow arm, far); a fingerless brown leather glove on the RIGHT hand (string hand, near).
+- Knee-high brown leather boots with laces and folded cuffs.
+- Bow: a wooden longbow with gently curved limbs, small brass tips and a grip wrapped in green cloth, held in the LEFT hand (far).
+
+MAGE (id: mage)
+- A clever, cheerful boy of about 11. Round face, big sky-blue eyes, rosy cheeks, a calm confident smile. Soft, slightly messy silver-blue hair falling over the forehead.
+- A big pointed wizard hat of deep purple felt with a wide floppy brim, a gold band and three tiny gold stars on the band; the soft tip flops backwards.
+- A purple robe-tunic to just above the knees with a gold-embroidered hem, a white collar, and wide sleeves ending in gold cuffs at the wrists.
+- A long red scarf wrapped around the neck, its two ends trailing behind him.
+- Brown leather belt with a round gold buckle and a small brown leather spell book hanging on the hip.
+- Dark navy trousers; brown leather shoes with slightly curled tips.
+- Bare hands; a thin gold bracelet on the RIGHT wrist (casting hand, near).
+- Staff: a wooden staff about as tall as he is, its top carved into a curl that holds a large red gemstone with a bright highlight, held in the LEFT hand (far).
+
+BACKGROUND COLOUR (images 1-15)
+- Swordman and Archer images: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink or purple inside the character.
+- Mage images: a perfectly flat, solid pure green #00FF00 everywhere. Never use bright green inside the character.
+- No gradient, texture, floor or shadow in the background. No text, numbers, labels, frames, grid lines or watermarks. No ground shadow, glow, magic effects, motion lines or sparkles.
+
+PART A – THE THREE MASTER DESIGNS (portrait 2:3, one full-body hero, centred, about 75% of the image height)
+IMAGE 1 – Swordman master: three-quarter front view turned toward the RIGHT, standing ready: the sword held forward and low in the right hand, the shield raised a little in front of the body on the left arm, a confident grin, the headband tails fluttering. Magenta background.
+IMAGE 2 – Archer master: three-quarter front view turned toward the RIGHT, standing ready: the bow held in the left hand, angled forward at her side, the right hand resting on the quiver strap, a bright smile, the ponytail swinging. Magenta background.
+IMAGE 3 – Mage master: three-quarter front view turned toward the RIGHT, standing ready: the staff upright in the left hand, the right hand raised beside the chest, palm up, as if about to cast, a confident smile, the scarf ends and the hat tip swaying. Green background.
+
+PART B – CUT-OUT PUPPET PARTS (images 4-15, used to animate each hero as a 2D cut-out puppet)
+Rules for every RIG POSE image (portrait 2:3):
+- The exact same character as the master, full body, three-quarter front view turned toward the RIGHT, about 75% of the image height, centred, in a neutral pose: standing straight, weight even, feet about shoulder-width apart, both feet flat; both arms hanging down, held slightly away from the body (about 20 degrees) so they do NOT overlap the torso; hands open and relaxed; eyes open and calm, a small closed smile.
+- Clear empty space between the arms, the legs and the body. This is the assembly reference: every later part must match it exactly in scale, colours and line weight.
+Rules for every PARTS SHEET (landscape 3:2):
+- Every part is drawn COMPLETE, as if the parts in front of it had been removed, including areas normally hidden underneath (the shoulder under the pauldron, the top of the thigh under the tunic).
+- Joint ends are rounded like ball joints and run about 15% past the joint, so bending never shows a gap.
+- Each part keeps exactly the orientation it has in the rig pose (do not rotate parts to fit) and exactly the SAME SCALE as the rig pose (do not enlarge small parts).
+- No shadows cast by other parts; each part is lit on its own.
+- Parts arranged in a neat grid in the listed order (left to right, top to bottom), with plenty of empty background around every part; nothing touching or overlapping; nothing touching the image edge; each part exactly once.
+- FACES rules for the head sheets: each EYE piece is BOTH eyes together with their eyebrows, spaced and angled exactly as they sit on the blank head (three-quarter view, so the far eye is slightly narrower), sized to fit it. Eyes, in order: 1 open, calm; 2 half-closed (mid-blink); 3 closed (soft downward arcs); 4 happy closed (upward arcs); 5 focused attack (narrowed, brows angled down); 6 hurt (squeezed shut); 7 knocked out (spirals); 8 surprised (wide, small pupils). Mouths, in order, sized to fit the head: 1 small smile; 2 neutral closed; 3 open happy (cheer, tongue visible); 4 determined tight line; 5 battle shout (open, teeth); 6 ouch (wavy); 7 small "O".
+
+IMAGE 4 – Swordman RIG POSE: no sword, no shield; the headband tails hanging down behind the head. Magenta background.
+IMAGE 5 – Swordman HEAD AND FACES SHEET. Left third, top to bottom: A. the head with the hair, the headband knot and the ears, same three-quarter view as the rig pose, the face BLANK (no eyes, no eyebrows, no mouth; keep the skin, the rosy cheeks, the nose and the cheek bandage), no headband tails, no neck; B. the two headband tails alone, hanging down from where they are tied. Right two thirds, in a grid: rows 1-2 the 8 EYE pieces, row 3 the 7 MOUTH pieces. Magenta background.
+IMAGE 6 – Swordman BODY PARTS SHEET: 1 torso: the breastplate over the upper tunic, a short neck stub, no arms; 2 hips: the lower tunic with the cream hem, the belt with its buckle and pouch, and the tops of the trousers; 3 the pauldron alone; 4 left upper arm (sleeve); 5 left forearm with its steel cuff (no hand); 6 right upper arm (sleeve); 7 right forearm with its steel cuff (no hand); 8 thigh (trouser leg); 9 lower leg with the boot. Magenta background.
+IMAGE 7 – Swordman HANDS AND GEAR SHEET: 1 the sword alone, standing perfectly vertically, point up; 2 the shield alone, seen from the front at the same three-quarter angle it has when worn; 3 left hand open (gloved); 4 left hand making a fist, seen from the thumb side (the shield hand); 5 right hand open (gloved); 6 right hand gripping: a fist seen from the thumb side, closed around an empty round gap where the sword grip goes; 7 right hand clenched in a fist, knuckles forward. Magenta background.
+
+IMAGE 8 – Archer RIG POSE: no bow, no quiver, no arrows (keep the chest strap); the ponytail hanging down. Magenta background.
+IMAGE 9 – Archer HEAD AND FACES SHEET. Left third, top to bottom: A. the head with the hair, the fringe and the ears, the face BLANK (no eyes, no eyebrows, no mouth; keep the skin, freckles, rosy cheeks and nose), WITHOUT the ponytail, no neck; B. the ponytail alone with its leather cord and white feather, hanging down from where it is tied. Right two thirds, in a grid: rows 1-2 the 8 EYE pieces (eye 5 is focused aiming), row 3 the 7 MOUTH pieces. Magenta background.
+IMAGE 10 – Archer BODY PARTS SHEET: 1 torso: the vest over the blouse with the chest strap, a short neck stub, no arms, no quiver; 2 hips: the skirt, the belt with its buckle and pouch, and the tops of the leggings; 3 left upper arm (puffed sleeve); 4 left forearm with the leather bracer (no hand); 5 right upper arm (puffed sleeve); 6 right forearm with the glove cuff (no hand); 7 thigh (legging); 8 lower leg with the boot. Magenta background.
+IMAGE 11 – Archer HANDS AND GEAR SHEET: 1 the bow WITHOUT its string (the game draws the string), standing vertically, grip in the middle; 2 one arrow, horizontal, pointing right; 3 the quiver with its arrows, as worn on the back; 4 left hand open (bare); 5 left hand gripping: a fist seen from the thumb side, closed around an empty gap where the bow grip goes; 6 right hand open, in the fingerless glove; 7 right hand pinching (thumb and index together, as if holding a bowstring), in the fingerless glove. Magenta background.
+
+IMAGE 12 – Mage RIG POSE: no staff; the hat tip flopped back; the scarf ends hanging straight down behind the shoulders. Green background.
+IMAGE 13 – Mage HEAD AND FACES SHEET. Left third, top to bottom: A. the head with the hat, the hair and the ears, the face BLANK (no eyes, no eyebrows, no mouth; keep the skin, rosy cheeks and nose), no scarf, no neck; B. the two scarf ends alone, hanging down from where they leave the neck. Right two thirds, in a grid: rows 1-2 the 8 EYE pieces (eye 5 is focused casting), row 3 the 7 MOUTH pieces (mouth 5 is shouting a spell). Green background.
+IMAGE 14 – Mage BODY PARTS SHEET: 1 torso: the upper robe with the white collar and the scarf wrapped around the neck, a short neck stub, no arms, no scarf ends; 2 hips: the lower robe with the gold hem, the belt with its buckle and the spell book, and the tops of the trousers; 3 left upper arm (wide sleeve); 4 left forearm with the gold cuff (no hand); 5 right upper arm (wide sleeve); 6 right forearm with the gold cuff and the bracelet (no hand); 7 thigh (trouser leg); 8 lower leg with the shoe. Green background.
+IMAGE 15 – Mage HANDS AND GEAR SHEET: 1 the staff alone, standing perfectly vertically, the red gem at the top; 2 left hand open; 3 left hand gripping: a fist seen from the thumb side, closed around an empty round gap where the staff goes; 4 right hand open, palm forward, fingers spread as if casting a spell; 5 right hand pointing forward with the index finger, the other fingers curled. Green background.
+
+PART C – TITLE PICTURE
+IMAGE 16 – Title screen painting (portrait 9:16), a complete scene WITH a painted background (no flat colour): the three heroes together in a heroic group pose on a grassy hilltop on a sunny day, the Swordman in front in the middle raising his sword, the Archer on the left drawing her bow, the Mage on the right raising his glowing staff; behind them rolling green hills, a winding dirt road and a small fairy-tale castle town far away, a bright blue sky with soft clouds. Keep the top quarter calm, open sky (the game puts its logo there). No text, no logo.

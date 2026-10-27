@@ -1,0 +1,61 @@
+You are the lead artist for "Ricco Rush", a cute fantasy action game for phones, seen from a high three-quarter top-down angle. In this chat we will paint 6 images for map 1, "Greenhill Fields" (sunny meadows outside a fairy-tale castle town), ONE image per reply, in the order of the list below.
+
+HOW WE WORK
+- Right now, paint IMAGE 1 only, then stop and wait for me.
+- When I reply "ต่อ" (or "next"), paint the next image on the list.
+- When I reply "วาดใหม่" (or "redo"), paint the same image again, following every rule more closely.
+- Any other message from me is a correction: repaint the current image with that change (for example "fix only the top-left monster").
+- Start every reply with the image number and name, for example "IMAGE 3 / 6 – Monsters".
+- One image per reply, never a collage of several images.
+
+REFERENCE (the one picture attached to this message: four panels from our previous game; left: a hero's master illustration; middle: a gameplay mock-up; top right: a monster sheet; bottom right: an icon sheet)
+- Match the middle panel's painting style, camera angle and scale, and the top-right panel's monster painting style and level of detail. Do NOT copy those monsters or objects.
+
+STYLE (every image)
+- Cute early-2000s Korean fantasy MMORPG charm, repainted at modern quality: chibi proportions (big heads, big friendly eyes), soft cel shading with gentle gradients, clean warm dark-brown outlines (never pure black), warm pastel colours, light from the upper left.
+- Monsters are cute and a little silly, never scary or gory.
+- Every design is ORIGINAL. Do not imitate any existing game, anime or brand: no existing characters, monsters, logos or interface.
+
+SHEET RULES (images 2-6)
+- Background: a perfectly flat, solid colour (given for each image) everywhere: no gradient, texture, floor, horizon, shadow or vignette. Never use that colour, or anything close to it, inside the drawings.
+- No text, numbers, letters, labels, frames, borders, grid lines, signatures or watermarks.
+- No ground shadows, glows, auras, motion lines, sparkles or particles around the drawings.
+- Arrange the drawings in the grid given: every cell the same size, each drawing centred in its own cell, complete (nothing cut off), never touching another drawing or the image edge, with plenty of plain background around each one. Each drawing exactly once.
+- Creatures and objects are seen from the game's high three-quarter top-down angle; creatures are full body, in a three-quarter view turned toward the RIGHT side of the image, in a lively ready pose, the way they will look on the game map.
+
+IMAGE 1 – GROUND TILE (square 1:1)
+- Lush spring-green meadow grass painted with soft strokes, tiny white and yellow flowers and clover scattered evenly, a few small pebbles and two or three small patches of bare earth.
+- Seen from the game's high top-down angle, at the same scale as the grass in the mock-up (a grass tuft is about 4% of the image width).
+- Seamless and tileable: the left edge continues naturally into the right edge, and the top edge into the bottom edge.
+- Even detail and lighting across the whole square: no large features, no paths, no objects, no shadows of trees or buildings, no vignette, no border. No characters, no text.
+
+IMAGE 2 – MAP DECORATIONS (landscape 3:2, background solid magenta #FF00FF; never magenta, pink or purple inside the drawings; grid of 3 columns x 2 rows, the objects in each row standing on the same invisible ground line)
+1. A big round leafy oak tree with a thick short trunk (the tallest object, filling most of its cell's height).
+2. A round green bush with a few small red berries.
+3. A mossy grey boulder with a tuft of grass.
+4. A patch of white and yellow wildflowers with clover leaves.
+5. A short rustic wooden fence section with a rope tied around one post.
+6. A wooden signpost with two blank arrow-shaped boards (NO letters or symbols on them).
+
+IMAGE 3 – MONSTERS (landscape 3:2, background solid cyan #00FFFF; never cyan or turquoise inside the drawings; grid of 3 columns x 2 rows; monsters 1-4 and 6 about the same size, number 5 half that size)
+1. Gummy: a round, glossy peach-orange jelly blob, slightly see-through with a tiny golden seed visible inside, a little two-leaf sprout on top, and a happy-silly face with a tiny tongue sticking out. It hops.
+2. Fluffbun: a chubby light-brown bunny with a cream belly, one upright ear and one floppy ear, big buck teeth and mischievous eyes, wearing a tiny acorn-cap hat. It hops fast.
+3. Capshroom: a walking mushroom with a big red cap with cream spots, a grumpy face with thick eyebrows, stubby legs and tiny arms.
+4. Fuzzpuff: a round fluffy dandelion-seed puffball, white with a pale-yellow centre, a sleepy grumpy face and tiny feet. (When hit, it bursts into smaller puffs.)
+5. Fuzzlet: a tiny version of Fuzzpuff, half its size, with a surprised face.
+6. Buzzer: a chubby yellow-and-black striped bee with small see-through wings, a tiny stinger and big determined eyes. (It flies in swarms.)
+
+IMAGE 4 – LEADER AND BOSS (landscape 3:2, background solid cyan #00FFFF; never cyan or turquoise inside the drawings; two drawings side by side, the left one about two thirds the size of the right one)
+1. (left) Ironhide Boar: a stocky wild boar with brown bristly fur, small curved ivory tusks, angry little eyes and a snorting snout, wearing a leather armour plate with brass studs on its back and forehead. It charges at the hero.
+2. (right, the biggest drawing) Jelly Monarch: a huge peach-orange jelly blob, the king of the Gummies, slightly see-through with a golden seed inside, a two-leaf sprout on top, wearing a small gold crown set with red gems and a short red velvet cape with white fur trim draped over its back; a smug royal grin and a shiny highlight.
+
+IMAGE 5 – SKILL EFFECTS AND PROJECTILES (square 1:1, background solid magenta #FF00FF; never magenta, pink or purple inside the drawings; grid of 4 columns x 4 rows; every projectile flying toward the RIGHT; for these effect sprites, a glow that is part of the effect itself is allowed)
+Row 1: 1 an arrow (wooden shaft, steel head, red-and-white fletching); 2 a charged arrow wrapped in a swirl of golden wind; 3 a crescent-shaped sword-wave of white-blue light (a sword slash arc); 4 a long golden lance of light (a piercing thrust).
+Row 2: 5 a soul orb: a glowing white-blue spirit ball with a short wispy tail; 6 a fire bolt: a spear of bright flame; 7 a cold bolt: a sharp spear of clear blue ice; 8 a big round fireball.
+Row 3: 9 a tall pillar of flame (a piece of a wall of fire); 10 a cluster of sharp ice crystals growing from the ground; 11 a flaming meteor rock; 12 a small brown-and-white falcon flying to the right with its wings spread.
+Row 4: 13 an open steel jaw trap on the ground; 14 a round clay land mine half-buried in dirt, with one small glowing red dot on top; 15 a small red-orange fireball thrown by a monster; 16 a small pale-blue ghost-fire flame thrown by a monster.
+
+IMAGE 6 – PICKUPS AND WORLD OBJECTS (landscape 4:3, background solid magenta #FF00FF; never magenta, pink or purple inside the drawings; grid of 4 columns x 3 rows)
+Row 1: 1 a small sky-blue experience crystal; 2 a medium emerald-green experience crystal; 3 a large golden experience crystal; 4 a shiny gold coin stamped with a simple star.
+Row 2: 5 a small round red potion bottle with a cork; 6 the same bottle with an orange potion; 7 a bigger bottle with a white potion; 8 a red-and-silver horseshoe magnet.
+Row 3: 9 a closed wooden treasure chest with gold trim and a lock; 10 a face-down playing-card-sized monster card with an ornate gold-and-red back; 11 a warp portal: a swirling ring of blue light lying flat on the ground, seen from the top-down angle; 12 a small stone angel statue with folded wings on a round pedestal (a healing shrine).
