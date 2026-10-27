@@ -1,0 +1,18 @@
+Draw ONE large full-body picture of a character from an original 2D fantasy online RPG, for the game's character select screen. The look is the classic late-1990s / early-2000s Korean 2D online RPG character sprite: a small chibi-anime character about 2.5 to 3 heads tall, a cute anime face with large glossy eyes and a small mouth, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted earthy palette, light from the upper left, seen from slightly above (about 30 degrees), like hand-polished game sprites.
+
+REFERENCE: the attached image is her sprite sheet from the game. Match it exactly: the same girl, face, hair, outfit, colours, bow, proportions, outline weight and shading, just drawn much bigger and with a little more detail.
+
+CHARACTER (our own original design; exactly the same in every drawing):
+- "Archer", a cheerful teenage girl with chestnut red-brown hair tied in a high ponytail with a small white feather in the tie, short side bangs, green eyes.
+- A moss-green leather vest laced at the front over a cream shirt with short puffed sleeves; a brown leather belt with a small pouch; a short tan leather skirt over dark leggings; tall brown leather boots with folded cuffs.
+- A leather bracer on her left forearm and a fingerless glove on her right hand; a brown leather quiver with white-fletched arrows on her back (its strap crosses her chest).
+- A plain wooden longbow with small brass tips, carried in her left hand, held low and relaxed while she walks.
+
+POSE AND LAYOUT (portrait 1024 x 1536):
+- Exactly one drawing of her, full body from the feather on her ponytail to the soles of her boots, filling most of the picture's height (about 1300 px tall), centred.
+- A confident, friendly ready stance in a three-quarter front view turned toward the RIGHT side of the image: weight on one leg, the longbow held upright at her side in her left hand, her right hand resting on her hip, a bright smile.
+
+TECHNICAL:
+- Background: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink or purple inside the drawing.
+- No text, numbers, labels, frames, borders, ground shadows, glows, sparkles or watermarks.
+- The drawing is complete: nothing is cut off by the image edge.

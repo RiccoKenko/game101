@@ -1,0 +1,20 @@
+Draw ONE monster sprite sheet for an original 2D fantasy online RPG (a top-down action game). The look is the classic late-1990s / early-2000s Korean 2D online RPG monster sprite: small, cute, round creatures with big glossy eyes, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted palette, light from the upper left, seen from slightly above (about 30 degrees), like hand-polished game sprites.
+
+REFERENCE: the attached image is the hero's sprite sheet from the same game. Draw the monsters in exactly the same rendering style (outline weight, shading, level of detail, palette feel), at a size that suits them next to her: a monster is about half to two thirds of her height.
+
+MONSTERS of the first map, Greenhill Fields (our own original designs; cute and a little silly, never scary):
+1. Gummy: a round, glossy peach-orange jelly blob, slightly see-through, with a tiny golden seed visible inside, a little two-leaf sprout on top and a happy-silly face with a tiny tongue sticking out. It hops.
+2. Fluffbun: a chubby light-brown bunny with a cream belly, one upright ear and one floppy ear, big buck teeth and mischievous eyes, wearing a tiny acorn-cap hat. It hops fast.
+3. Capshroom: a walking mushroom with a big red cap with cream spots, a grumpy face with thick eyebrows, stubby legs and tiny arms.
+4. Fuzzpuff: a round fluffy dandelion-seed puffball, white with a pale-yellow centre, a sleepy grumpy face and tiny feet.
+5. Buzzer: a chubby bee with honey-yellow and dark-brown stripes, small rounded wings drawn pale blue-white, a tiny stinger and big determined eyes. It flies.
+
+SHEET LAYOUT (landscape 1536 x 1024):
+- A grid of 5 columns x 2 rows of equal cells. Each COLUMN is one monster, in the order above. The two ROWS are the two frames of its movement: row 1 frame A, row 2 frame B (Gummy: squashed on landing / stretched up mid-hop; Fluffbun: crouched / leaping; Capshroom: left foot forward / right foot forward; Fuzzpuff: one tiny foot up / the other; Buzzer: wings up / wings down with the body bobbing).
+- Every monster faces the viewer and turns toward the RIGHT side of the image (a three-quarter front view), centred in its cell, the same size in both frames, resting on the same baseline near the bottom of its cell (the flyer floats a little above it).
+
+TECHNICAL:
+- Background: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink or purple inside the drawings.
+- No text, numbers, labels, grid lines, frames, borders, ground shadows, glows, motion lines, sparkles or watermarks.
+- Every drawing is complete (nothing cut off by its cell or the image edge) and separated from its neighbours by plain background.
+- Each monster's design, colours and size are identical in its two frames.

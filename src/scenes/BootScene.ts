@@ -3,7 +3,7 @@ import { assetUrl, inlinedJson } from '../art/assets';
 import manifest from '../art/manifest.json';
 import { createTextures, heroAnimations, heroMetaKey, type HeroMeta } from '../art/textures';
 import { audio, AUDIO_ENABLED, SFX_KEYS } from '../audio/audio';
-import { CHARACTERS } from '../config/characters';
+import { PLAYABLE } from '../config/characters';
 import { MAPS } from '../config/maps';
 import { DEBUG } from '../core/debug';
 import { COLORS } from '../ui/theme';
@@ -30,7 +30,7 @@ export class BootScene extends Phaser.Scene {
     // Painted art (public/art/); anything missing falls back to the SVG art drawn in code.
     for (const key of manifest.keys) this.load.image(key, assetUrl(`art/${key}.webp`));
     // Each playable hero: an animated sheet described by a JSON file, and a still for the menu.
-    for (const c of CHARACTERS) {
+    for (const c of PLAYABLE) {
       const key = heroMetaKey(c.sheet);
       this.load.image(c.menu, assetUrl(`art/hero/${c.menu}.webp`));
       const loadHero = (meta: HeroMeta) =>
@@ -68,7 +68,7 @@ export class BootScene extends Phaser.Scene {
       this.progress.art = p;
       this.drawBar();
     }).then(() => {
-      for (const c of CHARACTERS) heroAnimations(this, c.sheet);
+      for (const c of PLAYABLE) heroAnimations(this, c.sheet);
       if (DEBUG.autostart) {
         this.scene.start('Game', { map: Phaser.Math.Clamp(DEBUG.map - 1, 0, MAPS.length - 1) });
       } else {

@@ -1,0 +1,23 @@
+Draw ONE character sprite sheet for an original 2D fantasy online RPG (a top-down action game). The look is the classic late-1990s / early-2000s Korean 2D online RPG character sprite: a small chibi-anime character about 2.5 to 3 heads tall, a cute anime face with large glossy eyes and a small mouth, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted earthy palette, light from the upper left, seen from slightly above (about 30 degrees), like hand-polished game sprites.
+
+CHARACTER (our own original design; exactly the same in every drawing):
+- "Archer", a cheerful teenage girl with chestnut red-brown hair tied in a high ponytail with a small white feather in the tie, short side bangs, green eyes.
+- A moss-green leather vest laced at the front over a cream shirt with short puffed sleeves; a brown leather belt with a small pouch; a short tan leather skirt over dark leggings; tall brown leather boots with folded cuffs.
+- A leather bracer on her left forearm and a fingerless glove on her right hand; a brown leather quiver with white-fletched arrows on her back (its strap crosses her chest).
+- A plain wooden longbow with small brass tips, carried in her left hand, held low and relaxed while she walks.
+
+SHEET LAYOUT (portrait 1024 x 1536):
+- A grid of 4 columns x 5 rows of equal cells. One full-body drawing per cell, centred in its cell, the same size in every cell, her feet on the same baseline near the bottom of every cell.
+- Each ROW is one facing direction. Each COLUMN is one frame of a 4-frame walk cycle: frame 1 left foot forward, frame 2 legs passing with the body a little higher, frame 3 right foot forward, frame 4 legs passing.
+  Row 1: walking toward the viewer (front view).
+  Row 2: walking down and to the RIGHT (three-quarter front view, turned toward the right side of the image).
+  Row 3: walking to the RIGHT (side view, her profile facing the right side of the image).
+  Row 4: walking up and to the RIGHT (three-quarter back view: we see her back and a little of her right side).
+  Row 5: walking away from the viewer (back view).
+- Her arms swing naturally against her legs; the ponytail and skirt sway a little with each step.
+
+TECHNICAL:
+- Background: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink or purple inside the drawings.
+- No text, numbers, labels, grid lines, frames, borders, ground shadows, glows, motion lines, sparkles or watermarks.
+- Every drawing is complete (nothing cut off by its cell or the image edge) and separated from its neighbours by plain background.
+- Keep her design, colours and proportions identical in all 20 drawings.

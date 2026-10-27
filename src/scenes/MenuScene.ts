@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio, AUDIO_ENABLED, MUSIC_KEYS } from '../audio/audio';
-import { CHARACTERS } from '../config/characters';
+import { CHARACTERS, PLAYABLE } from '../config/characters';
 import { UNLOCK_KEYS } from '../config/collection';
 import { describeReward, MASTERY, MASTERY_REWARDS } from '../config/mastery';
 import { CURSE_UNLOCK_MAPS, heatOf } from '../config/curses';
@@ -31,7 +31,7 @@ interface MapCard {
 export class MenuScene extends Phaser.Scene {
   private selected = 0;
   private cards: MapCard[] = [];
-  /** The hero shown between the title and the map cards (one of CHARACTERS). */
+  /** The hero shown between the title and the map cards (one of PLAYABLE). */
   private heroIndex = 0;
   private heroImg?: Phaser.GameObjects.Image;
   private heroName!: Phaser.GameObjects.Text;
@@ -61,7 +61,7 @@ export class MenuScene extends Phaser.Scene {
     ensureDaily(save);
     saveStore.save();
     this.selected = save.unlockedMaps - 1;
-    this.heroIndex = Math.max(0, CHARACTERS.findIndex((c) => c.id === save.character));
+    this.heroIndex = Math.max(0, PLAYABLE.findIndex((c) => c.id === save.character));
 
     const { width, height } = this.scale;
     const { top, bottom } = safeInsets(this);
@@ -169,7 +169,7 @@ export class MenuScene extends Phaser.Scene {
     const plateH = 196;
     const bottom = areaBottom - plateH - 6;
     this.heroBox = { x, top: areaTop, bottom };
-    if (CHARACTERS.some((c) => this.textures.exists(c.menu))) {
+    if (PLAYABLE.some((c) => this.textures.exists(c.menu))) {
       this.add.ellipse(x, bottom - 14, 300, 46, 0x050a18, 0.35);
       const py = areaBottom - plateH / 2;
       const plate = panel(this, x, py, 960, plateH, { radius: 28 });
@@ -183,7 +183,8 @@ export class MenuScene extends Phaser.Scene {
       this.heroBar = new Bar(this, x - 250, my - 10, 200, 20, 0x5ad15a);
       this.heroNext = text(this, x - 30, my, '', 25, { color: CSS.soft, weight: '600', originX: 0, shadow: false, align: 'left' });
       const ay = bottom - Math.min(HERO_H, bottom - areaTop - 6) / 2;
-      for (const dir of [-1, 1]) {
+      // Arrows to switch heroes, when there is more than one to pick.
+      for (const dir of PLAYABLE.length > 1 ? [-1, 1] : []) {
         const b = new Button(this, x + dir * 410, ay, {
           w: 104,
           h: 104,
@@ -296,8 +297,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private switchHero(dir: number): void {
-    this.heroIndex = (this.heroIndex + dir + CHARACTERS.length) % CHARACTERS.length;
-    saveStore.data.character = CHARACTERS[this.heroIndex].id;
+    this.heroIndex = (this.heroIndex + dir + PLAYABLE.length) % PLAYABLE.length;
+    saveStore.data.character = PLAYABLE[this.heroIndex].id;
     saveStore.save();
     audio.sfx('click');
     this.showHero(dir);
@@ -306,7 +307,7 @@ export class MenuScene extends Phaser.Scene {
   /** Shows the selected hero: picture, name and kind, strengths (green) and weaknesses (red). */
   private showHero(dir = 0): void {
     if (!this.heroName) return;
-    const c = CHARACTERS[this.heroIndex];
+    const c = PLAYABLE[this.heroIndex];
     const { x, top, bottom } = this.heroBox;
     this.heroImg?.destroy();
     const key = this.textures.exists(c.menu) ? c.menu : 'archer_menu';
@@ -327,7 +328,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private play(): void {
-    saveStore.data.character = CHARACTERS[this.heroIndex].id;
+    saveStore.data.character = PLAYABLE[this.heroIndex].id;
     saveStore.save();
     this.scene.start('Game', { map: this.selected });
   }

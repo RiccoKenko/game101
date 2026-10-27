@@ -21,6 +21,11 @@ export interface HeroMeta {
   feet: [number, number];
   /** How tall the hero's body is in a frame, in px (the game scales it to its hero height); else 82% of a frame. */
   bodyHeight?: number;
+  /**
+   * A sheet drawn from several sides (e.g. s, se, e, ne, n): every animation then exists once per side, named
+   * `<animation>_<side>`, and the game mirrors the east-facing sides for the west.
+   */
+  directions?: string[];
   animations: Record<string, { start: number; count: number; fps: number; loop: boolean }>;
 }
 

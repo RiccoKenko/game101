@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
-import { CHARACTERS, type CharacterDef } from '../config/characters';
+import { PLAYABLE, type CharacterDef } from '../config/characters';
 import { BESTIARY, describeGoal, isBoss, monsterName, monsterTexture, UNLOCKS, unlockKey, type MonsterId, type UnlockDef } from '../config/collection';
 import { BOSSES } from '../config/enemies';
 import { MAPS } from '../config/maps';
@@ -167,7 +167,7 @@ export class CollectionScene extends Phaser.Scene {
     };
     if (tab === 'weapons') {
       // Skill by skill, class by class (a mechanic no class uses stays out of the book).
-      for (const owner of CHARACTERS) {
+      for (const owner of PLAYABLE) {
         for (const id of owner.skills) {
           const w = WEAPONS[id];
           add('weapon', id, w.name, w.icon, 'weapon', (locked) => {
@@ -381,8 +381,8 @@ export class CollectionScene extends Phaser.Scene {
 
   private drawHeroes(): void {
     const gap = 16;
-    const h = (this.listBottom - this.listTop - gap * (CHARACTERS.length - 1)) / CHARACTERS.length;
-    CHARACTERS.forEach((c, i) => this.heroCard(c, this.listTop + i * (h + gap) + h / 2, h));
+    const h = Math.min(420, (this.listBottom - this.listTop - gap * (PLAYABLE.length - 1)) / PLAYABLE.length);
+    PLAYABLE.forEach((c, i) => this.heroCard(c, this.listTop + i * (h + gap) + h / 2, h));
   }
 
   private heroCard(c: CharacterDef, cy: number, h: number): void {

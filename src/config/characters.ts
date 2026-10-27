@@ -35,6 +35,8 @@ export interface CharacterDef {
   shield: number;
   /** Where shots leave the bow or hand, from the feet in game px, when aiming right (x forward, y up). */
   muzzle: [number, number];
+  /** Not offered in the menu yet (its art is being redrawn); `?hero=` still plays it. */
+  hidden?: boolean;
 }
 
 export const CHARACTERS: CharacterDef[] = [
@@ -48,6 +50,7 @@ export const CHARACTERS: CharacterDef[] = [
     skills: ['slash', 'bash', 'quake', 'aura', 'spear', 'ward', 'axes'],
     sheet: 'swordman',
     menu: 'swordman_menu',
+    hidden: true,
     melee: true,
     maxHp: 1.3,
     area: 1,
@@ -89,6 +92,7 @@ export const CHARACTERS: CharacterDef[] = [
     skills: ['bolt', 'lightning', 'frost', 'shuriken', 'bomb', 'firetrail', 'beam'],
     sheet: 'mage',
     menu: 'mage_menu',
+    hidden: true,
     maxHp: 0.8,
     area: 1.2,
     speed: 0.95,
@@ -102,6 +106,9 @@ export const CHARACTERS: CharacterDef[] = [
 ];
 
 export const CHARACTER_IDS = CHARACTERS.map((c) => c.id);
+
+/** The classes the menu offers. */
+export const PLAYABLE = CHARACTERS.filter((c) => !c.hidden);
 
 /** Every skill this class doesn't learn: its level-up cards never offer them. */
 export function otherSkills(c: CharacterDef): WeaponId[] {

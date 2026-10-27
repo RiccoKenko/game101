@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
 import { ULTIMATES } from '../config/abilities';
-import { characterDef, otherSkills, type CharacterDef, type CharacterId } from '../config/characters';
+import { characterDef, otherSkills, PLAYABLE, type CharacterDef, type CharacterId } from '../config/characters';
 import { CURSE, CURSE_IDS, CURSE_UNLOCK_MAPS, HEAT_GOLD, heatOf, type CurseId } from '../config/curses';
 import { DIFFICULTIES, maxDifficulty, type DifficultyDef } from '../config/difficulty';
 import { UNLOCKS, unlockKey, type MonsterId } from '../config/collection';
@@ -232,7 +232,9 @@ export class GameScene extends Phaser.Scene {
     const picked: string[] = DEBUG.curses.length ? DEBUG.curses : save.unlockedMaps >= CURSE_UNLOCK_MAPS ? save.curses : [];
     this.curses = new Set(CURSE_IDS.filter((id) => picked.includes(id)));
     this.heat = heatOf([...this.curses]);
-    const hero = (this.hero = characterDef((DEBUG.hero || saveStore.data.character) as CharacterId));
+    // A save may still name a class the menu no longer offers: that plays the first one offered instead.
+    const saved = PLAYABLE.some((c) => c.id === save.character) ? save.character : PLAYABLE[0].id;
+    const hero = (this.hero = characterDef((DEBUG.hero || saved) as CharacterId));
     this.mastery = DEBUG.mastery > 0 ? Math.min(MASTERY.maxLevel, DEBUG.mastery) : masteryState(save.mastery[hero.id]).level;
     this.perks = masteryPerks(hero.id, this.mastery);
     this.gear = gearBonus(save.gear);

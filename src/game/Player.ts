@@ -9,6 +9,20 @@ import { type PlayerStats } from '../core/stats';
 const HERO_HEIGHT = 150;
 /** The running loops, which share their legs frame by frame. */
 const STRIDES = ['run', 'runaim', 'runrelease'];
+/**
+ * A sheet drawn from five sides has each animation once per side (`idle_s`, `run_ne`...): which side to show for
+ * each of the eight ways the hero can look (east, then clockwise on screen), and whether to mirror it.
+ */
+const FACINGS = [
+  { dir: 'e', flip: false },
+  { dir: 'se', flip: false },
+  { dir: 's', flip: false },
+  { dir: 'se', flip: true },
+  { dir: 'e', flip: true },
+  { dir: 'ne', flip: true },
+  { dir: 'n', flip: false },
+  { dir: 'ne', flip: false },
+];
 
 export class Player {
   x = 0;
@@ -41,6 +55,16 @@ export class Player {
   private action: string | null = null;
   /** Which way the last shot went (-1 left, 1 right): the hero faces it while shooting, even running the other way. */
   private aimFace = 1;
+  /** The last shot's direction (unit vector), for a sheet drawn from five sides. */
+  private aimX = 1;
+  private aimY = 0;
+  /** A sheet drawn from five sides (see FACINGS): where the hero looks, and whether the side shown is mirrored. */
+  private readonly directional: boolean;
+  private lookX = 1;
+  private lookY = 0;
+  private flip = false;
+  /** The animation key the current one-shot action plays. */
+  private actionKey = '';
   /** Seconds since the bow last fired: running soon after a shot keeps the bow drawn (runaim). */
   private sinceShot = 99;
   /** Seconds left of the just-released arms while running (runrelease), before drawing again. */
@@ -68,17 +92,22 @@ export class Player {
     this.shadow = scene.add.image(0, 0, 'shadow').setDisplaySize(84, 26).setDepth(4);
     // Anchored at the feet so the run bounce and squash pivot on the ground. A character whose sheet didn't load
     // falls back to the archer's.
-    const sheet = scene.anims.exists(`${character.sheet}_idle`) ? character.sheet : 'archer';
+    const loaded = (key: string) => {
+      const m = scene.cache.json.get(heroMetaKey(key)) as HeroMeta | undefined;
+      return !!m && scene.anims.exists(`${key}_idle${m.directions ? '_s' : ''}`);
+    };
+    const sheet = loaded(character.sheet) ? character.sheet : 'archer';
     this.sheet = sheet;
     this.strides = new Set(STRIDES.map((s) => `${sheet}_${s}`));
     const meta = scene.cache.json.get(heroMetaKey(sheet)) as HeroMeta | undefined;
-    this.painted = !!meta && scene.anims.exists(`${sheet}_idle`);
+    this.painted = loaded(sheet);
+    this.directional = !!meta?.directions;
     if (this.painted && meta) {
       this.baseScale = HERO_HEIGHT / (meta.bodyHeight ?? meta.frameHeight * 0.82);
       this.sprite = scene.add.sprite(0, 0, sheet, 0).setDepth(20);
-      this.sprite.setOrigin(meta.feet[0] / meta.frameWidth, meta.feet[1] / meta.frameHeight).play(`${sheet}_idle`);
+      this.sprite.setOrigin(meta.feet[0] / meta.frameWidth, meta.feet[1] / meta.frameHeight).play(this.key('idle'));
       this.sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim: Phaser.Animations.Animation) => {
-        if (anim.key !== `${sheet}_ko` && `${sheet}_${this.action}` === anim.key) this.action = null;
+        if (this.action && this.action !== 'ko' && anim.key === this.actionKey) this.action = null;
       });
     } else {
       this.baseScale = 1;
@@ -135,6 +164,9 @@ export class Player {
   shootAt(angle: number): void {
     this.squash = Math.max(this.squash, 0.5);
     this.aimFace = Math.cos(angle) < 0 ? -1 : 1;
+    this.aimX = Math.cos(angle);
+    this.aimY = Math.sin(angle);
+    if (!this.moving) this.look(this.aimX, this.aimY);
     this.sinceShot = 0;
     if (!this.moving) this.playAction('shoot', this.action === 'shoot');
     else if (!this.action && this.hasAnim('runrelease')) {
@@ -148,12 +180,34 @@ export class Player {
    * the same legs frame by frame, so swapping them changes only the arms.
    */
   private playStride(name: string): void {
-    const key = `${this.sheet}_${name}`;
+    const key = this.key(name);
     const anims = this.sprite.anims;
     const current = anims.currentAnim?.key ?? '';
     if (current === key && anims.isPlaying) return;
-    const i = this.strides.has(current) && anims.currentFrame ? anims.currentFrame.index - 1 : 0;
+    const stride = this.directional ? current.startsWith(`${this.sheet}_run_`) : this.strides.has(current);
+    const i = stride && anims.currentFrame ? anims.currentFrame.index - 1 : 0;
     this.sprite.play({ key, startFrame: i });
+    this.flip = this.facing().flip;
+  }
+
+  /**
+   * The animation key for `name`. On a sheet drawn from five sides it is the side the hero looks toward (the
+   * running variants share the plain run there).
+   */
+  private key(name: string): string {
+    if (!this.directional) return `${this.sheet}_${name}`;
+    return `${this.sheet}_${STRIDES.includes(name) ? 'run' : name}_${this.facing().dir}`;
+  }
+
+  /** Which side of a five-sided sheet to show, and mirrored or not, for where the hero looks (one of 8 ways). */
+  private facing(): { dir: string; flip: boolean } {
+    return FACINGS[(Math.round(Math.atan2(this.lookY, this.lookX) / (Math.PI / 4)) + 8) % 8];
+  }
+
+  private look(x: number, y: number): void {
+    if (Math.hypot(x, y) < 0.15) return;
+    this.lookX = x;
+    this.lookY = y;
   }
 
   /**
@@ -166,7 +220,7 @@ export class Player {
   }
 
   private hasAnim(name: string): boolean {
-    return this.painted && this.sprite.scene.anims.exists(`${this.sheet}_${name}`);
+    return this.painted && this.sprite.scene.anims.exists(this.key(name));
   }
 
   /** Throws the bow up in joy (level-ups, boss kills). */
@@ -185,7 +239,9 @@ export class Player {
     if (!this.painted || this.action === 'ko' || !this.hasAnim(name)) return;
     if (this.action && !force) return;
     this.action = name;
-    this.sprite.play(`${this.sheet}_${name}`);
+    this.actionKey = this.key(name);
+    this.flip = this.facing().flip;
+    this.sprite.play(this.actionKey);
   }
 
   update(dt: number): void {
@@ -208,10 +264,14 @@ export class Player {
       this.sinceShot += dt;
       // Starting to run mid-shot cuts the standing shot short.
       if (this.moving && this.action === 'shoot') this.action = null;
+      // A sheet drawn from five sides looks where the hero walks, or standing, where it last shot.
+      if (!this.action && this.moving) this.look(this.faceX, this.faceY);
+      else if (!this.action && this.sinceShot < 1.2) this.look(this.aimX, this.aimY);
       if (!this.action) {
         if (!this.moving) {
           this.release = 0;
-          this.sprite.play(`${this.sheet}_idle`, true);
+          this.sprite.play(this.key('idle'), true);
+          this.flip = this.facing().flip;
         } else if (this.release > 0) {
           this.release -= dt;
           if (this.release <= 0) this.playStride('runaim');
@@ -230,7 +290,8 @@ export class Player {
     }
     const key = this.sprite.anims.currentAnim?.key;
     const aiming = this.action === 'shoot' || (!this.action && (key === `${this.sheet}_runaim` || key === `${this.sheet}_runrelease`));
-    if (aiming) this.sprite.setFlipX(this.aimFace < 0);
+    if (this.directional) this.sprite.setFlipX(this.flip);
+    else if (aiming) this.sprite.setFlipX(this.aimFace < 0);
     else if (Math.abs(this.faceX) > 0.15) this.sprite.setFlipX(this.faceX < 0);
     if (this.moving !== this.wasMoving) {
       this.wasMoving = this.moving;
