@@ -11,9 +11,9 @@ HOW WE WORK
 
 STYLE (every image): the look of a classic late-1990s Korean 2D online fantasy RPG, remastered in high resolution
 - A cosy, nostalgic, gentle and cute online fantasy world full of friendly adventurers: 2D character sprites walking over hand-painted 3D fields, seen from about 45 degrees above.
-- Everything looks like classic hand-pixelled 2D game sprites redrawn cleanly at high resolution (smooth, not blocky): small, precise shapes; soft 3- or 4-tone shading per material with a light dithered texture; thin outlines in a darker shade of each colour (dark brown on skin and leather, dark navy on blue cloth), never thick black lines.
+- Everything looks like a classic 2D pixel-art game sprite (drawn about 100 pixels tall) enlarged with gentle smoothing: a soft, slightly blurred pixel texture, simple shapes, 3- or 4-tone shading per material, thin outlines in a darker shade of each colour (dark brown on skin and leather), never thick black lines and never crisp vector lines.
 - NOT a modern mobile-game look: no glossy plastic rendering, no airbrushed gradients, no thick outlines, no 3D render, no flat vector style.
-- Colours: a muted, slightly desaturated medieval-fantasy palette (dusty navy, slate blue, khaki, leather brown, ivory, moss green, burgundy, old brass), soft warm daylight from the upper left.
+- Colours: a warm, earthy, low-saturation palette: beige, tan, sand, cream, leather brown, dusty rose, brick red, slate blue, moss green, with very few bright colours; soft, slightly hazy warm daylight from the upper left.
 - Every design is ORIGINAL. Do not copy any existing game's characters, monsters, items, logos or interface, and do not use any existing game's name.
 - Monsters are drawn like the field monsters of that era: simple rounded shapes, big glossy eyes, small mouths, cute and a little silly, never scary or gory; small and readable, like 2D sprites about 100 pixels tall shown larger.
 - Map pieces look like the hand-painted 3D fields of that era: ground textures are soft, painterly and a little hazy, in muted greens, ochres and browns, low in contrast so characters stand out; trees, rocks and props look like simple 3D shapes with hand-painted textures, seen from about 45 degrees above.
