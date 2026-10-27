@@ -29,10 +29,13 @@ const DIRS = ['s', 'se', 'e', 'ne', 'n'];
  */
 const HEROES = {
   archer: {
-    sheets: { walk: 'archer_walk.png', attack: 'archer_attack.png', misc: 'archer_misc.png' },
+    // archer_walk.png (the first walk) was redrawn as archer_walk2.png: its legs barely moved.
+    sheets: { walk: 'archer_walk2.png', walkshoot: 'archer_walkshoot.png', attack: 'archer_attack.png', misc: 'archer_misc.png' },
     animations: {
       idle: { fps: 2, loop: true, frames: [['misc', 0]] },
       run: { fps: 9, loop: true, frames: [['walk', 0], ['walk', 1], ['walk', 2], ['walk', 3]] },
+      // Walking while the bow keeps firing: the legs match run frame for frame.
+      runshoot: { fps: 9, loop: true, frames: [['walkshoot', 0], ['walkshoot', 1], ['walkshoot', 2], ['walkshoot', 3]] },
       shoot: { fps: 14, loop: false, frames: [['attack', 0], ['attack', 1], ['attack', 2], ['attack', 3]] },
       hurt: { fps: 8, loop: false, frames: [['misc', 1], ['misc', 1], ['misc', 1]] },
       ko: { fps: 6, loop: false, frames: [['misc', 1], ['misc', 2], ['misc', 2]] },
@@ -230,6 +233,15 @@ async function buildHero(id, preview) {
   const sheets = {};
   for (const [name, file] of Object.entries(h.sheets)) sheets[name] = poses(await keyed(join(IN, file)), 4, 5);
   const pose = (sheet, col, row) => sheets[sheet][row][col];
+  // How tall each sheet draws her (median over its poses), to check the sheets agree on her size.
+  for (const [name, grid] of Object.entries(sheets)) {
+    const hs = grid.flat().map((p) => {
+      const f = feetOf(p);
+      return f.y - f.top;
+    });
+    hs.sort((a, b) => a - b);
+    console.log(`  ${name}: median height ${hs[Math.floor(hs.length / 2)]} px`);
+  }
   // Scale: the standing front pose ends up `BODY` px tall (the game shows heroes 150 px tall).
   const BODY = 176;
   const stand = feetOf(pose(...h.stand));

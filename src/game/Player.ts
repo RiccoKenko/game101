@@ -169,7 +169,7 @@ export class Player {
     if (!this.moving) this.look(this.aimX, this.aimY);
     this.sinceShot = 0;
     if (!this.moving) this.playAction('shoot', this.action === 'shoot');
-    else if (!this.action && this.hasAnim('runrelease')) {
+    else if (!this.action && !this.directional && this.hasAnim('runrelease')) {
       this.release = 0.19;
       this.playStride('runrelease');
     }
@@ -264,11 +264,14 @@ export class Player {
       this.sinceShot += dt;
       // Starting to run mid-shot cuts the standing shot short.
       if (this.moving && this.action === 'shoot') this.action = null;
-      // A sheet drawn from five sides looks where the hero walks, or standing, where it last shot.
-      if (!this.action && this.moving) this.look(this.faceX, this.faceY);
-      else if (!this.action && this.sinceShot < 1.2) this.look(this.aimX, this.aimY);
+      // A sheet drawn from five sides looks where the hero walks, or where it shoots: walking while the bow keeps
+      // firing, it walks and shoots that way (runshoot).
+      const runShoot = this.directional && this.moving && this.sinceShot < 0.9 && this.hasAnim('runshoot');
+      if (!this.action && (runShoot || (!this.moving && this.sinceShot < 1.2))) this.look(this.aimX, this.aimY);
+      else if (!this.action && this.moving) this.look(this.faceX, this.faceY);
       if (!this.action) {
-        if (!this.moving) {
+        if (runShoot) this.playStride('runshoot');
+        else if (!this.moving) {
           this.release = 0;
           this.sprite.play(this.key('idle'), true);
           this.flip = this.facing().flip;

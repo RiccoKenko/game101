@@ -1,0 +1,32 @@
+Draw ONE character sprite sheet for an original 2D fantasy online RPG (a top-down action game). The look is the classic late-1990s / early-2000s Korean 2D online RPG character sprite: a small chibi-anime character about 2.5 to 3 heads tall, a cute anime face with large glossy eyes and a small mouth, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted earthy palette, light from the upper left, seen from slightly above (about 30 degrees), like hand-polished game sprites.
+
+REFERENCE: the attached image shows her design (an earlier sheet whose legs barely move: do NOT copy its poses). Match her design exactly: the same girl, face, hair, outfit, colours, bow, proportions, size in the cell, outline weight and shading.
+
+CHARACTER (our own original design; exactly the same in every drawing):
+- "Archer", a cheerful teenage girl with chestnut red-brown hair tied in a high ponytail with a small white feather in the tie, short side bangs, green eyes.
+- A moss-green leather vest laced at the front over a cream shirt with short puffed sleeves; a brown leather belt with a small pouch; a short tan leather skirt over dark leggings; tall brown leather boots with folded cuffs.
+- A leather bracer on her left forearm and a fingerless glove on her right hand; a brown leather quiver with white-fletched arrows on her back (its strap crosses her chest).
+- A plain wooden longbow with small brass tips, carried in her left hand, held low and relaxed while she walks.
+
+SHEET LAYOUT (portrait 1024 x 1536):
+- She WALKS AND SHOOTS AT THE SAME TIME: her legs walk while her upper body shoots the bow toward the way she faces.
+- A grid of 4 columns x 5 rows of equal cells. One full-body drawing per cell, centred in its cell, the same size in every cell, the foot that carries her weight on the same baseline near the bottom of every cell.
+- Each ROW is one facing direction (she walks and aims the same way):
+  Row 1: toward the viewer (front view; the bow held up in front of her, aimed at the viewer).
+  Row 2: down and to the RIGHT (three-quarter front view, turned toward the right side of the image).
+  Row 3: to the RIGHT (side view, profile toward the right side of the image).
+  Row 4: up and to the RIGHT (three-quarter back view).
+  Row 5: away from the viewer (back view).
+- Each COLUMN is one frame of a 4-frame walk cycle, and the four frames must look clearly different from each other, even at a small size:
+  Column 1 (contact): the stride at its widest: her LEFT leg forward with the heel touching the ground, her right leg stretched back on its toes; her body at its lowest.
+  Column 2 (passing): her legs together under her body: the left leg straight and carrying her weight, the RIGHT knee lifted and bent as that leg swings forward; her body at its highest.
+  Column 3 (contact): the mirror of column 1: her RIGHT leg forward, her left leg stretched back; her body at its lowest.
+  Column 4 (passing): legs together again: the right leg straight, the LEFT knee lifted and bent as it swings forward; her body at its highest.
+  In the front and back views show the steps just as clearly: the forward foot lower and bigger, the back foot higher and partly hidden, the lifted knee bent up.
+- Her UPPER BODY in the four columns: column 1 at full draw (bow arm stretched out toward where she faces, the string pulled back to her cheek, arrow aimed); column 2 still at full draw; column 3 release (the string snapped forward, the arrow gone, a slight recoil; do not draw the flying arrow); column 4 drawing the next arrow back.
+
+TECHNICAL:
+- Background: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink or purple inside the drawings.
+- No text, numbers, labels, grid lines, frames, borders, ground shadows, glows, motion lines, sparkles or watermarks.
+- Every drawing is complete (nothing cut off by its cell or the image edge) and separated from its neighbours by plain background.
+- Keep her design, colours and proportions identical in all 20 drawings and identical to the reference.

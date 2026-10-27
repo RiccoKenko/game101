@@ -74,122 +74,152 @@
       "fps": 9,
       "loop": true
     },
-    "shoot_s": {
+    "runshoot_s": {
       "start": 25,
+      "count": 4,
+      "fps": 9,
+      "loop": true
+    },
+    "runshoot_se": {
+      "start": 29,
+      "count": 4,
+      "fps": 9,
+      "loop": true
+    },
+    "runshoot_e": {
+      "start": 33,
+      "count": 4,
+      "fps": 9,
+      "loop": true
+    },
+    "runshoot_ne": {
+      "start": 37,
+      "count": 4,
+      "fps": 9,
+      "loop": true
+    },
+    "runshoot_n": {
+      "start": 41,
+      "count": 4,
+      "fps": 9,
+      "loop": true
+    },
+    "shoot_s": {
+      "start": 45,
       "count": 4,
       "fps": 14,
       "loop": false
     },
     "shoot_se": {
-      "start": 29,
+      "start": 49,
       "count": 4,
       "fps": 14,
       "loop": false
     },
     "shoot_e": {
-      "start": 33,
+      "start": 53,
       "count": 4,
       "fps": 14,
       "loop": false
     },
     "shoot_ne": {
-      "start": 37,
+      "start": 57,
       "count": 4,
       "fps": 14,
       "loop": false
     },
     "shoot_n": {
-      "start": 41,
+      "start": 61,
       "count": 4,
       "fps": 14,
       "loop": false
     },
     "hurt_s": {
-      "start": 45,
+      "start": 65,
       "count": 3,
       "fps": 8,
       "loop": false
     },
     "hurt_se": {
-      "start": 48,
+      "start": 68,
       "count": 3,
       "fps": 8,
       "loop": false
     },
     "hurt_e": {
-      "start": 51,
+      "start": 71,
       "count": 3,
       "fps": 8,
       "loop": false
     },
     "hurt_ne": {
-      "start": 54,
+      "start": 74,
       "count": 3,
       "fps": 8,
       "loop": false
     },
     "hurt_n": {
-      "start": 57,
+      "start": 77,
       "count": 3,
       "fps": 8,
       "loop": false
     },
     "ko_s": {
-      "start": 60,
+      "start": 80,
       "count": 3,
       "fps": 6,
       "loop": false
     },
     "ko_se": {
-      "start": 63,
+      "start": 83,
       "count": 3,
       "fps": 6,
       "loop": false
     },
     "ko_e": {
-      "start": 66,
+      "start": 86,
       "count": 3,
       "fps": 6,
       "loop": false
     },
     "ko_ne": {
-      "start": 69,
+      "start": 89,
       "count": 3,
       "fps": 6,
       "loop": false
     },
     "ko_n": {
-      "start": 72,
+      "start": 92,
       "count": 3,
       "fps": 6,
       "loop": false
     },
     "cheer_s": {
-      "start": 75,
+      "start": 95,
       "count": 4,
       "fps": 6,
       "loop": false
     },
     "cheer_se": {
-      "start": 79,
+      "start": 99,
       "count": 4,
       "fps": 6,
       "loop": false
     },
     "cheer_e": {
-      "start": 83,
+      "start": 103,
       "count": 4,
       "fps": 6,
       "loop": false
     },
     "cheer_ne": {
-      "start": 87,
+      "start": 107,
       "count": 4,
       "fps": 6,
       "loop": false
     },
     "cheer_n": {
-      "start": 91,
+      "start": 111,
       "count": 4,
       "fps": 6,
       "loop": false
