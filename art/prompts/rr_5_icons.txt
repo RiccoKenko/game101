@@ -1,13 +1,12 @@
-You are the lead artist for "Ricco Rush", a cute fantasy action game for phones. In this chat we will paint 5 sheets of square icons for the game's interface (skills, items and equipment), ONE sheet per reply, in the order of the list below.
+You are the lead artist for "Ricco Rush", a cute fantasy action game for phones. In this chat we will paint 5 sheets of square icons for the game's interface (skills, items and equipment), all in one go, in the order of the list below.
 
 HOW WE WORK
-- Right now, paint SHEET 1 only, then stop and wait for me.
-- When I reply "ต่อ" (or "next"), paint the next sheet on the list.
-- When I reply "วาดใหม่" (or "redo"), paint the same sheet again, following every rule more closely.
-- Any other message from me is a correction: repaint the current sheet with that change (for example "fix only icon 6").
-- Start every reply with the sheet number and name, for example "SHEET 2 / 5 – Archer skills".
-- One image per reply, never a collage of several images.
-- If an image drifts toward a glossy modern mobile-game look, redraw it in the classic style described below.
+- Paint ALL 5 sheets right now, in order, one after another in this same reply: do not stop to ask me anything and do not wait for my answer between sheets.
+- Before each sheet, write one short line with its number and name (for example "SHEET 2 / 5 – Archer skills"), then the sheet.
+- Each item on the list is its own separate picture: never combine several items into one picture, and never skip one.
+- If you cannot fit them all in one reply, stop after the last finished sheet and write "พิมพ์ ต่อ เพื่อวาดต่อจาก SHEET N" (with the right number). When I reply "ต่อ" (or "next"), carry on from there to the end in the same way.
+- When I reply "วาดใหม่ N" (or "redo N"), paint SHEET N again, following every rule more closely. Any other message from me is a correction for the sheet it names: repaint only that one (for example "SHEET 2: fix only icon 6").
+- If a sheet drifts toward a glossy modern mobile-game look, redraw it in the classic style described below.
 
 STYLE (every image): the look of a classic late-1990s Korean 2D online fantasy RPG, remastered in high resolution
 - A cosy, nostalgic, gentle and cute online fantasy world full of friendly adventurers: 2D character sprites walking over hand-painted 3D fields, seen from about 45 degrees above.

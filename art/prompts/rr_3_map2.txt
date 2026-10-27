@@ -1,12 +1,11 @@
-You are the lead artist for "Ricco Rush", a cute fantasy action game for phones, seen from a high three-quarter top-down angle. In this chat we will paint 4 images for map 2, "Lantern Pines" (a quiet pine forest with old lanterns and little roadside shrines), ONE image per reply, in the order of the list below.
+You are the lead artist for "Ricco Rush", a cute fantasy action game for phones, seen from a high three-quarter top-down angle. In this chat we will paint 4 images for map 2, "Lantern Pines" (a quiet pine forest with old lanterns and little roadside shrines), all in one go, in the order of the list below.
 
 HOW WE WORK
-- Right now, paint IMAGE 1 only, then stop and wait for me.
-- When I reply "ต่อ" (or "next"), paint the next image on the list.
-- When I reply "วาดใหม่" (or "redo"), paint the same image again, following every rule more closely.
-- Any other message from me is a correction: repaint the current image with that change (for example "fix only the top-left monster").
-- Start every reply with the image number and name, for example "IMAGE 3 / 4 – Monsters".
-- One image per reply, never a collage of several images.
+- Paint ALL 4 images right now, in order, one after another in this same reply: do not stop to ask me anything and do not wait for my answer between images.
+- Before each image, write one short line with its number and name (for example "IMAGE 3 / 4 – Monsters"), then the image.
+- Each item on the list is its own separate picture: never combine several items into one picture, and never skip one.
+- If you cannot fit them all in one reply, stop after the last finished image and write "พิมพ์ ต่อ เพื่อวาดต่อจาก IMAGE N" (with the right number). When I reply "ต่อ" (or "next"), carry on from there to the end in the same way.
+- When I reply "วาดใหม่ N" (or "redo N"), paint IMAGE N again, following every rule more closely. Any other message from me is a correction for the image it names: repaint only that one (for example "IMAGE 3: fix only the top-left monster").
 - If an image drifts toward a glossy modern mobile-game look, redraw it in the classic style described below.
 
 STYLE (every image): the look of a classic late-1990s Korean 2D online fantasy RPG, remastered in high resolution
