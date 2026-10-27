@@ -169,7 +169,7 @@ export class MenuScene extends Phaser.Scene {
     const plateH = 196;
     const bottom = areaBottom - plateH - 6;
     this.heroBox = { x, top: areaTop, bottom };
-    if (this.textures.exists('hero_menu')) {
+    if (CHARACTERS.some((c) => this.textures.exists(c.menu))) {
       this.add.ellipse(x, bottom - 14, 300, 46, 0x050a18, 0.35);
       const py = areaBottom - plateH / 2;
       const plate = panel(this, x, py, 960, plateH, { radius: 28 });
@@ -309,7 +309,7 @@ export class MenuScene extends Phaser.Scene {
     const c = CHARACTERS[this.heroIndex];
     const { x, top, bottom } = this.heroBox;
     this.heroImg?.destroy();
-    const key = this.textures.exists(c.menu) ? c.menu : 'hero_menu';
+    const key = this.textures.exists(c.menu) ? c.menu : 'archer_menu';
     const img = (this.heroImg = this.add.image(x + dir * 120, bottom - 6, key).setOrigin(0.5, 1).setAlpha(dir ? 0 : 1));
     img.setScale(Math.min(HERO_H, bottom - top - 6) / img.height);
     if (c.tint) img.setTint(c.tint);

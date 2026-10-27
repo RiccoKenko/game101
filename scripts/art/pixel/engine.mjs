@@ -33,7 +33,7 @@ export class Sprite {
   constructor(width, height, { scale = 3, ss = 3 } = {}) {
     this.w = width;
     this.h = height;
-    this.scale = scale;
+    this.size = scale;
     this.ss = ss;
     this.R = scale * ss;
     this.W = width * this.R;
@@ -45,13 +45,92 @@ export class Sprite {
     this.shapes = [];
     this.ox = 0;
     this.oy = 0;
+    /** The current transform (x' = a x + c y + e, y' = b x + d y + f), like a canvas: save, translate, rotate, restore. */
+    this.m = [1, 0, 0, 1, 0, 0];
+    this.stack = [];
+    this.clips = [];
   }
 
-  /** Shift everything drawn from now on (a breathing frame, a bob). */
+  /** Shift everything drawn from now on (a breathing frame, a bob), on top of the transform. */
   offset(x, y) {
     this.ox = x;
     this.oy = y;
     return this;
+  }
+
+  save() {
+    this.stack.push(this.m.slice());
+    return this;
+  }
+
+  restore() {
+    this.m = this.stack.pop() ?? [1, 0, 0, 1, 0, 0];
+    return this;
+  }
+
+  translate(x, y) {
+    const [a, b, c, d] = this.m;
+    this.m[4] += a * x + c * y;
+    this.m[5] += b * x + d * y;
+    return this;
+  }
+
+  /** Turn everything drawn from now on by `t` radians (clockwise on screen) around the current origin. */
+  rotate(t) {
+    const [a, b, c, d] = this.m;
+    const cos = Math.cos(t);
+    const sin = Math.sin(t);
+    this.m[0] = a * cos + c * sin;
+    this.m[1] = b * cos + d * sin;
+    this.m[2] = c * cos - a * sin;
+    this.m[3] = d * cos - b * sin;
+    return this;
+  }
+
+  /** Draw everything from now on `k` times larger (radii too; outlines stay one pixel). */
+  scale(k) {
+    for (let i = 0; i < 4; i++) this.m[i] *= k;
+    return this;
+  }
+
+  /** How much the transform enlarges lengths. */
+  get k() {
+    return Math.hypot(this.m[0], this.m[1]);
+  }
+
+  /**
+   * Only paint inside this rectangle (sprite pixels, as the transform places it now, and inside any clip already
+   * set) until the matching `unclip()`.
+   */
+  clip(x, y, w, h) {
+    const [X0, Y0] = this.tf(x, y);
+    const [X1, Y1] = this.tf(x + w, y + h);
+    const c = [Math.min(X0, X1), Math.min(Y0, Y1), Math.max(X0, X1), Math.max(Y0, Y1)];
+    const o = this.clips.at(-1);
+    this.clips.push(o ? [Math.max(c[0], o[0]), Math.max(c[1], o[1]), Math.min(c[2], o[2]), Math.min(c[3], o[3])] : c);
+    return this;
+  }
+
+  unclip() {
+    this.clips.pop();
+    return this;
+  }
+
+  /** Turn by `t` around the point (x, y). */
+  pivot(x, y, t) {
+    return this.translate(x, y).rotate(t).translate(-x, -y);
+  }
+
+  /** A point in sprite pixels to raster pixels, through the transform and the offset. */
+  tf(x, y) {
+    const [a, b, c, d, e, f] = this.m;
+    return [(a * x + c * y + e + this.ox) * this.R, (b * x + d * y + f + this.oy) * this.R];
+  }
+
+  /** Where a sprite point ends up (sprite pixels), e.g. to hang a weapon on a hand drawn inside a transform. */
+  where(x, y) {
+    const [X, Y] = this.tf(x, y);
+    return [X / this.R, Y / this.R];
   }
 
   addShape(ramp, opts) {
@@ -81,27 +160,36 @@ export class Sprite {
 
   put(X, Y, p, rgb) {
     if (X < 0 || Y < 0 || X >= this.W || Y >= this.H) return;
+    const c = this.clips.at(-1);
+    if (c && (X < c[0] || Y < c[1] || X >= c[2] || Y >= c[3])) return;
     const i = Y * this.W + X;
     this.part[i] = p;
     this.col.set(rgb, i * 3);
   }
 
-  /** A ball-shaded ellipse (centre and radii in sprite pixels). */
+  /** A ball-shaded ellipse (centre and radii in sprite pixels); `opts.rot` tilts it. */
   ellipse(cx, cy, rx, ry, ramp, opts) {
     const { R } = this;
     const p = this.addShape(ramp, opts);
     const s = this.shapes[p];
-    cx = (cx + this.ox) * R;
-    cy = (cy + this.oy) * R;
-    rx *= R;
-    ry *= R;
-    for (let Y = Math.floor(cy - ry); Y <= Math.ceil(cy + ry); Y++)
-      for (let X = Math.floor(cx - rx); X <= Math.ceil(cx + rx); X++) {
-        const nx = (X + 0.5 - cx) / rx;
-        const ny = (Y + 0.5 - cy) / ry;
+    [cx, cy] = this.tf(cx, cy);
+    rx *= R * this.k;
+    ry *= R * this.k;
+    const t = Math.atan2(this.m[1], this.m[0]) + ((typeof opts === 'object' && opts?.rot) || 0);
+    const cos = Math.cos(t);
+    const sin = Math.sin(t);
+    const ext = t ? Math.max(rx, ry) : 0;
+    const ex = ext || rx;
+    const ey = ext || ry;
+    for (let Y = Math.floor(cy - ey); Y <= Math.ceil(cy + ey); Y++)
+      for (let X = Math.floor(cx - ex); X <= Math.ceil(cx + ex); X++) {
+        const dx = X + 0.5 - cx;
+        const dy = Y + 0.5 - cy;
+        const nx = (dx * cos + dy * sin) / rx;
+        const ny = (dy * cos - dx * sin) / ry;
         const r2 = nx * nx + ny * ny;
         if (r2 > 1) continue;
-        this.put(X, Y, p, this.shade(s, X, Y, nx, ny, Math.sqrt(1 - r2)));
+        this.put(X, Y, p, this.shade(s, X, Y, nx * cos - ny * sin, nx * sin + ny * cos, Math.sqrt(1 - r2)));
       }
     return this;
   }
@@ -111,11 +199,9 @@ export class Sprite {
     const { R } = this;
     const p = this.addShape(ramp, opts);
     const s = this.shapes[p];
-    x1 = (x1 + this.ox) * R;
-    x2 = (x2 + this.ox) * R;
-    y1 = (y1 + this.oy) * R;
-    y2 = (y2 + this.oy) * R;
-    r *= R;
+    [x1, y1] = this.tf(x1, y1);
+    [x2, y2] = this.tf(x2, y2);
+    r *= R * this.k;
     const dx = x2 - x1;
     const dy = y2 - y1;
     const len2 = dx * dx + dy * dy || 1;
@@ -140,12 +226,10 @@ export class Sprite {
     const { R } = this;
     const p = this.addShape(ramp, opts);
     const s = this.shapes[p];
-    x1 = (x1 + this.ox) * R;
-    x2 = (x2 + this.ox) * R;
-    y1 = (y1 + this.oy) * R;
-    y2 = (y2 + this.oy) * R;
-    r1 *= R;
-    r2 *= R;
+    [x1, y1] = this.tf(x1, y1);
+    [x2, y2] = this.tf(x2, y2);
+    r1 *= R * this.k;
+    r2 *= R * this.k;
     const rm = Math.max(r1, r2);
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -168,10 +252,9 @@ export class Sprite {
 
   /** A filled polygon, shaded like an upright cylinder across its width. */
   poly(points, ramp, opts) {
-    const { R } = this;
     const p = this.addShape(ramp, opts);
     const s = this.shapes[p];
-    const pts = points.map(([x, y]) => [(x + this.ox) * R, (y + this.oy) * R]);
+    const pts = points.map(([x, y]) => this.tf(x, y));
     const xs = pts.map((q) => q[0]);
     const ys = pts.map((q) => q[1]);
     const minX = Math.min(...xs);

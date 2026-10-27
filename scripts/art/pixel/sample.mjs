@@ -8,9 +8,10 @@
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import { archer, gummy, mage, swordman } from './heroes.mjs';
+import { archer, mage, swordman } from './heroes.mjs';
+import { gummy } from './gummy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..');
 const OUT = process.argv[2] ?? join(ROOT, 'art/samples');
@@ -19,7 +20,7 @@ mkdirSync(OUT, { recursive: true });
 const HEROES = { swordman, archer, mage };
 
 /** A soft painted grass field: smooth two-octave patches of green, then tufts and small flowers drawn on top. */
-async function grass(w, h, seed = 7) {
+export async function grass(w, h, seed = 7) {
   let r = seed;
   const rnd = () => ((r = (r * 1103515245 + 12345) % 2147483648) / 2147483648);
   const layer = (G) => {
@@ -133,7 +134,8 @@ async function main() {
   console.log(`wrote ${OUT}/lineup.png, scene.png, preview.html and the sprite frames`);
 }
 
-main();
+// Run when called as a script; other scripts may import grass().
+if (import.meta.url === pathToFileURL(process.argv[1]).href) main();
 
 /** The preview page: the field, then each sprite breathing (two frames). */
 async function page(frames, scene, { hw, hh, gw, gh }) {

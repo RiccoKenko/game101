@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+</head>
+<body style="margin:0;background:transparent">
+<script type="module">
+// Poses a 3D model (glTF/GLB or FBX) and photographs it with an orthographic camera tilted down at the field, for
+// scripts/art/render3d/render.mjs. Everything is driven through window.info() and window.render().
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.setClearColor(0x000000, 0);
+document.body.appendChild(renderer.domElement);
+const models = {};
+const textures = {};
+
+async function load(url) {
+  if (models[url]) return models[url];
+  let root;
+  let clips;
+  if (url.toLowerCase().endsWith('.fbx')) {
+    root = await new FBXLoader().loadAsync(url);
+    // FBX comes in centimetres: bring it to metres like the glTF models.
+    root.scale.setScalar(0.01);
+    clips = root.animations;
+  } else {
+    const g = await new GLTFLoader().loadAsync(url);
+    root = g.scene;
+    clips = g.animations;
+  }
+  models[url] = { root, clips };
+  return models[url];
+}
+
+window.info = async (url) => {
+  const { root, clips } = await load(url);
+  const meshes = [];
+  const bones = [];
+  root.traverse((o) => {
+    if (o.isMesh) meshes.push(`${o.name} <${o.parent?.name}>`);
+    if (o.isBone) bones.push(o.name);
+  });
+  const size = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).toArray();
+  return { clips: clips.map((c) => `${c.name} ${c.duration.toFixed(2)}`), meshes, bones, size };
+};
+
+/** `base` with the tracks of the bones in `upper` taken from `over` instead (a run with the arms of an attack). */
+function layered(base, over, upper) {
+  const isUpper = (track) => upper.some((b) => track.name.startsWith(`${b}.`));
+  const tracks = [...base.tracks.filter((t) => !isUpper(t)), ...over.tracks.filter(isUpper)];
+  return new THREE.AnimationClip(`${base.name}+${over.name}`, base.duration, tracks);
+}
+
+/**
+ * Photographs `url` playing `clip` at each time in `times` (seconds): an orthographic camera looking down `elev`
+ * degrees, the model turned `yaw` degrees, `px` pixels per metre, a `w` x `h` picture with the model's origin (its
+ * feet) at `feet`. `show`/`hide` pick meshes by name prefix, `over` (+ `overTime`, `upper` bone names) layers another
+ * clip on the upper body, `tex` supplies a texture to meshes without one, `tint` multiplies mesh colours by name.
+ * Returns PNG data URLs.
+ */
+window.render = async (o) => {
+  const { url, clip, times = [0], w = 256, h = 256, feet = [128, 236], px = 60, yaw = 60, elev = 20 } = o;
+  const { root, clips } = await load(url);
+  if (o.tex && !textures[o.tex]) {
+    textures[o.tex] = await new THREE.TextureLoader().loadAsync(o.tex);
+    textures[o.tex].colorSpace = THREE.SRGBColorSpace;
+  }
+  root.traverse((m) => {
+    if (!m.isMesh) return;
+    m.frustumCulled = false;
+    if (o.show) m.visible = o.show.some((n) => m.name.startsWith(n));
+    if (o.hide?.some((n) => m.name.startsWith(n))) m.visible = false;
+    for (const mat of [].concat(m.material)) {
+      mat.transparent = false;
+      mat.opacity = 1;
+      if (o.tex && !mat.map) {
+        mat.map = textures[o.tex];
+        mat.needsUpdate = true;
+      }
+    }
+  });
+  const scene = new THREE.Scene();
+  const turn = new THREE.Group();
+  turn.add(root);
+  turn.rotation.y = THREE.MathUtils.degToRad(yaw);
+  scene.add(turn);
+  const L = o.light ?? {};
+  scene.add(new THREE.HemisphereLight(0xfff4e0, 0x6a5a48, L.hemi ?? 1.5));
+  const sun = new THREE.DirectionalLight(0xfff0d8, L.sun ?? 2.4);
+  sun.position.set(-4, 8, 6);
+  scene.add(sun);
+  const fill = new THREE.DirectionalLight(0xd8e4ff, L.fill ?? 0.6);
+  fill.position.set(5, 3, -4);
+  scene.add(fill);
+  renderer.setSize(w, h, false);
+  const cam = new THREE.OrthographicCamera(-feet[0] / px, (w - feet[0]) / px, feet[1] / px, -(h - feet[1]) / px, -50, 50);
+  const e = THREE.MathUtils.degToRad(elev);
+  cam.position.set(0, Math.sin(e) * 10, Math.cos(e) * 10);
+  cam.lookAt(0, 0, 0);
+  const mixer = new THREE.AnimationMixer(root);
+  let c = clips.find((k) => k.name === clip);
+  if (!c && clip) throw new Error(`no clip ${clip}`);
+  if (c && o.over) {
+    const over = clips.find((k) => k.name === o.over);
+    if (!over) throw new Error(`no clip ${o.over}`);
+    // Freeze the overlay at one moment: resample it into a one-frame clip at `overTime`.
+    const still = new THREE.AnimationClip(over.name, c.duration, over.tracks.map((t) => {
+      const v = t.createInterpolant().evaluate(Math.min(o.overTime ?? 0, over.duration));
+      return new (t.constructor)(t.name, [0, c.duration], [...v, ...v]);
+    }));
+    c = layered(c, still, o.upper);
+  }
+  const out = [];
+  if (c) mixer.clipAction(c).play();
+  for (const t of times) {
+    if (c) mixer.setTime(t);
+    renderer.render(scene, cam);
+    out.push(renderer.domElement.toDataURL('image/png'));
+  }
+  mixer.stopAllAction();
+  mixer.uncacheRoot(root);
+  turn.remove(root);
+  return out;
+};
+window.ready = true;
+</script>
+</body>
+</html>

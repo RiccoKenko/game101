@@ -397,7 +397,7 @@ export class CollectionScene extends Phaser.Scene {
     const ink = master ? CSS.cream : CSS.ink;
     const soft = master ? CSS.soft : CSS.inkSoft;
     // The hero's picture on the left.
-    const key = this.textures.exists(c.menu) ? c.menu : 'hero_menu';
+    const key = this.textures.exists(c.menu) ? c.menu : 'archer_menu';
     if (this.textures.exists(key)) {
       const img = this.keep(this.add.image(x0 + 130, top + h - 18, key).setOrigin(0.5, 1));
       img.setScale(Math.min((h - 40) / img.height, 240 / img.width));

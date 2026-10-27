@@ -68,13 +68,13 @@ export class Player {
     this.shadow = scene.add.image(0, 0, 'shadow').setDisplaySize(84, 26).setDepth(4);
     // Anchored at the feet so the run bounce and squash pivot on the ground. A character whose sheet didn't load
     // falls back to the archer's.
-    const sheet = scene.anims.exists(`${character.sheet}_idle`) ? character.sheet : 'hero';
+    const sheet = scene.anims.exists(`${character.sheet}_idle`) ? character.sheet : 'archer';
     this.sheet = sheet;
     this.strides = new Set(STRIDES.map((s) => `${sheet}_${s}`));
     const meta = scene.cache.json.get(heroMetaKey(sheet)) as HeroMeta | undefined;
     this.painted = !!meta && scene.anims.exists(`${sheet}_idle`);
     if (this.painted && meta) {
-      this.baseScale = HERO_HEIGHT / (meta.frameHeight * 0.82);
+      this.baseScale = HERO_HEIGHT / (meta.bodyHeight ?? meta.frameHeight * 0.82);
       this.sprite = scene.add.sprite(0, 0, sheet, 0).setDepth(20);
       this.sprite.setOrigin(meta.feet[0] / meta.frameWidth, meta.feet[1] / meta.frameHeight).play(`${sheet}_idle`);
       this.sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim: Phaser.Animations.Animation) => {

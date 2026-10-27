@@ -19,6 +19,8 @@ export interface HeroMeta {
   frameHeight: number;
   /** Where the feet are in each frame, in px. */
   feet: [number, number];
+  /** How tall the hero's body is in a frame, in px (the game scales it to its hero height); else 82% of a frame. */
+  bodyHeight?: number;
   animations: Record<string, { start: number; count: number; fps: number; loop: boolean }>;
 }
 
@@ -69,7 +71,8 @@ need(['axe_titan'], 104);
 need(['aura', 'aura_holy', 'ground_meadow', 'ground_graveyard', 'ground_castle'], 256);
 need(['explosion'], 220);
 need(['bolt'], 72, 300);
-need(['tree', 'bush', 'rock', 'flowers', 'grave', 'grave_cross', 'dead_tree', 'bones', 'pillar', 'pillar_broken', 'brazier', 'rubble'], 80);
+need(['tree', 'bush', 'rock', 'flowers', 'fence', 'signpost', 'pine', 'stone_lantern', 'paper_lantern', 'wayside_shrine', 'stump', 'fern_rock'], 80);
+need(['palm', 'cactus', 'pillar_broken', 'lion_statue', 'skull', 'pots'], 80);
 need(
   [
     'icon_bow', 'icon_daggers', 'icon_axes', 'icon_aura', 'icon_lightning', 'icon_bomb', 'icon_boomerang',

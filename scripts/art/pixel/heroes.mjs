@@ -4,38 +4,9 @@
  * `breath` lowers everything above the knees by a pixel, for a two-frame idle.
  */
 import { Sprite } from './engine.mjs';
+import { BLUSH, C, EYE, SHEEN } from './palette.mjs';
 
-/** 4-tone ramps: highlight, base, shade, outline. */
-export const C = {
-  skin: ['#fde6cc', '#f2c9a3', '#d9a07c', '#7e4f3b'],
-  chestnut: ['#ad7650', '#8a573a', '#66402b', '#38231a'],
-  navy: ['#66779e', '#4a5980', '#354262', '#1d2337'],
-  steel: ['#dfe3e7', '#b0b7bf', '#848c96', '#434953'],
-  sand: ['#eedfbd', '#d7c196', '#b39b72', '#6a583d'],
-  brick: ['#cc735d', '#a9523f', '#843a2d', '#481e18'],
-  leather: ['#a87b52', '#87603e', '#684830', '#37251a'],
-  slate: ['#8f9fb4', '#6f8097', '#56657b', '#2d3644'],
-  cream: ['#fcf4e1', '#ebdfc3', '#ccbd9c', '#776c55'],
-  wood: ['#cc9a61', '#a8794a', '#845c37', '#4a311d'],
-  iron: ['#a3a9b0', '#7b8189', '#5a5f67', '#2b2e33'],
-  moss: ['#a1b578', '#80955a', '#627545', '#323f25'],
-  tan: ['#d8ad78', '#b88b58', '#946b43', '#53381f'],
-  umber: ['#80614d', '#624838', '#49362b', '#291c16'],
-  indigo: ['#8188b2', '#656c96', '#4d5377', '#292c44'],
-  ivory: ['#fffbf2', '#efe6d1', '#d2c6aa', '#7f7660'],
-  mantle: ['#cca97e', '#aa8860', '#876a49', '#4a3926'],
-  rust: ['#d3734e', '#b05638', '#893f29', '#4a2014'],
-  plum: ['#9e7e8a', '#7e606d', '#624854', '#35252d'],
-  ash: ['#e6e6ea', '#c6c7cf', '#9fa1ad', '#575864'],
-  ruby: ['#ff9384', '#d8463c', '#a02a26', '#561414'],
-  brass: ['#e8cc7e', '#c5a559', '#9c7f3f', '#5a4822'],
-  peach: ['#ffdcc6', '#f7b394', '#df8b6b', '#874735'],
-  leaf: ['#b8d97e', '#8db457', '#6a8d3f', '#34471e'],
-};
-const EYE = '#2b1c18';
-const BLUSH = '#f0b49c';
-/** Flat sheen for hair, between a ramp's highlight and base. */
-const SHEEN = { chestnut: '#a06d4a' };
+export { C };
 
 /** Boots and legs, shared by all three heroes (x of the near and far foot, top of the boot). */
 function legs(s, ramp, boot, bootTop, kneeY = 50) {
@@ -201,22 +172,5 @@ export function mage(breath = 0) {
   s.ellipse(29, 38.6, 2.3, 1.6, C.skin);
   s.spot(27.5, 40.5, 0.5, 0.45, C.brass[1]);
   s.offset(0, 0);
-  return s;
-}
-
-/** Gummy, the peach jelly of Greenhill Fields. `squash` widens and lowers it, for a hop. */
-export function gummy(squash = 0) {
-  const s = new Sprite(32, 28);
-  const top = 7 + squash;
-  s.capsule(16, top, 16, top - 3.5, 0.8, C.leaf);
-  s.ellipse(12.5, top - 4.5, 3.4, 2, C.leaf, 0.2).ellipse(19.5, top - 4.5, 3.4, 2, C.leaf, 0.2);
-  s.ellipse(16, 18 + squash / 2, 12 + squash, 9.5 - squash / 2, C.peach);
-  s.clear(0, 26, 32, 2);
-  const ey = 15 + squash;
-  s.spot(10.6, ey + 4.3, 1.8, 0.9, '#f59a86').spot(21.4, ey + 4.3, 1.8, 0.9, '#f59a86');
-  s.spot(13, ey + 1.5, 1.15, 1.6, EYE).spot(20, ey + 1.5, 1.15, 1.6, EYE);
-  s.spot(13.4, ey + 0.8, 0.45, 0.5, '#ffffff').spot(20.4, ey + 0.8, 0.45, 0.5, '#ffffff');
-  s.line(15.4, ey + 4.4, 16.5, ey + 5.3, 0.32, '#a5503c').line(16.5, ey + 5.3, 17.6, ey + 4.4, 0.32, '#a5503c');
-  s.spot(9.6, 12.8 + squash, 1.3, 0.95, '#fff4ea');
   return s;
 }

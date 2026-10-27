@@ -1,0 +1,59 @@
+{
+  "frameWidth": 256,
+  "frameHeight": 240,
+  "feet": [
+    128,
+    216
+  ],
+  "bodyHeight": 152,
+  "animations": {
+    "idle": {
+      "start": 0,
+      "count": 8,
+      "fps": 8,
+      "loop": true
+    },
+    "run": {
+      "start": 8,
+      "count": 8,
+      "fps": 14,
+      "loop": true
+    },
+    "runaim": {
+      "start": 16,
+      "count": 8,
+      "fps": 14,
+      "loop": true
+    },
+    "runrelease": {
+      "start": 24,
+      "count": 8,
+      "fps": 14,
+      "loop": true
+    },
+    "shoot": {
+      "start": 32,
+      "count": 8,
+      "fps": 16,
+      "loop": false
+    },
+    "hurt": {
+      "start": 40,
+      "count": 6,
+      "fps": 12,
+      "loop": false
+    },
+    "ko": {
+      "start": 46,
+      "count": 8,
+      "fps": 12,
+      "loop": false
+    },
+    "cheer": {
+      "start": 54,
+      "count": 10,
+      "fps": 12,
+      "loop": false
+    }
+  }
+}

@@ -21,6 +21,7 @@
   "devDependencies": {
     "@playwright/test": "1.56.1",
     "sharp": "0.34.5",
+    "three": "0.170.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vite": "7.3.7",

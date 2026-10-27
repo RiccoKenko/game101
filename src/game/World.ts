@@ -4,7 +4,7 @@ import { mulberry32 } from '../core/rng';
 
 const CHUNK = 640;
 /** Decorations that sway in the wind (pivoting at their base). */
-const SWAYS = new Set(['tree', 'bush', 'dead_tree', 'flowers']);
+const SWAYS = new Set(['tree', 'bush', 'flowers', 'pine', 'palm', 'paper_lantern']);
 
 /** Infinite scrolling ground plus deterministic scattered decorations. */
 export class World {
