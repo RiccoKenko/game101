@@ -1,0 +1,15 @@
+Draw ONE boss sprite sheet for an original 2D fantasy online RPG (a top-down action game), in exactly the same style as the two attached reference images (the game's hero and its first monsters): the classic late-1990s / early-2000s Korean 2D online RPG sprite look, chibi proportions, cute but impressive, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted palette, light from the upper left, seen from slightly above.
+
+LAYOUT (landscape 16:9): a grid of 3 columns x 2 rows of equal cells, one boss per cell, centred, full body, filling most of its cell, every boss in a three-quarter front view turned toward the RIGHT side of the image, standing on the same baseline near the bottom of its cell.
+
+TOP ROW, the three map leaders (big, about the size of three heroes):
+1. Ironhide Boar: a stocky wild boar with brown bristly fur, small curved ivory tusks, angry little eyes and a snorting snout, a leather armour plate with brass studs on its back and forehead; it is about to charge.
+2. Bigpaw: a huge brown bear standing on its hind legs, a round belly with a cream patch, a torn red scarf around its neck, both huge paws raised, roaring (fierce but still cute).
+3. Sandstone Golem: a hulking golem of stacked sandstone blocks with glowing amber cracks, a small head with two glowing eyes and huge fists.
+
+BOTTOM ROW, the three map bosses (the biggest and grandest):
+4. Jelly Monarch: a huge glossy peach-orange jelly blob, the king of the small jelly in the reference, slightly see-through with a golden seed inside, a little two-leaf sprout on top, a small gold crown set with red gems and a short red velvet cape with white fur trim over its back, a smug royal grin.
+5. Shrine Oni: a giant ogre with muted brick-red skin, two short ivory horns, wild black hair, small tusks and a wide grin, gold hoop earrings, a thick twisted straw-rope belt with white paper streamers, a short tiger-striped cloth skirt, and a huge iron-studded wooden club resting on one shoulder.
+6. Sunscar Pharaoh: a giant floating mummy king in loose bandages, a golden mask with a calm painted face, a striped slate-blue and gold headdress, a broad golden collar, a tattered red cape and a golden crook staff; one eye glows behind the mask.
+
+All six are our own original designs. Background: a perfectly flat, solid magenta #FF00FF everywhere (no floor, shadow or gradient); never use magenta, hot pink or purple inside the drawings. No text, numbers, labels, grid lines, frames, borders, glows, sparkles or watermarks. Every drawing is complete (nothing cut off) and separated from its neighbours by plain background.
