@@ -66,7 +66,11 @@ const HEROES = {
   },
 };
 
-/** Monster sheets: one column per monster, frame A on top and frame B under it; target size is the larger side. */
+/**
+ * Monster sheets: one column per monster, frame A on top and frame B under it; target size is the larger side.
+ * A key may add options: `rows` picks other rows for its two frames, `mirror` the frames to flip so all face the
+ * same way (Flow sometimes turns one round).
+ */
 const MONSTERS = {
   monsters1: {
     file: 'monsters1.png',
@@ -90,18 +94,19 @@ const MONSTERS = {
       ['ghost', 112],
       ['zombie', 132],
       ['pumpkin', 102],
-      ['wraith', 114],
+      ['wraith', 114, { mirror: [0] }],
     ],
   },
+  // Flow drew three rows here; the first two are the frames, but the urn takes its widest-open lid.
   monsters3: {
     file: 'monsters3_flow.jpg',
     cols: 6,
-    rows: 2,
+    rows: 3,
     keys: [
       ['imp', 110],
       ['knight', 128],
       ['gargoyle', 136],
-      ['mimic', 116],
+      ['mimic', 116, { rows: [0, 2] }],
       ['wisp', 100],
       ['goblin', 120],
     ],
@@ -271,6 +276,14 @@ function feetOf(p, box = false) {
   return { x: n ? sx / n : p.width / 2, y: bottom, top };
 }
 
+/** A pose flipped left to right. */
+function mirrored(p) {
+  const out = Buffer.alloc(p.data.length);
+  for (let y = 0; y < p.height; y++)
+    for (let x = 0; x < p.width; x++) p.data.copy(out, (y * p.width + (p.width - 1 - x)) * 4, (y * p.width + x) * 4, (y * p.width + x) * 4 + 4);
+  return { data: out, width: p.width, height: p.height };
+}
+
 const png = (p) => sharp(p.data, { raw: { width: p.width, height: p.height, channels: 4 } }).png().toBuffer();
 
 /** A pose scaled by `k` and placed in a `fw` x `fh` frame with its feet at `feet`. */
@@ -354,9 +367,9 @@ async function buildMonsters(set, preview) {
   const m = MONSTERS[set];
   const grid = poses(await keyed(join(IN, m.file)), m.cols, m.rows);
   const keys = [];
-  for (const [c, [tex, size]] of m.keys.entries()) {
+  for (const [c, [tex, size, opts = {}]] of m.keys.entries()) {
     // Both frames share one scale and one feet point, so the step doesn't jump.
-    const frames = [0, 1].map((r) => grid[r][c]);
+    const frames = (opts.rows ?? [0, 1]).map((r, i) => (opts.mirror?.includes(i) ? mirrored(grid[r][c]) : grid[r][c]));
     const boxes = await Promise.all(frames.map(async (p) => sharp(await png(p)).trim({ threshold: 0 }).metadata()));
     const big = Math.max(...boxes.flatMap((b) => [b.width, b.height]));
     const k = size / big;
