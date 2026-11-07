@@ -32,7 +32,6 @@ export class Enemy {
   kx = 0;
   ky = 0;
   flash = 0;
-  anim = 0;
   frame = 0;
   tex = '';
   elite = false;
@@ -55,6 +54,10 @@ export class Enemy {
   enter = 0;
   /** Facing (-1 left, 1 right); only flips on a clear change of direction so sprites don't jitter. */
   face = 1;
+  /** The facing eased toward `face`: the sprite squeezes through it when turning, like a card flipping over. */
+  faceS = 1;
+  /** How far through its gait (hops, steps, wingbeats) the monster is: it advances with how fast it actually moves. */
+  gait = 0;
   lean = 0;
   /** A small copy left behind by a splitter (it doesn't split again). */
   small = false;
@@ -159,9 +162,10 @@ export class EnemyManager {
     const e = this.pool.pop() ?? new Enemy(this.ctx.scene);
     e.uid = this.nextUid++;
     e.active = true;
-    e.kx = e.ky = e.flash = e.anim = e.frame = 0;
+    e.kx = e.ky = e.flash = e.frame = 0;
     e.timer = e.timer2 = e.timer3 = e.state = e.slow = e.thresholds = 0;
-    e.hitSquash = e.enter = e.lean = 0;
+    e.hitSquash = e.enter = e.lean = e.gait = 0;
+    e.faceS = e.face;
     e.small = e.selfDestructed = false;
     e.burnDps = e.burnLeft = e.burnTick = e.frozen = 0;
     e.stunned = false;
@@ -905,7 +909,7 @@ export class EnemyManager {
         e.y = p.y;
       }
 
-      this.animate(e, dt, vx, faceX);
+      this.animate(e, dt, vx, faceX, vy);
     }
 
     // Rebuild the spatial hash, then push overlapping enemies apart.
@@ -928,22 +932,27 @@ export class EnemyManager {
     }
   }
 
-  /** Two-frame flip plus procedural motion on top: hops, wingbeats, waddles, lean, hit squash, pop-in. */
-  private animate(e: Enemy, dt: number, vx: number, faceX: number): void {
-    e.anim += dt;
+  /**
+   * Two frames plus procedural motion on top: hops, wingbeats, waddles, lean, hit squash, pop-in. The gait runs
+   * with how fast the monster really moves (a walker that stops, stops stepping), and the two frames swap on the
+   * beat of it (in the air / on the ground, one foot / the other, wings up / down), not on a clock of their own.
+   */
+  private animate(e: Enemy, dt: number, vx: number, faceX: number, vy = 0): void {
     const sleeping = e.def?.behavior === 'ambush' && e.state === 0;
-    if (!e.boss && e.anim > 0.2 && !sleeping) {
-      e.anim = 0;
-      e.frame ^= 1;
-      e.sprite.setTexture(`${e.tex}_${e.frame}`);
-    }
+    const motion = e.def?.motion;
+    const hover = motion === 'flap' || motion === 'float';
+    const pace = e.speed > 0 ? Math.min(1.4, Math.hypot(vx, vy) / e.speed) : 0;
+    e.gait += dt * (hover ? 1 : 0.3 + 0.7 * pace);
+    // How big the steps are: a walker standing still barely sways.
+    const amp = hover ? 1 : 0.25 + 0.75 * Math.min(1, pace);
     if (Math.abs(faceX) > 0.25) e.face = faceX < 0 ? -1 : 1;
-    e.sprite.setFlipX(e.face < 0);
+    e.faceS += (e.face - e.faceS) * Math.min(1, dt * 16);
+    e.sprite.setFlipX(e.faceS < 0);
     e.hitSquash *= Math.exp(-12 * dt);
     const leanTarget = Phaser.Math.Clamp(vx / Math.max(1, e.speed), -1, 1) * 0.1;
     e.lean += (leanTarget - e.lean) * Math.min(1, dt * 10);
 
-    const t = e.timer + e.phase;
+    const t = e.gait + e.phase;
     let lift = 0;
     let sx = 1;
     let sy = 1;
@@ -960,7 +969,7 @@ export class EnemyManager {
         case 'hop': {
           const u = (t * 1.8) % 1;
           if (u < 0.7) {
-            lift = Math.sin((u / 0.7) * Math.PI) * 22;
+            lift = Math.sin((u / 0.7) * Math.PI) * 22 * amp;
             sx = 0.92;
             sy = 1.1;
           } else {
@@ -980,20 +989,32 @@ export class EnemyManager {
           break;
         case 'walk': {
           const w = Math.sin(t * 9);
-          lift = Math.abs(w) * 6;
-          rot = w * 0.09;
-          sx = 1 - Math.abs(w) * 0.03;
-          sy = 1 + Math.abs(w) * 0.04;
+          lift = Math.abs(w) * 6 * amp;
+          rot = w * 0.09 * amp;
+          sx = 1 - Math.abs(w) * 0.03 * amp;
+          sy = 1 + Math.abs(w) * 0.04 * amp;
           break;
         }
         case 'heavy': {
           const w = Math.sin(t * 5.5);
-          lift = Math.abs(w) * 4;
-          rot = w * 0.06;
-          sx = 1 + (1 - Math.abs(w)) * 0.05;
-          sy = 1 - (1 - Math.abs(w)) * 0.05;
+          lift = Math.abs(w) * 4 * amp;
+          rot = w * 0.06 * amp;
+          sx = 1 + (1 - Math.abs(w)) * 0.05 * amp;
+          sy = 1 - (1 - Math.abs(w)) * 0.05 * amp;
           break;
         }
+      }
+      // The second drawing on the beat: in the air for hoppers, on each step for walkers, wings down for flyers.
+      const beat =
+        motion === 'hop' ? ((t * 1.8) % 1 < 0.7 ? 1 : 0)
+        : motion === 'walk' ? (Math.sin(t * 9) < 0 ? 1 : 0)
+        : motion === 'heavy' ? (Math.sin(t * 5.5) < 0 ? 1 : 0)
+        : motion === 'flap' ? (Math.sin(t * 10) < 0 ? 1 : 0)
+        : Math.sin(t * 6) < 0 ? 1 : 0;
+      const frame = sleeping ? 0 : beat;
+      if (frame !== e.frame) {
+        e.frame = frame;
+        e.sprite.setTexture(`${e.tex}_${e.frame}`);
       }
       rot += e.lean;
       if (sleeping) {
@@ -1021,6 +1042,8 @@ export class EnemyManager {
     }
     sx *= 1 + 0.22 * e.hitSquash;
     sy *= 1 - 0.18 * e.hitSquash;
+    // Turning round: a quick squeeze through the middle instead of a snap (gentler on the big bosses).
+    sx *= Math.max(e.isBoss ? 0.6 : 0.35, Math.abs(e.faceS));
     if (e.spawnT < 1) {
       e.spawnT = Math.min(1, e.spawnT + dt / 0.3);
       const k = Phaser.Math.Easing.Back.Out(e.spawnT);
