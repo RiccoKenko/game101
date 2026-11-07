@@ -71,6 +71,9 @@ const TRAILS: Record<string, [number, number, number]> = {
   arrow_storm: [0x9fdcff, 140, 16],
   dagger: [0xd8e8ff, 70, 8],
   dagger_gold: [0xffd36b, 84, 10],
+  arrow_gold: [0xffd36b, 84, 10],
+  arrow_charge: [0xf2d98a, 120, 14],
+  arrow_phantom: [0xbfeaf5, 150, 18],
   spear: [0xffffff, 120, 12],
   spear_dragon: [0xff8a3d, 160, 18],
   bolt: [0x8fd8ff, 80, 16],
@@ -131,6 +134,9 @@ interface Zone {
   /** A Flame Trail patch (flickers; Inferno Road's set monsters on fire). */
   fire: boolean;
   burn: boolean;
+  /** An Arrow Shower: arrows keep raining onto it while it lasts (`rain` counts down to the next one). */
+  shower?: boolean;
+  rain?: number;
   img: Phaser.GameObjects.Image;
 }
 
@@ -304,13 +310,13 @@ export class WeaponSystem {
     // Ward Orbs, a Cyclone's two twisters and a Rainbow Ray's beams are always out, so they live on the runtime.
     const circling = id === 'ward' ? rt.stats.amount : rt.owned.evolved && (id === 'twister' || id === 'beam') ? rt.stats.amount : 0;
     if (circling > 0) {
-      const tex = id === 'ward' ? (rt.owned.evolved ? 'ward_holy' : 'ward') : id === 'twister' ? 'twister' : 'beam';
+      const tex = id === 'ward' ? (rt.owned.evolved ? 'ward_holy' : 'ward') : id === 'twister' ? 'snare_shock' : 'beam';
       while (rt.orbs.length < circling) rt.orbs.push(scene.add.image(0, 0, tex).setDepth(id === 'beam' ? 27 : 26));
       while (rt.orbs.length > circling) rt.orbs.pop()!.destroy();
       rt.orbs.forEach((o, i) => {
         o.setTexture(tex);
         if (id === 'ward') o.setScale(1.4 * rt.stats.area);
-        if (id === 'twister') o.setOrigin(0.5, 0.9).setScale((TWISTER_RADIUS * rt.stats.area) / 60).setAlpha(0.85);
+        if (id === 'twister') o.setOrigin(0.5).setDepth(3).setAlpha(0.9);
         if (id === 'beam') o.setOrigin(0, 0.5).setTint(PRISM[i % PRISM.length]);
       });
       const cores = id === 'beam' ? circling : 0;
@@ -349,7 +355,7 @@ export class WeaponSystem {
     p.sprite.setTexture(texture).setVisible(true).setScale(1).setRotation(0);
     if (kind === 'bomb' || kind === 'flask') {
       p.trail.setTexture('shadow').setOrigin(0.5).setBlendMode(Phaser.BlendModes.NORMAL).clearTint().setAlpha(1).setVisible(true);
-    } else if (kind === 'boomerang' || kind === 'shuriken' || kind === 'wisp') {
+    } else if (kind === 'shuriken' || kind === 'wisp') {
       // It spins (or floats), so a straight streak would look wrong.
       p.trail.setVisible(false);
     } else {
@@ -563,7 +569,7 @@ export class WeaponSystem {
         for (let i = 0; i < s.amount; i++) {
           const target: Enemy | undefined = inView.length ? inView[Math.floor(this.ctx.rng() * inView.length)] : undefined;
           const a = this.ctx.rng() * Math.PI * 2;
-          const p = this.obtain('flask', 'flask');
+          const p = this.obtain('flask', 'arrow');
           p.sx = p.x = player.x;
           p.sy = p.y = player.y - 30;
           p.tx = target ? target.x : player.x + Math.cos(a) * 260;
@@ -573,7 +579,6 @@ export class WeaponSystem {
           p.duration = s.duration;
           p.plague = !!evolved;
           p.life = 0.55 + i * 0.08;
-          if (evolved) p.sprite.setTint(0xb8f0a0);
         }
         break;
       }
@@ -588,7 +593,7 @@ export class WeaponSystem {
             const t = evolved ? targets[Math.floor(this.ctx.rng() * targets.length)] : targets[i % targets.length];
             a = Math.atan2(t.y - player.y, t.x - player.x) + (i >= targets.length ? (i - targets.length + 1) * 0.12 : 0);
           }
-          this.shoot('dagger', evolved ? 'dagger_gold' : 'dagger', a, s, 18 * s.area);
+          this.shoot('dagger', evolved ? 'arrow_gold' : 'arrow', a, s, 18 * s.area);
         }
         if (!evolved) audio.sfx('shoot', 0.8);
         break;
@@ -599,11 +604,10 @@ export class WeaponSystem {
         for (let i = 0; i < s.amount; i++) {
           // Twin Moons fly out evenly all around; the plain boomerang fans toward the nearest enemy.
           const a = evolved ? base + (i / s.amount) * Math.PI * 2 : base + (i - (s.amount - 1) / 2) * 0.5;
-          const p = this.shoot('boomerang', 'boomerang', a, s, 30 * s.area);
+          const p = this.shoot('boomerang', evolved ? 'arrow_phantom' : 'arrow_charge', a, s, 30 * s.area);
           p.outTime = evolved ? 0.6 : 0.5;
           p.life = 4;
           p.sprite.setScale(s.area * (evolved ? 1.15 : 1));
-          if (evolved) p.sprite.setTint(0xd8ecff);
         }
         audio.sfx('shoot', 0.8);
         break;
@@ -858,7 +862,7 @@ export class WeaponSystem {
   private releaseWisp(s: WeaponStats, i: number, harvest: boolean): void {
     const { player } = this.ctx;
     const a = (i / Math.max(1, s.amount)) * Math.PI * 2 + this.ctx.rng() * 0.6;
-    const p = this.obtain('wisp', 'wisp');
+    const p = this.obtain('wisp', harvest ? 'falcon_gold' : 'falcon');
     p.x = player.x;
     p.y = player.y - 30;
     p.vx = Math.cos(a) * s.speed * 0.7;
@@ -868,8 +872,7 @@ export class WeaponSystem {
     p.speed = s.speed;
     p.life = 3.5;
     p.harvest = harvest;
-    p.sprite.setScale(0.9 + 0.2 * s.area);
-    if (harvest) p.sprite.setTint(0xd8ffe0);
+    p.sprite.setScale(0.6 + 0.15 * s.area);
   }
 
   /** A wisp drifts out, then dives at the nearest monster and bursts on touching one. */
@@ -890,14 +893,17 @@ export class WeaponSystem {
     }
     p.x += p.vx * dt;
     p.y += p.vy * dt;
-    p.sprite.setPosition(p.x, p.y + Math.sin(p.age * 9) * 4).setFlipX(p.vx < 0);
-    if (Math.random() < dt * 14) fx.sparkle(p.x, p.y, 1, p.harvest ? 0xc8ffd8 : 0xbff8ff);
+    // The falcon faces where it flies; it beats its wings while circling out, and folds them to dive.
+    const k = 0.6 + 0.15 * p.area;
+    const flap = p.age < WISP_DRIFT ? 0.8 + 0.2 * Math.sin(p.age * 22) : 0.75;
+    p.sprite.setPosition(p.x, p.y + Math.sin(p.age * 9) * 4).setRotation(Math.atan2(p.vy, p.vx)).setScale(k, k * flap);
+    if (Math.random() < dt * 8) fx.sparkle(p.x, p.y, 1, p.harvest ? 0xf6dd8a : 0xf2e6c8);
     let hit = false;
     if (p.age >= WISP_DRIFT * 0.5) enemies.forEachInRadius(p.x, p.y, 18, () => (hit = true));
     if (!hit && p.life > 0) return;
     // Burst.
     const r = WISP_RADIUS * p.area;
-    fx.ring(p.x, p.y, r, p.harvest ? 0x9dff8a : 0x8ff0ff, 'ring', 35, 260);
+    fx.ring(p.x, p.y, r, p.harvest ? 0xf6dd8a : 0xf2e6c8, 'ring', 35, 260);
     fx.sparkle(p.x, p.y, 3, 0xffffff);
     enemies.forEachInRadius(p.x, p.y, r, (e) => enemies.damage(e, p.damage, p.x, p.y, 0.6));
     if (p.harvest && hit) player.heal(player.stats.maxHp * 0.005);
@@ -987,7 +993,7 @@ export class WeaponSystem {
 
   private addTwister(x: number, y: number, angle: number, s: WeaponStats, target: Enemy | null): void {
     const r = TWISTER_RADIUS * s.area;
-    const img = this.ctx.scene.add.image(x, y, 'twister').setDepth(26).setOrigin(0.5, 0.9).setAlpha(0);
+    const img = this.ctx.scene.add.image(x, y, 'snare').setDepth(3).setOrigin(0.5).setAlpha(0);
     this.twisters.push({ img, x, y, vx: Math.cos(angle) * s.speed, vy: Math.sin(angle) * s.speed, age: 0, life: s.duration, r, damage: s.damage, tick: 0, target });
   }
 
@@ -1010,13 +1016,11 @@ export class WeaponSystem {
     });
   }
 
-  /** The twister picture: spun by flipping, wobbling and swaying, with dust kicked up at its foot. */
+  /** A snare on the ground (seen from above, flattened): it tightens and loosens, shedding a leaf now and then. */
   private spinTwister(img: Phaser.GameObjects.Image, x: number, y: number, r: number, age: number, alpha: number, dt: number): void {
-    const k = r / 60;
-    img.setPosition(x, y + r * 0.35).setAlpha(alpha);
-    img.setScale(k * (1 + 0.07 * Math.sin(age * 19)), k * (1 - 0.04 * Math.sin(age * 19)));
-    img.setFlipX(Math.floor(age / 0.07) % 2 === 0).setRotation(Math.sin(age * 5) * 0.08);
-    if (Math.random() < dt * 14) this.ctx.fx.dust(x + (Math.random() - 0.5) * r, y + r * 0.3, 1);
+    const pulse = 1 + 0.06 * Math.sin(age * 8);
+    img.setPosition(x, y).setAlpha(alpha).setDisplaySize(r * 2.3 * pulse, r * 1.25 * pulse).setRotation(0);
+    if (Math.random() < dt * 4) this.ctx.fx.sparkle(x + (Math.random() - 0.5) * r, y + (Math.random() - 0.5) * r * 0.5, 1, 0xb8e07a);
   }
 
   private updateTwisters(dt: number): void {
@@ -1062,7 +1066,9 @@ export class WeaponSystem {
       const x = player.x + Math.cos(a) * orbit;
       const y = player.y + Math.sin(a) * orbit * 0.8;
       this.whirl(x, y, r, TWISTER_FORCE * 1.4, dt, hit ? s.damage : null);
-      this.spinTwister(img, x, y, r, this.clock + i * 0.5, 0.85, dt);
+      this.spinTwister(img, x, y, r, this.clock + i * 0.5, 0.9, dt);
+      // Shockwave Trap: its plate sends out a ring of force every so often.
+      if (hit && Math.random() < 0.3) this.ctx.fx.ring(x, y, r, 0xf2d98a, 'ring', 3, 360);
     });
   }
 
@@ -1075,7 +1081,7 @@ export class WeaponSystem {
     const d = 60 + rng() * 140;
     const x = player.x + Math.cos(a) * d;
     const y = player.y + 20 + Math.sin(a) * d * 0.8;
-    const img = this.ctx.scene.add.image(x, y, frost ? 'trap_frost' : 'trap').setDepth(3).setScale(0);
+    const img = this.ctx.scene.add.image(x, y, frost ? 'mine_frost' : 'mine').setDepth(3).setScale(0);
     const size = frost ? 1.15 : 0.95;
     this.ctx.scene.tweens.add({ targets: img, scale: size * Math.sqrt(s.area), duration: 260, ease: 'Back.easeOut' });
     this.traps.push({ img, x, y, arm: TRAP_ARM, life: s.duration, r: TRAP_RADIUS * s.area, damage: s.damage, frost });
@@ -1112,7 +1118,9 @@ export class WeaponSystem {
         if (t.frost) enemies.freezeSolid(e, 1.5);
         else e.slow = Math.max(e.slow, 1);
       });
-      audio.sfx('hit', 0.8);
+      // A Land Mine goes off with a bang; a Freezing Trap snaps shut in a burst of frost.
+      if (!t.frost) fx.explosion(t.x, t.y, t.r * 0.7);
+      audio.sfx(t.frost ? 'hit' : 'explosion', t.frost ? 0.8 : 0.45);
       t.img.destroy();
       this.traps.splice(i, 1);
     }
@@ -1295,6 +1303,26 @@ export class WeaponSystem {
     });
   }
 
+  /** One arrow of an Arrow Shower: drops from the sky onto a spot in the zone, sticks a moment, fades. */
+  private fallingArrow(z: Zone): void {
+    const scene = this.ctx.scene;
+    const a = Math.random() * Math.PI * 2;
+    const d = Math.sqrt(Math.random()) * z.r * 0.9;
+    const x = z.x + Math.cos(a) * d;
+    const y = z.y + Math.sin(a) * d * 0.55;
+    const img = scene.add.image(x, y - 240, 'arrow').setDepth(27).setRotation(Math.PI / 2).setScale(0.8);
+    scene.tweens.add({
+      targets: img,
+      y,
+      duration: 150,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        img.setDepth(4);
+        scene.tweens.add({ targets: img, alpha: 0, delay: 120, duration: 200, onComplete: () => img.destroy() });
+      },
+    });
+  }
+
   private updateZones(dt: number): void {
     const { enemies, fx } = this.ctx;
     for (let i = this.zones.length - 1; i >= 0; i--) {
@@ -1305,14 +1333,22 @@ export class WeaponSystem {
         // Flames flicker, and throw up the odd ember.
         z.img.setAlpha(Math.min(0.85, z.left / 0.4) * (0.8 + 0.2 * Math.sin(this.clock * 23 + z.x)));
         if (Math.random() < dt * 2) fx.sparkle(z.x + (Math.random() - 0.5) * z.r, z.y - 10, 1, 0xffb36b);
-      } else z.img.setAlpha(Math.min(0.6, z.left / 0.4));
+      } else z.img.setAlpha(Math.min(z.shower ? 0.9 : 0.6, z.left / 0.4));
+      if (z.shower) {
+        // Arrows keep raining onto the spot (thicker for Arrow Rain).
+        z.rain = (z.rain ?? 0) - dt;
+        while (z.rain <= 0) {
+          z.rain += z.slow ? 0.07 : 0.11;
+          this.fallingArrow(z);
+        }
+      }
       if (z.tick <= 0) {
         z.tick = 0.4;
         enemies.forEachInRadius(z.x, z.y, z.r, (e) => {
           enemies.damage(e, z.damage, z.x, z.y, 0, false);
           if (z.slow) e.slow = Math.max(e.slow, 0.6);
           if (z.burn) enemies.ignite(e, z.damage);
-          if (Math.random() < 0.3) fx.sparksAt(e.x, e.y, 1, z.fire ? 0xff8a3d : 0x9be64a);
+          if (Math.random() < 0.3) fx.sparksAt(e.x, e.y, 1, z.fire ? 0xff8a3d : z.shower ? 0xf2e6c8 : 0x9be64a);
         });
       }
       if (z.left <= 0) {
@@ -1431,15 +1467,15 @@ export class WeaponSystem {
         const u = Math.min(1, p.age / dur);
         p.x = Phaser.Math.Linear(p.sx, p.tx, u);
         p.y = Phaser.Math.Linear(p.sy, p.ty, u) - Math.sin(u * Math.PI) * 150;
-        p.sprite.setPosition(p.x, p.y).setRotation(p.age * 12);
+        // The lobbed arrow points along its arc: up on the way out, down as it lands.
+        p.sprite.setPosition(p.x, p.y).setRotation(Math.atan2(p.ty - p.sy - Math.cos(u * Math.PI) * Math.PI * 150, p.tx - p.sx));
         const sw = 24 + 24 * (1 - Math.sin(u * Math.PI));
         p.trail.setPosition(Phaser.Math.Linear(p.sx, p.tx, u), Phaser.Math.Linear(p.sy, p.ty, u) + 18).setDisplaySize(sw, sw * 0.32);
         if (u >= 1) {
           const r = PUDDLE_RADIUS * p.area;
-          const img = this.ctx.scene.add.image(p.tx, p.ty, 'puddle').setDepth(2).setDisplaySize(r * 2, r * 1.05);
-          if (p.plague) img.setTint(0x7fb86a);
-          this.zones.push({ x: p.tx, y: p.ty, r, damage: p.damage, left: p.duration, tick: 0, slow: p.plague, fire: false, burn: false, img });
-          this.ctx.fx.sparksAt(p.tx, p.ty, 6, 0xb6f26a);
+          const img = this.ctx.scene.add.image(p.tx, p.ty, 'shower_mark').setDepth(2).setDisplaySize(r * 2, r * 1.05);
+          this.zones.push({ x: p.tx, y: p.ty, r, damage: p.damage, left: p.duration, tick: 0, slow: p.plague, fire: false, burn: false, shower: true, rain: 0, img });
+          this.ctx.fx.dust(p.tx, p.ty, 3);
           audio.sfx('hit', 0.6);
           this.release(p);
         }
@@ -1532,7 +1568,7 @@ export class WeaponSystem {
             continue;
           }
         }
-        p.sprite.rotation += 16 * dt;
+        p.sprite.setRotation(Math.atan2(p.vy, p.vx));
       }
 
       p.x += p.vx * dt;

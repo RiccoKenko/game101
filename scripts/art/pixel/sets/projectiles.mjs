@@ -444,6 +444,171 @@ function ward(ramp, glow) {
   };
 }
 
+// ------------------------------------------------------------------ The Archer's skills, drawn to match their names
+
+/** Arrow Vulcan's arrow: brass-tipped, gilded shaft, golden fletching. */
+function arrowGold() {
+  const s = new Sprite(25, 8);
+  s.capsule(2.5, 4, 19, 4, 0.6, C.brass);
+  fletching(s, 0.8, 4, 6.2, 2.4, ['#fff1b8', '#f2cf6a', '#c9a043', '#5a4822']);
+  s.capsule(7, 4, 8, 4, 0.8, C.brick).capsule(17.2, 4, 18.2, 4, 0.8, C.brick);
+  s.poly([[18.2, 1.9], [24.2, 4], [18.2, 6.1], [19.4, 4]], C.brass);
+  s.line(19.2, 3.2, 23, 4, 0.22, C.brass[0]);
+  sparkle(s, 21.4, 2, 1.1);
+  return s;
+}
+
+/** Charge Arrow: a heavy iron-headed arrow with a curved shockwave bowing out ahead of its head. */
+function arrowCharge() {
+  const s = new Sprite(34, 14);
+  const wave = [];
+  for (let i = 0; i <= 12; i++) {
+    const a = -1.15 + (i / 12) * 2.3;
+    wave.push([24 + Math.cos(a) * 8, 7 + Math.sin(a) * 6.4]);
+  }
+  stroke(s, wave, 1.1, '#f2d98a');
+  const inner = wave.map(([x, y]) => [x - 2.2, 7 + (y - 7) * 0.8]);
+  stroke(s, inner, 0.6, '#fff4cc');
+  s.capsule(3, 7, 25, 7, 1, C.wood);
+  fletching(s, 1, 7, 8, 3.4, P.fletch);
+  s.capsule(9, 7, 10.6, 7, 1.25, C.leather).capsule(22.6, 7, 24.2, 7, 1.25, C.iron);
+  s.poly([[24, 3.4], [32.6, 7], [24, 10.6], [26, 7]], C.steel);
+  s.line(25.6, 5.8, 31.2, 7, 0.3, C.steel[0]);
+  return s;
+}
+
+/** Phantasmic Arrow: a big pale-blue spirit arrow, softly glowing. */
+async function arrowPhantom() {
+  const s = new Sprite(38, 14);
+  s.taper(4, 7, 26, 7, 0.4, 1.1, P.spirit, { flat: P.spirit[1] });
+  for (const k of [-1, 1]) s.poly([[1, 7 + k * 4.2], [6.5, 7 + k * 4.2], [12, 7 + k * 0.4], [4, 7 + k * 0.3]], P.spirit, { flat: P.spirit[0] });
+  s.poly([[25, 3.2], [36.6, 7], [25, 10.8], [27.6, 7]], P.ice);
+  s.line(27, 5.6, 34.8, 7, 0.35, '#ffffff');
+  s.line(6, 7, 25, 7, 0.3, '#ffffff');
+  sparkle(s, 31, 3.6, 1.6);
+  sparkle(s, 12, 10.6, 1);
+  return glowing(s, '#a9dcf2', { cx: 20, cy: 7, rx: 19, ry: 7, strength: 0.55 });
+}
+
+/** Where an Arrow Shower falls (seen from above, flattened): a faint ring of scuffed earth, arrows stuck in it. */
+function showerMark() {
+  const s = new Sprite(66, 35);
+  // A dashed ring of scuffed earth marks the spot.
+  for (let i = 0; i < 22; i++) {
+    const a = (i / 22) * Math.PI * 2;
+    s.ellipse(33 + Math.cos(a) * 29, 17.5 + Math.sin(a) * 14.6, 1.8, 0.8, C.umber, { flat: '#7a6249', outline: false, rot: a + Math.PI / 2 });
+  }
+  const stuck = [[14, 15, -0.25], [24, 25, 0.15], [33, 12, -0.05], [42, 22, 0.3], [52, 14, 0.2], [27, 18, -0.35], [47, 28, -0.1], [18, 27, 0.25], [38, 30, 0.05], [57, 22, -0.3]];
+  for (const [x, y, lean] of stuck) {
+    s.ellipse(x, y + 0.4, 2, 0.8, C.umber, { flat: '#6d5640', outline: false });
+    s.save().pivot(x, y, lean);
+    s.capsule(x, y, x, y - 7, 0.45, C.wood);
+    s.poly([[x - 1.6, y - 9.6], [x, y - 7.2], [x + 1.6, y - 9.6], [x, y - 8.6]], P.fletch);
+    s.restore();
+  }
+  return s;
+}
+
+/** Ankle Snare (seen from above, flattened): a loop of rope pulled into a noose, tangled with green vines. */
+function snare() {
+  const s = new Sprite(44, 24);
+  const loop = [];
+  for (let i = 0; i <= 28; i++) {
+    const a = (i / 28) * Math.PI * 2;
+    loop.push([22 + Math.cos(a) * 18, 12 + Math.sin(a) * 9]);
+  }
+  for (let i = 0; i < loop.length - 1; i++) s.capsule(loop[i][0], loop[i][1], loop[i + 1][0], loop[i + 1][1], 1.15, C.sand);
+  for (let i = 0; i < 28; i += 2) s.line(loop[i][0] - 0.6, loop[i][1] - 0.6, loop[i][0] + 0.6, loop[i][1] + 0.6, 0.25, C.sand[2]);
+  s.capsule(40, 12, 43, 10.5, 1.3, C.sand).ellipse(39.6, 12, 2, 1.7, C.sand, 0.1);
+  for (const [a0, a1] of [[0.3, 1.5], [2.2, 3.3], [3.9, 5.1], [5.4, 6.2]]) {
+    const vine = [];
+    for (let i = 0; i <= 8; i++) {
+      const a = a0 + ((a1 - a0) * i) / 8;
+      const w = Math.sin(i * 1.7) * 1.6;
+      vine.push([22 + Math.cos(a) * (18 + w), 12 + Math.sin(a) * (9 + w * 0.5)]);
+    }
+    for (let i = 0; i < vine.length - 1; i++) s.capsule(vine[i][0], vine[i][1], vine[i + 1][0], vine[i + 1][1], 0.55, C.leaf);
+    const [lx, ly] = vine[4];
+    s.ellipse(lx, ly - 1.2, 1.6, 0.9, C.leaf, { rot: 0.6, bias: 0.15 });
+  }
+  return s;
+}
+
+/** Shockwave Trap (seen from above, flattened): an iron trap plate with a glowing rune and brass studs. */
+function snareShock() {
+  const s = new Sprite(44, 24);
+  s.ellipse(22, 12, 19, 10, C.iron);
+  s.ellipse(22, 12, 15.4, 7.8, C.iron, { flat: C.iron[2], outline: false });
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    s.ellipse(22 + Math.cos(a) * 17, 12 + Math.sin(a) * 8.8, 1.2, 0.8, C.brass, 0.1);
+  }
+  s.ellipse(22, 12, 9, 4.6, ['#fff4c4', '#f2cf6a', '#c9a043', '#5a4822'], 0.2);
+  s.ellipse(22, 12, 5.6, 2.8, ['#fffbe8', '#fff1b8', '#f2cf6a', '#8a6a2a'], { flat: '#fff1b8', outline: false });
+  s.line(16, 12, 28, 12, 0.35, '#c9a043').line(22, 8.6, 22, 15.4, 0.35, '#c9a043');
+  return s;
+}
+
+/** Land Mine: a squat brass mine half sunk in a mound of earth, a lit spark on its fuse. */
+function mine() {
+  const s = new Sprite(22, 18);
+  s.ellipse(11, 14, 10, 3.6, C.umber, 0.1);
+  s.ellipse(11, 10.6, 7, 5.6, C.brass);
+  s.ellipse(11, 13.2, 9, 2.4, C.umber, { flat: C.umber[1] });
+  s.line(5.6, 10.6, 16.4, 10.6, 0.3, C.brass[2]);
+  for (const x of [7, 11, 15]) s.spot(x, 9, 0.5, 0.5, C.brass[3]);
+  s.capsule(11, 5.4, 12.4, 3, 0.45, C.sand);
+  s.ellipse(12.8, 2.4, 1.2, 1.2, P.flame, 0.2);
+  sparkle(s, 13.6, 2, 1.6, '#fff1b0');
+  return s;
+}
+
+/** Freezing Trap: an iron jaw trap, its teeth crusted with ice crystals, set flat on the ground. */
+function mineFrost() {
+  const s = new Sprite(26, 18);
+  s.ellipse(13, 12, 12, 4.4, C.slate);
+  s.ellipse(13, 12, 8.6, 2.8, C.slate, { flat: C.slate[2], outline: false });
+  for (let i = 0; i < 7; i++) {
+    const x = 4.6 + i * 2.8;
+    s.taper(x, 10.4, x + 0.4, 6.4 - (i % 2) * 1.4, 1, 0.2, C.steel);
+    s.taper(x + 1.2, 13.8, x + 1.4, 16.4, 0.9, 0.2, C.steel);
+  }
+  for (const [x, y, h] of [[6, 8, 4], [12, 6.4, 5], [18.4, 7.6, 4.4], [9, 10, 3], [16, 10.6, 3]]) s.poly([[x - 1.1, y + h * 0.6], [x, y - h * 0.4], [x + 1.1, y + h * 0.6]], P.ice, 0.2);
+  s.ellipse(13, 12, 2, 1, C.brass, 0.1);
+  sparkle(s, 19.4, 4.4, 1.6);
+  return s;
+}
+
+/** A falcon from above, gliding to the right: wings spread wide, tail fanned behind, head forward. */
+function falconOf(body, wing, belly) {
+  const s = new Sprite(26, 26);
+  // Wings (each a long feathered blade), then the tail, body and head.
+  for (const k of [-1, 1]) {
+    s.poly([[15, 13 + k * 2], [12.6, 13 + k * 8], [9.4, 13 + k * 12.4], [6.8, 13 + k * 11.6], [5.6, 13 + k * 7.6], [8.8, 13 + k * 2.4]], wing, k < 0 ? 0.12 : -0.05);
+    for (let i = 0; i < 4; i++) s.line(6.2 + i * 0.9, 13 + k * (8.6 + i * 0.8), 9.4 + i * 0.9, 13 + k * (4 + i * 1.2), 0.2, wing[2]);
+    s.line(14, 13 + k * 3, 10.4, 13 + k * 11.4, 0.25, wing[0]);
+  }
+  s.poly([[7.4, 13], [1.6, 9.6], [0.8, 13], [1.6, 16.4]], wing, 0.05);
+  s.ellipse(12.6, 13, 6, 2.6, body);
+  s.ellipse(12.4, 13, 3.6, 1.4, belly, { flat: belly[1], outline: false });
+  s.ellipse(18.2, 13, 2.4, 2.1, body, 0.1);
+  s.poly([[20.2, 12.2], [22.4, 13], [20.2, 13.8]], C.brass);
+  s.spot(18.8, 12, 0.45, 0.45, '#20160f').spot(18.8, 14, 0.45, 0.45, '#20160f');
+  return s;
+}
+
+/** Blitz Beat's falcon: brown and cream. */
+function falcon() {
+  return falconOf(['#b58a5e', '#8c6440', '#6a4a2e', '#3a2717'], ['#a27a50', '#7e5a38', '#5e4229', '#33231a'], C.cream);
+}
+
+/** Falcon Assault: the same falcon in gold, glowing. */
+async function falconGold() {
+  const s = falconOf(['#f6dd8a', '#d9b252', '#a98436', '#5a4420'], ['#fbe7a4', '#e3c06a', '#b8913f', '#5e4822'], C.ivory);
+  sparkle(s, 21.4, 9.4, 1.4);
+  return glowing(s, '#f6dd8a', { strength: 0.55 });
+}
+
 export const ART = {
   arrow,
   arrow_storm: arrowStorm,
@@ -475,4 +640,14 @@ export const ART = {
   turret_gold: turret(C.brass),
   ward: ward(P.ice, '#a9dcf2'),
   ward_holy: ward(C.brass, '#f2d98a'),
+  arrow_gold: arrowGold,
+  arrow_charge: arrowCharge,
+  arrow_phantom: arrowPhantom,
+  shower_mark: showerMark,
+  snare,
+  snare_shock: snareShock,
+  mine,
+  mine_frost: mineFrost,
+  falcon,
+  falcon_gold: falconGold,
 };
