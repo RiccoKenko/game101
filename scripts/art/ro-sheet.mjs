@@ -186,6 +186,15 @@ const ICONS = {
       [3, 0], [3, 1], [3, 2], [3, 3],
     ],
   },
+  icons_gear: {
+    file: 'icons_gear_flow.jpg',
+    keys: [
+      'gear_gloves', 'gear_bracers', 'gear_hat', 'gear_helm',
+      'gear_cloak', 'gear_robe', 'gear_boots', 'gear_boots_lucky',
+      'icon_might', 'icon_armor', 'icon_greed', 'icon_growth',
+      'icon_revival', 'icon_skull', 'icon_hard', 'icon_nightmare',
+    ],
+  },
 };
 
 /** The picture with the flat magenta made transparent (soft at the edges, with the pink fringe pulled out). */

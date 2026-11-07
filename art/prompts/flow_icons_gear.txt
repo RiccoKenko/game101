@@ -1,0 +1,29 @@
+Draw ONE sheet of 16 game icons for an original 2D fantasy online RPG, in the same painting style as the two attached reference images (the game's hero and monsters): the classic late-1990s / early-2000s Korean online RPG inventory and skill icon look, each icon a single clear object or symbol, softly painted with gentle cel shading, thin dark-brown outlines (never pure black), a warm, slightly muted palette with a few bright accents, light from the upper left. Every icon must read clearly at a small size (about 64 px).
+
+LAYOUT (landscape 16:9): a grid of 4 columns x 4 rows of equal cells, one icon per cell, centred, filling about two thirds of its cell, in the order below (row by row, left to right). Exactly 16 icons, nothing extra.
+
+ROW 1 (headgear and body armour):
+1. Horned Helm: a rounded iron helmet with two short curved ivory horns and a brass rim.
+2. Magic Circlet: a thin gold circlet with a small glowing blue gem at the front.
+3. Sage Robe: a folded long robe of deep blue cloth with gold trim and a rope belt.
+4. Plate Mail: a sturdy steel breastplate with brass rivets and leather straps.
+
+ROW 2 (cloaks and shoes):
+5. Wind Muffler: a long light-green scarf fluttering as if in the wind.
+6. Mystic Manteau: a short dark-teal cape with a silver clasp and a gold-embroidered hem.
+7. Sprint Sandals: a pair of brown leather sandals with laces wrapped up the ankle.
+8. Lucky Boots: a pair of red leather boots with a little four-leaf clover charm on the side.
+
+ROW 3 (training upgrades):
+9. Might: a steel short sword pointing up, with a red leather grip and a brass cross guard.
+10. Armor: a heavy iron kite shield with a brass rim and a single brass boss.
+11. Greed: a bulging leather coin pouch tied with string, gold coins spilling out of it.
+12. Growth: a small green sapling growing out of a glowing pale-blue crystal.
+
+ROW 4 (revival and difficulty):
+13. Revival: a single white angel wing with a soft gold halo above it.
+14. Normal: a plain bone-white skull, calm and simple.
+15. Hard: a bone-white skull wearing a dented iron helmet with two red horns.
+16. Nightmare: a dark slate-grey skull with glowing pale-cyan eyes and small black horns, cold blue flames rising behind it.
+
+Draw only the object or symbol itself: no square frame, no border, no badge, no background plate behind it. All are our own original designs. Background: a perfectly flat, solid magenta #FF00FF everywhere; never use magenta, hot pink or purple inside the icons. No text, letters, numbers, labels or watermarks anywhere. Every icon is complete and separated from its neighbours by plain background.
