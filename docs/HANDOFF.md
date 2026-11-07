@@ -6,7 +6,7 @@
 
 ### สถานะและลิงก์
 - **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (push ครบ, working tree สะอาด)
-- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 23
+- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 24
   - **สร้างใหม่:** `node scripts/build-artifact.mjs <scratchpad>/ricco-rush.html` แล้ว publish ทับลิงก์นี้ด้วย `url`
   - **session ใหม่:** ต้อง `action: read` ลิงก์ก่อน publish
 - **ลิงก์หลัก:** little-archer.vercel.app ยังเป็นเกมเก่า v11 ขึ้นเฉพาะเมื่อเจ้านายสั่ง (วิธี deploy ดูหัวข้อ "ข้อห้ามและกติกา" ในแผนเก่า หรือ v11 ด้านล่าง)
@@ -90,10 +90,11 @@
   - แผ่นภาพกว้างขึ้นเองเพื่อไม่ให้สูงเกิน 4096
 - **สถานะ:**
   - เดินธรรมดา: ด้าน e = 8 เฟรม, ที่เหลือ 4 (prompt 4 ด้านส่งให้เจ้านายแล้ว)
-  - เดินยิง: e, ne, n = 8 เฟรม
-  - เดินยิง se: ใช้ 4 เฟรมแถวบนของ Flow
-  - เดินยิง s: ยังใช้ท่าเดิม
-  - Flow วาด s/se ไม่ได้ (เล็งออกข้าง / แขนเปลี่ยนทุกเฟรม) → ให้ OpenAI ทำ 2 ภาพ (`ro_archer_walkshoot8_s.txt`, `_se.txt`)
+  - เดินยิง: ครบ 5 ด้าน 8 เฟรม (e, ne, n จาก Flow)
+  - **s, se จาก OpenAI:** Flow เล็งไม่ได้ (เล็งออกข้าง / แขนเปลี่ยนทุกเฟรม)
+    - ไฟล์ `archer_walkshoot8_{s,se}_oa.png`, prompt `ro_archer_walkshoot8_{s,se}.txt`
+    - แนบ `archer_frontshot.png` + `archer_walkshoot8_e_flow.jpg` เป็นตัวอย่าง
+    - ผ่านในรอบแรกทั้งคู่ ภาพละ $0.123
 - **Player:**
   - ลูปต่างจำนวนเฟรม (4/8) สลับกันได้ที่จุดเดียวกันของก้าว
   - การเด้งตัวตามก้าว 2 หรือ 4 เฟรม (`STEP_BOB`)
@@ -114,7 +115,7 @@
 ### งบ OpenAI
 - เจ้านายเติม $5 ให้ใช้ออกแบบไม่เกิน $5
   - รันด้วย `OPENAI_BUDGET_USD=8.52 npm run art:openai -- ...` (ยอดเดิม $3.53 + $5)
-- ใช้ไป $0.88 รวมสะสม $4.41 **เหลือ $4.12**
+- ใช้ไป $1.13 รวมสะสม $4.66 **เหลือ $3.86** (7 พ.ย.: เดินยิง 8 เฟรม s/se 2 ภาพ $0.246)
   - หลังเริ่มใช้ Flow ไม่ได้ใช้ OpenAI อีก
 - **ถ้า OpenAI ขึ้น `server_is_overloaded`:** รอบที่ล้มไม่เสียเงิน ให้ลองใหม่ทุก 1 นาที
 - **ท่าเล็งเข้าหากล้อง AI วาดยาก:** ต้องเขียนว่า "ธนูวางแนวนอน ลูกธนูชี้ลงจอ ทุกภาพ"

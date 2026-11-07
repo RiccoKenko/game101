@@ -49,8 +49,11 @@ const HEROES = {
       // 8-frame walks drawn in Google Flow, one side per picture (4 x 2: contact, down, passing, up, twice).
       walk8e: { file: 'archer_walk8_e_flow.jpg', cols: 4, rows: 2, like: 'walk' },
       ...Object.fromEntries(
-        ['se', 'e', 'ne', 'n'].map((d) => [`shoot8${d}`, { file: `archer_walkshoot8_${d}_flow.jpg`, cols: 4, rows: 2, like: 'walkshoot' }]),
+        ['e', 'ne', 'n'].map((d) => [`shoot8${d}`, { file: `archer_walkshoot8_${d}_flow.jpg`, cols: 4, rows: 2, like: 'walkshoot' }]),
       ),
+      // The front and front-diagonal ones Flow could not aim, drawn by OpenAI instead (same 4 x 2 layout).
+      shoot8s: { file: 'archer_walkshoot8_s_oa.png', cols: 4, rows: 2, like: 'walkshoot' },
+      shoot8se: { file: 'archer_walkshoot8_se_oa.png', cols: 4, rows: 2, like: 'walkshoot' },
     },
     animations: {
       idle: { fps: 2, loop: true, frames: [['misc', 0]] },
@@ -67,14 +70,14 @@ const HEROES = {
         frames: [['walkshoot', 0], ['walkshoot', 1], ['walkshoot', 2], ['walkshoot', 3]],
         sides: { s: ['front', 1], se: ['front', 3] },
         // Flow drew frame 7 of the side and back views with the string already let go: frame 3 stands in for it.
-        // Its front-diagonal sheet aims down-right only in the top row (the bottom row aims level), so that side
-        // keeps 4 frames; its front view aimed sideways, so the front keeps the old front-shot row. (The retries,
-        // archer_walkshoot8_s2 / se2, came back with the arms changing between frames / aiming level: unused.)
+        // Flow could not aim the front views (archer_walkshoot8_se / s2 / se2 aim level or change arms between
+        // frames, unused): those two are OpenAI's.
         cells: {
           e: steady8('shoot8e'),
           ne: grid8('shoot8ne'),
           n: steady8('shoot8n'),
-          se: [0, 1, 2, 3].map((c) => ['shoot8se', c, 0]),
+          se: grid8('shoot8se'),
+          s: grid8('shoot8s'),
         },
       },
       shoot: {
