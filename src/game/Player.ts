@@ -13,6 +13,11 @@ const DECEL = 0.045;
 /** The running loops' frame rate is scaled so the feet keep pace with the ground: x this at the base speed. */
 const STRIDE_RATE = 1.45;
 const BASE_SPEED = 340;
+/**
+ * The run bounce over one step, frame by frame (0 low, 1 high), for a step drawn in 2 frames (footfall, passing)
+ * or in 4 (contact, down, passing, up).
+ */
+const STEP_BOB: Record<number, number[]> = { 2: [0, 1], 4: [0.3, 0, 0.7, 1] };
 /** How far past the edge of its eighth of the circle the look must turn before the hero turns (no flicker). */
 const TURN_SLACK = 0.14;
 /** The running loops, which share their legs frame by frame. */
@@ -214,7 +219,10 @@ export class Player {
     if (current === key && anims.isPlaying) return;
     // Every running loop (run, runshoot) shares its legs frame by frame, so the stride carries over between them.
     const stride = this.directional ? current.startsWith(`${this.sheet}_run`) : this.strides.has(current);
-    const i = stride && anims.currentFrame ? anims.currentFrame.index - 1 : 0;
+    // The same point of the stride, even if the loops have different numbers of frames (4 and 8).
+    const from = anims.currentAnim?.frames.length ?? 1;
+    const to = this.sprite.scene.anims.get(key)?.frames.length ?? 1;
+    const i = stride && anims.currentFrame ? Math.round(((anims.currentFrame.index - 1) * to) / from) % to : 0;
     this.sprite.play({ key, startFrame: i });
     this.flip = this.facing().flip;
   }
@@ -350,8 +358,10 @@ export class Player {
     const running = this.painted && !this.action && key.startsWith(`${this.sheet}_run`);
     this.sprite.anims.timeScale = running ? Phaser.Math.Clamp((speed / BASE_SPEED) * STRIDE_RATE, 0.6, 2.2) : 1;
     const frame = running ? (this.sprite.anims.currentFrame?.index ?? 1) - 1 : -1;
-    this.bob += ((running && frame % 2 === 1 ? 1 : 0) - this.bob) * (1 - Math.exp(-28 * dt));
-    if (running && frame % 2 === 0 && frame !== this.lastStep) this.onStep?.(this.x - this.faceX * 18, this.y + 40);
+    const step = (this.sprite.anims.currentAnim?.frames.length ?? 4) / 2;
+    const bobs = STEP_BOB[step] ?? STEP_BOB[2];
+    this.bob += ((running ? bobs[frame % step] ?? 0 : 0) - this.bob) * (1 - Math.exp(-28 * dt));
+    if (running && frame % step === 0 && frame !== this.lastStep) this.onStep?.(this.x - this.faceX * 18, this.y + 40);
     this.lastStep = frame;
     // Standing still, the hero breathes.
     const idle = this.painted && !this.moving && !this.action;

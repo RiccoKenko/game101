@@ -32,6 +32,9 @@ const DIRS = ['s', 'se', 'e', 'ne', 'n'];
  * pose to hold it). Every animation exists once per facing, its row in the sheet, unless `sides` names another
  * sheet's row for that facing.
  */
+/** The eight frames of a 4 x 2 walk sheet, row by row. */
+const grid8 = (sheet) => [0, 1].flatMap((r) => [0, 1, 2, 3].map((c) => [sheet, c, r]));
+
 const HEROES = {
   archer: {
     // archer_walk.png (the first walk) was redrawn as archer_walk2.png: its legs barely moved.
@@ -39,10 +42,19 @@ const HEROES = {
     // The front shots redrawn aiming down the picture (the attack and walk-shoot sheets aim sideways there):
     // rows standing and walking toward the viewer, then standing and walking down-right.
     // `like`: drawn bigger than the others, so it is scaled to match that sheet's typical height.
-    extra: { front: { file: 'archer_frontshot.png', rows: 4, like: 'attack' } },
+    extra: {
+      front: { file: 'archer_frontshot.png', rows: 4, like: 'attack' },
+      // 8-frame walks drawn in Google Flow, one side per picture (4 x 2: contact, down, passing, up, twice).
+      walk8e: { file: 'archer_walk8_e_flow.jpg', cols: 4, rows: 2, like: 'walk' },
+    },
     animations: {
       idle: { fps: 2, loop: true, frames: [['misc', 0]] },
-      run: { fps: 9, loop: true, frames: [['walk', 0], ['walk', 1], ['walk', 2], ['walk', 3]] },
+      run: {
+        fps: 9,
+        loop: true,
+        frames: [['walk', 0], ['walk', 1], ['walk', 2], ['walk', 3]],
+        cells: { e: grid8('walk8e') },
+      },
       // Walking while the bow keeps firing: the legs match run frame for frame.
       runshoot: {
         fps: 9,
@@ -337,7 +349,7 @@ function poses(img, cols, rows, { speck = 60, byCell = false } = {}) {
  * Where a pose stands: the bottom of the drawing, and across, the middle of what touches its lowest tenth (or with
  * `box`, the middle of the whole drawing: for creatures whose feet sit off-centre).
  */
-function feetOf(p, box = false) {
+function feetOf(p, box = false, body = false) {
   let top = p.height;
   let bottom = -1;
   let left = p.width;
@@ -351,6 +363,19 @@ function feetOf(p, box = false) {
         right = Math.max(right, x);
       }
   if (box) return { x: (left + right) / 2, y: bottom, top };
+  // A walking pose is held by its upper body (head and chest), so the legs swing under a steady body instead of
+  // the body lurching over whichever foot is planted.
+  if (body) {
+    let sx = 0;
+    let n = 0;
+    for (let y = top; y <= top + (bottom - top) * 0.55; y++)
+      for (let x = 0; x < p.width; x++)
+        if (p.data[(y * p.width + x) * 4 + 3] > 128) {
+          sx += x;
+          n++;
+        }
+    return { x: n ? sx / n : p.width / 2, y: bottom, top };
+  }
   const band = Math.max(4, Math.round((bottom - top) * 0.1));
   let sx = 0;
   let n = 0;
@@ -374,8 +399,8 @@ function mirrored(p) {
 const png = (p) => sharp(p.data, { raw: { width: p.width, height: p.height, channels: 4 } }).png().toBuffer();
 
 /** A pose scaled by `k` and placed in a `fw` x `fh` frame with its feet at `feet`. */
-async function place(p, k, fw, fh, feet, box = false) {
-  const f = feetOf(p, box);
+async function place(p, k, fw, fh, feet, box = false, body = false) {
+  const f = feetOf(p, box, body);
   const w = Math.round(p.width * k);
   const h = Math.round(p.height * k);
   const scaled = await sharp(await png(p)).resize(w, h, { kernel: 'lanczos3' }).png().toBuffer();
@@ -397,7 +422,7 @@ async function buildHero(id, preview) {
   const h = HEROES[id];
   const sheets = {};
   for (const [name, file] of Object.entries(h.sheets)) sheets[name] = poses(await keyed(join(IN, file)), 4, 5);
-  for (const [name, x] of Object.entries(h.extra ?? {})) sheets[name] = poses(await keyed(join(IN, x.file)), 4, x.rows);
+  for (const [name, x] of Object.entries(h.extra ?? {})) sheets[name] = poses(await keyed(join(IN, x.file)), x.cols ?? 4, x.rows);
   const pose = (sheet, col, row) => sheets[sheet][row][col];
   // How tall each sheet draws her (median over its poses), to check the sheets agree on her size.
   const median = {};
@@ -421,15 +446,17 @@ async function buildHero(id, preview) {
   const meta = { frameWidth: FW, frameHeight: FH, feet: FEET, bodyHeight: BODY, directions: DIRS, animations: {} };
   for (const [name, a] of Object.entries(h.animations))
     for (const [row, dir] of DIRS.entries()) {
-      meta.animations[`${name}_${dir}`] = { start: frames.length, count: a.frames.length, fps: a.fps, loop: a.loop };
-      // `sides` swaps in another sheet's row for some sides (same columns).
+      // `sides` swaps in another sheet's row for some sides (same columns); `cells` gives a side its own frames
+      // ([sheet, col, row] each, any number: an 8-frame walk drawn as a 4 x 2 grid, say), at `fps` x their count / 4.
       const side = a.sides?.[dir];
-      for (const [sheet, col] of a.frames) {
-        const [from, r] = side ? [side[0], side[1]] : [sheet, row];
-        frames.push(await place(pose(from, col, r), k * scaleOf(from), FW, FH, FEET));
-      }
+      const own = a.cells?.[dir];
+      const list = own ?? a.frames.map(([sheet, col]) => (side ? [side[0], col, side[1]] : [sheet, col, row]));
+      const fps = Math.round(((a.fps * list.length) / a.frames.length) * 100) / 100;
+      meta.animations[`${name}_${dir}`] = { start: frames.length, count: list.length, fps, loop: a.loop };
+      for (const [from, col, r] of list) frames.push(await place(pose(from, col, r), k * scaleOf(from), FW, FH, FEET, false, !!own));
     }
-  const cols = 8;
+  // Wide enough that the sheet stays under 4096 px tall (the largest texture many phones take).
+  const cols = Math.max(8, Math.ceil(frames.length / Math.floor(4096 / FH)));
   const rows = Math.ceil(frames.length / cols);
   const sheet = await sharp({ create: { width: cols * FW, height: rows * FH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
     .composite(frames.map((f, i) => ({ input: f, left: (i % cols) * FW, top: Math.floor(i / cols) * FH })))
