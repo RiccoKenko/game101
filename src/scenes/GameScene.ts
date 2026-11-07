@@ -454,7 +454,7 @@ export class GameScene extends Phaser.Scene {
     this.runEvents.update(dt);
     if (run.greedUntil > 0 && run.time >= run.greedUntil) this.payGreed();
     this.enemies.update(dt);
-    if (!DEBUG.calm) this.weapons.update(dt);
+    if (!DEBUG.nofire) this.weapons.update(dt);
     this.pickups.update(dt, run.stats.magnet);
     this.fx.update(dt);
     this.questCheck += dt;

@@ -10,7 +10,7 @@
  * difficulty: 0 Normal, 1 Hard, 2 Nightmare (ignores what is unlocked). relics: wear these, e.g. `relics=boar,demon`.
  * curses: play with these curses, e.g. `curses=horde,tyrant` (ignores whether curses are unlocked).
  * mastery: play with every hero at this mastery level (1-15).
- * calm: no monsters come and the hero holds fire (for recording her walk).
+ * calm: no monsters come. nofire: the hero holds fire (both for recording her walk).
  */
 const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
 const num = (key: string, fallback: number) => {
@@ -39,4 +39,5 @@ export const DEBUG = {
   curses: (params.get('curses') ?? '').split(',').filter(Boolean),
   mastery: num('mastery', 0),
   calm: params.has('calm'),
+  nofire: params.has('nofire'),
 };
