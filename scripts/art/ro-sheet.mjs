@@ -204,6 +204,15 @@ const ICONS = {
       'icon_revival', 'icon_skull', 'icon_hard', 'icon_nightmare',
     ],
   },
+  icons_menu: {
+    file: 'icons_menu_flow.jpg',
+    cols: 5,
+    rows: 2,
+    keys: [
+      'icon_coin', 'icon_shop', 'icon_scroll', 'icon_trophy', 'icon_crown',
+      'icon_book', 'icon_banish', 'icon_curse', 'icon_clock', 'icon_lock',
+    ],
+  },
 };
 
 /** The picture with the flat magenta made transparent (soft at the edges, with the pink fringe pulled out). */

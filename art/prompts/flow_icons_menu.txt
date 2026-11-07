@@ -1,0 +1,19 @@
+Draw ONE sheet of 10 game icons for an original 2D fantasy online RPG, in the same painting style as the two attached reference images (the game's hero and monsters): the classic late-1990s / early-2000s Korean online RPG inventory icon look, each icon a single clear object, softly painted with gentle cel shading, thin dark-brown outlines (never pure black), a warm, slightly muted palette with a few bright accents, light from the upper left. Every icon must read clearly at a small size (about 48 px).
+
+LAYOUT (landscape 16:9): a grid of 5 columns x 2 rows of equal cells, one icon per cell, centred, filling about two thirds of its cell, in the order below (row by row, left to right). Exactly 10 icons, nothing extra.
+
+ROW 1:
+1. Coin: one shiny gold coin with a square hole in the middle, seen almost face-on.
+2. Shop: a small wooden market stall with a red-and-cream striped awning.
+3. Quests: a rolled parchment scroll tied with a red ribbon.
+4. Trophy: a gold trophy cup with two handles on a small wooden base.
+5. Crown: a small gold crown set with red gems.
+
+ROW 2:
+6. Collection: a thick brown leather book with brass corners and a gold star on the cover.
+7. Banish: a blank parchment card torn in two, the halves drifting apart.
+8. Curse: a dark iron-grey skull wrapped in a rusty chain, glowing green eyes.
+9. Clock: a brass pocket watch with a white face, its lid open.
+10. Lock: a sturdy brass padlock with a keyhole.
+
+Draw only the object itself: no square frame, no border, no badge, no background plate behind it. All are our own original designs. Background: a perfectly flat, solid magenta #FF00FF everywhere; never use magenta, hot pink or purple inside the icons. No text, letters, numbers, labels or watermarks anywhere. Every icon is complete and separated from its neighbours by plain background.
