@@ -15,7 +15,7 @@ ICONS (stat crystals, potions and adventurer's gear):
 10. Healing Herb: a sprig of green herb leaves with a tiny white flower.
 11. Moon Pendant: a silver crescent-moon pendant on a thin chain.
 12. Scholar's Glasses: round brass reading glasses resting on a little scroll.
-13. Berserk Potion: a round glass flask of glowing red potion with a cork and a skull-free plain red label.
+13. Berserk Potion: a round glass flask of glowing red potion with a cork and a plain red label.
 14. Spiked Mail: a small iron chest armour covered in short spikes.
 15. Slayer Ring: a gold ring set with a sharp red gem.
 16. Yggdrasil Leaf: a single large glowing green leaf with golden veins.
