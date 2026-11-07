@@ -1,0 +1,22 @@
+Draw ONE character sprite sheet for an original 2D fantasy online RPG (a top-down action game): an 8-frame animation of "Archer" WALKING WHILE SHOOTING. The look is the classic late-1990s / early-2000s Korean 2D online RPG character sprite: a small chibi-anime girl about 2.5 to 3 heads tall, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted earthy palette, light from the upper left, seen from slightly above (about 30 degrees).
+
+REFERENCES: the FIRST attached image is her bow-shot sheet from the game: match her design exactly (the same girl, face, hair with the white feather, outfit, colours, bow, proportions, outline weight and shading). The SECOND attached image shows the LAYOUT and the leg cycle to follow (8 frames in 4 columns x 2 rows, the upper body steady while the legs walk); it shows her from the side, but this sheet is a different view (below).
+
+CHARACTER (our own original design): a cheerful teenage girl with chestnut red-brown hair in a high ponytail with a small white feather in the tie, green eyes; a moss-green leather vest laced at the front over a cream shirt with short puffed sleeves; a brown belt with a small pouch; a short tan leather skirt over dark leggings; tall brown boots with folded cuffs; a leather bracer and a fingerless glove; a brown leather quiver with white-fletched arrows on her back; a plain wooden longbow with small brass tips.
+
+VIEW AND AIM: she FACES THE VIEWER and walks toward the viewer (down the picture), shooting DOWN THE PICTURE at the viewer, the way top-down games show a shot toward the camera: the bow tilted almost FLAT (turned on its side) and held low in front of her, her bow arm stretched downward, the string pulled back up to her chest, the arrow lying on the bow pointing STRAIGHT DOWN. In EVERY drawing the bow is flat and the arrow points straight down. Never left, never right, never level, never sideways.
+
+SHEET LAYOUT (landscape 1536 x 1024): a grid of 4 columns x 2 rows of equal cells, one full-body drawing per cell, read left to right, top row first, each centred in its cell, the same size in every cell, the soles of her boots on the same baseline near the bottom of every cell, the whole bow inside the cell.
+
+THE 8 FRAMES are the legs of one full walk cycle (two steps); her upper body, head, arms and bow are IDENTICAL in all 8 (fully drawn, aiming, never released):
+1. Contact: her left leg steps toward the viewer (the forward foot lower and a little bigger), heel just touching the ground; the other leg behind, toes touching.
+2. Down: her weight drops onto the front leg, knee softly bent; the back foot lifts off; her body at its LOWEST.
+3. Passing: the front leg straight under her; the back leg swings forward past it, knee bent, foot lifted.
+4. Up: she pushes up on her toes; the swinging leg reaches forward; her body at its HIGHEST.
+5-8. The same as 1-4 with the legs swapped.
+The legs must clearly differ from frame to frame, even at a small size.
+
+TECHNICAL:
+- Background: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink or purple inside the drawings.
+- No text, numbers, labels, grid lines, frames, borders, ground shadows, glows, motion lines, sparkles or watermarks.
+- Every drawing is complete (nothing cut off) and separated from its neighbours by plain background.
