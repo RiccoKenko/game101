@@ -188,6 +188,15 @@ const ICONS = {
   },
   icons_gear: {
     file: 'icons_gear_flow.jpg',
+    // Flow drew 6 x 4 with extra helmets and skulls in the last two columns: the asked-for 16 are the first four.
+    cols: 6,
+    rows: 4,
+    picks: [
+      [0, 0], [0, 1], [0, 2], [0, 3],
+      [1, 0], [1, 1], [1, 2], [1, 3],
+      [2, 0], [2, 1], [2, 2], [2, 3],
+      [3, 0], [3, 1], [3, 2], [3, 3],
+    ],
     keys: [
       'gear_gloves', 'gear_bracers', 'gear_hat', 'gear_helm',
       'gear_cloak', 'gear_robe', 'gear_boots', 'gear_boots_lucky',
@@ -525,10 +534,27 @@ async function buildCards(set, preview) {
   console.log(`${set}: ${keys.length} cards${preview ? ' (preview only)' : ''}`);
 }
 
+/**
+ * Clears thin lines along the grid between cells, so a glow that reaches across into the next cell (a crystal's halo
+ * touching the flames below it) cannot join two icons into one piece.
+ */
+function walls(img, cols, rows) {
+  const { width: W, height: H, data } = img;
+  for (let c = 1; c < cols; c++) {
+    const x0 = Math.round((c * W) / cols);
+    for (let y = 0; y < H; y++) for (let x = x0 - 1; x <= x0; x++) data[(y * W + x) * 4 + 3] = 0;
+  }
+  for (let r = 1; r < rows; r++) {
+    const y0 = Math.round((r * H) / rows);
+    for (let y = y0 - 1; y <= y0; y++) for (let x = 0; x < W; x++) data[(y * W + x) * 4 + 3] = 0;
+  }
+  return img;
+}
+
 async function buildIcons(set, preview) {
   const ic = ICONS[set];
   const [cols, rows] = [ic.cols ?? 4, ic.rows ?? 4];
-  const grid = poses(await keyed(join(IN, ic.file)), cols, rows, { speck: 6, byCell: true });
+  const grid = poses(walls(await keyed(join(IN, ic.file)), cols, rows), cols, rows, { speck: 6, byCell: true });
   const S = 128;
   for (const [i, key] of ic.keys.entries()) {
     const [r, c] = ic.picks?.[i] ?? [Math.floor(i / cols), i % cols];
