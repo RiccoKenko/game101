@@ -7,7 +7,7 @@ const FADE_IN_OUT = { values: [0, 0.9, 0.9, 0] };
 
 /** Drifting particles that give each map its air, one list of layers per map (by index). */
 const LAYERS: Layer[][] = [
-  // Sunny Meadow: petals on the breeze and floating pollen.
+  // Greenhill Fields: petals on the breeze and floating pollen.
   [
     {
       texture: 'petal',
@@ -33,7 +33,7 @@ const LAYERS: Layer[][] = [
       blendMode: ADD,
     },
   ],
-  // Spooky Graveyard: slow fog banks and fireflies.
+  // Lantern Pines: slow fog banks and fireflies.
   [
     {
       texture: 'puff',
@@ -58,30 +58,29 @@ const LAYERS: Layer[][] = [
       blendMode: ADD,
     },
   ],
-  // Dark Castle: embers rising from the braziers, falling ash.
+  // Sunscar Desert: sand blowing along the ground, and the odd glint of sun on it.
   [
-    {
-      texture: 'glow',
-      depth: 45,
-      frequency: 170,
-      lifespan: 3600,
-      speedX: { min: -24, max: 24 },
-      speedY: { min: -95, max: -40 },
-      scale: { start: 0.24, end: 0 },
-      alpha: FADE_IN_OUT,
-      tint: [0xff8a3d, 0xffc46b, 0xff5a3c],
-      blendMode: ADD,
-    },
     {
       texture: 'puff',
       depth: 44,
-      frequency: 520,
-      lifespan: 6000,
-      speedX: { min: -12, max: 12 },
-      speedY: { min: 10, max: 28 },
-      scale: { min: 0.14, max: 0.3 },
-      alpha: { values: [0, 0.55, 0] },
-      tint: 0x6b6070,
+      frequency: 260,
+      lifespan: 5200,
+      speedX: { min: 70, max: 140 },
+      speedY: { min: -8, max: 14 },
+      scale: { min: 1.2, max: 2.8 },
+      alpha: { values: [0, 0.16, 0.16, 0] },
+      tint: 0xead6a6,
+    },
+    {
+      texture: 'glow',
+      depth: 45,
+      frequency: 650,
+      lifespan: 1600,
+      speed: { min: 0, max: 8 },
+      scale: { min: 0.08, max: 0.16 },
+      alpha: { values: [0, 0.9, 0] },
+      tint: 0xfff3c0,
+      blendMode: ADD,
     },
   ],
 ];

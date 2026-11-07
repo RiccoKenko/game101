@@ -6,7 +6,7 @@
 
 ### สถานะและลิงก์
 - **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (push ครบ, working tree สะอาด)
-- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 24
+- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 27
   - **สร้างใหม่:** `node scripts/build-artifact.mjs <scratchpad>/ricco-rush.html` แล้ว publish ทับลิงก์นี้ด้วย `url`
   - **session ใหม่:** ต้อง `action: read` ลิงก์ก่อน publish
 - **ลิงก์หลัก:** little-archer.vercel.app ยังเป็นเกมเก่า v11 ขึ้นเฉพาะเมื่อเจ้านายสั่ง (วิธี deploy ดูหัวข้อ "ข้อห้ามและกติกา" ในแผนเก่า หรือ v11 ด้านล่าง)
@@ -101,6 +101,25 @@
 - **สวิตช์ทดสอบ:** `?calm` ไม่มีมอน, `?nofire` ไม่ยิง
 - **สคริปต์อัดวิดีโอ:** scratchpad `fx0/record2.cjs` (เดินซ้ายขวา), `record3.cjs` (เดินยิง)
 
+### แมพสวยขึ้น + สกิลตรงชื่อ + มอนลื่น (v26-v27)
+- **สกิล Archer ตรงชื่อแล้ว:** เดิมชื่อ/ไอคอนใหม่ แต่ภาพตอนเล่นยังเป็นอาวุธเก่า
+  - วาดภาพใหม่ด้วยโค้ดใน `projectiles.mjs`: `arrow_gold`, `arrow_charge`, `arrow_phantom`, `shower_mark`, `snare`, `snare_shock`, `mine`, `mine_frost`, `falcon`, `falcon_gold`
+  - สลับใน `Weapons.ts` กลไกและตัวเลขเดิม
+  - Arrow Shower มีลูกธนูตกจากฟ้าตลอดช่วง (`fallingArrow`)
+- **มอนลื่น (`Enemies.animate`):**
+  - `gait` เดินตามความเร็วจริง
+  - สลับเฟรมตามจังหวะท่า
+  - หันตัวแบบพลิกการ์ด (`faceS`)
+- **แมพ:**
+  - **รายละเอียดพื้น 24 ชิ้น จาก Flow ภาพเดียว:** `art/incoming/ro/ground_details_flow.jpg`, ชุด `ground_details` ใน `ro-sheet.mjs`
+    - `counts` ตัดตามลำดับการอ่าน เพราะ Flow เรียงแถว 6-5-5-8
+    - `blended()` ลบขอบชมพู หดขอบ แล้วจางออกที่ขอบ
+  - **`World.populate`:**
+    - รายละเอียดพื้น 5-8 ชิ้นต่อ chunk (`MapDef.details`)
+    - ของประกอบเป็นกลุ่ม (ดง 2-4, กอ 2-3) และเรียงความลึกตาม y
+    - เงาเมฆลอย (ยกเว้นป่าสน)
+  - **`Ambience`:** ทะเลทรายเป็นทรายปลิว (เดิมยังเป็นไฟ/เถ้าของแมพปราสาทเก่า)
+
 ### Google Flow (ฟรี) วิธีทำงานกับเจ้านาย
 - สร้างภาพนิ่งใน Flow ใช้ 0 เครดิต (มีเพดานต่อวัน) ผมเชื่อม Flow ไม่ได้ (ไม่มี API)
 - ผมเขียนคำสั่งใน `art/prompts/flow_*.txt` แล้วแปะในแชตเป็นบล็อกโค้ด
@@ -149,7 +168,7 @@
 - **การสื่อสาร:**
   - เรียก "เจ้านาย" ตอบไทย ส่งงานก่อนอธิบาย บอก 📍 checkpoint
   - ถามแบบมีตัวเลือก
-  - "📚 บทเรียนที่ N" ใช้ถึง 71 แล้ว **ข้อต่อไป 72**
+  - "📚 บทเรียนที่ N" ใช้ถึง 73 แล้ว **ข้อต่อไป 74**
 
 ## สถานะ (27 ต.ค. 2026): เริ่มรอบ Ricco Rush
 - **งานรอบนี้:** เจ้านายสั่งโละธีมเดิม แล้วทำเกมใหม่ชื่อ **Ricco Rush**

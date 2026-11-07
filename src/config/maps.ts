@@ -5,6 +5,8 @@ export interface MapDef {
   name: string;
   ground: string;
   decor: string[];
+  /** Flat painted pieces scattered over the ground (flowers, stones, leaves...), so it never looks tiled. */
+  details: string[];
   music: string;
   /** [early, mid, late] enemy types. */
   enemies: [EnemyId, EnemyId, EnemyId];
@@ -25,6 +27,7 @@ export const MAPS: MapDef[] = [
     name: 'Greenhill Fields',
     ground: 'ground_meadow',
     decor: ['tree', 'bush', 'rock', 'flowers', 'flowers', 'fence', 'signpost'],
+    details: ['gd_flowers', 'gd_tufts', 'gd_dirt', 'gd_stones', 'gd_clover', 'gd_mushring', 'gd_steps', 'gd_twig', 'gd_flowers', 'gd_tufts'],
     music: 'music_meadow',
     enemies: ['slime', 'bat', 'mushroom'],
     boss: 'boss_slime',
@@ -38,6 +41,7 @@ export const MAPS: MapDef[] = [
     name: 'Lantern Pines',
     ground: 'ground_graveyard',
     decor: ['pine', 'pine', 'stone_lantern', 'paper_lantern', 'wayside_shrine', 'stump', 'fern_rock'],
+    details: ['gd_needles', 'gd_mossrock', 'gd_leaves', 'gd_whiteshrooms', 'gd_oldpath', 'gd_puddle', 'gd_roots', 'gd_blueflowers', 'gd_needles', 'gd_leaves'],
     music: 'music_graveyard',
     enemies: ['skeleton', 'ghost', 'zombie'],
     boss: 'boss_lich',
@@ -53,6 +57,7 @@ export const MAPS: MapDef[] = [
     name: 'Sunscar Desert',
     ground: 'ground_castle',
     decor: ['palm', 'cactus', 'pillar_broken', 'lion_statue', 'skull', 'pots'],
+    details: ['gd_cracks', 'gd_pebbles', 'gd_shrub', 'gd_tiles', 'gd_desertflowers', 'gd_bones', 'gd_ripples', 'gd_shards', 'gd_ripples', 'gd_pebbles'],
     music: 'music_castle',
     enemies: ['imp', 'knight', 'gargoyle'],
     boss: 'boss_demon',

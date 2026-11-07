@@ -245,6 +245,94 @@ const ICONS = {
   },
 };
 
+/**
+ * Ground details: flat pieces scattered over each map's ground (src/config/maps.ts `details`). `counts` is how
+ * many pieces each row of the picture holds, in reading order; every piece keeps its painted size times `scale`.
+ */
+const DECALS = {
+  ground_details: {
+    file: 'ground_details_flow.jpg',
+    counts: [6, 5, 5, 8],
+    scale: 0.62,
+    keys: [
+      'gd_flowers', 'gd_tufts', 'gd_dirt', 'gd_stones', 'gd_clover', 'gd_mushring', 'gd_steps', 'gd_twig',
+      'gd_needles', 'gd_mossrock', 'gd_leaves', 'gd_whiteshrooms', 'gd_oldpath', 'gd_puddle', 'gd_roots', 'gd_blueflowers',
+      'gd_cracks', 'gd_pebbles', 'gd_shrub', 'gd_tiles', 'gd_desertflowers', 'gd_bones', 'gd_ripples', 'gd_shards',
+    ],
+  },
+};
+
+/**
+ * A ground piece made to melt into the ground: the pink left in its feathered rim is taken out, the rim is pulled
+ * in a few pixels and softened, and the whole piece fades out toward its edge (its own patch of grass or sand then
+ * gives way to the map's ground instead of ending in a line).
+ */
+async function blended(pngBuf) {
+  const { data, info } = await sharp(pngBuf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: W, height: H } = info;
+  // Despill: no colour may lean toward magenta.
+  for (let i = 0; i < W * H; i++) {
+    const m = Math.min(data[i * 4], data[i * 4 + 2]) - data[i * 4 + 1];
+    if (m > 0) {
+      data[i * 4] -= m;
+      data[i * 4 + 2] -= m;
+    }
+  }
+  // Pull the rim in (the smallest alpha within 3 px), then soften it (average within 3 px).
+  const a0 = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) a0[i] = data[i * 4 + 3];
+  const pass = (src, r, f) => {
+    const out = new Float32Array(W * H);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        let v = f === 'min' ? 255 : 0;
+        let n = 0;
+        for (let dy = -r; dy <= r; dy++)
+          for (let dx = -r; dx <= r; dx++) {
+            const X = x + dx;
+            const Y = y + dy;
+            const s = X < 0 || Y < 0 || X >= W || Y >= H ? 0 : src[Y * W + X];
+            if (f === 'min') v = Math.min(v, s);
+            else v += s;
+            n++;
+          }
+        out[y * W + x] = f === 'min' ? v : v / n;
+      }
+    return out;
+  };
+  const a = pass(pass(a0, 3, 'min'), 3, 'avg');
+  // Fade toward the edge of the piece's ellipse.
+  const smooth = (e0, e1, v) => {
+    const t = Math.max(0, Math.min(1, (v - e0) / (e1 - e0)));
+    return t * t * (3 - 2 * t);
+  };
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      const dx = (x - W / 2) / (W / 2);
+      const dy = (y - H / 2) / (H / 2);
+      const fade = 1 - smooth(0.6, 1, Math.hypot(dx, dy));
+      data[(y * W + x) * 4 + 3] = Math.round(a[y * W + x] * fade);
+    }
+  return sharp(data, { raw: { width: W, height: H, channels: 4 } }).png().toBuffer();
+}
+
+async function buildDecals(set, preview) {
+  const d = DECALS[set];
+  const grid = poses(await keyed(join(IN, d.file)), Math.max(...d.counts), d.counts.length, { counts: d.counts, speck: 200 });
+  const cells = grid.flatMap((row, r) => row.slice(0, d.counts[r]));
+  const keys = [];
+  for (const [i, key] of d.keys.entries()) {
+    const pic = await blended(await sharp(await png(cells[i])).trim({ threshold: 0 }).png().toBuffer());
+    const m = await sharp(pic).metadata();
+    const out = await sharp(pic).resize(Math.round(m.width * d.scale), Math.round(m.height * d.scale), { kernel: 'lanczos3' }).png().toBuffer();
+    keys.push(key);
+    if (preview) await sharp(out).toFile(join(preview, `${key}.png`));
+    else await sharp(out).webp({ quality: 90, alphaQuality: 100 }).toFile(join(ART, `${key}.webp`));
+  }
+  addToManifest(keys, preview);
+  console.log(`${set}: ${keys.length} ground details${preview ? ' (preview only)' : ''}`);
+}
+
 /** The picture with the flat magenta made transparent (soft at the edges, with the pink fringe pulled out). */
 async function keyed(file) {
   const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -272,7 +360,7 @@ async function keyed(file) {
  * drawings made of many small pieces (a cloud of little arrows), which the nearest-pose rule would scatter.
  * Returns poses[row][col], each an RGBA image of just its blobs.
  */
-function poses(img, cols, rows, { speck = 60, byCell = false } = {}) {
+function poses(img, cols, rows, { speck = 60, byCell = false, counts = null } = {}) {
   const { width: W, height: H, data } = img;
   const label = new Int32Array(W * H).fill(-1);
   const blobs = [];
@@ -309,7 +397,21 @@ function poses(img, cols, rows, { speck = 60, byCell = false } = {}) {
   ];
   const kept = blobs.filter((b) => b.pixels.length >= speck).sort((a, b) => b.pixels.length - a.pixels.length);
   const mains = [];
-  for (const b of kept) {
+  // `counts`: pieces laid out in rows of different lengths (Flow does that): the biggest pieces in reading order.
+  if (counts) {
+    const n = counts.reduce((a, b) => a + b, 0);
+    const big = kept.slice(0, n).map((b) => ({ b, cx: b.sx / b.pixels.length, cy: b.sy / b.pixels.length }));
+    big.sort((a, b) => a.cy - b.cy);
+    let k = 0;
+    counts.forEach((count, r) => {
+      big.slice(k, k + count).sort((a, b) => a.cx - b.cx).forEach((m, c) => {
+        grid[r][c] = [m.b];
+        mains.push({ b: m.b, r, c });
+      });
+      k += count;
+    });
+  }
+  for (const b of counts ? [] : kept) {
     const [r, c] = cellOf(b);
     if (byCell) {
       grid[r][c].push(b);
@@ -640,13 +742,14 @@ async function main() {
   const preview = pi >= 0 ? args.splice(pi, 2)[1] : null;
   if (preview) mkdirSync(preview, { recursive: true });
   // Cards come last: they are made from the monsters' finished pictures.
-  const sets = [...Object.keys(HEROES), ...Object.keys(MONSTERS), ...Object.keys(BOSSES), ...Object.keys(ICONS), ...Object.keys(CARDS)];
+  const sets = [...Object.keys(HEROES), ...Object.keys(MONSTERS), ...Object.keys(BOSSES), ...Object.keys(ICONS), ...Object.keys(DECALS), ...Object.keys(CARDS)];
   const names = args.length ? args : sets.filter((n) => !ICONS[n] || existsSync(join(IN, ICONS[n].file)));
   for (const n of names) {
     if (HEROES[n]) await buildHero(n, preview);
     else if (BOSSES[n]) await buildBosses(n, preview);
     else if (CARDS[n]) await buildCards(n, preview);
     else if (ICONS[n]) await buildIcons(n, preview);
+    else if (DECALS[n]) await buildDecals(n, preview);
     else if (MONSTERS[n]) {
       if (!existsSync(join(IN, MONSTERS[n].file))) throw new Error(`missing ${MONSTERS[n].file}`);
       await buildMonsters(n, preview);
