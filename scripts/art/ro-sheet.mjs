@@ -154,8 +154,9 @@ const CARDS = {
 };
 
 /**
- * Icon sheets (a 4 x 4 grid of objects on magenta, painted in Google Flow from art/prompts/flow_icons_*.txt): each
- * becomes a 128 x 128 icon, the object fitted inside with a small margin.
+ * Icon sheets (a grid of objects on magenta, painted in Google Flow from art/prompts/flow_icons_*.txt): each becomes
+ * a 128 x 128 icon, the object fitted inside with a small margin. `keys` run row by row, unless `picks` names the
+ * cell ([row, col]) of each key.
  */
 const ICONS = {
   icons_archer: {
@@ -167,13 +168,22 @@ const ICONS = {
       'icon_twister', 'icon_cyclone', 'icon_dash', 'icon_arrowstorm',
     ],
   },
+  // Flow drew this one 6 x 4 with a few extras and repeats; the picks take the right 16.
   icons_items: {
     file: 'icons_items_flow.jpg',
+    cols: 6,
+    rows: 4,
     keys: [
       'icon_powergem', 'icon_hourglass', 'icon_heart', 'icon_tome',
       'icon_quiver', 'icon_clover', 'icon_boots', 'icon_magnet',
       'icon_shield', 'icon_spring', 'icon_charm', 'icon_cap',
       'icon_mask', 'icon_thorns', 'icon_ring', 'icon_feather',
+    ],
+    picks: [
+      [0, 0], [0, 1], [0, 2], [0, 3],
+      [1, 0], [1, 1], [1, 2], [1, 3],
+      [2, 0], [2, 1], [2, 2], [2, 3],
+      [3, 0], [3, 1], [3, 2], [3, 3],
     ],
   },
 };
@@ -200,10 +210,12 @@ async function keyed(file) {
 /**
  * The sheet's drawings sorted into its grid: the biggest blob of paint in each cell (by where its middle lies) is
  * that cell's pose, and every smaller blob (a dropped bow, a stray feather) joins the pose it lies closest to, so a
- * pose that pokes over its cell's edge stays whole and nothing of the neighbours leaks in. Specks are dropped.
+ * pose that pokes over its cell's edge stays whole and nothing of the neighbours leaks in. Specks (under `speck`
+ * pixels) are dropped. With `byCell`, every blob simply stays in the cell its middle lies in: for well-spaced
+ * drawings made of many small pieces (a cloud of little arrows), which the nearest-pose rule would scatter.
  * Returns poses[row][col], each an RGBA image of just its blobs.
  */
-function poses(img, cols, rows) {
+function poses(img, cols, rows, { speck = 60, byCell = false } = {}) {
   const { width: W, height: H, data } = img;
   const label = new Int32Array(W * H).fill(-1);
   const blobs = [];
@@ -238,17 +250,21 @@ function poses(img, cols, rows) {
     Math.min(rows - 1, Math.floor((b.sy / b.pixels.length / H) * rows)),
     Math.min(cols - 1, Math.floor((b.sx / b.pixels.length / W) * cols)),
   ];
-  const kept = blobs.filter((b) => b.pixels.length >= 60).sort((a, b) => b.pixels.length - a.pixels.length);
+  const kept = blobs.filter((b) => b.pixels.length >= speck).sort((a, b) => b.pixels.length - a.pixels.length);
   const mains = [];
   for (const b of kept) {
     const [r, c] = cellOf(b);
+    if (byCell) {
+      grid[r][c].push(b);
+      continue;
+    }
     if (grid[r][c].length) continue;
     grid[r][c].push(b);
     mains.push({ b, r, c });
   }
   // How far a point is from a blob's box.
   const gap = (m, x, y) => Math.hypot(Math.max(m.x0 - x, 0, x - m.x1), Math.max(m.y0 - y, 0, y - m.y1));
-  for (const b of kept) {
+  for (const b of byCell ? [] : kept) {
     if (mains.some((m) => m.b === b)) continue;
     const x = b.sx / b.pixels.length;
     const y = b.sy / b.pixels.length;
@@ -502,10 +518,12 @@ async function buildCards(set, preview) {
 
 async function buildIcons(set, preview) {
   const ic = ICONS[set];
-  const grid = poses(await keyed(join(IN, ic.file)), 4, 4);
+  const [cols, rows] = [ic.cols ?? 4, ic.rows ?? 4];
+  const grid = poses(await keyed(join(IN, ic.file)), cols, rows, { speck: 6, byCell: true });
   const S = 128;
   for (const [i, key] of ic.keys.entries()) {
-    const pic = await sharp(await png(grid[Math.floor(i / 4)][i % 4])).trim({ threshold: 0 }).png().toBuffer();
+    const [r, c] = ic.picks?.[i] ?? [Math.floor(i / cols), i % cols];
+    const pic = await sharp(await png(grid[r][c])).trim({ threshold: 0 }).png().toBuffer();
     const fitted = await sharp(pic).resize(S - 8, S - 8, { fit: 'inside', kernel: 'lanczos3' }).png().toBuffer();
     const m = await sharp(fitted).metadata();
     const out = await sharp({ create: { width: S, height: S, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })

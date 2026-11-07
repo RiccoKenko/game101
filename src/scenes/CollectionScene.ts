@@ -215,9 +215,12 @@ export class CollectionScene extends Phaser.Scene {
     }
   }
 
-  /** Which weapon this rune or item evolves, as a detail line. */
+  /** Which weapon this rune or item evolves, as a detail line (only skills of the classes on offer). */
   private evolves(id: RuneId | PassiveId): Detail['extra'] {
-    const w = WEAPON_IDS.map((x) => WEAPONS[x]).find((x) => x.evolution?.requires === id);
+    const offered = new Set(PLAYABLE.flatMap((c) => c.skills));
+    const w = WEAPON_IDS.filter((x) => offered.has(x))
+      .map((x) => WEAPONS[x])
+      .find((x) => x.evolution?.requires === id);
     if (!w) return undefined;
     const evo = EVOLUTIONS[w.evolution!.into];
     return { icon: evo.icon, text: `Evolves the ${w.name} into ${evo.name}` };
