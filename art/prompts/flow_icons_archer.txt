@@ -1,0 +1,23 @@
+Draw ONE sheet of 16 game icons for an original 2D fantasy online RPG, in the same painting style as the two attached reference images (the game's hero and monsters): the classic late-1990s / early-2000s Korean online RPG inventory and skill icon look, each icon a single clear object or symbol, softly painted with gentle cel shading, thin dark-brown outlines (never pure black), a warm, slightly muted palette with a few bright accents, light from the upper left. Every icon must read clearly at a small size (about 64 px).
+
+LAYOUT (landscape 16:9): a grid of 4 columns x 4 rows of equal cells, one icon per cell, centred, filling about two thirds of its cell, in the order below (row by row, left to right).
+
+ICONS (the Archer's skills; arrows and feathers in warm wood, brass and leaf green, magic in pale gold or sky blue):
+1. Arrow Shot: a single wooden arrow with white fletching flying diagonally up-right.
+2. Sharp Shooting: a glowing golden arrow piercing straight through a small round target.
+3. Double Strafe: two arrows flying side by side, slightly fanned.
+4. Arrow Vulcan: a fan of five arrows bursting outward from one point.
+5. Arrow Shower: three arrows falling straight down onto a small patch of ground.
+6. Arrow Rain: many arrows falling from a dark little cloud.
+7. Charge Arrow: one heavy arrow with a big curved shockwave behind it.
+8. Phantasmic Arrow: a translucent glowing pale-blue spirit arrow trailing sparkles.
+9. Land Mine: a small round brass mine half buried in a mound of earth, with a spark on top.
+10. Freezing Trap: an iron jaw trap covered in ice crystals.
+11. Blitz Beat: a brown falcon diving with its wings swept back.
+12. Falcon Assault: a fierce falcon surrounded by a golden streak of light, talons forward.
+13. Ankle Snare: a loop of rope snare with green vines, pulled tight.
+14. Shockwave Trap: a trap plate with circular shock rings bursting out of it.
+15. Back Slide: a pair of brown leather boots leaping backward with white speed streaks.
+16. Arrow Storm: a whirlwind of many arrows spiralling up into the sky.
+
+Draw only the object or symbol itself: no square frame, no border, no badge, no background plate behind it. All are our own original designs. Background: a perfectly flat, solid magenta #FF00FF everywhere; never use magenta, hot pink or purple inside the icons. No text, letters, numbers, labels or watermarks anywhere. Every icon is complete and separated from its neighbours by plain background.

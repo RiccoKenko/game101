@@ -6,7 +6,8 @@
  * - a hero: public/art/hero/<id>.webp + <id>.json, every animation in five facings (s, se, e, ne, n; the game
  *   mirrors se, e and ne for the west side), plus the menu picture <id>_menu.webp;
  * - monsters: public/art/<texture>_0.webp and _1.webp, their two movement frames, listed in src/art/manifest.json;
- * - bosses: public/art/<boss>.webp, one drawing each, and their MVP cards (public/art/relic_<boss>.webp).
+ * - bosses: public/art/<boss>.webp, one drawing each, and their MVP cards (public/art/relic_<boss>.webp);
+ * - monster cards (icon_rune_<id>) from the finished monster pictures, and icons cut from 4 x 4 icon sheets.
  *
  * Each pose is keyed off the magenta, then placed so its feet stand on the same point in every frame (the bottom of
  * the drawing, centred on the feet), so the animation doesn't wobble.
@@ -133,6 +134,49 @@ const BOSSES = {
   },
 };
 const CARD_BACKDROPS = [C.moss, C.slate, C.tan];
+
+/** Monster cards (the runes' icons, icon_rune_<id>): each monster's first frame in the MVP card frame, by map. */
+const CARDS = {
+  cards: [
+    ['leech', 'slime', 0],
+    ['ricochet', 'bat', 0],
+    ['giant', 'mushroom', 0],
+    ['split', 'puff', 0],
+    ['homing', 'bee', 0],
+    ['echo', 'ghost', 1],
+    ['freeze', 'zombie', 1],
+    ['blast', 'pumpkin', 1],
+    ['chain', 'wraith', 1],
+    ['burn', 'imp', 2],
+    ['reaper', 'gargoyle', 2],
+    ['nova', 'wisp', 2],
+  ],
+};
+
+/**
+ * Icon sheets (a 4 x 4 grid of objects on magenta, painted in Google Flow from art/prompts/flow_icons_*.txt): each
+ * becomes a 128 x 128 icon, the object fitted inside with a small margin.
+ */
+const ICONS = {
+  icons_archer: {
+    file: 'icons_archer_flow.jpg',
+    keys: [
+      'icon_bow', 'icon_stormbow', 'icon_daggers', 'icon_blades',
+      'icon_flask', 'icon_plague', 'icon_boomerang', 'icon_twinmoon',
+      'icon_traps', 'icon_glacier', 'icon_wisps', 'icon_soulharvest',
+      'icon_twister', 'icon_cyclone', 'icon_dash', 'icon_arrowstorm',
+    ],
+  },
+  icons_items: {
+    file: 'icons_items_flow.jpg',
+    keys: [
+      'icon_powergem', 'icon_hourglass', 'icon_heart', 'icon_tome',
+      'icon_quiver', 'icon_clover', 'icon_boots', 'icon_magnet',
+      'icon_shield', 'icon_spring', 'icon_charm', 'icon_cap',
+      'icon_mask', 'icon_thorns', 'icon_ring', 'icon_feather',
+    ],
+  },
+};
 
 /** The picture with the flat magenta made transparent (soft at the edges, with the pink fringe pulled out). */
 async function keyed(file) {
@@ -426,15 +470,75 @@ async function buildBosses(set, preview) {
   console.log(`${set}: ${keys.length} pictures${preview ? ' (preview only)' : ''}`);
 }
 
+/** A picture set into a card window: fitted inside it, centred, standing on the window's bottom edge. */
+async function inCard(pic, map) {
+  const { back, front } = cardLayers(CARD_BACKDROPS[map]);
+  const R = back.size;
+  const [wx, wy, ww, wh] = [CARD_WINDOW.x * R, CARD_WINDOW.y * R, CARD_WINDOW.w * R, CARD_WINDOW.h * R].map(Math.round);
+  const m = await sharp(pic).metadata();
+  const k = Math.min((ww - 8) / m.width, (wh - 6) / m.height);
+  const w = Math.round(m.width * k);
+  const h = Math.round(m.height * k);
+  const fitted = await sharp(pic).resize(w, h, { kernel: 'lanczos3' }).png().toBuffer();
+  return sharp(await back.png())
+    .composite([{ input: fitted, left: wx + Math.round((ww - w) / 2), top: wy + wh - h - 2 }, { input: await front.png() }])
+    .png()
+    .toBuffer();
+}
+
+async function buildCards(set, preview) {
+  const keys = [];
+  for (const [rune, tex, map] of CARDS[set]) {
+    const pic = await sharp(join(ART, `${tex}_0.webp`)).trim({ threshold: 0 }).png().toBuffer();
+    const key = `icon_rune_${rune}`;
+    const out = await inCard(pic, map);
+    keys.push(key);
+    if (preview) await sharp(out).toFile(join(preview, `${key}.png`));
+    else await sharp(out).webp({ quality: 92, alphaQuality: 100 }).toFile(join(ART, `${key}.webp`));
+  }
+  addToManifest(keys, preview);
+  console.log(`${set}: ${keys.length} cards${preview ? ' (preview only)' : ''}`);
+}
+
+async function buildIcons(set, preview) {
+  const ic = ICONS[set];
+  const grid = poses(await keyed(join(IN, ic.file)), 4, 4);
+  const S = 128;
+  for (const [i, key] of ic.keys.entries()) {
+    const pic = await sharp(await png(grid[Math.floor(i / 4)][i % 4])).trim({ threshold: 0 }).png().toBuffer();
+    const fitted = await sharp(pic).resize(S - 8, S - 8, { fit: 'inside', kernel: 'lanczos3' }).png().toBuffer();
+    const m = await sharp(fitted).metadata();
+    const out = await sharp({ create: { width: S, height: S, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: fitted, left: Math.round((S - m.width) / 2), top: Math.round((S - m.height) / 2) }])
+      .png()
+      .toBuffer();
+    if (preview) await sharp(out).toFile(join(preview, `${key}.png`));
+    else await sharp(out).webp({ quality: 92, alphaQuality: 100 }).toFile(join(ART, `${key}.webp`));
+  }
+  addToManifest(ic.keys, preview);
+  console.log(`${set}: ${ic.keys.length} icons${preview ? ' (preview only)' : ''}`);
+}
+
+function addToManifest(keys, preview) {
+  if (preview) return;
+  const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+  manifest.keys = [...new Set([...manifest.keys, ...keys])].sort();
+  writeFileSync(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const pi = args.indexOf('--preview');
   const preview = pi >= 0 ? args.splice(pi, 2)[1] : null;
   if (preview) mkdirSync(preview, { recursive: true });
-  const names = args.length ? args : [...Object.keys(HEROES), ...Object.keys(MONSTERS), ...Object.keys(BOSSES)];
+  // Cards come last: they are made from the monsters' finished pictures.
+  const sets = [...Object.keys(HEROES), ...Object.keys(MONSTERS), ...Object.keys(BOSSES), ...Object.keys(ICONS), ...Object.keys(CARDS)];
+  const names = args.length ? args : sets.filter((n) => !ICONS[n] || existsSync(join(IN, ICONS[n].file)));
   for (const n of names) {
     if (HEROES[n]) await buildHero(n, preview);
     else if (BOSSES[n]) await buildBosses(n, preview);
+    else if (CARDS[n]) await buildCards(n, preview);
+    else if (ICONS[n]) await buildIcons(n, preview);
     else if (MONSTERS[n]) {
       if (!existsSync(join(IN, MONSTERS[n].file))) throw new Error(`missing ${MONSTERS[n].file}`);
       await buildMonsters(n, preview);

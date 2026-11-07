@@ -1,0 +1,23 @@
+Draw ONE sheet of 16 game icons for an original 2D fantasy online RPG, in the same painting style as the two attached reference images (the game's hero and monsters): the classic late-1990s / early-2000s Korean online RPG inventory and skill icon look, each icon a single clear object or symbol, softly painted with gentle cel shading, thin dark-brown outlines (never pure black), a warm, slightly muted palette with a few bright accents, light from the upper left. Every icon must read clearly at a small size (about 64 px).
+
+LAYOUT (landscape 16:9): a grid of 4 columns x 4 rows of equal cells, one icon per cell, centred, filling about two thirds of its cell, in the order below (row by row, left to right).
+
+ICONS (stat crystals, potions and adventurer's gear):
+1. STR: a red crystal fist emblem, a clenched fist carved from glowing ruby.
+2. AGI: a little brass hourglass with green sand.
+3. VIT: a plump red heart with a soft shine.
+4. INT: a closed blue spell book with brass corners.
+5. DEX: a leather quiver full of white-fletched arrows.
+6. LUK: a four-leaf clover with a tiny gold sparkle.
+7. Wind Shoes: light green leather shoes with small white wings at the heels.
+8. Lodestone: a red and silver horseshoe magnet.
+9. Buckler: a small round wooden shield with an iron rim and boss.
+10. Healing Herb: a sprig of green herb leaves with a tiny white flower.
+11. Moon Pendant: a silver crescent-moon pendant on a thin chain.
+12. Scholar's Glasses: round brass reading glasses resting on a little scroll.
+13. Berserk Potion: a round glass flask of glowing red potion with a cork and a skull-free plain red label.
+14. Spiked Mail: a small iron chest armour covered in short spikes.
+15. Slayer Ring: a gold ring set with a sharp red gem.
+16. Yggdrasil Leaf: a single large glowing green leaf with golden veins.
+
+Draw only the object or symbol itself: no square frame, no border, no badge, no background plate behind it. All are our own original designs. Background: a perfectly flat, solid magenta #FF00FF everywhere; never use magenta, hot pink or purple inside the icons. No text, letters, numbers, labels or watermarks anywhere. Every icon is complete and separated from its neighbours by plain background.
