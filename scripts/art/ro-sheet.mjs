@@ -49,7 +49,7 @@ const HEROES = {
       // 8-frame walks drawn in Google Flow, one side per picture (4 x 2: contact, down, passing, up, twice).
       walk8e: { file: 'archer_walk8_e_flow.jpg', cols: 4, rows: 2, like: 'walk' },
       ...Object.fromEntries(
-        ['s', 'se', 'e', 'ne', 'n'].map((d) => [`shoot8${d}`, { file: `archer_walkshoot8_${d}_flow.jpg`, cols: 4, rows: 2, like: 'walkshoot' }]),
+        ['se', 'e', 'ne', 'n'].map((d) => [`shoot8${d}`, { file: `archer_walkshoot8_${d}_flow.jpg`, cols: 4, rows: 2, like: 'walkshoot' }]),
       ),
     },
     animations: {
@@ -68,7 +68,8 @@ const HEROES = {
         sides: { s: ['front', 1], se: ['front', 3] },
         // Flow drew frame 7 of the side and back views with the string already let go: frame 3 stands in for it.
         // Its front-diagonal sheet aims down-right only in the top row (the bottom row aims level), so that side
-        // keeps 4 frames; its front view aimed sideways, so the front keeps the old front-shot row.
+        // keeps 4 frames; its front view aimed sideways, so the front keeps the old front-shot row. (The retries,
+        // archer_walkshoot8_s2 / se2, came back with the arms changing between frames / aiming level: unused.)
         cells: {
           e: steady8('shoot8e'),
           ne: grid8('shoot8ne'),
