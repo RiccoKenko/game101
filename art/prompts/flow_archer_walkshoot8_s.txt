@@ -1,0 +1,17 @@
+Draw ONE sprite sheet: an 8-frame animation of the girl archer in the attached reference images WALKING WHILE SHOOTING, seen from the front, walking straight toward the viewer (down the picture). She is exactly the same character as in the references: same face, same auburn ponytail with a white hair tie, same green vest over a cream puff-sleeved blouse, tan skirt, brown belt pouch, dark leggings, brown boots, fingerless brown gloves, the quiver of white-fletched arrows on her back, and the same wooden bow. Same art style as the references: classic late-1990s / early-2000s Korean 2D online RPG sprite, chibi proportions, soft cel shading, thin dark-brown outlines, light from the upper left.
+
+AIM: she holds the bow fully drawn with an arrow nocked, steady, exactly the same way in all 8 frames. She aims straight DOWN the picture, at the viewer: the bow is held FLAT (horizontal) in front of her chest, and the drawn arrow points straight down the picture toward the viewer, in every frame. Her head, arms and bow do not change between frames; only her legs walk (and her ponytail sways a little).
+
+LAYOUT (landscape 16:9): a grid of 4 columns x 2 rows of equal cells, one frame per cell, read left to right, top row first. In every frame she is the SAME size, centred in her cell, full body with the whole bow inside the cell, the soles of her boots on the same baseline near the bottom of the cell.
+
+THE 8 FRAMES (the legs of one full walk cycle, two steps):
+1. Contact: her right leg steps toward the viewer, heel just touching the ground; the other leg is behind, toes touching.
+2. Down: her weight drops onto the front leg, knee softly bent; the back foot lifts off; her body is at its LOWEST.
+3. Passing: the front leg is straight under her body; the back leg swings forward past it, knee bent, foot lifted.
+4. Up: she pushes up on her toes; the swinging leg reaches forward; her body is at its HIGHEST.
+5. Contact: the same as frame 1 with the legs swapped.
+6. Down: the same as frame 2 with the legs swapped.
+7. Passing: the same as frame 3 with the legs swapped.
+8. Up: the same as frame 4 with the legs swapped.
+
+Background: a perfectly flat, solid magenta #FF00FF everywhere (no floor, shadow or gradient); never use magenta, hot pink or purple on the character. No text, numbers, labels, grid lines, frames, borders or watermarks. Every frame is complete (nothing cut off) and separated from its neighbours by plain background.
