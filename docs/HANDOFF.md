@@ -6,7 +6,7 @@
 
 ### สถานะและลิงก์
 - **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (push ครบ, working tree สะอาด)
-- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 19
+- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 20
   - **สร้างใหม่:** `node scripts/build-artifact.mjs <scratchpad>/ricco-rush.html` แล้ว publish ทับลิงก์นี้ด้วย `url`
   - **session ใหม่:** ต้อง `action: read` ลิงก์ก่อน publish
 - **ลิงก์หลัก:** little-archer.vercel.app ยังเป็นเกมเก่า v11 ขึ้นเฉพาะเมื่อเจ้านายสั่ง (วิธี deploy ดูหัวข้อ "ข้อห้ามและกติกา" ในแผนเก่า หรือ v11 ด้านล่าง)
@@ -43,6 +43,7 @@
 | การ์ดมอน 12 ใบ (`icon_rune_*`) | รูปมอน + กรอบโค้ด | (ใช้ `public/art/<มอน>_0.webp`) | `cards` |
 | ไอคอนสกิล Archer 16 + ไอเทม 16 | Flow | `icons_archer_flow.jpg`, `icons_items_flow.jpg` | `icons_archer`, `icons_items` |
 | พื้น 3 แมพ, ของประกอบ 18, ของเก็บ 8 | โค้ด (ผู้ช่วย) | - | `scripts/art/pixel/sets/world.mjs`, `pickups.mjs` → `node scripts/art/pixel/build.mjs world pickups` |
+| กระสุนและเอฟเฟกต์ 30 ชิ้น (ทุกอาชีพ + กระสุนมอน + ระเบิด/ประกาย) | โค้ด | - | `scripts/art/pixel/sets/projectiles.mjs` → `node scripts/art/pixel/build.mjs projectiles` |
 
 - **ตัดภาพเข้าเกม:** `node scripts/art/ro-sheet.mjs [ชุด ...] [--preview <dir>]` (ไม่ระบุชุด = ทำทุกชุด)
   - ลบพื้นชมพูม่วง
@@ -81,9 +82,10 @@
 - **ท่าเดิน:** ต้องระบุทีละเฟรม (contact / passing) ไม่งั้นได้ท่าเดียวซ้ำ
 
 ### ที่เหลือ (เรียงตามที่เสนอเจ้านาย)
-1. **กระสุนและเอฟเฟกต์:** ลูกธนู, ลูกไฟของมอน, `orb` ฯลฯ ยังเป็นภาพเกมเก่า
-   - ทำเองด้วยโค้ดได้ (`scripts/art/pixel/sets/`)
-   - keys อยู่ใน `src/art/manifest.json` และ `need()` ใน `src/art/textures.ts`
+1. ~~**กระสุนและเอฟเฟกต์**~~ เสร็จแล้ว (ลิงก์ทดสอบเวอร์ชัน 20)
+   - ของที่บินชี้ไปทางขวา (เกมหมุนตามทิศเอง), ของที่หมุน/ยืนวาดตั้งตรง, ของบนพื้นวาดมุมบนแบบแบน
+   - ของเวทมนตร์ใช้ `glowing()` วาดแสงนุ่มด้านหลัง
+   - SVG เดิมใน `src/art/items.ts` ยังอยู่เป็นภาพสำรอง (เกมใช้ webp ก่อนเสมอ)
 2. **Swordman และ Mage แบบ Archer:** อาชีพละราว 6 ภาพใน Flow
    - ภาพที่ต้องมี: เดิน, เดินโจมตี, โจมตี, ยืน/โดนตี/ล้ม/ดีใจ, หันหน้าโจมตี, ภาพเมนู
    - เสร็จแล้วเอา `hidden` ออก
