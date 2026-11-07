@@ -10,7 +10,7 @@
   - อะไรทำเองได้ทำเองด้วยโค้ด: พื้น ของประกอบ ของเก็บ (`scripts/art/pixel/sets/world.mjs`, `pickups.mjs`)
 - **งบ OpenAI รอบนี้:** เจ้านายเติม $5 ให้ใช้ไม่เกิน $5
   - รันสคริปต์ด้วย `OPENAI_BUDGET_USD=8.52` (ยอดเดิม $3.53 + $5)
-  - ใช้ไปแล้ว $0.42 (รวมสะสม $3.95)
+  - ใช้ไปแล้ว $0.88 (รวมสะสม $4.41) ณ 28 ต.ค.
   - คุณภาพ medium ก่อน ไม่พอค่อย high
 - **ทำแล้ว**
   - Archer: `art/incoming/ro/archer_{walk,attack,misc,menu}.png` (prompt `art/prompts/ro_archer_*.txt`)
@@ -22,8 +22,15 @@
   - Swordman/Mage ซ่อนไว้ (`hidden`, เมนูมีแค่ Archer, `?hero=` ยังเล่นได้)
     - ภาพ 3D ของสองอาชีพนี้ลบออกจาก `public/` แล้ว
     - เครื่องเรนเดอร์ `scripts/art/render3d/` และโมเดล `art/models/kaykit/` ยังเก็บไว้
-- **ลิงก์ทดสอบ:** เวอร์ชัน 13 https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH
-- **รอเจ้านาย:** บอส/MVP, มอนแมพ 2-3, ไอคอน, Swordman/Mage แบบเดียวกัน
+- **Google Flow (ฟรี, 7 พ.ย.):** สร้างภาพใน Flow ใช้ 0 เครดิต (มีเพดานต่อวัน)
+  - ผมเชื่อม Flow ไม่ได้ (ไม่มี API) เลยให้เจ้านายวางคำสั่งเอง: `art/prompts/flow_*.txt` พร้อมแนบภาพ `archer_attack.png` + `monsters1.png` เป็นตัวอย่าง
+  - ภาพที่เจ้านายส่งเป็นข้อความใหม่ มาเป็นไฟล์ที่ `/tmp/claude-0/<project>/<session>/images/<n>.jpg` (Flow ให้ JPG 1376×768)
+    - คัดลอกไป `art/incoming/ro/` แล้วตัดด้วย `ro-sheet.mjs`
+  - **บอส 6 ตัว + การ์ด MVP เสร็จแล้ว** (`bosses_flow.jpg`, ชุด `bosses` ใน `ro-sheet.mjs`)
+    - การ์ดใช้กรอบวาดด้วยโค้ด (`cardLayers` ใน `scripts/art/pixel/card.mjs`) ใส่ภาพบอสในช่อง
+- **Archer แก้หลังเล่นจริง:** ท่าเดินใหม่ (`archer_walk2.png`), ท่าเดินยิง (`archer_walkshoot.png`), ท่าหันหน้า/เฉียงหน้ายิงเล็งลงจอ (`archer_frontshot.png` ผ่าน `sides`)
+- **ลิงก์ทดสอบ:** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH (ดูเวอร์ชันล่าสุดใน commit log)
+- **ยังเหลือ:** มอนแมพ 2-3 (+ Coin Thief), ไอคอน, กระสุน/เอฟเฟกต์ (โค้ด), Swordman/Mage
 
 ## สถานะ (27 ต.ค. 2026): เริ่มรอบ Ricco Rush
 - **งานรอบนี้:** เจ้านายสั่งโละธีมเดิม แล้วทำเกมใหม่ชื่อ **Ricco Rush**

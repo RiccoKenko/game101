@@ -5,7 +5,8 @@
  * into the game's textures:
  * - a hero: public/art/hero/<id>.webp + <id>.json, every animation in five facings (s, se, e, ne, n; the game
  *   mirrors se, e and ne for the west side), plus the menu picture <id>_menu.webp;
- * - monsters: public/art/<texture>_0.webp and _1.webp, their two movement frames, listed in src/art/manifest.json.
+ * - monsters: public/art/<texture>_0.webp and _1.webp, their two movement frames, listed in src/art/manifest.json;
+ * - bosses: public/art/<boss>.webp, one drawing each, and their MVP cards (public/art/relic_<boss>.webp).
  *
  * Each pose is keyed off the magenta, then placed so its feet stand on the same point in every frame (the bottom of
  * the drawing, centred on the feet), so the animation doesn't wobble.
@@ -14,6 +15,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { cardLayers, CARD_WINDOW } from './pixel/card.mjs';
+import { C } from './pixel/palette.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const IN = join(ROOT, 'art/incoming/ro');
@@ -78,6 +81,27 @@ const MONSTERS = {
     ],
   },
 };
+
+/**
+ * Bosses: one drawing per cell (largest side in game px), each also put on its MVP card (relic_<card>), with the
+ * card window's backdrop of its map.
+ */
+const BOSSES = {
+  bosses: {
+    file: 'bosses_flow.jpg',
+    cols: 3,
+    rows: 2,
+    keys: [
+      { key: 'boss_boar', size: 300, card: 'relic_boar', map: 0 },
+      { key: 'boss_captain', size: 290, card: 'relic_captain', map: 1 },
+      { key: 'boss_ogre', size: 330, card: 'relic_ogre', map: 2 },
+      { key: 'boss_slime', size: 340, card: 'relic_slime', map: 0 },
+      { key: 'boss_lich', size: 330, card: 'relic_lich', map: 1 },
+      { key: 'boss_demon', size: 360, card: 'relic_demon', map: 2 },
+    ],
+  },
+};
+const CARD_BACKDROPS = [C.moss, C.slate, C.tan];
 
 /** The picture with the flat magenta made transparent (soft at the edges, with the pink fringe pulled out). */
 async function keyed(file) {
@@ -328,14 +352,50 @@ async function buildMonsters(set, preview) {
   console.log(`${set}: ${keys.length} pictures${preview ? ' (preview only)' : ''}`);
 }
 
+async function buildBosses(set, preview) {
+  const b = BOSSES[set];
+  const grid = poses(await keyed(join(IN, b.file)), b.cols, b.rows);
+  const keys = [];
+  for (const [i, { key, size, card, map }] of b.keys.entries()) {
+    const pic = await sharp(await png(grid[Math.floor(i / b.cols)][i % b.cols])).trim({ threshold: 0 }).png().toBuffer();
+    const m = await sharp(pic).metadata();
+    const k = size / Math.max(m.width, m.height);
+    const boss = await sharp(pic).resize(Math.round(m.width * k), Math.round(m.height * k), { kernel: 'lanczos3' }).png().toBuffer();
+    // The card: the boss fills the window's width (a little more), its head at the top, cut to the window.
+    const { back, front } = cardLayers(CARD_BACKDROPS[map]);
+    const R = back.size;
+    const [wx, wy, ww, wh] = [CARD_WINDOW.x * R, CARD_WINDOW.y * R, CARD_WINDOW.w * R, CARD_WINDOW.h * R].map(Math.round);
+    const pw = Math.round(ww * 1.08);
+    const ph = Math.round((m.height * pw) / m.width);
+    const portrait = await sharp(pic).resize(pw, ph, { kernel: 'lanczos3' }).png().toBuffer();
+    const window = await sharp({ create: { width: ww, height: wh, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: await sharp(portrait).extract({ left: Math.round((pw - ww) / 2), top: 0, width: ww, height: Math.min(ph, wh - 2) }).png().toBuffer(), left: 0, top: 2 }])
+      .png()
+      .toBuffer();
+    const cardPng = await sharp(await back.png()).composite([{ input: window, left: wx, top: wy }, { input: await front.png() }]).png().toBuffer();
+    for (const [name, buf] of [[key, boss], [card, cardPng]]) {
+      keys.push(name);
+      if (preview) await sharp(buf).toFile(join(preview, `${name}.png`));
+      else await sharp(buf).webp({ quality: 92, alphaQuality: 100 }).toFile(join(ART, `${name}.webp`));
+    }
+  }
+  if (!preview) {
+    const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+    manifest.keys = [...new Set([...manifest.keys, ...keys])].sort();
+    writeFileSync(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`);
+  }
+  console.log(`${set}: ${keys.length} pictures${preview ? ' (preview only)' : ''}`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const pi = args.indexOf('--preview');
   const preview = pi >= 0 ? args.splice(pi, 2)[1] : null;
   if (preview) mkdirSync(preview, { recursive: true });
-  const names = args.length ? args : [...Object.keys(HEROES), ...Object.keys(MONSTERS)];
+  const names = args.length ? args : [...Object.keys(HEROES), ...Object.keys(MONSTERS), ...Object.keys(BOSSES)];
   for (const n of names) {
     if (HEROES[n]) await buildHero(n, preview);
+    else if (BOSSES[n]) await buildBosses(n, preview);
     else if (MONSTERS[n]) {
       if (!existsSync(join(IN, MONSTERS[n].file))) throw new Error(`missing ${MONSTERS[n].file}`);
       await buildMonsters(n, preview);
