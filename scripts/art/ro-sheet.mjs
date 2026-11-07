@@ -80,6 +80,32 @@ const MONSTERS = {
       ['bee', 96],
     ],
   },
+  // Painted in Google Flow from art/prompts/flow_monsters2.txt and flow_monsters3.txt.
+  monsters2: {
+    file: 'monsters2_flow.jpg',
+    cols: 5,
+    rows: 2,
+    keys: [
+      ['skeleton', 112],
+      ['ghost', 112],
+      ['zombie', 132],
+      ['pumpkin', 102],
+      ['wraith', 114],
+    ],
+  },
+  monsters3: {
+    file: 'monsters3_flow.jpg',
+    cols: 6,
+    rows: 2,
+    keys: [
+      ['imp', 110],
+      ['knight', 128],
+      ['gargoyle', 136],
+      ['mimic', 116],
+      ['wisp', 100],
+      ['goblin', 120],
+    ],
+  },
 };
 
 /**

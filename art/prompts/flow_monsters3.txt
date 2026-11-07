@@ -1,0 +1,13 @@
+Draw ONE monster sprite sheet for an original 2D fantasy online RPG (a top-down action game), in exactly the same style as the two attached reference images (the game's hero and its first monsters): the classic late-1990s / early-2000s Korean 2D online RPG monster sprite look, small, cute, round creatures with big glossy eyes, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted palette, light from the upper left, seen from slightly above. Same size and level of detail as the monsters in the reference.
+
+MONSTERS of the third map, Sunscar Desert (sand dunes and sandstone ruins; gold is the theme, kept warm and muted like brass), plus a thief who visits every map:
+1. Dust Imp: a small imp made of swirling orange-tan sand, two little horns, glowing amber eyes and a mischievous grin, one hand raised ready to throw. It hovers. Frames: arms up / arms down with the sand swirling.
+2. Wrapped One: a short, stubby mummy wrapped in loose cream bandages with one long trailing end, one glowing yellow eye peeking through, arms reaching forward. Frames: shuffling, left foot / right foot.
+3. Stingtail: a sandy-gold scorpion with big pincers, a raised curled tail with a stinger and a cheeky face. Frames: pincers open / closed, legs stepping.
+4. Treasure Urn: a round clay urn painted with gold bands, stuffed with gold coins, sneaky eyes peeking out from the gap under its lid, tiny stubby legs. Frames: lid down / lid lifted showing teeth.
+5. Gold Scarab: a small, shiny brass-gold beetle with its wing cases open and little see-through wings. It flies. Frames: wings up / wings down.
+6. Coin Thief: a small sneaky raccoon-like rascal with a black eye mask and a brown hooded cloak, running and carrying a huge bulging sack of gold coins over its shoulder. Frames: running, legs stretched / legs gathered.
+
+LAYOUT (landscape 16:9): a grid of 6 columns x 2 rows of equal cells. Each COLUMN is one monster, in the order above. The two ROWS are the two frames of its movement (row 1 frame A, row 2 frame B), clearly different from each other, the monster's design, colours and size identical in both. Every monster faces the viewer and turns toward the RIGHT side of the image (a three-quarter front view), centred in its cell, resting on the same baseline near the bottom of its cell (flyers float a little above it).
+
+All are our own original designs. Background: a perfectly flat, solid magenta #FF00FF everywhere (no floor, shadow or gradient); never use magenta, hot pink or purple inside the drawings. No text, numbers, labels, grid lines, frames, borders, glows, sparkles or watermarks. Every drawing is complete (nothing cut off) and separated from its neighbours by plain background.
