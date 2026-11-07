@@ -160,6 +160,9 @@ export class GameScene extends Phaser.Scene {
   ctx!: GameCtx;
   private map!: MapDef;
   private mapIndex = 0;
+  /** Where the camera looks: it eases after the hero, a little ahead of where she walks. */
+  private camX = 0;
+  private camY = 0;
   /** The hero being played (the menu's choice). */
   private hero!: CharacterDef;
   /** The map's difficulty for this run, and the relics worn. */
@@ -359,6 +362,8 @@ export class GameScene extends Phaser.Scene {
     this.abilities = new Abilities(ctx, hero, this.weapons);
     // Relics, the difficulty's gold and anything else that changes stats, once everything exists.
     this.applyRelicsAtStart();
+    this.camX = 0;
+    this.camY = 0;
     this.cameras.main.centerOn(0, 0);
     this.ambience = new Ambience(this, this.mapIndex);
     this.warpIn();
@@ -436,7 +441,12 @@ export class GameScene extends Phaser.Scene {
     const regen = this.weapons.regen / 100 + run.stats.regen;
     if (regen > 0) this.player.heal(run.stats.maxHp * regen * dt);
     this.player.update(dt);
-    this.cameras.main.centerOn(this.player.x, this.player.y);
+    // The look-ahead about cancels the easing's lag at a steady walk, so the hero stays near the middle while
+    // starts, stops and turns are softened.
+    const ease = 1 - Math.exp(-9 * dt);
+    this.camX += (this.player.x + this.player.vx * 0.12 - this.camX) * ease;
+    this.camY += (this.player.y + this.player.vy * 0.12 - this.camY) * ease;
+    this.cameras.main.centerOn(this.camX, this.camY);
     this.world.update(dt);
     this.ambience.update();
 

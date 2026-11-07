@@ -7,6 +7,14 @@ import { type PlayerStats } from '../core/stats';
 
 /** On-screen height of the painted hero, in game px. */
 const HERO_HEIGHT = 150;
+/** Seconds the hero takes to get up to speed, and to stop (a short ease, so starts and stops aren't robotic). */
+const ACCEL = 0.06;
+const DECEL = 0.045;
+/** The running loops' frame rate is scaled so the feet keep pace with the ground: x this at the base speed. */
+const STRIDE_RATE = 1.45;
+const BASE_SPEED = 340;
+/** How far past the edge of its eighth of the circle the look must turn before the hero turns (no flicker). */
+const TURN_SLACK = 0.14;
 /** The running loops, which share their legs frame by frame. */
 const STRIDES = ['run', 'runaim', 'runrelease'];
 /**
@@ -27,6 +35,9 @@ const FACINGS = [
 export class Player {
   x = 0;
   y = 0;
+  /** Current velocity (px/s), eased toward where the stick points. */
+  vx = 0;
+  vy = 0;
   hp: number;
   /** Unit vector of the last movement direction (the Bow shoots this way). */
   faceX = 1;
@@ -60,9 +71,18 @@ export class Player {
   private aimY = 0;
   /** A sheet drawn from five sides (see FACINGS): where the hero looks, and whether the side shown is mirrored. */
   private readonly directional: boolean;
-  private lookX = 1;
-  private lookY = 0;
+  /** Which of the eight ways the hero faces (index into FACINGS); it turns only past a little slack. */
+  private octant = 0;
   private flip = false;
+  /** A turn impulse (the body pinches as it swings round), easing back to 0. */
+  private turn = 0;
+  /** The run bounce: up on the passing frames, down on the footfalls, eased (0-1). */
+  private bob = 0;
+  /** How much the idle breathing shows (fades in when standing). */
+  private breath = 0;
+  /** A small kick back from a standing shot, easing back to 0. */
+  private kick = 0;
+  private lastStep = -1;
   /** The animation key the current one-shot action plays. */
   private actionKey = '';
   /** Seconds since the bow last fired: running soon after a shot keeps the bow drawn (runaim). */
@@ -130,10 +150,15 @@ export class Player {
   move(dx: number, dy: number, dt: number): void {
     const len = Math.hypot(dx, dy);
     this.moving = len > 0.05;
+    const m = this.moving ? Math.min(1, len) * this.stats.speed : 0;
+    const tx = this.moving ? (dx / len) * m : 0;
+    const ty = this.moving ? (dy / len) * m : 0;
+    const k = 1 - Math.exp(-dt / (this.moving ? ACCEL : DECEL));
+    this.vx += (tx - this.vx) * k;
+    this.vy += (ty - this.vy) * k;
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
     if (this.moving) {
-      const m = Math.min(1, len);
-      this.x += (dx / len) * m * this.stats.speed * dt;
-      this.y += (dy / len) * m * this.stats.speed * dt;
       this.faceX = dx / len;
       this.faceY = dy / len;
     }
@@ -154,7 +179,9 @@ export class Player {
 
   hitFlash(): void {
     this.flash = 0.12;
-    this.playAction('hurt', true);
+    // Standing, the hero flinches; running, she keeps her stride (a flinch would freeze her legs mid-slide).
+    if (this.moving) this.squash = Math.max(this.squash, 0.6);
+    else this.playAction('hurt', true);
   }
 
   /**
@@ -168,6 +195,7 @@ export class Player {
     this.aimY = Math.sin(angle);
     if (!this.moving) this.look(this.aimX, this.aimY);
     this.sinceShot = 0;
+    if (!this.moving) this.kick = 1;
     if (!this.moving) this.playAction('shoot', this.action === 'shoot');
     else if (!this.action && !this.directional && this.hasAnim('runrelease')) {
       this.release = 0.19;
@@ -184,7 +212,8 @@ export class Player {
     const anims = this.sprite.anims;
     const current = anims.currentAnim?.key ?? '';
     if (current === key && anims.isPlaying) return;
-    const stride = this.directional ? current.startsWith(`${this.sheet}_run_`) : this.strides.has(current);
+    // Every running loop (run, runshoot) shares its legs frame by frame, so the stride carries over between them.
+    const stride = this.directional ? current.startsWith(`${this.sheet}_run`) : this.strides.has(current);
     const i = stride && anims.currentFrame ? anims.currentFrame.index - 1 : 0;
     this.sprite.play({ key, startFrame: i });
     this.flip = this.facing().flip;
@@ -201,13 +230,23 @@ export class Player {
 
   /** Which side of a five-sided sheet to show, and mirrored or not, for where the hero looks (one of 8 ways). */
   private facing(): { dir: string; flip: boolean } {
-    return FACINGS[(Math.round(Math.atan2(this.lookY, this.lookX) / (Math.PI / 4)) + 8) % 8];
+    return FACINGS[this.octant];
   }
 
+  /**
+   * Looks toward (x, y). The hero turns to another of the eight ways only once the look is a little past the edge
+   * of the current one, so walking along a diagonal doesn't flicker between two sides.
+   */
   private look(x: number, y: number): void {
     if (Math.hypot(x, y) < 0.15) return;
-    this.lookX = x;
-    this.lookY = y;
+    const a = Math.atan2(y, x);
+    const off = Math.abs(Phaser.Math.Angle.Wrap(a - (this.octant * Math.PI) / 4));
+    if (off <= Math.PI / 8 + TURN_SLACK) return;
+    const next = (Math.round(a / (Math.PI / 4)) + 8) % 8;
+    if (next !== this.octant) {
+      this.octant = next;
+      this.turn = 1;
+    }
   }
 
   /**
@@ -291,7 +330,7 @@ export class Player {
       this.frame = 0;
       this.sprite.setTexture('hero_0');
     }
-    const key = this.sprite.anims.currentAnim?.key;
+    const key = this.sprite.anims.currentAnim?.key ?? '';
     const aiming = this.action === 'shoot' || (!this.action && (key === `${this.sheet}_runaim` || key === `${this.sheet}_runrelease`));
     if (this.directional) this.sprite.setFlipX(this.flip);
     else if (aiming) this.sprite.setFlipX(this.aimFace < 0);
@@ -301,17 +340,32 @@ export class Player {
       this.squash = Math.max(this.squash, 0.8);
     }
     this.squash *= Math.exp(-10 * dt);
-    const lean = this.moving ? this.faceX * 0.13 : 0;
+    this.turn *= Math.exp(-14 * dt);
+    this.kick *= Math.exp(-16 * dt);
+    const speed = Math.hypot(this.vx, this.vy);
+    const lean = Phaser.Math.Clamp(this.vx / BASE_SPEED, -1, 1) * 0.13;
     this.lean += (lean - this.lean) * Math.min(1, dt * 12);
-    // The painted run cycle bounces by itself.
+    // A painted running loop: the legs keep pace with the ground (faster when the hero is faster), the body rises on
+    // the passing frames and settles on each footfall, where a puff of dust kicks up.
+    const running = this.painted && !this.action && key.startsWith(`${this.sheet}_run`);
+    this.sprite.anims.timeScale = running ? Phaser.Math.Clamp((speed / BASE_SPEED) * STRIDE_RATE, 0.6, 2.2) : 1;
+    const frame = running ? (this.sprite.anims.currentFrame?.index ?? 1) - 1 : -1;
+    this.bob += ((running && frame % 2 === 1 ? 1 : 0) - this.bob) * (1 - Math.exp(-28 * dt));
+    if (running && frame % 2 === 0 && frame !== this.lastStep) this.onStep?.(this.x - this.faceX * 18, this.y + 40);
+    this.lastStep = frame;
+    // Standing still, the hero breathes.
+    const idle = this.painted && !this.moving && !this.action;
+    this.breath += ((idle ? 1 : 0) - this.breath) * Math.min(1, dt * 4);
+    const inhale = Math.sin(this.anim * 2.6) * this.breath;
+    // The two-frame fallback hero bounces in code.
     const stride = this.moving && !this.painted ? Math.abs(Math.sin((this.anim * Math.PI) / 0.16)) : 0;
-    const bob = stride * 6;
-    const sx = 1 + 0.12 * this.squash - stride * 0.03;
-    const sy = 1 - 0.1 * this.squash + stride * 0.05;
+    const bob = this.painted ? this.bob * 5 : stride * 6;
+    const sx = (1 + 0.12 * this.squash - stride * 0.03 - this.bob * 0.012 - inhale * 0.007) * (1 - 0.14 * this.turn);
+    const sy = 1 - 0.1 * this.squash + stride * 0.05 + this.bob * 0.025 + inhale * 0.014;
     this.sprite.setScale(sx * this.baseScale, sy * this.baseScale).setRotation(this.painted ? this.lean * 0.5 : this.lean);
-    this.sprite.setPosition(this.x, this.y + 44 - bob);
+    this.sprite.setPosition(this.x - this.aimX * this.kick * 5, this.y + 44 - bob - this.aimY * this.kick * 3);
     this.shadow.setPosition(this.x, this.y + 42).setDisplaySize(84 * (1 - bob / 40), 26 * (1 - bob / 40));
-    if (this.moving) {
+    if (this.moving && !this.painted) {
       this.stepTimer += dt;
       if (this.stepTimer > 0.16) {
         this.stepTimer = 0;
