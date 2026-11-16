@@ -106,6 +106,8 @@ export class Enemy {
   /** How high a leaping boss is (px), and whether it is in the air (it can't touch the hero then). */
   jump = 0;
   airborne = false;
+  /** The weekly boss's Awakened form: its signature moves come this much faster (1 = normal). */
+  awakened = 1;
   /** Coloured glow underneath (an elite's power, an enraged boss), the powers' names, an elite's shield bubble. */
   aura?: Phaser.GameObjects.Image;
   label?: Phaser.GameObjects.Text;
@@ -208,6 +210,7 @@ export class EnemyManager {
     e.enraged = false;
     e.mtimer = e.mtimer2 = e.mstep = e.hold = e.jump = 0;
     e.airborne = false;
+    e.awakened = 1;
     e.ptimer = e.pcount = e.pangle = e.thornT = 0;
     this.hideExtras(e);
     e.spawnT = 0;
@@ -1416,8 +1419,8 @@ export class EnemyManager {
   private bossMoves(e: Enemy, dt: number, d: number, dx: number, dy: number): boolean {
     const { player, rng } = this.ctx;
     const angry = e.enraged;
-    e.mtimer += dt;
-    e.mtimer2 += dt;
+    e.mtimer += dt * e.awakened;
+    e.mtimer2 += dt * e.awakened;
     switch (e.boss!.id) {
       case 'boss_slime': {
         // Royal Belly Flop: leaps high and comes down where the hero stood (a red circle warns), spraying jelly.

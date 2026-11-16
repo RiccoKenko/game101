@@ -11,6 +11,7 @@
  * curses: play with these curses, e.g. `curses=horde,tyrant` (ignores whether curses are unlocked).
  * mastery: play with every hero at this mastery level (1-15).
  * calm: no monsters come. nofire: the hero holds fire (both for recording her walk).
+ * weekly: with autostart, play the weekly boss fight against this boss (e.g. `weekly=boss_demon`).
  */
 const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
 const num = (key: string, fallback: number) => {
@@ -40,4 +41,5 @@ export const DEBUG = {
   mastery: num('mastery', 0),
   calm: params.has('calm'),
   nofire: params.has('nofire'),
+  weekly: params.get('weekly') ?? '',
 };

@@ -5,7 +5,7 @@ import { characterDef, otherSkills, PLAYABLE, type CharacterDef, type CharacterI
 import { CURSE, CURSE_IDS, CURSE_UNLOCK_MAPS, HEAT_GOLD, heatOf, type CurseId } from '../config/curses';
 import { difficultyDef, maxDifficulty, type DifficultyDef } from '../config/difficulty';
 import { UNLOCKS, unlockKey, type MonsterId } from '../config/collection';
-import { BOSSES, type EnemyId } from '../config/enemies';
+import { BOSSES, type BossId, type EnemyId } from '../config/enemies';
 import { CARD_DROP, CARD_MAX_LEVEL, CARD_OF } from '../config/cards';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
 import { BOSS_GOLD, CAMERA_ZOOM, COIN_VALUE, DROP_CHANCE, MAX_WEAPONS, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
@@ -18,9 +18,9 @@ import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
 import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
 import { statusBonus, type StatusBonus } from '../core/status';
-import { dailyReward, dailySpec, type DailySpec } from '../core/challenges';
-import { DAILY, type TwistId } from '../config/challenges';
-import { addItem, fieldDrop, gearBonus, lootTier, runDrops, wornCards, type GearBonus, type GearItem } from '../core/gear';
+import { dailyReward, dailySpec, weeklySpec, weeklyWon, type DailySpec, type WeeklySpec } from '../core/challenges';
+import { DAILY, WEEKLY, type TwistId } from '../config/challenges';
+import { addItem, fieldDrop, gearBonus, lootTier, rollItem, runDrops, wornCards, type GearBonus, type GearItem } from '../core/gear';
 import { claimUnlocks, lockedKeys, lockedTalents, masteryPerks, masteryState, masteryXp, reachedUnlocks, records } from '../core/collection';
 import { DEBUG } from '../core/debug';
 import {
@@ -159,6 +159,8 @@ export interface RunSummary {
   cards: string[];
   /** The daily challenge's result, when this run was it. */
   daily: { time: number; ore: number; card: boolean; gear: boolean } | null;
+  /** The weekly boss fight's result, when this run was it. */
+  weekly: { won: boolean; time: number; rewards: string[]; boss: string } | null;
 }
 
 /** Something to celebrate in the HUD: a daily quest or an achievement tier finished during the run. */
@@ -239,9 +241,19 @@ export class GameScene extends Phaser.Scene {
     return this.daily ? this.daily.twist.id : null;
   }
 
-  init(data: { map?: number; daily?: boolean }): void {
+  /** This week's boss fight, when this run is it. */
+  private weekly: WeeklySpec | null = null;
+
+  init(data: { map?: number; daily?: boolean; weekly?: boolean }): void {
     this.daily = data.daily ? dailySpec(saveStore.data.unlockedMaps) : null;
-    this.mapIndex = Phaser.Math.Clamp(this.daily ? this.daily.map : (data.map ?? 0), 0, MAPS.length - 1);
+    this.weekly = data.weekly ? weeklySpec() : null;
+    // Testing: fight a chosen boss instead of this week's.
+    if (this.weekly && DEBUG.weekly && DEBUG.weekly in BOSSES) {
+      const boss = DEBUG.weekly as BossId;
+      this.weekly = { ...this.weekly, boss, map: Math.max(0, MAPS.findIndex((m) => m.boss === boss || m.leader === boss)) };
+    }
+    const map = this.daily ? this.daily.map : this.weekly ? this.weekly.map : (data.map ?? 0);
+    this.mapIndex = Phaser.Math.Clamp(map, 0, MAPS.length - 1);
     this.spawnAcc = 0;
     this.pendingLevelUps = 0;
     this.modalOpen = false;
@@ -253,13 +265,15 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.map = MAPS[this.mapIndex];
-    this.rng = mulberry32(this.daily ? this.daily.seed : DEBUG.seed || Date.now() >>> 0);
+    this.rng = mulberry32(this.daily ? this.daily.seed : this.weekly ? this.weekly.seed : DEBUG.seed || Date.now() >>> 0);
     this.world = new World(this, this.map);
     const save = saveStore.data;
-    this.difficulty = this.daily ? 0 : DEBUG.difficulty >= 0 ? DEBUG.difficulty : Math.min(save.difficulty[this.mapIndex], maxDifficulty(save.clears[this.mapIndex]));
+    this.difficulty = this.daily || this.weekly ? 0 : DEBUG.difficulty >= 0 ? DEBUG.difficulty : Math.min(save.difficulty[this.mapIndex], maxDifficulty(save.clears[this.mapIndex]));
     this.diff = difficultyDef(this.difficulty);
     this.relics = new Set((DEBUG.relics.length ? DEBUG.relics : save.equipped) as RelicId[]);
-    const picked: string[] = this.daily
+    const picked: string[] = this.weekly
+      ? []
+      : this.daily
       ? [...this.daily.curses, ...(this.twist === 'swift' ? ['frenzy'] : [])]
       : DEBUG.curses.length
         ? DEBUG.curses
@@ -413,7 +427,8 @@ export class GameScene extends Phaser.Scene {
     this.ambience = new Ambience(this, this.mapIndex);
     this.warpIn();
 
-    for (let i = 1; i < DEBUG.level; i++) {
+    // The weekly boss fight starts the hero at a high level (upgrades picked for it).
+    for (let i = 1; i < (this.weekly ? WEEKLY.level : DEBUG.level); i++) {
       this.run.level++;
       this.applyChoiceNow(this.botPick(rollChoices(this.run.inventory, this.rng)));
     }
@@ -496,6 +511,12 @@ export class GameScene extends Phaser.Scene {
     this.ambience.update();
 
     if (!run.won && !DEBUG.calm) this.spawn(dt);
+    // The weekly boss has to fall within the time limit.
+    if (this.weekly && !run.won && run.time >= WEEKLY.timeLimit) {
+      this.events.emit('toast', "Time's up!");
+      this.endRun(false);
+      return;
+    }
     this.runEvents.update(dt);
     if (run.greedUntil > 0 && run.time >= run.greedUntil) this.payGreed();
     this.enemies.update(dt);
@@ -569,6 +590,10 @@ export class GameScene extends Phaser.Scene {
   private spawn(dt: number): void {
     const run = this.run;
     const t = run.time;
+    if (this.weekly) {
+      this.spawnWeekly(dt);
+      return;
+    }
     if (bossesDue(t) > run.bossesSpawned) {
       run.bossesSpawned++;
       this.spawnBoss(run.bossesSpawned - 1);
@@ -612,6 +637,34 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** The map's leader drops in like a boss (smaller, at 2:30, 7:30...), unless a boss is already fighting. */
+  /** The weekly fight: the Awakened boss two seconds in, and a thin stream of its map's monsters. */
+  private spawnWeekly(dt: number): void {
+    const run = this.run;
+    if (!run.bossesSpawned && run.time >= 2) {
+      run.bossesSpawned = 1;
+      const id = this.weekly!.boss;
+      const def = BOSSES[id];
+      const a = Math.PI / 2;
+      // Two halves: its Awakened moves first, then enraged from half HP like any boss.
+      const e = this.enemies.spawnBoss(id, this.player.x + Math.cos(a) * 460, this.player.y + Math.sin(a) * 460, 1, false);
+      e.maxHp = e.hp = WEEKLY.hp;
+      e.damage = WEEKLY.damage;
+      e.awakened = WEEKLY.moveSpeed;
+      e.scale = WEEKLY.scale;
+      e.radius = def.radius * WEEKLY.scale;
+      e.sprite.setScale(WEEKLY.scale);
+      run.boss = run.finalBoss = e;
+      audio.sfx('boss_warning');
+      this.events.emit('boss', `Awakened ${def.name}`, true);
+    }
+    this.spawnAcc += spawnRate(run.time) * WEEKLY.spawn * dt;
+    while (this.spawnAcc >= 1) {
+      this.spawnAcc -= 1;
+      const p = this.spawnPoint();
+      this.enemies.spawn(this.map.enemies[Math.floor(this.rng() * 2)], p.x, p.y);
+    }
+  }
+
   private spawnLeader(k: number): void {
     if (this.run.boss) return;
     const def = BOSSES[this.map.leader];
@@ -782,6 +835,12 @@ export class GameScene extends Phaser.Scene {
     const run = this.run;
     if (run.boss === e) run.boss = null;
     run.leadersKilled++;
+    // A leader can be the weekly boss: beating it wins the fight.
+    if (e === run.finalBoss) {
+      run.won = true;
+      this.events.emit('toast', 'VICTORY!');
+      this.time.delayedCall(2600, () => this.endRun(false));
+    }
     this.pickups.drop('chest', e.x, e.y);
     if (this.rng() < LOOT.leader.chance) this.dropGear(e.x + 60, e.y + 20, 'leader');
     this.dropOre(e.x - 40, e.y, ORE.leader);
@@ -1229,7 +1288,8 @@ export class GameScene extends Phaser.Scene {
     return {
       mapIndex: r.mapIndex,
       time: r.time,
-      level: r.level,
+      // The weekly fight hands out its first levels: only the ones earned count for quests.
+      level: this.weekly ? Math.max(1, r.level - WEEKLY.level + 1) : r.level,
       kills: r.kills,
       eliteKills: r.eliteKills,
       bossKills: r.bossesKilled,
@@ -1284,10 +1344,12 @@ export class GameScene extends Phaser.Scene {
     const total = collected + bonus + victoryBonus;
     // A clear opens the next difficulty and may win a relic (worn at once if a slot is free).
     let relic: string | null = null;
-    const newBestHeat = run.won && this.heat > save.bestHeat[this.mapIndex];
+    // The weekly boss fight is its own thing: winning it is not a map clear, nor is its time a map record.
+    const cleared = run.won && !this.weekly;
+    const newBestHeat = cleared && this.heat > save.bestHeat[this.mapIndex];
     if (newBestHeat) save.bestHeat[this.mapIndex] = this.heat;
     let opened: string | null = null;
-    if (run.won) {
+    if (cleared) {
       const before = maxDifficulty(save.clears[this.mapIndex]);
       save.clears[this.mapIndex] = Math.max(save.clears[this.mapIndex], this.difficulty + 1);
       const top = maxDifficulty(save.clears[this.mapIndex]);
@@ -1304,7 +1366,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
     const prevBest = save.bestTimes[this.mapIndex];
-    const newBest = run.time > prevBest;
+    const newBest = !this.weekly && run.time > prevBest;
     save.gold += total;
     if (newBest) save.bestTimes[this.mapIndex] = run.time;
     const report = { ...this.report(), died: !run.won && !quit };
@@ -1322,6 +1384,33 @@ export class GameScene extends Phaser.Scene {
     // The daily challenge pays by how long it lasted.
     let daily: RunSummary['daily'] = null;
     const dailyGear: Omit<GearItem, 'uid'>[] = [];
+    // The weekly boss: the first win of the week pays its MVP card (or Legendary gear), ore and a monster card.
+    let weekly: RunSummary['weekly'] = null;
+    if (this.weekly) {
+      const first = run.won && !weeklyWon(save);
+      const got: string[] = [];
+      if (first) {
+        const relicId = this.weekly.boss.replace('boss_', '') as RelicId;
+        if (!save.relics.includes(relicId)) {
+          save.relics.push(relicId);
+          if (save.equipped.length < 2) save.equipped.push(relicId);
+          got.push(relicDef(relicId).name);
+        } else {
+          dailyGear.push(rollItem(this.rng, [0, 0, 0, 0, 1, 0], 4));
+          got.push('Legendary gear');
+        }
+        save.ore += WEEKLY.ore;
+        got.push(`${WEEKLY.ore} ore`);
+        const c = RUNE_IDS[Math.floor(this.rng() * RUNE_IDS.length)];
+        cards.push(c);
+        got.push(RUNES[c].name);
+      }
+      if (run.won) {
+        const best = save.weekly.week === this.weekly.week && save.weekly.won ? Math.min(save.weekly.best, Math.floor(run.time)) : Math.floor(run.time);
+        save.weekly = { week: this.weekly.week, won: true, best };
+      }
+      weekly = { won: run.won, time: run.time, rewards: got, boss: BOSSES[this.weekly.boss].name };
+    }
     if (this.daily) {
       const r = dailyReward(run.time, run.won);
       save.ore += r.ore;
@@ -1377,6 +1466,7 @@ export class GameScene extends Phaser.Scene {
       ore,
       cards: cards.map((c) => RUNES[c].name),
       daily,
+      weekly,
       mastery: { hero: this.hero.name, xp, from, to: masteryState(save.mastery[this.hero.id]).level },
     };
     audio.stopMusic();

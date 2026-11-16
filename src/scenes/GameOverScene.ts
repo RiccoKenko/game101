@@ -98,6 +98,14 @@ export class GameOverScene extends Phaser.Scene {
       this.lootNote(news, y + 75);
       y += 150 + gap;
     }
+    if (s.weekly) {
+      const w = s.weekly;
+      const msg = w.won
+        ? `Awakened ${w.boss} defeated in ${formatTime(w.time)}!\n${w.rewards.length ? `Reward: ${w.rewards.join(', ')}` : 'This week\'s reward was already claimed'}`
+        : `The Awakened ${w.boss} held on.\nTry again: you have all week`;
+      news.add(text(this, 0, y + 50, msg, 38, { color: w.won ? '#ffd36b' : '#ff9a8a', wrap: 860 }));
+      y += 110 + gap;
+    }
     if (s.daily) {
       const d = s.daily;
       const bits = [`${d.ore} ore`, ...(d.card ? ['a monster card'] : []), ...(d.gear ? ['Epic+ gear'] : [])];

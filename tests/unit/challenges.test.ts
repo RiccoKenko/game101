@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DAILY, DAILY_CURSES } from '../../src/config/challenges';
-import { dailyPlayed, dailyReward, dailySpec, startDaily } from '../../src/core/challenges';
+import { dailyPlayed, dailyReward, dailySpec, startDaily, weekKey, weeklySpec, weeklyWon } from '../../src/core/challenges';
+import { WEEKLY_BOSSES } from '../../src/config/challenges';
+import { MAPS } from '../../src/config/maps';
 import { defaultSave, sanitize } from '../../src/core/save';
 
 describe('daily challenge', () => {
@@ -35,5 +37,37 @@ describe('daily challenge', () => {
     expect(dailyReward(59, false)).toEqual({ ore: 0, card: false, gear: false });
     expect(dailyReward(9 * 60 + 30, false)).toEqual({ ore: 36, card: false, gear: false });
     expect(dailyReward(900, true)).toEqual({ ore: 60, card: true, gear: true });
+  });
+});
+
+describe('weekly boss', () => {
+  it('counts weeks the ISO way, Monday to Sunday', () => {
+    expect(weekKey(new Date(2026, 10, 16))).toBe('2026-W47');
+    expect(weekKey(new Date(2026, 10, 22))).toBe('2026-W47');
+    expect(weekKey(new Date(2026, 10, 23))).toBe('2026-W48');
+    expect(weekKey(new Date(2024, 11, 30))).toBe('2025-W01');
+    expect(weekKey(new Date(2021, 0, 3))).toBe('2020-W53');
+  });
+
+  it('is one boss all week, a different one the next, always on its own map', () => {
+    const a = weeklySpec(new Date(2026, 10, 16));
+    expect(weeklySpec(new Date(2026, 10, 22, 23))).toEqual(a);
+    const seen = new Set<string>();
+    for (let w = 0; w < WEEKLY_BOSSES.length; w++) {
+      const spec = weeklySpec(new Date(2026, 10, 16 + 7 * w));
+      seen.add(spec.boss);
+      expect([MAPS[spec.map].boss, MAPS[spec.map].leader]).toContain(spec.boss);
+    }
+    expect(seen.size).toBe(WEEKLY_BOSSES.length);
+  });
+
+  it('remembers a win for the rest of the week only', () => {
+    const save = defaultSave();
+    const now = new Date(2026, 10, 18);
+    expect(weeklyWon(save, now)).toBe(false);
+    save.weekly = { week: weekKey(now), won: true, best: 140 };
+    expect(weeklyWon(save, now)).toBe(true);
+    expect(weeklyWon(save, new Date(2026, 10, 24))).toBe(false);
+    expect(sanitize({ weekly: { week: '2026-W47', won: true, best: 140 } }).weekly).toEqual({ week: '2026-W47', won: true, best: 140 });
   });
 });

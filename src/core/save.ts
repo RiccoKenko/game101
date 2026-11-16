@@ -61,6 +61,8 @@ export interface SaveData {
   ore: number;
   /** The daily challenge: the day it was last played, and how long that run lasted. */
   challenge: { day: string; best: number };
+  /** The weekly boss: the week it was last beaten in, and the fastest win (seconds) that week. */
+  weekly: { week: string; won: boolean; best: number };
   /** Monster cards in the album (not slotted into gear), by card. */
   cards: Partial<Record<RuneId, number>>;
   shop: Record<ShopId, number>;
@@ -117,6 +119,7 @@ export function defaultSave(): SaveData {
     gold: 0,
     ore: 0,
     challenge: { day: '', best: 0 },
+    weekly: { week: '', won: false, best: 0 },
     cards: {},
     shop,
     unlockedMaps: 1,
@@ -157,6 +160,10 @@ export function sanitize(raw: unknown): SaveData {
   if (r.challenge && typeof r.challenge === 'object') {
     const c = r.challenge as Record<string, unknown>;
     out.challenge = { day: typeof c.day === 'string' ? c.day.slice(0, 10) : '', best: Math.floor(num(c.best, 0, 0, 3600)) };
+  }
+  if (r.weekly && typeof r.weekly === 'object') {
+    const w = r.weekly as Record<string, unknown>;
+    out.weekly = { week: typeof w.week === 'string' ? w.week.slice(0, 8) : '', won: w.won === true, best: Math.floor(num(w.best, 0, 0, 3600)) };
   }
   if (r.cards && typeof r.cards === 'object') {
     for (const id of RUNE_IDS) {

@@ -1,4 +1,5 @@
 import { type CurseId } from './curses';
+import { type BossId } from './enemies';
 
 /**
  * The daily challenge: one run a day on a map with two curses and a twist, the same for everyone on the same day
@@ -31,3 +32,12 @@ export const DAILY = {
   swift: 1.3,
   giantsElites: 3,
 };
+
+/**
+ * The weekly boss: each week one boss wakes up (Awakened: far more HP, bigger, its signature moves faster; enraged
+ * from half HP; every boss hits as hard as the others, so no week is unfair). The hero comes in at Lv 20 and has five minutes to bring it down. The first win of the week
+ * gives the boss's MVP card (or Legendary gear if it is already owned), ore and a monster card.
+ */
+export const WEEKLY = { level: 25, timeLimit: 300, hp: 16000, damage: 14, moveSpeed: 1.15, scale: 1.25, spawn: 0.5, ore: 50 };
+/** The order the bosses come round in, a week each. */
+export const WEEKLY_BOSSES: BossId[] = ['boss_boar', 'boss_slime', 'boss_captain', 'boss_lich', 'boss_ogre', 'boss_demon'];

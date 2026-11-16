@@ -70,7 +70,7 @@ export class BootScene extends Phaser.Scene {
     }).then(() => {
       for (const c of PLAYABLE) heroAnimations(this, c.sheet);
       if (DEBUG.autostart) {
-        this.scene.start('Game', { map: Phaser.Math.Clamp(DEBUG.map - 1, 0, MAPS.length - 1) });
+        this.scene.start('Game', { map: Phaser.Math.Clamp(DEBUG.map - 1, 0, MAPS.length - 1), weekly: !!DEBUG.weekly });
       } else {
         this.scene.start('Menu');
       }

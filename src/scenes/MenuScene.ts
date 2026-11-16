@@ -13,7 +13,8 @@ import { formatTime } from '../core/format';
 import { claimUnlocks, masteryState, unseen, xpForLevel } from '../core/collection';
 import { claimableCount, ensureDaily } from '../core/quests';
 import { saveStore } from '../core/save';
-import { dailyPlayed, dailySpec, startDaily } from '../core/challenges';
+import { dailyPlayed, dailySpec, startDaily, weeklySpec, weeklyWon } from '../core/challenges';
+import { WEEKLY } from '../config/challenges';
 import { curseDef } from '../config/curses';
 import { msToNextDay } from '../core/quests';
 import { safeInsets } from '../ui/safe';
@@ -114,17 +115,29 @@ export class MenuScene extends Phaser.Scene {
       },
     });
 
-    text(this, 60, blockTop + 22, 'Choose your adventure', 40, { color: CSS.cream, originX: 0 });
+    text(this, 60, blockTop + 22, 'Choose your adventure', 34, { color: CSS.cream, originX: 0 });
+    // This week's Awakened boss.
+    const beaten = weeklyWon(saveStore.data);
+    new Button(this, width - 410, blockTop + 22, {
+      w: 240,
+      h: 62,
+      color: beaten ? BUTTON.system : BUTTON.danger,
+      icon: 'icon_skull',
+      iconSize: 40,
+      label: beaten ? 'Weekly ✓' : 'Weekly',
+      fontSize: 28,
+      onClick: () => this.time.delayedCall(1, () => this.weeklyCard()),
+    });
     // Today's challenge: one try a day.
     const done = dailyPlayed(saveStore.data);
-    new Button(this, width - 190, blockTop + 22, {
-      w: 270,
+    new Button(this, width - 150, blockTop + 22, {
+      w: 240,
       h: 62,
       color: done ? BUTTON.system : BUTTON.purple,
       icon: 'icon_crown',
       iconSize: 40,
-      label: done ? 'Daily ✓' : 'Daily!',
-      fontSize: 30,
+      label: done ? 'Daily ✓' : 'Daily',
+      fontSize: 28,
       onClick: () => this.time.delayedCall(1, () => this.dailyCard()),
     });
     this.cards = [];
@@ -359,6 +372,62 @@ export class MenuScene extends Phaser.Scene {
     saveStore.data.character = PLAYABLE[this.heroIndex].id;
     saveStore.save();
     this.scene.start('Game', { map: this.selected });
+  }
+
+  /** This week's Awakened boss: who, the rules, the reward, and a Start button (as many tries as you like). */
+  private weeklyCard(): void {
+    const save = saveStore.data;
+    const spec = weeklySpec();
+    const def = BOSSES[spec.boss];
+    const beaten = weeklyWon(save);
+    const { width, height } = this.scale;
+    const parts: Phaser.GameObjects.GameObject[] = [];
+    const add = <T extends Phaser.GameObjects.GameObject & { setDepth(v: number): unknown }>(o: T): T => {
+      o.setDepth(60);
+      parts.push(o);
+      return o;
+    };
+    const close = () => this.time.delayedCall(1, () => parts.forEach((o) => o.destroy()));
+    add(dimmer(this, 0.75)).on('pointerup', close);
+    const cy = height / 2;
+    add(panel(this, width / 2, cy, 960, 1060, { gem: true }).setInteractive());
+    add(gradientText(text(this, width / 2, cy - 450, 'Weekly Boss', 68, { strokeColor: '#2a1606' })));
+    const img = add(this.add.image(width / 2, cy - 250, def.texture));
+    img.setScale(Math.min(300 / img.width, 300 / img.height)).setTint(0xffb0a0);
+    add(text(this, width / 2, cy - 70, `Awakened ${def.name}`, 48, { color: '#ff8a8a' }));
+    add(
+      text(this, width / 2, cy + 20, `${WEEKLY.hp.toLocaleString()} HP, its moves come faster, enraged from half HP.\nYou start at Lv ${WEEKLY.level}; beat it within ${WEEKLY.timeLimit / 60}:00.`, 30, {
+        color: CSS.cream,
+        weight: '600',
+        wrap: 860,
+      }),
+    );
+    const relic = spec.boss.replace('boss_', '');
+    const owned = save.relics.includes(relic as (typeof save.relics)[number]);
+    add(
+      text(this, width / 2, cy + 130, `First win this week: ${owned ? 'Legendary gear' : `${def.name} Card (MVP)`}, ${WEEKLY.ore} ore and a monster card. A new boss every Monday.`, 26, {
+        color: CSS.soft,
+        weight: '600',
+        wrap: 860,
+        shadow: false,
+      }),
+    );
+    if (beaten) add(text(this, width / 2, cy + 215, `Beaten this week: best ${formatTime(save.weekly.best)}`, 34, { color: CSS.green }));
+    add(
+      new Button(this, width / 2, cy + 310, {
+        w: 520,
+        h: 120,
+        color: beaten ? BUTTON.secondary : BUTTON.danger,
+        label: beaten ? 'Fight again' : 'Fight!',
+        fontSize: 50,
+        onClick: () => {
+          save.character = PLAYABLE[this.heroIndex].id;
+          saveStore.save();
+          this.scene.start('Game', { weekly: true });
+        },
+      }),
+    );
+    add(new Button(this, width / 2, cy + 450, { w: 360, h: 100, color: BUTTON.secondary, label: 'Close', fontSize: 40, onClick: close }));
   }
 
   /** Today's challenge: where, which curses, the twist, and a Start button (or when the next one comes). */
