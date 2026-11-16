@@ -41,6 +41,8 @@ export interface UltimateDef {
   text: string;
   /** The dash button's name for this hero. */
   dash: string;
+  /** The dash button's icon, when the hero has their own (else the boots). */
+  dashIcon?: string;
 }
 
 export const ULTIMATES: Record<CharacterId, UltimateDef> = {
@@ -51,7 +53,13 @@ export const ULTIMATES: Record<CharacterId, UltimateDef> = {
     dash: 'Shield Charge',
   },
   archer: { name: 'Arrow Storm', icon: 'icon_arrowstorm', text: 'Arrows rain on the monsters on screen for 3 seconds', dash: 'Back Slide' },
-  mage: { name: 'Meteor Storm', icon: 'icon_meteor', text: 'A huge meteor crashes down around you, freezing what survives', dash: 'Teleport' },
+  mage: {
+    name: 'Meteor Storm',
+    icon: 'icon_meteorstorm',
+    text: 'A huge meteor crashes down around you, freezing what survives',
+    dash: 'Teleport',
+    dashIcon: 'icon_teleport',
+  },
 };
 
 /** Energy one ultimate costs at time t (seconds). */

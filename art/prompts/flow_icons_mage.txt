@@ -1,0 +1,23 @@
+Draw ONE sheet of 16 game icons for an original 2D fantasy online RPG, in the same painting style as the attached reference images: the classic late-1990s / early-2000s Korean online RPG skill icon look, each icon a single clear symbol of a spell, softly painted with gentle cel shading, thin dark-brown outlines (never pure black), a warm, slightly muted palette with bright magical accents, light from the upper left. Every icon must read clearly at a small size (about 64 px).
+
+LAYOUT (landscape 16:9): a grid of 4 columns x 4 rows of equal cells, one icon per cell, centred, filling about two thirds of its cell, in the order below (row by row, left to right). Exactly 16 icons, nothing extra.
+
+ICONS (the Mage's spells: fire in orange and red, ice in pale blue and white, lightning in yellow, spirit magic in pale blue):
+1. Soul Strike: a glowing pale-blue spirit orb with a wispy tail.
+2. Napalm Vulcan: three pale-blue spirit flames falling diagonally like comets.
+3. Fire Bolt: a jagged bolt made of fire striking straight down.
+4. Fire Pillar: a tall column of fire rising from a small scorched patch of ground.
+5. Cold Bolt: three sharp ice spears fanning out.
+6. Storm Gust: a swirling snowstorm full of ice crystals.
+7. Lightning Bolt: a crackling ball of yellow lightning with small forks jumping off it.
+8. Lord of Vermilion: three lightning bolts striking down from a small dark storm cloud.
+9. Fire Ball: a big round blazing fireball.
+10. Sightrasher: a burst of fire exploding outward in a ring.
+11. Fire Wall: a low wall of flames.
+12. Volcano: a small erupting volcano with glowing lava.
+13. Frost Diver: a straight line of jagged ice crystals shooting forward along the ground.
+14. Frost Nova: a ring of ice spikes bursting outward in a circle.
+15. Teleport: a glowing pale-blue magic circle on the ground with sparkles rising from it.
+16. Meteor Storm: three flaming meteors falling from a red sky.
+
+Draw only the symbol itself: no square frame, no border, no badge, no background plate behind it. All are our own original designs. Background: a perfectly flat, solid magenta #FF00FF everywhere; never use magenta, hot pink, pink or purple inside the icons. No text, letters, numbers, labels, grid lines or watermarks anywhere. Every icon is complete and separated from its neighbours by plain background.

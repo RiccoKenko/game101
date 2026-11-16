@@ -95,6 +95,33 @@ const HEROES = {
     /** The big picture for the menu (one drawing on magenta). */
     menu: 'archer_menu.png',
   },
+  // The Mage, all drawn by OpenAI from art/prompts/ro_mage_*.txt (her design: mage_menu.png). The walk while
+  // casting (8 frames a side, staff held out steady) doubles as her plain walk.
+  mage: {
+    sheets: { attack: 'mage_attack.png', misc: 'mage_misc.png' },
+    extra: Object.fromEntries(
+      ['s', 'se', 'e', 'ne', 'n'].map((d) => [`cast8${d}`, { file: `mage_walkcast8_${d}.png`, cols: 4, rows: 2, like: 'attack', ground: true, scale: d === 'n' ? 1.15 : 1 }]),
+    ),
+    animations: {
+      idle: { fps: 2, loop: true, frames: [['misc', 0]] },
+      runshoot: {
+        fps: 9,
+        loop: true,
+        frames: [['attack', 0], ['attack', 1], ['attack', 2], ['attack', 3]],
+        cells: Object.fromEntries(['s', 'se', 'e', 'ne', 'n'].map((d) => [d, grid8(`cast8${d}`)])),
+      },
+      run: { same: 'runshoot', loop: true },
+      shoot: { fps: 14, loop: false, frames: [['attack', 0], ['attack', 1], ['attack', 2], ['attack', 3]] },
+      hurt: { fps: 8, loop: false, frames: [['misc', 1], ['misc', 1], ['misc', 1]] },
+      ko: { fps: 6, loop: false, frames: [['misc', 1], ['misc', 2], ['misc', 2]] },
+      cheer: { fps: 6, loop: false, frames: [['misc', 3], ['misc', 0], ['misc', 3], ['misc', 3]] },
+    },
+    stand: ['misc', 0, 0],
+    menu: 'mage_menu.png',
+    // Her hat adds height without her body being bigger, and her staff reaches further than a bow.
+    tall: 1.2,
+    frame: [256, 256],
+  },
 };
 
 /**
@@ -232,6 +259,15 @@ const ICONS = {
       'gear_cloak', 'gear_robe', 'gear_boots', 'gear_boots_lucky',
       'icon_might', 'icon_armor', 'icon_greed', 'icon_growth',
       'icon_revival', 'icon_skull', 'icon_hard', 'icon_nightmare',
+    ],
+  },
+  icons_mage: {
+    file: 'icons_mage_flow.jpg',
+    keys: [
+      'icon_bolt', 'icon_starfall', 'icon_lightning', 'icon_thunder',
+      'icon_frost', 'icon_blizzard', 'icon_shuriken', 'icon_starstorm',
+      'icon_bomb', 'icon_meteor', 'icon_firetrail', 'icon_inferno',
+      'icon_beam', 'icon_rainbow', 'icon_teleport', 'icon_meteorstorm',
     ],
   },
   icons_menu: {
@@ -460,7 +496,8 @@ function poses(img, cols, rows, { speck = 60, byCell = false, counts = null } = 
             for (const j of [i - 1, i + 1, i - W, i + W]) if (j >= 0 && j < W * H && mine.has(label[j])) ok = true;
           if (ok) data.copy(out, ((y - y0) * w + (x - x0)) * 4, i * 4, i * 4 + 4);
         }
-      return { data: out, width: w, height: h };
+      // Where the crop sat in the picture, for sheets whose drawings share one ground line.
+      return { data: out, width: w, height: h, top: y0 };
     }),
   );
 }
@@ -469,7 +506,7 @@ function poses(img, cols, rows, { speck = 60, byCell = false, counts = null } = 
  * Where a pose stands: the bottom of the drawing, and across, the middle of what touches its lowest tenth (or with
  * `box`, the middle of the whole drawing: for creatures whose feet sit off-centre).
  */
-function feetOf(p, box = false, body = false) {
+function feetOf(p, box = false, body = false, ground = null) {
   let top = p.height;
   let bottom = -1;
   let left = p.width;
@@ -483,6 +520,8 @@ function feetOf(p, box = false, body = false) {
         right = Math.max(right, x);
       }
   if (box) return { x: (left + right) / 2, y: bottom, top };
+  // `ground`: the drawing's own ground line (where its boots stand), when something it holds reaches lower.
+  if (ground !== null) bottom = ground;
   // A walking pose is held by its upper body (head and chest), so the legs swing under a steady body instead of
   // the body lurching over whichever foot is planted.
   if (body) {
@@ -519,8 +558,8 @@ function mirrored(p) {
 const png = (p) => sharp(p.data, { raw: { width: p.width, height: p.height, channels: 4 } }).png().toBuffer();
 
 /** A pose scaled by `k` and placed in a `fw` x `fh` frame with its feet at `feet`. */
-async function place(p, k, fw, fh, feet, box = false, body = false) {
-  const f = feetOf(p, box, body);
+async function place(p, k, fw, fh, feet, box = false, body = false, ground = null) {
+  const f = feetOf(p, box, body, ground);
   const w = Math.round(p.width * k);
   const h = Math.round(p.height * k);
   const scaled = await sharp(await png(p)).resize(w, h, { kernel: 'lanczos3' }).png().toBuffer();
@@ -536,6 +575,15 @@ async function place(p, k, fw, fh, feet, box = false, body = false) {
     .composite([{ input: piece, left: Math.max(0, left), top: Math.max(0, top) }])
     .png()
     .toBuffer();
+}
+
+/**
+ * A row's ground line in picture coordinates: the most common bottom of the row's drawings (the boots stand on it
+ * in most frames; a lower staff tip in one or two frames does not move it).
+ */
+function groundOf(row) {
+  const bottoms = row.map((p) => p.top + feetOf(p).y).sort((a, b) => a - b);
+  return bottoms[Math.floor((bottoms.length - 1) / 2)];
 }
 
 async function buildHero(id, preview) {
@@ -555,17 +603,26 @@ async function buildHero(id, preview) {
     median[name] = hs[Math.floor(hs.length / 2)];
     console.log(`  ${name}: median height ${median[name]} px`);
   }
-  const scaleOf = (sheet) => (h.extra?.[sheet]?.like ? median[h.extra[sheet].like] / median[sheet] : 1);
+  // `like` matches a sheet's typical height to another's; `scale` corrects it by eye when something held up high
+  // (a staff raised over the head) makes the drawings look taller than the body is.
+  const scaleOf = (sheet) => (h.extra?.[sheet]?.like ? median[h.extra[sheet].like] / median[sheet] : 1) * (h.extra?.[sheet]?.scale ?? 1);
   // Scale: the standing front pose ends up `BODY` px tall (the game shows heroes 150 px tall).
   const BODY = 176;
+  // `frame`: a bigger frame for a hero whose staff or hat reaches further; `tall`: how much taller than the others
+  // the hero stands in the game (a hat adds height without the body being bigger).
+  const [FW, FH] = h.frame ?? [208, 224];
+  const FEET = [FW / 2, FH - 12];
   const stand = feetOf(pose(...h.stand));
   const k = BODY / (stand.y - stand.top);
-  const [FW, FH] = [208, 224];
-  const FEET = [104, 212];
   const frames = [];
-  const meta = { frameWidth: FW, frameHeight: FH, feet: FEET, bodyHeight: BODY, directions: DIRS, animations: {} };
+  const meta = { frameWidth: FW, frameHeight: FH, feet: FEET, bodyHeight: Math.round(BODY / (h.tall ?? 1)), directions: DIRS, animations: {} };
   for (const [name, a] of Object.entries(h.animations))
     for (const [row, dir] of DIRS.entries()) {
+      // `same`: plays another animation's frames (the walk while casting doubles as the plain walk).
+      if (a.same) {
+        meta.animations[`${name}_${dir}`] = { ...meta.animations[`${a.same}_${dir}`], loop: a.loop };
+        continue;
+      }
       // `sides` swaps in another sheet's row for some sides (same columns); `cells` gives a side its own frames
       // ([sheet, col, row] each, any number: an 8-frame walk drawn as a 4 x 2 grid, say), at `fps` x their count / 4.
       const side = a.sides?.[dir];
@@ -573,7 +630,13 @@ async function buildHero(id, preview) {
       const list = own ?? a.frames.map(([sheet, col]) => (side ? [side[0], col, side[1]] : [sheet, col, row]));
       const fps = Math.round(((a.fps * list.length) / a.frames.length) * 100) / 100;
       meta.animations[`${name}_${dir}`] = { start: frames.length, count: list.length, fps, loop: a.loop };
-      for (const [from, col, r] of list) frames.push(await place(pose(from, col, r), k * scaleOf(from), FW, FH, FEET, false, !!own));
+      for (const [from, col, r] of list) {
+        const p = pose(from, col, r);
+        // A sheet marked `ground`: every drawing in a row stands on that row's ground line, the lowest boot of
+        // the row (its staff can reach lower than its feet, and must not lift her off the ground).
+        const g = own && h.extra?.[from]?.ground ? groundOf(sheets[from][r]) - p.top : null;
+        frames.push(await place(p, k * scaleOf(from), FW, FH, FEET, false, !!own, g));
+      }
     }
   // Wide enough that the sheet stays under 4096 px tall (the largest texture many phones take).
   const cols = Math.max(8, Math.ceil(frames.length / Math.floor(4096 / FH)));

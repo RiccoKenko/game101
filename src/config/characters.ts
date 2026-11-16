@@ -92,7 +92,6 @@ export const CHARACTERS: CharacterDef[] = [
     skills: ['bolt', 'lightning', 'frost', 'shuriken', 'bomb', 'firetrail', 'beam'],
     sheet: 'mage',
     menu: 'mage_menu',
-    hidden: true,
     maxHp: 0.8,
     area: 1.2,
     speed: 0.95,
@@ -101,7 +100,8 @@ export const CHARACTERS: CharacterDef[] = [
     armor: 0,
     moveHaste: 0,
     shield: 10,
-    muzzle: [38, 96],
+    // Her spells leave from the red gem at the tip of her staff, held out in front of her.
+    muzzle: [70, 100],
   },
 ];
 

@@ -134,12 +134,14 @@ export class HudScene extends Phaser.Scene {
     this.joyKnob = this.add.image(width / 2, joyY, 'joy_knob').setDepth(101).setAlpha(0.75);
     // Ultimate on the left, dash on the right, level with the joystick (a second finger can press them).
     const ult = ULTIMATES[this.game_.heroId];
+    // A hero's own icons, while their pictures are still on the way: the shared ones.
+    const own = (key: string | undefined, fallback: string) => (key && this.textures.exists(key) ? key : fallback);
     this.ultBtn = new Button(this, ABILITY_X, joyY, {
       w: ABILITY_D,
       h: ABILITY_D,
       shape: 'round',
       color: BUTTON.warning,
-      icon: ult.icon,
+      icon: own(ult.icon, 'icon_meteor'),
       iconSize: 104,
       onClick: () => this.game_.ultimate(),
     }).setDepth(100);
@@ -148,7 +150,7 @@ export class HudScene extends Phaser.Scene {
       h: ABILITY_D,
       shape: 'round',
       color: BUTTON.secondary,
-      icon: 'icon_dash',
+      icon: own(ult.dashIcon, 'icon_dash'),
       iconSize: 100,
       onClick: () => this.game_.dash(),
     }).setDepth(100);

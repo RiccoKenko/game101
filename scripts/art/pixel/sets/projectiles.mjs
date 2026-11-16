@@ -609,6 +609,36 @@ async function falconGold() {
   return glowing(s, '#f6dd8a', { strength: 0.55 });
 }
 
+// ------------------------------------------------------------------ The Mage's spells, drawn to match their names
+
+/** Napalm Vulcan: a pale-blue spirit flame falling from the sky (drawn flying right; the game turns it). */
+async function spiritFlame() {
+  const s = new Sprite(18, 13);
+  const blue = ['#f4fbff', '#bfe6f5', '#86bfdc', '#2f5a78'];
+  s.taper(11, 6.5, 1, 6.5, 4.4, 1, blue);
+  for (const [x, y, r] of [[3.4, 3.4, 1.1], [1.6, 9.6, 0.8]]) s.ellipse(x, y, r, r, blue, 0.1);
+  s.taper(11, 6.5, 4, 6.2, 3, 0.6, blue, { flat: blue[1], outline: false });
+  s.ellipse(11.6, 6.5, 4.4, 4.2, blue, 0.15);
+  s.ellipse(12.2, 6.2, 2.6, 2.4, blue, { flat: '#ffffff', outline: false });
+  return glowing(s, '#a9dcf2', { cx: 11, cy: 6.5, rx: 8, ry: 6.5, strength: 0.6 });
+}
+
+/** Lightning Bolt: a crackling ball of lightning, white-hot in the middle, with little forks jumping off it. */
+async function thunderOrb() {
+  const s = new Sprite(18, 18);
+  const gold = ['#fffbe0', '#ffe98a', '#f2c94a', '#7a5a14'];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.3;
+    const m = [9 + Math.cos(a) * 5.2, 9 + Math.sin(a) * 5.2];
+    const k = [9 + Math.cos(a + 0.35) * 6.6, 9 + Math.sin(a + 0.35) * 6.6];
+    const t = [9 + Math.cos(a - 0.1) * 8.6, 9 + Math.sin(a - 0.1) * 8.6];
+    s.line(m[0], m[1], k[0], k[1], 0.35, '#fff3b0').line(k[0], k[1], t[0], t[1], 0.25, '#fff3b0');
+  }
+  s.ellipse(9, 9, 4.6, 4.6, gold, 0.2);
+  s.ellipse(8.6, 8.6, 2.6, 2.6, gold, { flat: '#ffffff', outline: false });
+  return glowing(s, '#ffe98a', { strength: 0.65 });
+}
+
 export const ART = {
   arrow,
   arrow_storm: arrowStorm,
@@ -650,4 +680,6 @@ export const ART = {
   mine_frost: mineFrost,
   falcon,
   falcon_gold: falconGold,
+  spirit_flame: spiritFlame,
+  thunder_orb: thunderOrb,
 };

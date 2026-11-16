@@ -1,0 +1,27 @@
+Draw ONE character sprite sheet for an original 2D fantasy online RPG (a top-down action game): an 8-frame animation of "Mage" WALKING WHILE CASTING. The look is the classic late-1990s / early-2000s Korean 2D online RPG character sprite: a small chibi-anime character about 2.5 to 3 heads tall, a cute anime face with large glossy eyes and a small mouth, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted palette, light from the upper left, seen from slightly above (about 30 degrees), like hand-polished game sprites.
+
+REFERENCES: the FIRST attached image is her design: match it exactly (the same girl, face, hair, hat, robe, colours, staff, proportions, outline weight and shading). The SECOND attached image is another hero of the same game doing the same walk from the same side: copy its view angle, LAYOUT (8 frames in 4 columns x 2 rows), character SIZE in the cells and the leg cycle, but NOT her design or her arms.
+
+CHARACTER (our own original design; exactly the same in every drawing, as in the FIRST attached image):
+- "Mage", a cheerful girl of about eleven with shoulder-length silver hair with a soft pale-blue tint, straight bangs and one small red ribbon on the left side; large deep-blue eyes.
+- A tall navy-blue pointed wizard hat with a wide brim, a gold band and three small gold stars, its tip bent softly backward.
+- A navy-blue hooded coat-robe to just above her knees, trimmed with gold along every edge, over a cream blouse; a long red scarf with both ends hanging down; a brown belt with a small brass-cornered spellbook at her hip.
+- Dark navy stockings and short brown boots with gold buckles.
+- A wooden staff as tall as she is, its top curled into a spiral holding a round red gem.
+
+VIEW AND CAST: seen from behind, walking straight away from the viewer (up the picture); she casts straight UP THE PICTURE, away from the viewer: we see her back, both hands raising the staff in front of her so the red gem shows just above her hat, the gem glowing softly. Her upper body, head, arms and staff are IDENTICAL in all 8 frames; only her legs walk (and her scarf ends and hair sway a little).
+
+SHEET LAYOUT (landscape 1536 x 1024): a grid of 4 columns x 2 rows of equal cells, one full-body drawing per cell, read left to right, top row first, each centred in its cell, the same size in every cell, the soles of her boots on the same baseline near the bottom of every cell, the whole staff and hat inside the cell.
+
+THE 8 FRAMES are the legs of one full walk cycle (two steps):
+1. Contact: her right leg steps away from the viewer, heel just touching the ground; the other leg behind, toes touching.
+2. Down: her weight drops onto the front leg, knee softly bent; the back foot lifts off; her body at its LOWEST.
+3. Passing: the front leg straight under her; the back leg swings forward past it, knee bent, foot lifted.
+4. Up: she pushes up on her toes; the swinging leg reaches forward; her body at its HIGHEST.
+5-8. The same as 1-4 with the legs swapped.
+The legs must clearly differ from frame to frame, even at a small size.
+
+TECHNICAL:
+- Background: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink, pink or purple inside the drawings (her colours are navy blue, gold, cream, red, silver and brown).
+- No text, numbers, labels, grid lines, frames, borders, ground shadows, motion lines or watermarks; no flying spells or projectiles.
+- Every drawing is complete (nothing cut off by its cell or the image edge) and separated from its neighbours by plain background.

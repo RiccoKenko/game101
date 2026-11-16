@@ -1,0 +1,30 @@
+Draw ONE character sprite sheet for an original 2D fantasy online RPG (a top-down action game). The look is the classic late-1990s / early-2000s Korean 2D online RPG character sprite: a small chibi-anime character about 2.5 to 3 heads tall, a cute anime face with large glossy eyes and a small mouth, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted palette, light from the upper left, seen from slightly above (about 30 degrees), like hand-polished game sprites.
+
+REFERENCES: the FIRST attached image is her design: match it exactly (the same girl, face, hair, hat, robe, colours, staff, proportions, outline weight and shading). The SECOND attached image is another hero's sheet from the same game: copy its LAYOUT (4 columns x 5 rows, rows are facing directions), the character SIZE in the cells and the view angle, but NOT her design.
+
+CHARACTER (our own original design; exactly the same in every drawing, as in the FIRST attached image):
+- "Mage", a cheerful girl of about eleven with shoulder-length silver hair with a soft pale-blue tint, straight bangs and one small red ribbon on the left side; large deep-blue eyes.
+- A tall navy-blue pointed wizard hat with a wide brim, a gold band and three small gold stars, its tip bent softly backward.
+- A navy-blue hooded coat-robe to just above her knees, trimmed with gold along every edge, over a cream blouse; a long red scarf with both ends hanging down; a brown belt with a small brass-cornered spellbook at her hip.
+- Dark navy stockings and short brown boots with gold buckles.
+- A wooden staff as tall as she is, its top curled into a spiral holding a round red gem.
+
+SHEET LAYOUT (portrait 1024 x 1536):
+- A grid of 4 columns x 5 rows of equal cells. One full-body drawing per cell, centred in its cell, the same size as in the second reference, her feet on the same baseline near the bottom of every cell.
+- Each ROW is one facing direction. Each COLUMN is one frame of a 4-frame spell cast, standing still with her feet planted, always toward where she faces:
+  Column 1: wind-up: she lifts the staff, her free hand drawn back, the red gem starting to glow.
+  Column 2: cast: the staff thrust forward toward where she faces, the gem glowing brightly, her free hand open beside it.
+  Column 3: release: the spell has just left (do not draw it), the staff still forward, a small recoil, her scarf and robe swinging forward.
+  Column 4: recover: the staff coming back upright at her side, her free hand relaxing.
+  Row 1: facing the viewer (front view).
+  Row 2: facing down and to the RIGHT (three-quarter front view, turned toward the right side of the image).
+  Row 3: facing to the RIGHT (side view, profile toward the right side of the image).
+  Row 4: facing up and to the RIGHT (three-quarter back view).
+  Row 5: facing away from the viewer (back view).
+  In the front row the staff points toward the viewer (down the picture); in the back row it points away (up the picture).
+
+TECHNICAL:
+- Background: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink, pink or purple inside the drawings (her colours are navy blue, gold, cream, red, silver and brown).
+- No text, numbers, labels, grid lines, frames, borders, ground shadows, motion lines or watermarks; no flying spells or projectiles.
+- Every drawing is complete (nothing cut off by its cell or the image edge) and separated from its neighbours by plain background.
+- Keep her design, colours and proportions identical in all 20 drawings and identical to the first reference.

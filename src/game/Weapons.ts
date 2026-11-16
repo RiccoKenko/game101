@@ -78,6 +78,7 @@ const TRAILS: Record<string, [number, number, number]> = {
   spear_dragon: [0xff8a3d, 160, 18],
   bolt: [0x8fd8ff, 80, 16],
   star_bolt: [0xffe08a, 110, 14],
+  spirit_flame: [0x9fdcff, 110, 14],
   ice_shard: [0xd4f4ff, 60, 8],
   meteor: [0xff8a3d, 170, 30],
 };
@@ -193,7 +194,8 @@ const BEAM_LENGTH = 820;
 const BEAM_WIDTH = 34;
 const RAINBOW_LENGTH = 520;
 /** Beam colours, one per beam. */
-const PRISM = [0x8fe8ff, 0xff8ab0, 0xffe07a, 0x9dff8a, 0xc9a8ff];
+/** Frost Diver's lines of ice (and Frost Nova's): pale blues. */
+const PRISM = [0x9fe8ff, 0xc8f4ff, 0x7fd0ff, 0xe0faff, 0xa8dcff];
 /** Bash reaches monsters this close, and each blow also hits those this near the one it lands on. */
 const BASH_REACH = 330;
 const BASH_SPLASH = 80;
@@ -526,7 +528,7 @@ export class WeaponSystem {
       }
       case 'bolt': {
         if (evolved) {
-          this.starfall(s);
+          this.starfall(s, 'spirit_flame');
           break;
         }
         // Each bolt picks its own target (the boss first), flies out in a fan and curves in on it.
@@ -625,7 +627,8 @@ export class WeaponSystem {
           const a = this.ctx.rng() * Math.PI * 2;
           const tx = target ? target.x : player.x + Math.cos(a) * 300;
           const ty = target ? target.y : player.y + Math.sin(a) * 300;
-          const p = this.obtain('bomb', 'bomb');
+          const p = this.obtain('bomb', 'fireball');
+          p.sprite.setScale(1.4);
           p.sx = p.x = player.x;
           p.sy = p.y = player.y;
           p.tx = tx;
@@ -649,12 +652,13 @@ export class WeaponSystem {
         for (const t of targets) {
           const x = t.x;
           const y = t.y;
-          this.ctx.fx.lightning(x, y, evolved ? 0xc9a8ff : 0x9fdcff);
+          // Fire Bolt: a bolt of fire from the sky (Fire Pillar's burn hotter and leap on).
+          this.ctx.fx.lightning(x, y, evolved ? 0xffb347 : 0xff7a3d);
           enemies.forEachInRadius(x, y, BOLT_RADIUS * s.area, (e) => enemies.damage(e, s.damage, x, y, 0.5));
           // Thunderstorm: each strike jumps on to the two nearest enemies.
           if (evolved) {
             for (const n of enemies.nearestN(x, y, 3, 320).filter((e) => e !== t).slice(0, 2)) {
-              this.ctx.fx.arc(x, y - 20, n.x, n.y - 20, 0xe2c8ff);
+              this.ctx.fx.arc(x, y - 20, n.x, n.y - 20, 0xffc46b);
               enemies.damage(n, s.damage * 0.6, x, y, 0.3, false);
             }
           }
@@ -691,7 +695,7 @@ export class WeaponSystem {
         for (let i = 0; i < s.amount; i++) {
           const t = targets.length ? targets[i % targets.length] : null;
           const a = t ? Math.atan2(t.y - player.y, t.x - player.x) + (i >= targets.length ? 0.35 : 0) : face + (i - (s.amount - 1) / 2) * 0.4;
-          const p = this.shoot('shuriken', 'shuriken', a, s, 22 * s.area);
+          const p = this.shoot('shuriken', 'thunder_orb', a, s, 22 * s.area);
           p.pierce = 0;
           p.bounces += s.pierce;
           p.life = 2;
@@ -1446,7 +1450,8 @@ export class WeaponSystem {
         const u = Math.min(1, p.age / dur);
         p.x = Phaser.Math.Linear(p.sx, p.tx, u);
         p.y = Phaser.Math.Linear(p.sy, p.ty, u) - Math.sin(u * Math.PI) * 170;
-        p.sprite.setPosition(p.x, p.y).setRotation(p.age * 10);
+        // The Fire Ball points along its arc (its flames trail behind).
+        p.sprite.setPosition(p.x, p.y).setRotation(Math.atan2(p.ty - p.sy - Math.cos(u * Math.PI) * Math.PI * 170, p.tx - p.sx));
         const gx = Phaser.Math.Linear(p.sx, p.tx, u);
         const gy = Phaser.Math.Linear(p.sy, p.ty, u);
         const sw = 30 + 30 * (1 - Math.sin(u * Math.PI));
@@ -1502,8 +1507,9 @@ export class WeaponSystem {
           this.release(p);
         } else if (u >= 1) {
           const r = STAR_RADIUS * p.area;
-          this.ctx.fx.ring(p.tx, p.ty, r * 1.3, 0xffe08a);
-          this.ctx.fx.sparkle(p.tx, p.ty, 4, 0xfff1b8);
+          const spirit = p.sprite.texture.key === 'spirit_flame';
+          this.ctx.fx.ring(p.tx, p.ty, r * 1.3, spirit ? 0x9fdcff : 0xffe08a);
+          this.ctx.fx.sparkle(p.tx, p.ty, 4, spirit ? 0xe0f6ff : 0xfff1b8);
           enemies.forEachInRadius(p.tx, p.ty, r, (e) => enemies.damage(e, p.damage, p.tx, p.ty, 0.8));
           audio.sfx('zap', 0.5);
           this.release(p);
@@ -1640,6 +1646,8 @@ export class WeaponSystem {
       }
     }
     if (!next) return false;
+    // Lightning Bolt jumps: a crackle of lightning from where it hit to the next monster.
+    if (p.kind === 'shuriken') this.ctx.fx.arc(p.x, p.y, next.x, next.y - 20, 0xfff3a0);
     const sp = Math.hypot(p.vx, p.vy) || 800;
     const a = Math.atan2(next.y - p.y, next.x - p.x);
     p.vx = Math.cos(a) * sp;

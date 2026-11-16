@@ -1,0 +1,19 @@
+Draw ONE large full-body picture of a character from an original 2D fantasy online RPG, for the game's character select screen. The look is the classic late-1990s / early-2000s Korean 2D online RPG character sprite: a small chibi-anime character about 2.5 to 3 heads tall, a cute anime face with large glossy eyes and a small mouth, soft clean cel shading with gentle gradients, thin dark-brown outlines (never pure black), a warm, slightly muted palette, light from the upper left, seen from slightly above (about 30 degrees), like hand-polished game sprites.
+
+REFERENCE: the attached image is ANOTHER hero from the same game (the Archer). Match its art style exactly: the same proportions, head size, face style, outline weight, shading, level of detail and overall size. Do NOT copy her design: this is a different girl, described below.
+
+CHARACTER (our own original design):
+- "Mage", a cheerful, slightly dreamy girl of about eleven with shoulder-length silver hair with a soft pale-blue tint, straight bangs and one small red ribbon on the left side; large deep-blue eyes.
+- A tall navy-blue pointed wizard hat with a wide brim, a gold band around it and three small gold stars, its tip bent softly backward.
+- A navy-blue hooded coat-robe that reaches just above her knees, trimmed with gold along every edge, over a cream blouse with a round collar; a long red scarf wrapped once around her neck with both ends hanging down; a brown leather belt with a small brass-cornered spellbook hanging at her hip.
+- Dark navy stockings and short brown leather boots with gold buckles.
+- A wooden staff as tall as she is, its top curled into a spiral that holds a round red gem, carried in her left hand.
+
+POSE AND LAYOUT (portrait 1024 x 1536):
+- Exactly one drawing of her, full body from the tip of her hat to the soles of her boots, filling most of the picture's height (about 1300 px tall), centred.
+- A friendly ready stance in a three-quarter front view turned toward the RIGHT side of the image: weight on one leg, the staff held upright at her side in her left hand with the red gem softly lit, her right hand raised in front of her with a small spark of magic above her palm, a bright smile.
+
+TECHNICAL:
+- Background: a perfectly flat, solid magenta #FF00FF everywhere. Never use magenta, hot pink, pink or purple inside the drawing (her colours are navy blue, gold, cream, red, silver and brown).
+- No text, numbers, labels, frames, borders, ground shadows, glows or watermarks.
+- The drawing is complete: nothing is cut off by the image edge.
