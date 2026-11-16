@@ -13,6 +13,7 @@ import {
   lockedTalents,
   masteryPerks,
   masteryState,
+  xpForLevel,
   masteryXp,
   reachedUnlocks,
   records,
@@ -126,7 +127,10 @@ describe('hero mastery', () => {
   it('levels up with XP and stops at the top', () => {
     expect(masteryState(0)).toEqual({ level: 1, into: 0, need: 200 });
     expect(masteryState(199).level).toBe(1);
-    expect(masteryState(200)).toEqual({ level: 2, into: 0, need: 350 });
+    expect(masteryState(200)).toEqual({ level: 2, into: 0, need: 300 });
+    // Job Lv 50 is a long road: roughly 100 runs at about 1,200 XP a run, and Job Lv 40 about two thirds of it.
+    expect(xpForLevel(50)).toBeGreaterThan(100_000);
+    expect(xpForLevel(40)).toBeLessThan(xpForLevel(50) * 0.7);
     expect(masteryState(10_000_000)).toEqual({ level: MASTERY.maxLevel, into: 0, need: 0 });
   });
 

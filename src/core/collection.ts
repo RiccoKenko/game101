@@ -109,8 +109,8 @@ export function lockedTalents(hero: CharacterId, level: number): TalentId[] {
 export function masteryPerks(hero: CharacterId, level: number) {
   const has = (kind: MasteryReward['kind']) => masteryRewards(hero, level).filter((r) => r.kind === kind).length;
   return {
-    damage: MASTERY.damage * (level - 1),
-    maxHp: MASTERY.maxHp * (level - 1),
+    damage: MASTERY.damage * (Math.min(level, MASTERY.flatUntil) - 1),
+    maxHp: MASTERY.maxHp * (Math.min(level, MASTERY.flatUntil) - 1),
     rerolls: has('reroll'),
     banishes: has('banish'),
     startLevels: has('start'),

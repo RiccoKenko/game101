@@ -17,6 +17,7 @@ import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
 import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
+import { statusBonus, type StatusBonus } from '../core/status';
 import { addItem, fieldDrop, gearBonus, lootTier, runDrops, wornCards, type GearBonus, type GearItem } from '../core/gear';
 import { claimUnlocks, lockedKeys, lockedTalents, masteryPerks, masteryState, masteryXp, reachedUnlocks, records } from '../core/collection';
 import { DEBUG } from '../core/debug';
@@ -220,6 +221,8 @@ export class GameScene extends Phaser.Scene {
   private perks!: ReturnType<typeof masteryPerks>;
   /** What the worn equipment adds. */
   private gear!: GearBonus;
+  /** The hero's stat points and second job. */
+  private status!: StatusBonus;
   private keys?: Record<string, Phaser.Input.Keyboard.Key>;
 
   constructor() {
@@ -254,6 +257,7 @@ export class GameScene extends Phaser.Scene {
     this.mastery = DEBUG.mastery > 0 ? Math.min(MASTERY.maxLevel, DEBUG.mastery) : masteryState(save.mastery[hero.id]).level;
     this.perks = masteryPerks(hero.id, this.mastery);
     this.gear = gearBonus(save.gear);
+    this.status = statusBonus(save, hero.id);
     // Each class only learns its own skills: the rest are never offered. Nor is anything still locked: items not yet
     // unlocked in the Collection, talents not yet earned with Job Lv.
     const inventory = newInventory(hero.start, [
@@ -952,13 +956,16 @@ export class GameScene extends Phaser.Scene {
     const b = run.blessings;
     const m = this.perks;
     const gb = this.gear;
-    st.goldMult *= (1 + m.gold) * (1 + gb.gold);
-    st.damageMult *= (1 + b.damage) * (1 + m.damage) * (1 + gb.damage);
-    st.speed *= (1 + b.speed) * (1 + gb.speed);
-    st.maxHp = Math.round(st.maxHp * (1 + b.maxHp) * (1 + m.maxHp) * (1 + gb.maxHp));
-    st.cooldownMult = Math.max(0.4, st.cooldownMult * (1 - gb.haste));
-    st.critChance += gb.crit;
-    st.areaMult *= 1 + gb.area;
+    const sb = this.status;
+    st.goldMult *= (1 + m.gold) * (1 + gb.gold) * (1 + sb.gold);
+    st.damageMult *= (1 + b.damage) * (1 + m.damage) * (1 + gb.damage) * (1 + sb.damage);
+    st.speed *= (1 + b.speed) * (1 + gb.speed) * (1 + sb.speed);
+    st.maxHp = Math.round(st.maxHp * (1 + b.maxHp) * (1 + m.maxHp) * (1 + gb.maxHp) * (1 + sb.maxHp));
+    st.cooldownMult = Math.max(0.4, st.cooldownMult * (1 - gb.haste) * sb.cooldown);
+    st.critChance += gb.crit + sb.crit;
+    st.areaMult *= (1 + gb.area) * (1 + sb.area);
+    st.amountBonus += sb.projectiles;
+    st.armor += sb.armor;
     st.xpMult += gb.xp;
     st.armor += gb.armor;
     st.durationMult += gb.duration;

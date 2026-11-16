@@ -8,6 +8,10 @@ import { MAPS } from '../config/maps';
 import { ACHIEVEMENTS, DAILY_COUNT, QUESTS, type AchievementId, type QuestId } from '../config/quests';
 import { SHOP, type ShopId } from '../config/shop';
 import { RUNE_IDS, type RuneId } from '../config/weapons';
+import { STAT_CAP, STAT_IDS, type StatId } from '../config/mastery';
+
+/** No points in any stat. */
+export const emptyStats = (): Record<StatId, number> => Object.fromEntries(STAT_IDS.map((s) => [s, 0])) as Record<StatId, number>;
 
 export interface Settings {
   music: boolean;
@@ -88,6 +92,9 @@ export interface SaveData {
   seen: string[];
   /** Mastery XP earned with each hero. */
   mastery: Record<CharacterId, number>;
+  /** Stat points each hero has spent (STR, AGI, ...), and whether it has taken its second job (1). */
+  points: Record<CharacterId, Record<StatId, number>>;
+  jobs: Record<CharacterId, number>;
   /** Equipment: the bag, and what is worn in each slot. */
   gear: GearState;
 }
@@ -128,6 +135,8 @@ export function defaultSave(): SaveData {
     unlocked: [],
     seen: [],
     mastery: Object.fromEntries(CHARACTER_IDS.map((id) => [id, 0])) as Record<CharacterId, number>,
+    points: Object.fromEntries(CHARACTER_IDS.map((id) => [id, emptyStats()])) as Record<CharacterId, Record<StatId, number>>,
+    jobs: Object.fromEntries(CHARACTER_IDS.map((id) => [id, 0])) as Record<CharacterId, number>,
     gear: emptyGear(),
   };
 }
@@ -195,6 +204,15 @@ export function sanitize(raw: unknown): SaveData {
   if (r.mastery && typeof r.mastery === 'object') {
     const m = r.mastery as Record<string, unknown>;
     for (const id of CHARACTER_IDS) out.mastery[id] = Math.floor(num(m[id], 0));
+  }
+  if (r.points && typeof r.points === 'object') {
+    for (const id of CHARACTER_IDS) {
+      const h = (r.points as Record<string, unknown>)[id];
+      if (h && typeof h === 'object') for (const st of STAT_IDS) out.points[id][st] = Math.floor(num((h as Record<string, unknown>)[st], 0, 0, STAT_CAP));
+    }
+  }
+  if (r.jobs && typeof r.jobs === 'object') {
+    for (const id of CHARACTER_IDS) out.jobs[id] = num((r.jobs as Record<string, unknown>)[id], 0) > 0 ? 1 : 0;
   }
   out.gear = sanitizeGear(r.gear);
   return out;

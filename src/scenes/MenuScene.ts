@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { audio, AUDIO_ENABLED, MUSIC_KEYS } from '../audio/audio';
 import { CHARACTERS, PLAYABLE } from '../config/characters';
 import { UNLOCK_KEYS } from '../config/collection';
-import { describeReward, MASTERY, MASTERY_REWARDS } from '../config/mastery';
+import { describeReward, JOB_CHANGE, MASTERY, MASTERY_REWARDS, SECOND_JOBS } from '../config/mastery';
+import { freePoints, jobName } from '../core/status';
 import { CURSE_UNLOCK_MAPS, heatOf } from '../config/curses';
 import { difficultyDef, maxDifficulty } from '../config/difficulty';
 import { BOSSES } from '../config/enemies';
@@ -41,6 +42,7 @@ export class MenuScene extends Phaser.Scene {
   private heroLevel!: Phaser.GameObjects.Text;
   private heroNext!: Phaser.GameObjects.Text;
   private heroBar!: Bar;
+  private heroPoints!: Phaser.GameObjects.Text;
   private heroBox = { x: 0, top: 0, bottom: 0 };
 
   constructor() {
@@ -173,8 +175,9 @@ export class MenuScene extends Phaser.Scene {
       this.add.ellipse(x, bottom - 14, 300, 46, 0x050a18, 0.35);
       const py = areaBottom - plateH / 2;
       const plate = panel(this, x, py, 960, plateH, { radius: 28 });
-      // Tapping the plate opens the heroes' mastery page.
-      plate.setInteractive({ useHandCursor: true }).on('pointerup', () => this.scene.start('Collection', { tab: 'heroes' }));
+      // Tapping the plate opens the hero's status: stat points and the job change.
+      plate.setInteractive({ useHandCursor: true }).on('pointerup', () => this.scene.start('Status', { hero: PLAYABLE[this.heroIndex].id }));
+      this.heroPoints = text(this, x + 440, py - 70, '', 26, { color: '#9dff7a', originX: 1 });
       this.heroName = text(this, x, py - 70, '', 40, { color: CSS.gold });
       this.heroPros = text(this, x, py - 26, '', 27, { color: '#b4f0a0', weight: '600', shadow: false });
       this.heroCons = text(this, x, py + 10, '', 27, { color: '#ffb0a0', weight: '600', shadow: false });
@@ -318,13 +321,23 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: img, y: img.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const st = masteryState(saveStore.data.mastery[c.id]);
     const master = st.level >= MASTERY.maxLevel;
-    this.heroName.setText(`${master ? 'Master ' : ''}${c.name} · ${c.title}`);
+    this.heroName.setText(`${master ? 'Master ' : ''}${jobName(saveStore.data, c.id, c.name)} · ${c.title}`);
+    const free = freePoints(saveStore.data, c.id);
+    this.heroPoints.setText(free ? `+${free} STATUS ▸` : 'STATUS ▸');
     this.heroPros.setText(`Strong: ${c.pros}`);
     this.heroCons.setText(`Weak: ${c.cons}`);
     this.heroLevel.setText(`Job Lv ${st.level}`);
     this.heroBar.set(master ? 1 : st.into / st.need);
     const next = MASTERY_REWARDS[c.id].find((r) => r.level > st.level);
-    this.heroNext.setText(master ? 'Fully mastered!' : next ? `Lv ${next.level}: ${describeReward(next)}` : `Next level: +${Math.round(MASTERY.damage * 100)}% damage and HP`);
+    this.heroNext.setText(
+      master
+        ? 'Fully mastered!'
+        : next
+          ? `Lv ${next.level}: ${describeReward(next)}`
+          : st.level < JOB_CHANGE.level && !saveStore.data.jobs[c.id]
+            ? `Lv ${JOB_CHANGE.level}: job change to ${SECOND_JOBS[c.id].name}`
+            : 'Next level: +1 stat point',
+    );
   }
 
   private play(): void {

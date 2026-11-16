@@ -17,6 +17,7 @@ import { RelicsScene } from './scenes/RelicsScene';
 import { CursesScene } from './scenes/CursesScene';
 import { CollectionScene } from './scenes/CollectionScene';
 import { GearScene } from './scenes/GearScene';
+import { StatusScene } from './scenes/StatusScene';
 import { ShrineScene } from './scenes/ShrineScene';
 import { ShopScene } from './scenes/ShopScene';
 
@@ -46,7 +47,7 @@ async function start(): Promise<void> {
     },
     input: { activePointers: 3 },
     render: { antialias: true, powerPreference: 'high-performance' },
-    scene: [BootScene, MenuScene, ShopScene, QuestsScene, RelicsScene, CursesScene, CollectionScene, GearScene, GameScene, HudScene, LevelUpScene, ChestScene, ShrineScene, PauseScene, GameOverScene],
+    scene: [BootScene, MenuScene, ShopScene, QuestsScene, RelicsScene, CursesScene, CollectionScene, GearScene, StatusScene, GameScene, HudScene, LevelUpScene, ChestScene, ShrineScene, PauseScene, GameOverScene],
   });
   (window as unknown as { __game: Phaser.Game }).__game = game;
 }
