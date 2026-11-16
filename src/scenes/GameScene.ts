@@ -7,7 +7,7 @@ import { DIFFICULTIES, maxDifficulty, type DifficultyDef } from '../config/diffi
 import { UNLOCKS, unlockKey, type MonsterId } from '../config/collection';
 import { BOSSES } from '../config/enemies';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
-import { BOSS_GOLD, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
+import { BOSS_GOLD, CAMERA_ZOOM, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
 import { GEAR, type GearType } from '../config/gear';
 import { MASTERY } from '../config/mastery';
@@ -364,7 +364,7 @@ export class GameScene extends Phaser.Scene {
     this.applyRelicsAtStart();
     this.camX = 0;
     this.camY = 0;
-    this.cameras.main.centerOn(0, 0);
+    this.cameras.main.setZoom(CAMERA_ZOOM).centerOn(0, 0);
     this.ambience = new Ambience(this, this.mapIndex);
     this.warpIn();
 

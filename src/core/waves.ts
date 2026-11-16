@@ -1,4 +1,4 @@
-import { BOSS_INTERVAL } from '../config/game';
+import { BOSS_INTERVAL, CROWD } from '../config/game';
 
 const minutes = (t: number) => t / 60;
 
@@ -20,7 +20,7 @@ export function damageMultiplier(t: number): number {
 /** Regular enemies spawned per second at time t. */
 export function spawnRate(t: number): number {
   const m = minutes(t);
-  return 1.3 + 1.1 * m + 0.1 * m * m;
+  return (1.3 + 1.1 * m + 0.1 * m * m) * CROWD;
 }
 
 /**

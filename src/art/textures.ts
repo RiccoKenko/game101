@@ -322,6 +322,26 @@ function effectTextures(scene: Phaser.Scene): void {
       ctx.fill();
     }
   });
+  // A boss's warning on the ground: a see-through disc with a solid rim, so its edge is easy to read.
+  canvasTexture(scene, 'tele_disc', 128, 128, (ctx) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.arc(64, 64, 60, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,1)';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+  });
+  // The part of a warning that fills up as the hit comes: a plain soft-edged disc.
+  canvasTexture(scene, 'tele_fill', 64, 64, (ctx) => {
+    const g = ctx.createRadialGradient(32, 32, 20, 32, 32, 31);
+    g.addColorStop(0, 'rgba(255,255,255,0.75)');
+    g.addColorStop(1, 'rgba(255,255,255,0.95)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(32, 32, 31, 0, Math.PI * 2);
+    ctx.fill();
+  });
   canvasTexture(scene, 'shock', 128, 128, (ctx) => {
     const g = ctx.createRadialGradient(64, 64, 34, 64, 64, 62);
     g.addColorStop(0, 'rgba(255,255,255,0)');

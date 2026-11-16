@@ -54,6 +54,13 @@ export function botSteer(ctx: GameCtx, t: number, melee = false): { x: number; y
     x += (dx / d) * w;
     y += (dy / d) * w;
   }
+  // Step out of anything a boss has marked on the ground.
+  const esc = enemies.escape(player.x, player.y, player.radius);
+  const el = Math.hypot(esc.x, esc.y);
+  if (el > 0) {
+    x += (esc.x / el) * 3;
+    y += (esc.y / el) * 3;
+  }
   const len = Math.hypot(x, y) || 1;
   return { x: x / len, y: y / len };
 }

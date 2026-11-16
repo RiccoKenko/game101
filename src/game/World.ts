@@ -21,8 +21,10 @@ export class World {
   private clock = 0;
 
   constructor(private scene: Phaser.Scene, private map: MapDef) {
+    // The ground covers whatever the camera sees, in world space (the camera is zoomed out, so a screen-sized,
+    // screen-fixed tile would leave the edges bare).
     const { width, height } = scene.scale;
-    this.ground = scene.add.tileSprite(0, 0, width, height, map.ground).setOrigin(0).setScrollFactor(0).setDepth(0);
+    this.ground = scene.add.tileSprite(0, 0, width, height, map.ground).setOrigin(0).setDepth(0);
     if (map.index !== 1) {
       for (let i = 0; i < CLOUDS; i++) {
         const c = scene.add.image(0, 0, 'glow').setDepth(9).setTint(0x1c2618).setAlpha(map.index === 2 ? 0.12 : 0.16);
@@ -50,7 +52,9 @@ export class World {
 
   update(dt: number): void {
     const cam = this.scene.cameras.main;
-    this.ground.setTilePosition(cam.scrollX, cam.scrollY);
+    const v = cam.worldView;
+    if (this.ground.width !== Math.ceil(v.width) + 2 || this.ground.height !== Math.ceil(v.height) + 2) this.ground.setSize(Math.ceil(v.width) + 2, Math.ceil(v.height) + 2);
+    this.ground.setPosition(v.x - 1, v.y - 1).setTilePosition(v.x - 1, v.y - 1);
     this.clock += dt;
     this.driftClouds(dt);
     for (const imgs of this.chunks.values()) {

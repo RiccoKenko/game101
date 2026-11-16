@@ -11,6 +11,7 @@ import { SpatialHash } from '../core/spatial';
 import { damageMultiplier, hpMultiplier, speedMultiplier } from '../core/waves';
 import { FONT } from '../ui/theme';
 import { type GameCtx } from './context';
+import { Telegraphs } from './Telegraphs';
 
 export class Enemy {
   uid = 0;
@@ -92,6 +93,19 @@ export class Enemy {
   ptimer = 0;
   pcount = 0;
   pangle = 0;
+  /** A boss's signature moves: their timers, the step a move is on, a spot it aims at, where a leap began. */
+  mtimer = 0;
+  mtimer2 = 0;
+  mstep = 0;
+  mx = 0;
+  my = 0;
+  fromX = 0;
+  fromY = 0;
+  /** Seconds the boss stands still (winding up a move). */
+  hold = 0;
+  /** How high a leaping boss is (px), and whether it is in the air (it can't touch the hero then). */
+  jump = 0;
+  airborne = false;
   /** Coloured glow underneath (an elite's power, an enraged boss), the powers' names, an elite's shield bubble. */
   aura?: Phaser.GameObjects.Image;
   label?: Phaser.GameObjects.Text;
@@ -139,6 +153,21 @@ const EXPLODE_RADIUS = 130;
 const FUSE = 0.8;
 /** Seconds a boss takes to drop in from the sky. */
 const BOSS_DROP = 0.9;
+/** A hit marked on the ground: a circle that lands after `delay` seconds. */
+interface Strike {
+  x: number;
+  y: number;
+  r: number;
+  t: number;
+  delay: number;
+  damage: number;
+  color: number;
+  disc: Phaser.GameObjects.Image;
+  fill: Phaser.GameObjects.Image;
+}
+
+/** Seconds a boss's leap takes from take-off to landing. */
+const LEAP = 1.15;
 
 export class EnemyManager {
   readonly alive: Enemy[] = [];
@@ -150,9 +179,14 @@ export class EnemyManager {
   private blastsThisFrame = 0;
   private novasThisFrame = 0;
   /** Telegraphed ground attacks (an enraged boss's stomps and splashes): a red circle, then the hit. */
-  private strikes: { x: number; y: number; r: number; t: number; damage: number; color: number }[] = [];
+  private strikes: Strike[] = [];
 
-  constructor(private ctx: GameCtx) {}
+  /** Lanes and rays the bosses warn with before they hit. */
+  readonly tele: Telegraphs;
+
+  constructor(private ctx: GameCtx) {
+    this.tele = new Telegraphs(ctx);
+  }
 
   get count(): number {
     return this.regularCount;
@@ -172,6 +206,8 @@ export class EnemyManager {
     e.affixes = [];
     e.shield = e.shieldMax = e.shieldIdle = e.vampT = e.summonT = e.blinkT = e.blinkWarn = 0;
     e.enraged = false;
+    e.mtimer = e.mtimer2 = e.mstep = e.hold = e.jump = 0;
+    e.airborne = false;
     e.ptimer = e.pcount = e.pangle = e.thornT = 0;
     this.hideExtras(e);
     e.spawnT = 0;
@@ -311,8 +347,11 @@ export class EnemyManager {
 
   /** A telegraphed hit on the ground: a red circle now, and in `delay` seconds it lands. */
   strike(x: number, y: number, r: number, delay: number, damage: number, color: number): void {
-    this.ctx.fx.decal('shock', x, y, r * 2, r, 0xff5a3c, 0.55, delay + 0.1);
-    this.strikes.push({ x, y, r, t: delay, damage, color });
+    // Drawn as the true circle it hits, with a fill that grows to the rim as the moment comes.
+    const scene = this.ctx.scene;
+    const disc = scene.add.image(x, y, 'tele_disc').setDepth(3).setTint(0xff5a3c).setAlpha(0.75).setDisplaySize(r * 2, r * 2);
+    const fill = scene.add.image(x, y, 'tele_fill').setDepth(3).setTint(0xff3c28).setAlpha(0.3).setDisplaySize(1, 1);
+    this.strikes.push({ x, y, r, t: delay, delay, damage, color, disc, fill });
   }
 
   private updateStrikes(dt: number): void {
@@ -320,7 +359,14 @@ export class EnemyManager {
     for (let i = this.strikes.length - 1; i >= 0; i--) {
       const s = this.strikes[i];
       s.t -= dt;
-      if (s.t > 0) continue;
+      if (s.t > 0) {
+        const k = 1 - s.t / s.delay;
+        s.fill.setDisplaySize(s.r * 2 * k, s.r * 2 * k).setAlpha(0.22 + 0.25 * k);
+        s.disc.setAlpha(0.6 + 0.3 * Math.abs(Math.sin(k * k * 14)));
+        continue;
+      }
+      s.disc.destroy();
+      s.fill.destroy();
       fx.shockwave(s.x, s.y, s.r, s.color);
       fx.sparksAt(s.x, s.y, 6, s.color);
       fx.decal('splat', s.x, s.y, s.r * 1.6, s.r * 0.8, s.color, 0.35, 1.5);
@@ -593,7 +639,12 @@ export class EnemyManager {
     }
     this.compact();
     this.regularCount = 0;
+    for (const s of this.strikes) {
+      s.disc.destroy();
+      s.fill.destroy();
+    }
     this.strikes = [];
+    this.tele.clear();
     for (const s of this.shots) {
       s.active = false;
       s.sprite.setVisible(false);
@@ -886,7 +937,7 @@ export class EnemyManager {
 
       const sleeping = e.def?.behavior === 'ambush' && e.state === 0;
       e.thornT -= dt;
-      if (d < e.radius + player.radius * 0.85 && !sleeping) {
+      if (d < e.radius + player.radius * 0.85 && !sleeping && !e.airborne) {
         contact = Math.max(contact, e.damage);
         // Thorn Mail pricks whatever touches the hero and shoves it away.
         const thorns = player.stats.thorns;
@@ -923,6 +974,7 @@ export class EnemyManager {
     if (contact > 0) this.ctx.hurtPlayer(contact);
     this.updateShots(dt);
     this.updateStrikes(dt);
+    this.tele.update(dt);
     this.compact();
     // Indices changed during compaction: rebuild so weapons query current indices.
     this.hash.clear();
@@ -963,6 +1015,7 @@ export class EnemyManager {
       sx = (2 - breathe) * (2 - squash);
       sy = breathe * squash;
       rot = e.lean * 0.5;
+      lift = e.jump;
       if (e.state === 2 && Math.random() < dt * 30) this.ctx.fx.dust(e.x, e.y + e.radius * 0.8, 2);
     } else {
       switch (e.def!.motion) {
@@ -1145,6 +1198,8 @@ export class EnemyManager {
         e.timer2 = 0;
         e.dirX = dx;
         e.dirY = dy;
+        // A boss shows the lane it is about to charge down.
+        if (e.isBoss) this.tele.line(e.x, e.y, Math.atan2(dy, dx), dashSpeed * 0.6 + e.radius * 2, e.radius * 1.5, windup, 0, 0);
       }
       return { x: dx, y: dy, charging: false };
     }
@@ -1158,6 +1213,8 @@ export class EnemyManager {
     if (e.timer2 > 0.6) {
       e.state = 0;
       e.timer2 = 0;
+      // The angry Ironhide Boar ends every charge stamping the ground where it stops.
+      if (e.boss?.id === 'boss_boar' && e.enraged) this.strike(e.x, e.y + e.radius * 0.4, 200, 0.5, e.damage * 1.1, 0xc89a5a);
     }
     return { x: e.dirX * dashSpeed, y: e.dirY * dashSpeed, charging: true };
   }
@@ -1287,6 +1344,13 @@ export class EnemyManager {
     const ratio = e.hp / e.maxHp;
     if (!e.enraged && ratio < 0.5) this.enrage(e);
     if (e.enraged) this.enragedAttack(e, dt, dx, dy);
+    // Winding up a signature move (or in the middle of one): it stands still.
+    if (e.hold > 0) {
+      e.hold -= dt;
+      this.bossMoves(e, dt, d, dx, dy);
+      return { x: 0, y: 0 };
+    }
+    if (this.bossMoves(e, dt, d, dx, dy)) return { x: 0, y: 0 };
     if (id === 'boss_boar') {
       // Charges again and again, faster when hurt.
       const v = this.updateCharge(e, dt, d, dx, dy, 680, 0.5, ratio < 0.5 ? 2 : 2.8);
@@ -1343,6 +1407,157 @@ export class EnemyManager {
     }
     const v = this.updateCharge(e, dt, d, dx, dy, 720, 0.6, 4.5);
     return v.charging ? { x: v.x, y: v.y } : { x: v.x * speed, y: v.y * speed };
+  }
+
+  /**
+   * Each boss's signature moves, on top of its old pattern; every one is shown on the ground before it lands.
+   * Returns true while the move has the boss (a leap in the air, say).
+   */
+  private bossMoves(e: Enemy, dt: number, d: number, dx: number, dy: number): boolean {
+    const { player, rng } = this.ctx;
+    const angry = e.enraged;
+    e.mtimer += dt;
+    e.mtimer2 += dt;
+    switch (e.boss!.id) {
+      case 'boss_slime': {
+        // Royal Belly Flop: leaps high and comes down where the hero stood (a red circle warns), spraying jelly.
+        if (e.mstep === 0 && e.mtimer > (angry ? 5.5 : 7.5)) {
+          e.mstep = 1;
+          e.mtimer = 0;
+          e.mx = player.x;
+          e.my = player.y;
+          e.fromX = e.x;
+          e.fromY = e.y;
+          e.airborne = true;
+          this.strike(e.mx, e.my, 200, LEAP, e.damage * 1.3, 0xff7eb6);
+          audio.sfx('zap', 0.8);
+        }
+        if (e.mstep !== 1) return false;
+        const u = Math.min(1, e.mtimer / LEAP);
+        e.x = Phaser.Math.Linear(e.fromX, e.mx, u);
+        e.y = Phaser.Math.Linear(e.fromY, e.my, u);
+        e.jump = Math.sin(u * Math.PI) * 520;
+        if (u >= 1) {
+          e.mstep = 0;
+          e.mtimer = 0;
+          e.jump = 0;
+          e.airborne = false;
+          this.ctx.shake(260, 0.012);
+          audio.sfx('explosion');
+          const n = angry ? 14 : 10;
+          const off = rng() * Math.PI;
+          for (let k = 0; k < n; k++) this.fireShot('orb', e.x, e.y, off + (k / n) * Math.PI * 2);
+        }
+        return true;
+      }
+      case 'boss_captain': {
+        // Paw Swipe: close up, a patch in front of it goes red, then the swipe. Boulder Toss: three boulders at the hero.
+        if (d < 330 && e.mtimer2 > (angry ? 2.6 : 3.6)) {
+          e.mtimer2 = 0;
+          this.strike(e.x + dx * 140, e.y + dy * 140, 180, 0.55, e.damage * 1.2, 0xc89a5a);
+          e.hold = 0.6;
+        }
+        if (e.mtimer > (angry ? 5 : 6.5)) {
+          e.mtimer = 0;
+          for (let k = 0; k < 3; k++) {
+            const tx = player.x + (k ? (rng() - 0.5) * 300 : 0);
+            const ty = player.y + (k ? (rng() - 0.5) * 300 : 0);
+            this.strike(tx, ty, 115, 1 + k * 0.2, e.damage, 0xa07850);
+            this.throwRock(e.x, e.y - e.radius, tx, ty, 1 + k * 0.2);
+          }
+        }
+        return false;
+      }
+      case 'boss_lich': {
+        // Club Quake: it raises its club, then lines of fire burst along the ground in a fan toward the hero.
+        if (e.mtimer > (angry ? 4.8 : 6.5)) {
+          e.mtimer = 0;
+          const n = angry ? 5 : 3;
+          const base = Math.atan2(player.y - e.y, player.x - e.x);
+          for (let k = 0; k < n; k++) this.tele.line(e.x, e.y, base + (k - (n - 1) / 2) * 0.34, 1150, 100, 0.95, e.damage * 1.1, 0xff8a3d);
+          e.hold = 1;
+        }
+        return false;
+      }
+      case 'boss_ogre': {
+        // Rockslide: rows of falling rocks sweep toward the hero, with one gap to slip through.
+        if (e.mtimer > (angry ? 6 : 8)) {
+          e.mtimer = 0;
+          const a = Math.atan2(player.y - e.y, player.x - e.x);
+          const ux = Math.cos(a);
+          const uy = Math.sin(a);
+          const gap = Math.floor(rng() * 6);
+          for (let row = 0; row < 5; row++) {
+            const dist = 160 + row * 190;
+            for (let c = 0; c < 7; c++) {
+              if (c === gap || c === gap + 1) continue;
+              const off = (c - 3) * 150;
+              this.strike(e.x + ux * dist - uy * off, e.y + uy * dist + ux * off, 80, 0.85 + row * 0.22, e.damage, 0xc8a070);
+            }
+          }
+          e.hold = 0.8;
+        }
+        return false;
+      }
+      case 'boss_demon': {
+        // Sun Rays: it stops and sends out rays that sweep round it. Curse Marks: circles keep landing on the hero.
+        if (e.mtimer > (angry ? 8.5 : 11) && !this.tele.busy) {
+          e.mtimer = 0;
+          const n = angry ? 4 : 3;
+          const off = Math.atan2(player.y - e.y, player.x - e.x) + Math.PI / n;
+          const spin = (rng() < 0.5 ? -1 : 1) * (angry ? 0.7 : 0.55);
+          for (let k = 0; k < n; k++) this.tele.ray(e, off + (k / n) * Math.PI * 2, spin, 1300, 64, 1.1, 2.8, e.damage * 0.45, 0xffd36b);
+          e.hold = 3.9;
+          audio.sfx('boss_warning', 0.6);
+        }
+        if (e.mstep === 0 && e.mtimer2 > 9) {
+          e.mtimer2 = 0;
+          e.mstep = angry ? 5 : 4;
+        }
+        if (e.mstep > 0 && e.mtimer2 > 0.55) {
+          e.mtimer2 = 0;
+          e.mstep--;
+          this.strike(player.x, player.y, 120, 0.8, e.damage * 0.9, 0xffb347);
+        }
+        return false;
+      }
+      default:
+        // The Ironhide Boar's lanes and stamps live in its charge (see updateCharge).
+        return false;
+    }
+  }
+
+  /** A boulder thrown in a high arc from (x0, y0) to (x1, y1), landing after `dur` seconds (just the picture). */
+  private throwRock(x0: number, y0: number, x1: number, y1: number, dur: number): void {
+    const scene = this.ctx.scene;
+    const img = scene.add.image(x0, y0, 'rock').setDepth(30).setScale(0.9);
+    scene.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: dur * 1000,
+      onUpdate: (tw) => {
+        const u = tw.getValue() ?? 0;
+        img.setPosition(Phaser.Math.Linear(x0, x1, u), Phaser.Math.Linear(y0, y1, u) - Math.sin(u * Math.PI) * 320).setRotation(u * 7);
+      },
+      onComplete: () => img.destroy(),
+    });
+  }
+
+  /** Which way to step to get out of every warned hit that would catch (x, y): what the test bot watches. */
+  escape(x: number, y: number, radius: number): { x: number; y: number } {
+    const t = this.tele.escape(x, y, radius);
+    let ex = t.x;
+    let ey = t.y;
+    for (const s of this.strikes) {
+      const dx = x - s.x;
+      const dy = y - s.y;
+      const dd = Math.hypot(dx, dy) || 1;
+      if (dd < s.r + radius + 25) {
+        ex += dx / dd;
+        ey += dy / dd;
+      }
+    }
+    return { x: ex, y: ey };
   }
 
   private updateShots(dt: number): void {
