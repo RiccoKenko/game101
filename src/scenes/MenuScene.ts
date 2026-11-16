@@ -13,9 +13,12 @@ import { formatTime } from '../core/format';
 import { claimUnlocks, masteryState, unseen, xpForLevel } from '../core/collection';
 import { claimableCount, ensureDaily } from '../core/quests';
 import { saveStore } from '../core/save';
+import { dailyPlayed, dailySpec, startDaily } from '../core/challenges';
+import { curseDef } from '../config/curses';
+import { msToNextDay } from '../core/quests';
 import { safeInsets } from '../ui/safe';
 import { BUTTON, CSS } from '../ui/theme';
-import { badge, Bar, Button, gradientText, panel, panelTexture, ribbon, slotTexture, text } from '../ui/widgets';
+import { badge, Bar, Button, dimmer, gradientText, panel, panelTexture, ribbon, slotTexture, text } from '../ui/widgets';
 
 const CARD_W = 960;
 const CARD_H = 152;
@@ -111,7 +114,19 @@ export class MenuScene extends Phaser.Scene {
       },
     });
 
-    text(this, width / 2, blockTop + 22, 'Choose your adventure', 40, { color: CSS.cream });
+    text(this, 60, blockTop + 22, 'Choose your adventure', 40, { color: CSS.cream, originX: 0 });
+    // Today's challenge: one try a day.
+    const done = dailyPlayed(saveStore.data);
+    new Button(this, width - 190, blockTop + 22, {
+      w: 270,
+      h: 62,
+      color: done ? BUTTON.system : BUTTON.purple,
+      icon: 'icon_crown',
+      iconSize: 40,
+      label: done ? 'Daily ✓' : 'Daily!',
+      fontSize: 30,
+      onClick: () => this.time.delayedCall(1, () => this.dailyCard()),
+    });
     this.cards = [];
     MAPS.forEach((map, i) => {
       const y = blockTop + 56 + CARD_H / 2 + i * (CARD_H + gap);
@@ -344,6 +359,51 @@ export class MenuScene extends Phaser.Scene {
     saveStore.data.character = PLAYABLE[this.heroIndex].id;
     saveStore.save();
     this.scene.start('Game', { map: this.selected });
+  }
+
+  /** Today's challenge: where, which curses, the twist, and a Start button (or when the next one comes). */
+  private dailyCard(): void {
+    const save = saveStore.data;
+    const spec = dailySpec(save.unlockedMaps);
+    const done = dailyPlayed(save);
+    const { width, height } = this.scale;
+    const parts: Phaser.GameObjects.GameObject[] = [];
+    const add = <T extends Phaser.GameObjects.GameObject & { setDepth(v: number): unknown }>(o: T): T => {
+      o.setDepth(60);
+      parts.push(o);
+      return o;
+    };
+    const close = () => this.time.delayedCall(1, () => parts.forEach((o) => o.destroy()));
+    add(dimmer(this, 0.75)).on('pointerup', close);
+    const cy = height / 2;
+    add(panel(this, width / 2, cy, 960, 900, { gem: true }).setInteractive());
+    add(gradientText(text(this, width / 2, cy - 370, 'Daily Challenge', 68, { strokeColor: '#2a1606' })));
+    add(text(this, width / 2, cy - 280, MAPS[spec.map].name, 48, { color: CSS.gold }));
+    add(text(this, width / 2, cy - 205, spec.curses.map((c) => `${curseDef(c).name}: ${curseDef(c).text}`).join('\n'), 30, { color: '#ffb0a0', weight: '600', wrap: 860 }));
+    add(text(this, width / 2, cy - 90, `Twist: ${spec.twist.name}`, 42, { color: '#c9a8ff' }));
+    add(text(this, width / 2, cy - 30, spec.twist.text, 30, { color: CSS.cream, weight: '600', wrap: 860 }));
+    add(text(this, width / 2, cy + 70, 'One try a day. Reward: 4 ore a minute, a monster card for lasting 10:00, Epic+ gear for a clear', 26, { color: CSS.soft, weight: '600', wrap: 860, shadow: false }));
+    if (done) {
+      const h = Math.ceil(msToNextDay() / 3_600_000);
+      add(text(this, width / 2, cy + 190, `Done today: lasted ${formatTime(save.challenge.best)}\nA new challenge in about ${h}h`, 36, { color: CSS.green }));
+    } else {
+      add(
+        new Button(this, width / 2, cy + 200, {
+          w: 520,
+          h: 120,
+          color: BUTTON.primary,
+          label: 'Start',
+          fontSize: 50,
+          onClick: () => {
+            if (!startDaily(save)) return;
+            save.character = PLAYABLE[this.heroIndex].id;
+            saveStore.save();
+            this.scene.start('Game', { daily: true });
+          },
+        }),
+      );
+    }
+    add(new Button(this, width / 2, cy + 360, { w: 360, h: 100, color: BUTTON.secondary, label: 'Close', fontSize: 40, onClick: close }));
   }
 }
 

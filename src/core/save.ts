@@ -59,6 +59,8 @@ export interface SaveData {
   gold: number;
   /** Ore for refining gear. */
   ore: number;
+  /** The daily challenge: the day it was last played, and how long that run lasted. */
+  challenge: { day: string; best: number };
   /** Monster cards in the album (not slotted into gear), by card. */
   cards: Partial<Record<RuneId, number>>;
   shop: Record<ShopId, number>;
@@ -114,6 +116,7 @@ export function defaultSave(): SaveData {
     version: 1,
     gold: 0,
     ore: 0,
+    challenge: { day: '', best: 0 },
     cards: {},
     shop,
     unlockedMaps: 1,
@@ -151,6 +154,10 @@ export function sanitize(raw: unknown): SaveData {
   const r = raw as Partial<Record<keyof SaveData, unknown>>;
   out.gold = Math.floor(num(r.gold, 0));
   out.ore = Math.floor(num(r.ore, 0));
+  if (r.challenge && typeof r.challenge === 'object') {
+    const c = r.challenge as Record<string, unknown>;
+    out.challenge = { day: typeof c.day === 'string' ? c.day.slice(0, 10) : '', best: Math.floor(num(c.best, 0, 0, 3600)) };
+  }
   if (r.cards && typeof r.cards === 'object') {
     for (const id of RUNE_IDS) {
       const v = Math.floor(num((r.cards as Record<string, unknown>)[id], 0, 0, 999));

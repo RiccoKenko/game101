@@ -8,7 +8,7 @@ import { UNLOCKS, unlockKey, type MonsterId } from '../config/collection';
 import { BOSSES, type EnemyId } from '../config/enemies';
 import { CARD_DROP, CARD_MAX_LEVEL, CARD_OF } from '../config/cards';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
-import { BOSS_GOLD, CAMERA_ZOOM, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
+import { BOSS_GOLD, CAMERA_ZOOM, COIN_VALUE, DROP_CHANCE, MAX_WEAPONS, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
 import { GEAR, LOOT, ORE, RARITIES, type GearType } from '../config/gear';
 import { MASTERY } from '../config/mastery';
@@ -18,6 +18,8 @@ import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
 import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
 import { statusBonus, type StatusBonus } from '../core/status';
+import { dailyReward, dailySpec, type DailySpec } from '../core/challenges';
+import { DAILY, type TwistId } from '../config/challenges';
 import { addItem, fieldDrop, gearBonus, lootTier, runDrops, wornCards, type GearBonus, type GearItem } from '../core/gear';
 import { claimUnlocks, lockedKeys, lockedTalents, masteryPerks, masteryState, masteryXp, reachedUnlocks, records } from '../core/collection';
 import { DEBUG } from '../core/debug';
@@ -155,6 +157,8 @@ export interface RunSummary {
   ore: number;
   /** Monster cards found, by name. */
   cards: string[];
+  /** The daily challenge's result, when this run was it. */
+  daily: { time: number; ore: number; card: boolean; gear: boolean } | null;
 }
 
 /** Something to celebrate in the HUD: a daily quest or an achievement tier finished during the run. */
@@ -229,8 +233,15 @@ export class GameScene extends Phaser.Scene {
     super('Game');
   }
 
-  init(data: { map?: number }): void {
-    this.mapIndex = Phaser.Math.Clamp(data.map ?? 0, 0, MAPS.length - 1);
+  /** Today's daily challenge, when this run is it, and its twist. */
+  private daily: DailySpec | null = null;
+  private get twist(): TwistId | null {
+    return this.daily ? this.daily.twist.id : null;
+  }
+
+  init(data: { map?: number; daily?: boolean }): void {
+    this.daily = data.daily ? dailySpec(saveStore.data.unlockedMaps) : null;
+    this.mapIndex = Phaser.Math.Clamp(this.daily ? this.daily.map : (data.map ?? 0), 0, MAPS.length - 1);
     this.spawnAcc = 0;
     this.pendingLevelUps = 0;
     this.modalOpen = false;
@@ -242,13 +253,19 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.map = MAPS[this.mapIndex];
-    this.rng = mulberry32(DEBUG.seed || Date.now() >>> 0);
+    this.rng = mulberry32(this.daily ? this.daily.seed : DEBUG.seed || Date.now() >>> 0);
     this.world = new World(this, this.map);
     const save = saveStore.data;
-    this.difficulty = DEBUG.difficulty >= 0 ? DEBUG.difficulty : Math.min(save.difficulty[this.mapIndex], maxDifficulty(save.clears[this.mapIndex]));
+    this.difficulty = this.daily ? 0 : DEBUG.difficulty >= 0 ? DEBUG.difficulty : Math.min(save.difficulty[this.mapIndex], maxDifficulty(save.clears[this.mapIndex]));
     this.diff = difficultyDef(this.difficulty);
     this.relics = new Set((DEBUG.relics.length ? DEBUG.relics : save.equipped) as RelicId[]);
-    const picked: string[] = DEBUG.curses.length ? DEBUG.curses : save.unlockedMaps >= CURSE_UNLOCK_MAPS ? save.curses : [];
+    const picked: string[] = this.daily
+      ? [...this.daily.curses, ...(this.twist === 'swift' ? ['frenzy'] : [])]
+      : DEBUG.curses.length
+        ? DEBUG.curses
+        : save.unlockedMaps >= CURSE_UNLOCK_MAPS
+          ? save.curses
+          : [];
     this.curses = new Set(CURSE_IDS.filter((id) => picked.includes(id)));
     this.heat = heatOf([...this.curses]);
     // A save may still name a class the menu no longer offers: that plays the first one offered instead.
@@ -589,7 +606,8 @@ export class GameScene extends Phaser.Scene {
       this.spawnAcc -= 1;
       const p = this.spawnPoint();
       const id = weightedPick(this.rng, table);
-      this.enemies.spawn(id, p.x, p.y, this.rng() < eliteChance(t) * (this.curses.has('mutation') ? CURSE.mutationElites : 1));
+      const eliteMult = (this.curses.has('mutation') ? CURSE.mutationElites : 1) * (this.twist === 'giants' ? DAILY.giantsElites : 1);
+      this.enemies.spawn(id, p.x, p.y, this.rng() < eliteChance(t) * eliteMult);
     }
   }
 
@@ -658,7 +676,7 @@ export class GameScene extends Phaser.Scene {
     const coinValue = COIN_VALUE[this.mapIndex] * (golden ? GOLDEN_HOUR.coinValue : 1);
     const chance = e.elite ? 1 : e.coinChance * coinFactor(this.run.time) * (golden ? GOLDEN_HOUR.coinChance : 1);
     if (this.rng() < chance) this.pickups.drop('coin', e.x + 24, e.y + 10, coinValue);
-    if (this.rng() < DROP_CHANCE.meat) this.pickups.drop('meat', e.x - 20, e.y);
+    if (this.twist !== 'vampire' && this.rng() < DROP_CHANCE.meat) this.pickups.drop('meat', e.x - 20, e.y);
     else if (this.rng() < DROP_CHANCE.magnet) this.pickups.drop('magnet', e.x - 20, e.y);
     if (e.elite && this.rng() < LOOT.elite.chance) this.dropGear(e.x, e.y, 'elite');
     if (e.elite && this.rng() < ORE.eliteChance) this.dropOre(e.x, e.y, ORE.elite);
@@ -944,6 +962,12 @@ export class GameScene extends Phaser.Scene {
     const st = run.stats;
     st.goldMult *= this.diff.gold * (1 + HEAT_GOLD * this.heat);
     if (this.curses.has('famine')) st.healMult = CURSE.famine;
+    // The daily challenge's twist.
+    if (this.twist === 'glass') {
+      st.damageMult *= 2;
+      st.maxHp *= 0.5;
+    }
+    if (this.twist === 'swift') st.speed *= DAILY.swift;
     if (this.relics.has('slime')) st.xpMult *= 1.1;
     if (this.relics.has('lich')) {
       st.magnet *= 1.4;
@@ -1082,6 +1106,23 @@ export class GameScene extends Phaser.Scene {
       inv.weapons[0].level = Math.max(inv.weapons[0].level, 2);
       const free = RUNE_IDS.filter((id) => !inv.runes.some((r) => r.id === id) && !inv.banned.includes(`rune:${id}`));
       if (free.length && heldRunes(inv) < 3) inv.runes.push({ id: free[Math.floor(this.rng() * free.length)], level: 1 });
+    }
+    if (this.daily) {
+      const t = this.daily.twist;
+      this.time.delayedCall(600, () => this.events.emit('toast', `Daily challenge · ${t.name}: ${t.text}`));
+    }
+    // Daily twists that change what the run starts with.
+    if (this.twist === 'vampire') {
+      const leech = run.inventory.runes.find((r) => r.id === 'leech');
+      if (leech) leech.level = RUNES.leech.maxLevel;
+      else run.inventory.runes.push({ id: 'leech', level: RUNES.leech.maxLevel, card: true });
+    }
+    if (this.twist === 'arsenal') {
+      const inv = run.inventory;
+      const free = this.hero.skills.filter((id) => !inv.weapons.some((w) => w.id === id));
+      for (let k = 0; k < 2 && free.length && inv.weapons.length < MAX_WEAPONS; k++) {
+        inv.weapons.push({ id: free.splice(Math.floor(this.rng() * free.length), 1)[0], level: 3, evolved: null });
+      }
     }
     // Monster cards slotted into worn gear: their powers from the first second, outside the run's card places.
     for (const [id, n] of Object.entries(wornCards(saveStore.data.gear)) as [RuneId, number][]) {
@@ -1278,12 +1319,24 @@ export class GameScene extends Phaser.Scene {
     const ore = run.ore + this.pickups.oreOnGround();
     save.ore += ore;
     const cards = [...run.cards, ...this.pickups.gearOnGround('card').map((i) => this.droppedCards[i])];
+    // The daily challenge pays by how long it lasted.
+    let daily: RunSummary['daily'] = null;
+    const dailyGear: Omit<GearItem, 'uid'>[] = [];
+    if (this.daily) {
+      const r = dailyReward(run.time, run.won);
+      save.ore += r.ore;
+      if (r.card) cards.push(RUNE_IDS[Math.floor(this.rng() * RUNE_IDS.length)]);
+      if (r.gear) dailyGear.push(fieldDrop(this.rng, lootTier(this.mapIndex, 2), 'boss'));
+      save.challenge.best = Math.max(save.challenge.best, Math.floor(run.time));
+      daily = { time: run.time, ore: r.ore, card: r.card, gear: r.gear };
+    }
     for (const c of cards) save.cards[c] = (save.cards[c] ?? 0) + 1;
     // What was picked up, what still lies on the ground (it's yours all the same), and the end-of-run drops.
     const drops = [
       ...run.gear,
       ...this.pickups.gearOnGround().map((i) => this.dropped[i]),
       ...runDrops(this.rng, { map: this.mapIndex, difficulty: this.difficulty, time: run.time, won: run.won }),
+      ...dailyGear,
     ];
     for (const d of drops) {
       const got = addItem(save.gear, d, save);
@@ -1323,6 +1376,7 @@ export class GameScene extends Phaser.Scene {
       lootGold,
       ore,
       cards: cards.map((c) => RUNES[c].name),
+      daily,
       mastery: { hero: this.hero.name, xp, from, to: masteryState(save.mastery[this.hero.id]).level },
     };
     audio.stopMusic();

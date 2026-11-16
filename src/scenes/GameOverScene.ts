@@ -98,6 +98,12 @@ export class GameOverScene extends Phaser.Scene {
       this.lootNote(news, y + 75);
       y += 150 + gap;
     }
+    if (s.daily) {
+      const d = s.daily;
+      const bits = [`${d.ore} ore`, ...(d.card ? ['a monster card'] : []), ...(d.gear ? ['Epic+ gear'] : [])];
+      news.add(text(this, 0, y + 50, `Daily challenge: lasted ${formatTime(d.time)}\nReward: ${bits.join(', ')}`, 40, { color: '#c9a8ff', wrap: 860 }));
+      y += 110 + gap;
+    }
     if (s.cards.length) {
       const names = [...new Set(s.cards)].join(', ');
       const t = text(this, 0, y + 50, `${names}${s.cards.length > 1 ? ` (${s.cards.length})` : ''}!\nSlot cards into gear in the Gear screen`, 40, { color: '#ffe08a', wrap: 860 });
