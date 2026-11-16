@@ -6,7 +6,7 @@
 
 ### สถานะและลิงก์
 - **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (push ครบ, working tree สะอาด)
-- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 27
+- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 29 (ซูมออก + ท่าบอส)
   - **สร้างใหม่:** `node scripts/build-artifact.mjs <scratchpad>/ricco-rush.html` แล้ว publish ทับลิงก์นี้ด้วย `url`
   - **session ใหม่:** ต้อง `action: read` ลิงก์ก่อน publish
 - **ลิงก์หลัก:** little-archer.vercel.app = **Ricco Rush** (7 พ.ย. 2026)
@@ -149,7 +149,7 @@
   | Sunscar Pharaoh | ลำแสงหมุน 3 เส้น (โกรธ 4) และวงคำสาปตกตามตัว 4-5 วง |
 
 - **บอททดสอบหลบ:** `Enemies.escape()` รวมวงและแนวทั้งหมด → `Bot.ts`
-- **ผลบอท (หลบครึ่งความเร็ว, ตัดที่ 9:00):** Archer seed 4/5 รอดครบ 9:00 เลือดเต็ม ฆ่า 8,340 / 8,302 ตัว (เดิม ~6,600); Mage กำลังวัด
+- **ผลบอท (หลบครึ่งความเร็ว, ตัดที่ 9:00):** Archer seed 4/5 รอดครบ 9:00 เลือดเต็ม ฆ่า 8,340 / 8,302 ตัว (เดิม ~6,600); Mage seed 4 รอดครบ 9:00 เลือดเต็ม ฆ่า 8,539 (seed 5 กำลังวัด)
 - **ถ่ายภาพบอส:** `scratchpad/boss/shots.cjs [ชื่อ,ชื่อ]` เดินเกมทีละเฟรมเอง (headless ช้ามาก ใช้เวลาจริงไม่ได้)
   - ภาพบันทึกตอนสัญญาณเตือนขึ้น
 
