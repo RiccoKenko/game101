@@ -32,6 +32,8 @@ interface Ray {
   life: number;
   damage: number;
   tick: number;
+  /** The ray's true reach, flat on the ground, so the hero can see exactly how wide it hurts. */
+  band: Phaser.GameObjects.Image;
   glow: Phaser.GameObjects.Image;
   core: Phaser.GameObjects.Image;
 }
@@ -65,9 +67,10 @@ export class Telegraphs {
   /** Rays round `owner`, starting at `angle` and turning `spin` radians a second; they warn for `warn` seconds. */
   ray(owner: Ray['owner'], angle: number, spin: number, len: number, width: number, warn: number, dur: number, damage: number, color: number): void {
     const scene = this.ctx.scene;
+    const band = scene.add.image(owner.x, owner.y, 'px').setOrigin(0, 0.5).setDepth(3).setTint(0xff5a3c).setAlpha(0);
     const glow = scene.add.image(owner.x, owner.y, 'beam').setOrigin(0, 0.5).setDepth(27).setTint(color).setAlpha(0);
     const core = scene.add.image(owner.x, owner.y, 'beam').setOrigin(0, 0.5).setDepth(28).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
-    this.rays.push({ owner, angle, spin, len, width, warn, life: warn + dur, damage, tick: 0, glow, core });
+    this.rays.push({ owner, angle, spin, len, width, warn, life: warn + dur, damage, tick: 0, band, glow, core });
   }
 
   get busy(): boolean {
@@ -112,6 +115,7 @@ export class Telegraphs {
       const live = r.warn <= 0;
       const { x, y } = r.owner;
       const w = r.warn > 0 ? r.width * 0.25 : r.width * (0.9 + 0.1 * Math.sin(r.life * 30));
+      r.band.setPosition(x, y).setRotation(r.angle).setDisplaySize(r.len, r.width + this.ctx.player.radius).setAlpha(r.warn > 0 ? 0.3 : 0.22);
       r.glow.setPosition(x, y).setRotation(r.angle).setDisplaySize(r.len, w * 1.9).setAlpha(r.warn > 0 ? 0.35 : 0.7);
       r.core.setPosition(x, y).setRotation(r.angle).setDisplaySize(r.len, w * 0.5).setAlpha(r.warn > 0 ? 0.25 : 0.95);
       if (live) {
@@ -122,6 +126,7 @@ export class Telegraphs {
         }
       }
       if (r.life <= 0 || !r.owner.active) {
+        r.band.destroy();
         r.glow.destroy();
         r.core.destroy();
         this.rays.splice(i, 1);
@@ -166,6 +171,7 @@ export class Telegraphs {
       l.fill.destroy();
     });
     this.rays.forEach((r) => {
+      r.band.destroy();
       r.glow.destroy();
       r.core.destroy();
     });
