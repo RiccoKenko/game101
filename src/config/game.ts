@@ -24,13 +24,13 @@ export const MAX_RUNES = 3;
 /** A boss appears every BOSS_INTERVAL seconds (5:00, 10:00, ...). */
 export const BOSS_INTERVAL = 300;
 /** Cap on regular enemies alive at once (bosses don't count). */
-export const MAX_ENEMIES = 260;
+export const MAX_ENEMIES = 300;
 /**
  * The camera is pulled back so the crowds can be seen coming from far off (everything in the world looks this
  * much smaller), and as many more monsters come to fill the bigger view.
  */
-export const CAMERA_ZOOM = 0.72;
-export const CROWD = 1.3;
+export const CAMERA_ZOOM = 0.6;
+export const CROWD = 1.5;
 /** Cap on XP gems lying on the ground; extra XP merges into existing gems. */
 export const MAX_GEMS = 320;
 
