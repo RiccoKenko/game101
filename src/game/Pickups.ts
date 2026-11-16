@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { MAX_GEMS, XP_GEM_TIERS } from '../config/game';
 import { type GameCtx } from './context';
 
-export type PickupKind = 'xp' | 'coin' | 'meat' | 'magnet' | 'chest';
+export type PickupKind = 'xp' | 'coin' | 'meat' | 'magnet' | 'chest' | 'gear';
 
 export class Pickup {
   active = false;
@@ -19,6 +19,11 @@ export class Pickup {
   h = 0;
   vh = 0;
   bounces = 0;
+  /** Gear only: the pillar of light in its rarity's colour, and whether it flies to the hero by itself (a boss's). */
+  beam: Phaser.GameObjects.Image | null = null;
+  /** A soft pool of the same colour on the ground under it. */
+  base: Phaser.GameObjects.Image | null = null;
+  homing = false;
   constructor(readonly sprite: Phaser.GameObjects.Image) {}
 }
 
@@ -31,6 +36,8 @@ export interface PickupHandlers {
   onMeat(): void;
   onMagnet(): void;
   onChest(): void;
+  /** A piece of gear was picked up: `value` is what the scene gave `dropGear`. */
+  onGear(value: number): void;
 }
 
 function gemTexture(value: number): string {
@@ -75,6 +82,9 @@ export class PickupManager {
     p.speed = 0;
     p.age = 0;
     p.gx = p.gy = p.h = p.vh = 0;
+    p.homing = false;
+    p.beam?.setVisible(false);
+    p.base?.setVisible(false);
     p.sprite.setTexture(texture).setVisible(true).setPosition(x, y).setScale(1).setDepth(kind === 'chest' ? 6 : 5);
     return p;
   }
@@ -118,6 +128,28 @@ export class PickupManager {
     }
   }
 
+  /**
+   * A piece of gear on the ground: its icon under a pillar of light in the rarity's colour, so a good drop is
+   * seen from across the map. `homing` gear (a boss's) flies to the hero after a moment.
+   */
+  dropGear(x: number, y: number, value: number, icon: string, color: number, homing: boolean): void {
+    const p = this.obtain('gear', x, y, icon);
+    p.value = value;
+    p.homing = homing;
+    p.sprite.setDisplaySize(88, 88).setDepth(6);
+    // Normal blending keeps the rarity's own colour on any ground (adding light would turn purple white on grass).
+    p.beam ??= this.ctx.scene.add.image(0, 0, 'streak').setOrigin(1, 0.5).setRotation(Math.PI / 2).setDepth(5);
+    p.beam.setTint(color).setDisplaySize(320, 60).setAlpha(0.8).setVisible(true).setPosition(x, y);
+    p.base ??= this.ctx.scene.add.image(0, 0, 'glow').setDepth(4);
+    p.base.setTint(color).setDisplaySize(150, 64).setAlpha(0.85).setVisible(true).setPosition(x, y);
+    this.pop(p, 140, 520);
+  }
+
+  /** What every piece of gear still lying on the ground was dropped with. */
+  gearOnGround(): number[] {
+    return this.list.filter((p) => p.active && p.kind === 'gear').map((p) => p.value);
+  }
+
   /** Scatter coins around a point (boss loot). */
   burstCoins(x: number, y: number, count: number, value: number): void {
     for (let i = 0; i < count; i++) {
@@ -135,6 +167,8 @@ export class PickupManager {
     for (const p of this.list) {
       p.active = false;
       p.sprite.setVisible(false);
+      p.beam?.setVisible(false);
+      p.base?.setVisible(false);
     }
     this.rays.setVisible(false);
     this.gems = 0;
@@ -190,7 +224,7 @@ export class PickupManager {
       const dx = player.x - p.x;
       const dy = player.y - p.y;
       const d2 = dx * dx + dy * dy;
-      if (!p.pulled && p.kind !== 'chest' && d2 < mr2) p.pulled = true;
+      if (!p.pulled && p.kind !== 'chest' && (d2 < mr2 || (p.homing && p.age > 1.2 && p.h === 0))) p.pulled = true;
       if (!p.pulled && p.kind === 'xp' && p.age > 6) {
         // Old gems slowly drift toward the hero so XP isn't lost far behind.
         const d = Math.sqrt(d2) || 1;
@@ -213,6 +247,10 @@ export class PickupManager {
       }
       const bob = p.kind === 'xp' || p.h > 0 ? 0 : Math.sin(p.age * 5) * 4;
       p.sprite.setPosition(p.x, p.y + bob - p.h);
+      if (p.beam?.visible) {
+        p.beam.setPosition(p.x, p.y + bob - p.h + 14).setAlpha(0.65 + 0.2 * Math.sin(p.age * 4));
+        p.base!.setPosition(p.x, p.y + 30);
+      }
       if (p.kind === 'coin') p.sprite.setScale(0.3 + 0.7 * Math.abs(Math.cos(p.age * 4)), 1);
       else if (p.kind === 'xp') {
         p.sprite.setScale(p.pulled ? 1.15 : 1);
@@ -232,6 +270,8 @@ export class PickupManager {
       this.ctx.fx.glow(player.x, player.y - 10, 30, 110, color, 0.16, 0.6);
     }
     if (p.kind === 'chest') this.rays.setVisible(false);
+    p.beam?.setVisible(false);
+    p.base?.setVisible(false);
     switch (p.kind) {
       case 'xp':
         this.gems--;
@@ -248,6 +288,9 @@ export class PickupManager {
         break;
       case 'chest':
         this.handlers.onChest();
+        break;
+      case 'gear':
+        this.handlers.onGear(p.value);
         break;
     }
   }

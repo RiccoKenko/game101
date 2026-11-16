@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
-import { DIFFICULTIES } from '../config/difficulty';
+import { difficultyDef } from '../config/difficulty';
 import { MAPS } from '../config/maps';
 import { formatTime } from '../core/format';
 import { safeInsets } from '../ui/safe';
@@ -37,7 +37,7 @@ export class GameOverScene extends Phaser.Scene {
     this.tweens.add({ targets: t, scale: 1, duration: 420, ease: 'Back.easeOut' });
 
     panel(this, width / 2, cy - 60, 900, 960, { header: 112, gem: true });
-    const diff = DIFFICULTIES[s.difficulty];
+    const diff = difficultyDef(s.difficulty);
     const where = [MAPS[s.mapIndex].name, ...(s.difficulty > 0 ? [diff.name] : []), ...(s.heat > 0 ? [`Heat ${s.heat}`] : [])].join(' · ');
     text(this, width / 2, cy - 484, where, s.heat > 0 ? 42 : 48, { color: s.heat > 0 ? '#d9c2ff' : s.difficulty > 0 ? diff.color : CSS.gold });
     if (s.newBestHeat) {
@@ -84,10 +84,12 @@ export class GameOverScene extends Phaser.Scene {
     const news = this.add.container(width / 2, 0);
     let y = 0;
     const gap = 18;
-    if (s.relic || s.unlockedMap !== null) {
+    if (s.relic || s.unlockedMap !== null || s.opened) {
       const u = s.relic
         ? text(this, 0, y + 58, `New ${s.relic}!\nWear it from the MVP Cards menu`, 46, { color: CSS.gold })
-        : text(this, 0, y + 58, `New map unlocked:\n${MAPS[s.unlockedMap!].name}!`, 50, { color: CSS.green });
+        : s.unlockedMap !== null
+          ? text(this, 0, y + 58, `New map unlocked:\n${MAPS[s.unlockedMap].name}!`, 50, { color: CSS.green })
+          : text(this, 0, y + 58, `${s.opened} opened!\nHarder monsters, better loot`, 46, { color: '#ff8a8a' });
       news.add(u);
       this.tweens.add({ targets: u, scale: 1.07, duration: 500, yoyo: true, repeat: -1 });
       y += 116 + gap;

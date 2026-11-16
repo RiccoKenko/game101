@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
-import { BAG_SIZE, CHEST, describeStat, GEAR, GEAR_TYPES, LEGENDARY, RARITIES, SLOTS, STAT_NAMES, type GearStat } from '../config/gear';
+import { BAG_SIZE, CHEST, describeStat, GEAR, GEAR_TYPES, RARITIES, TOP_RARITY, SLOTS, STAT_NAMES, type GearStat } from '../config/gear';
 import {
   bonusStat,
   equip,
@@ -157,7 +157,7 @@ export class GearScene extends Phaser.Scene {
       const [x, y] = at(i);
       this.keep(this.add.image(x, y, slotTexture(this, tile, 'weapon', 'back')).setAlpha(0.35));
     }
-    if (!items.length) this.keep(text(this, width / 2, gridTop + rowH * 2.5, 'Empty: gear drops at the end of a run', 32, { color: CSS.soft }));
+    if (!items.length) this.keep(text(this, width / 2, gridTop + rowH * 2.5, 'Empty: elites, leaders and bosses drop gear', 32, { color: CSS.soft }));
     items.forEach((item, i) => {
       const [x, y] = at(i);
       gearTile(this, x, y, tile, item.type, item.rarity).forEach((o) => this.keep(o));
@@ -264,8 +264,8 @@ export class GearScene extends Phaser.Scene {
     const partners = mergePartners(gear, item);
     const same = gear.items.filter((i) => slotOf(i) === slotOf(item) && i.rarity === item.rarity).length;
     const mergeText =
-      item.rarity >= LEGENDARY
-        ? 'Legendary is the rarest'
+      item.rarity >= TOP_RARITY
+        ? `${RARITIES[TOP_RARITY].name} is the rarest`
         : `Merge: 3 ${rar.name} ${slotName} → 1 ${RARITIES[item.rarity + 1].name} (you have ${Math.min(same, 3)}/3)`;
     d(text(this, x0 + 60, y, mergeText, 28, { color: partners.length ? CSS.gold : CSS.muted, weight: '600', originX: 0, shadow: false, wrap: w - 120, align: 'left' }));
 

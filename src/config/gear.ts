@@ -1,6 +1,7 @@
 /**
- * Equipment: four slots, two kinds of item for each, five rarities. Items drop at the end of a run or come out of
- * a gear chest, level up with gold, and three of a rarity in one slot merge into the next rarity.
+ * Equipment: four slots, two kinds of item for each, six rarities. Items drop in the field (elites, leaders and
+ * bosses), at the end of a run, or come out of a gear chest; they level up with gold, and three of a rarity in one
+ * slot merge into the next rarity.
  */
 export type GearSlot = 'gloves' | 'helmet' | 'cloak' | 'boots';
 export type GearStat = 'damage' | 'maxHp' | 'haste' | 'speed' | 'crit' | 'area' | 'xp' | 'armor' | 'duration' | 'gold' | 'magnet';
@@ -22,8 +23,10 @@ export const RARITIES: RarityDef[] = [
   { name: 'Rare', color: 0x3f8fff, css: '#8fd0ff', mult: 2.5, maxLevel: 30, salvage: 120 },
   { name: 'Epic', color: 0xa86bff, css: '#c9a8ff', mult: 3.8, maxLevel: 40, salvage: 300 },
   { name: 'Legendary', color: 0xffa51f, css: '#ffd66b', mult: 5.5, maxLevel: 50, salvage: 800 },
+  { name: 'Mythic', color: 0xff3b4e, css: '#ff8a8a', mult: 8, maxLevel: 60, salvage: 2000 },
 ];
-export const LEGENDARY = RARITIES.length - 1;
+/** The rarest rarity: nothing merges past it. */
+export const TOP_RARITY = RARITIES.length - 1;
 /** Items from Rare up carry a second stat. */
 export const BONUS_FROM = 2;
 
@@ -47,41 +50,60 @@ export interface GearDef {
   slot: GearSlot;
   name: string;
   icon: string;
-  /** The second stat, at Rare, Epic and Legendary. */
+  /** The second stat, at Rare, Epic, Legendary and Mythic. */
   bonus: GearStat;
-  bonusValues: [number, number, number];
+  bonusValues: [number, number, number, number];
 }
 
 export const GEAR: Record<GearType, GearDef> = {
-  hunterGloves: { id: 'hunterGloves', slot: 'gloves', name: 'Horned Helm', icon: 'gear_gloves', bonus: 'crit', bonusValues: [0.02, 0.035, 0.05] },
-  runeBracers: { id: 'runeBracers', slot: 'gloves', name: 'Magic Circlet', icon: 'gear_bracers', bonus: 'area', bonusValues: [0.04, 0.07, 0.1] },
-  featherHat: { id: 'featherHat', slot: 'helmet', name: 'Sage Robe', icon: 'gear_hat', bonus: 'xp', bonusValues: [0.05, 0.08, 0.12] },
-  ironHelm: { id: 'ironHelm', slot: 'helmet', name: 'Plate Mail', icon: 'gear_helm', bonus: 'armor', bonusValues: [1, 1, 2] },
-  windCloak: { id: 'windCloak', slot: 'cloak', name: 'Wind Muffler', icon: 'gear_cloak', bonus: 'speed', bonusValues: [0.03, 0.05, 0.08] },
-  mysticRobe: { id: 'mysticRobe', slot: 'cloak', name: 'Mystic Manteau', icon: 'gear_robe', bonus: 'duration', bonusValues: [0.06, 0.1, 0.15] },
-  sprintBoots: { id: 'sprintBoots', slot: 'boots', name: 'Sprint Sandals', icon: 'gear_boots', bonus: 'magnet', bonusValues: [0.1, 0.18, 0.25] },
-  luckyBoots: { id: 'luckyBoots', slot: 'boots', name: 'Lucky Boots', icon: 'gear_boots_lucky', bonus: 'gold', bonusValues: [0.05, 0.08, 0.12] },
+  hunterGloves: { id: 'hunterGloves', slot: 'gloves', name: 'Horned Helm', icon: 'gear_gloves', bonus: 'crit', bonusValues: [0.02, 0.035, 0.05, 0.08] },
+  runeBracers: { id: 'runeBracers', slot: 'gloves', name: 'Magic Circlet', icon: 'gear_bracers', bonus: 'area', bonusValues: [0.04, 0.07, 0.1, 0.15] },
+  featherHat: { id: 'featherHat', slot: 'helmet', name: 'Sage Robe', icon: 'gear_hat', bonus: 'xp', bonusValues: [0.05, 0.08, 0.12, 0.18] },
+  ironHelm: { id: 'ironHelm', slot: 'helmet', name: 'Plate Mail', icon: 'gear_helm', bonus: 'armor', bonusValues: [1, 1, 2, 3] },
+  windCloak: { id: 'windCloak', slot: 'cloak', name: 'Wind Muffler', icon: 'gear_cloak', bonus: 'speed', bonusValues: [0.03, 0.05, 0.08, 0.12] },
+  mysticRobe: { id: 'mysticRobe', slot: 'cloak', name: 'Mystic Manteau', icon: 'gear_robe', bonus: 'duration', bonusValues: [0.06, 0.1, 0.15, 0.22] },
+  sprintBoots: { id: 'sprintBoots', slot: 'boots', name: 'Sprint Sandals', icon: 'gear_boots', bonus: 'magnet', bonusValues: [0.1, 0.18, 0.25, 0.4] },
+  luckyBoots: { id: 'luckyBoots', slot: 'boots', name: 'Lucky Boots', icon: 'gear_boots_lucky', bonus: 'gold', bonusValues: [0.05, 0.08, 0.12, 0.18] },
 };
 export const GEAR_TYPES = Object.keys(GEAR) as GearType[];
 
 /** Main stat grows this much (of its level-1 value) per level. */
 export const PER_LEVEL = 0.05;
 /** Items the bag holds; a drop into a full bag is salvaged for gold. */
-export const BAG_SIZE = 30;
-/** A gear chest in the Gear screen: its price and rarity odds (Common..Legendary). */
-export const CHEST = { price: 300, weights: [60, 30, 9, 1, 0] };
+export const BAG_SIZE = 42;
+/** A gear chest in the Gear screen: its price and rarity odds (Common..Mythic). */
+export const CHEST = { price: 300, weights: [60, 30, 9, 1, 0, 0] };
 
-/** Rarity odds of a drop, by tier (the map's number plus the difficulty: Greenhill Normal 0 ... Sunscar Nightmare 4). */
+/**
+ * Rarity odds (Common..Mythic) by tier: the map's number plus the difficulty (Greenhill Normal 0, Sunscar Nightmare
+ * 4, and each Abyss step one more). Past the last row the odds stay at the last row's.
+ */
 export const DROP_WEIGHTS = [
-  [70, 25, 5, 0, 0],
-  [50, 35, 13, 2, 0],
-  [35, 38, 20, 6, 1],
-  [20, 35, 30, 12, 3],
-  [10, 30, 35, 19, 6],
+  [70, 25, 5, 0, 0, 0],
+  [50, 35, 13, 2, 0, 0],
+  [35, 38, 20, 6, 1, 0],
+  [20, 35, 30, 12, 3, 0],
+  [10, 30, 35, 19, 6, 0],
+  [5, 22, 35, 26, 11, 1],
+  [0, 15, 34, 32, 17, 2],
+  [0, 8, 30, 36, 22, 4],
+  [0, 4, 24, 38, 28, 6],
+  [0, 0, 20, 38, 33, 9],
 ];
+export const dropWeights = (tier: number): number[] => DROP_WEIGHTS[Math.max(0, Math.min(DROP_WEIGHTS.length - 1, tier))];
 
-/** Drops at the end of a run: one for lasting this long, one per boss, one per two leaders, a Rare or better for a clear. */
-export const DROPS = { surviveSeconds: 180, perBoss: 1, perLeaders: 2 };
+/**
+ * Who drops what. Each source rolls on the tier's row plus `boost` rows, never below `min` (the rarity index).
+ * Elites drop gear now and then, leaders and MVP bosses always do (an MVP always Rare or better).
+ */
+export const LOOT = {
+  elite: { chance: 0.02, boost: 1, min: 1 },
+  leader: { boost: 2, min: 1 },
+  boss: { boost: 3, min: 2 },
+  /** At the end of a run: one item per this many seconds survived, and a Rare or better for a clear. */
+  surviveSeconds: 180,
+  clear: { boost: 3, min: 2 },
+};
 
 export const STAT_NAMES: Record<GearStat, string> = {
   damage: 'Damage',

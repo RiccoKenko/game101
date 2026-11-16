@@ -4,7 +4,7 @@ import { CHARACTERS, PLAYABLE } from '../config/characters';
 import { UNLOCK_KEYS } from '../config/collection';
 import { describeReward, MASTERY, MASTERY_REWARDS } from '../config/mastery';
 import { CURSE_UNLOCK_MAPS, heatOf } from '../config/curses';
-import { DIFFICULTIES, maxDifficulty } from '../config/difficulty';
+import { difficultyDef, maxDifficulty } from '../config/difficulty';
 import { BOSSES } from '../config/enemies';
 import { MAPS } from '../config/maps';
 import { DEBUG } from '../core/debug';
@@ -241,7 +241,7 @@ export class MenuScene extends Phaser.Scene {
     const info = locked
       ? `Defeat the ${BOSSES[MAPS[index - 1].boss].name} to unlock`
       : best > 0
-        ? `Best time ${formatTime(best)}${save.bestHeat[index] > 0 ? `  ·  Heat ${save.bestHeat[index]} cleared` : save.bossKills[index] > 0 ? '  ·  Boss beaten' : ''}`
+        ? `Best time ${formatTime(best)}${save.clears[index] > 3 ? `  ·  ${difficultyDef(save.clears[index] - 1).name} cleared` : save.bestHeat[index] > 0 ? `  ·  Heat ${save.bestHeat[index]} cleared` : save.bossKills[index] > 0 ? '  ·  Boss beaten' : ''}`
         : `Boss: ${boss.name} at 5:00`;
     const sub = text(this, left, 28, info, 30, { color: locked ? CSS.muted : CSS.soft, weight: '600', originX: 0, align: 'left', wrap: w / 2 - left - 110, shadow: false });
     c.add([bg, back, tile, bossImg, frame, name, sub]);
@@ -260,7 +260,7 @@ export class MenuScene extends Phaser.Scene {
       const pic = this.add.image(-66, 0, 'icon_skull').setDisplaySize(58, 58);
       const ptx = text(this, 20, 1, '', 30, { originX: 0.5 });
       const show = () => {
-        const d = DIFFICULTIES[save.difficulty[index]];
+        const d = difficultyDef(save.difficulty[index]);
         pic.setTexture(d.icon).setDisplaySize(58, 58);
         ptx.setText(d.name).setColor(d.color).setFontSize(d.name.length > 6 ? 24 : 30);
       };

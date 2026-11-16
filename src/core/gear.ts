@@ -2,11 +2,11 @@ import {
   BAG_SIZE,
   BONUS_FROM,
   CHEST,
-  DROP_WEIGHTS,
-  DROPS,
+  dropWeights,
   GEAR,
   GEAR_TYPES,
-  LEGENDARY,
+  LOOT,
+  TOP_RARITY,
   PER_LEVEL,
   RARITIES,
   SLOTS,
@@ -20,7 +20,7 @@ import { type SaveData } from './save';
 export interface GearItem {
   uid: number;
   type: GearType;
-  /** 0 Common ... 4 Legendary. */
+  /** 0 Common ... 4 Legendary, 5 Mythic. */
   rarity: number;
   level: number;
   /** Gold put into levelling it (half comes back when it is salvaged). */
@@ -86,7 +86,7 @@ export const isEquipped = (gear: GearState, item: GearItem): boolean => gear.equ
 export function rollRarity(rng: Rng, weights: readonly number[], min = 0): number {
   const w = weights.map((x, i) => (i < min ? 0 : x));
   const total = w.reduce((a, b) => a + b, 0);
-  if (total <= 0) return Math.min(LEGENDARY, min);
+  if (total <= 0) return Math.min(TOP_RARITY, min);
   let r = rng() * total;
   for (let i = 0; i < w.length; i++) {
     r -= w[i];
@@ -112,12 +112,20 @@ export function addItem(gear: GearState, item: Omit<GearItem, 'uid'>, save?: Sav
   return stored;
 }
 
-/** What a run brings home. */
-export function runDrops(rng: Rng, o: { map: number; difficulty: number; time: number; bosses: number; leaders: number; won: boolean }) {
-  const weights = DROP_WEIGHTS[Math.min(DROP_WEIGHTS.length - 1, o.map + o.difficulty)];
-  const n = (o.time >= DROPS.surviveSeconds ? 1 : 0) + o.bosses * DROPS.perBoss + Math.floor(o.leaders / DROPS.perLeaders);
-  const out = Array.from({ length: n }, () => rollItem(rng, weights));
-  if (o.won) out.push(rollItem(rng, weights, BONUS_FROM));
+/** The loot tier of a run: the map's number plus its difficulty. */
+export const lootTier = (map: number, difficulty: number): number => map + difficulty;
+
+/** An item dropped by an elite, a leader or an MVP boss on a run of this tier. */
+export function fieldDrop(rng: Rng, tier: number, source: 'elite' | 'leader' | 'boss'): Omit<GearItem, 'uid'> {
+  const o = LOOT[source];
+  return rollItem(rng, dropWeights(tier + o.boost), o.min);
+}
+
+/** What the end of a run adds to the gear found on the way: one item per few minutes survived, a Rare or better for a clear. */
+export function runDrops(rng: Rng, o: { map: number; difficulty: number; time: number; won: boolean }) {
+  const tier = lootTier(o.map, o.difficulty);
+  const out = Array.from({ length: Math.floor(o.time / LOOT.surviveSeconds) }, () => rollItem(rng, dropWeights(tier)));
+  if (o.won) out.push(rollItem(rng, dropWeights(tier + LOOT.clear.boost), Math.max(BONUS_FROM, LOOT.clear.min)));
   return out;
 }
 
@@ -147,7 +155,7 @@ export function upgrade(save: SaveData, item: GearItem): boolean {
 
 /** The two items a merge would use up: same slot and rarity, the ones not worn and lowest level first. */
 export function mergePartners(gear: GearState, item: GearItem): GearItem[] {
-  if (item.rarity >= LEGENDARY) return [];
+  if (item.rarity >= TOP_RARITY) return [];
   const others = gear.items
     .filter((i) => i !== item && slotOf(i) === slotOf(item) && i.rarity === item.rarity)
     .sort((a, b) => Number(isEquipped(gear, a)) - Number(isEquipped(gear, b)) || a.level - b.level);
@@ -198,7 +206,7 @@ export function sanitizeGear(raw: unknown): GearState {
       if (!x || typeof x !== 'object' || out.items.length >= BAG_SIZE) continue;
       const it = x as Record<string, unknown>;
       if (!GEAR_TYPES.includes(it.type as GearType)) continue;
-      const rarity = n(it.rarity, 0, LEGENDARY);
+      const rarity = n(it.rarity, 0, TOP_RARITY);
       const uid = n(it.uid, 1, Number.MAX_SAFE_INTEGER);
       if (out.items.some((o) => o.uid === uid)) continue;
       out.items.push({ uid, type: it.type as GearType, rarity, level: n(it.level, 1, RARITIES[rarity].maxLevel), spent: n(it.spent, 0, 1e9), fresh: it.fresh === true });

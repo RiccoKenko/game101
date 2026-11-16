@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { BAG_SIZE, CHEST, GEAR, GEAR_TYPES, RARITIES, SLOTS } from '../../src/config/gear';
+import { BAG_SIZE, CHEST, dropWeights, GEAR, GEAR_TYPES, LOOT, RARITIES, SLOTS, TOP_RARITY } from '../../src/config/gear';
+import { difficultyDef, DIFFICULTIES, maxDifficulty } from '../../src/config/difficulty';
 import {
   addItem,
   bonusStat,
   emptyGear,
   equip,
+  fieldDrop,
   gearBonus,
   isEquipped,
   mainStat,
@@ -28,7 +30,7 @@ describe('equipment content', () => {
   it('has two kinds of item for every slot, each with a picture', () => {
     for (const s of SLOTS) expect(GEAR_TYPES.filter((t) => GEAR[t].slot === s.id)).toHaveLength(2);
     for (const t of GEAR_TYPES) expect(GEAR[t].icon).toMatch(/^gear_/);
-    expect(RARITIES.map((r) => r.maxLevel)).toEqual([10, 20, 30, 40, 50]);
+    expect(RARITIES.map((r) => r.maxLevel)).toEqual([10, 20, 30, 40, 50, 60]);
   });
 });
 
@@ -116,22 +118,74 @@ describe('the bag', () => {
 });
 
 describe('drops', () => {
-  it('a run brings home gear for lasting, bosses, leaders, and a Rare or better for a clear', () => {
+  it('the end of a run adds one item per few minutes lasted, and a Rare or better for a clear', () => {
     const rng = mulberry32(7);
-    expect(runDrops(rng, { map: 0, difficulty: 0, time: 100, bosses: 0, leaders: 1, won: false })).toHaveLength(0);
-    expect(runDrops(rng, { map: 0, difficulty: 0, time: 400, bosses: 1, leaders: 2, won: false })).toHaveLength(3);
-    const clear = runDrops(rng, { map: 0, difficulty: 0, time: 900, bosses: 3, leaders: 3, won: true });
+    expect(runDrops(rng, { map: 0, difficulty: 0, time: 100, won: false })).toHaveLength(0);
+    expect(runDrops(rng, { map: 0, difficulty: 0, time: 9 * 60, won: false })).toHaveLength(3);
+    const clear = runDrops(rng, { map: 0, difficulty: 0, time: 900, won: true });
     expect(clear).toHaveLength(6);
     expect(clear[5].rarity).toBeGreaterThanOrEqual(2);
   });
 
+  it('an MVP always drops Rare or better, and Epic and Legendary can come even on the first map', () => {
+    const rng = mulberry32(11);
+    const counts = RARITIES.map(() => 0);
+    for (let i = 0; i < 3000; i++) counts[fieldDrop(rng, 0, 'boss').rarity]++;
+    expect(counts[0] + counts[1]).toBe(0);
+    expect(counts[3]).toBeGreaterThan(0);
+    expect(counts[4]).toBeGreaterThan(0);
+    // Elites and leaders never drop Common.
+    for (let i = 0; i < 500; i++) {
+      expect(fieldDrop(rng, 0, 'elite').rarity).toBeGreaterThanOrEqual(LOOT.elite.min);
+      expect(fieldDrop(rng, 0, 'leader').rarity).toBeGreaterThanOrEqual(LOOT.leader.min);
+    }
+  });
+
+  it('every odds row covers every rarity, gets better with the tier, and Mythic only drops deep in', () => {
+    for (let t = 0; t < 20; t++) expect(dropWeights(t)).toHaveLength(RARITIES.length);
+    const rare = (t: number) => dropWeights(t).slice(2).reduce((a, b) => a + b, 0) / dropWeights(t).reduce((a, b) => a + b, 0);
+    for (let t = 1; t < 10; t++) expect(rare(t)).toBeGreaterThan(rare(t - 1));
+    expect(dropWeights(0)[TOP_RARITY]).toBe(0);
+    expect(dropWeights(9)[TOP_RARITY]).toBeGreaterThan(0);
+    expect(CHEST.weights).toHaveLength(RARITIES.length);
+  });
+
   it('rarity rolls respect the odds and the floor', () => {
     const rng = mulberry32(3);
-    const counts = [0, 0, 0, 0, 0];
-    for (let i = 0; i < 4000; i++) counts[rollRarity(rng, [70, 25, 5, 0, 0])]++;
-    expect(counts[3] + counts[4]).toBe(0);
+    const counts = [0, 0, 0, 0, 0, 0];
+    for (let i = 0; i < 4000; i++) counts[rollRarity(rng, [70, 25, 5, 0, 0, 0])]++;
+    expect(counts[3] + counts[4] + counts[5]).toBe(0);
     expect(counts[0]).toBeGreaterThan(counts[1]);
-    for (let i = 0; i < 200; i++) expect(rollRarity(rng, [70, 25, 5, 0, 0], 2)).toBe(2);
+    for (let i = 0; i < 200; i++) expect(rollRarity(rng, [70, 25, 5, 0, 0, 0], 2)).toBe(2);
+  });
+});
+
+describe('difficulty ladder', () => {
+  it('goes on past Nightmare into Abyss steps, each harder and richer than the last', () => {
+    expect(difficultyDef(2)).toBe(DIFFICULTIES[2]);
+    expect(difficultyDef(3).name).toBe('Abyss 1');
+    expect(difficultyDef(12).name).toBe('Abyss 10');
+    for (let d = 1; d < 15; d++) {
+      expect(difficultyDef(d).hp).toBeGreaterThan(difficultyDef(d - 1).hp);
+      expect(difficultyDef(d).damage).toBeGreaterThan(difficultyDef(d - 1).damage);
+      expect(difficultyDef(d).gold).toBeGreaterThan(difficultyDef(d - 1).gold);
+    }
+    // Each clear opens the next step.
+    expect(maxDifficulty(3)).toBe(3);
+    expect(maxDifficulty(7)).toBe(7);
+    const save = sanitize({ clears: [8, 0, 0], difficulty: [6, 0, 0] });
+    expect(save.clears[0]).toBe(8);
+    expect(save.difficulty[0]).toBe(6);
+  });
+
+  it('merges go up to Mythic and no further', () => {
+    const g = emptyGear();
+    for (let i = 0; i < 3; i++) addItem(g, item({ rarity: TOP_RARITY - 1 }));
+    expect(merge(g, g.items[0])).toBe(true);
+    expect(g.items[0].rarity).toBe(TOP_RARITY);
+    for (let i = 0; i < 2; i++) addItem(g, item({ rarity: TOP_RARITY }));
+    expect(merge(g, g.items[0])).toBe(false);
+    expect(bonusStat(g.items[0])?.value).toBe(GEAR.hunterGloves.bonusValues[3]);
   });
 });
 
@@ -148,7 +202,7 @@ describe('saved gear', () => {
       next: 2,
     });
     expect(g.items).toEqual([
-      { uid: 4, type: 'ironHelm', rarity: 4, level: 50, spent: 10, fresh: false },
+      { uid: 4, type: 'ironHelm', rarity: TOP_RARITY, level: RARITIES[TOP_RARITY].maxLevel, spent: 10, fresh: false },
       { uid: 6, type: 'windCloak', rarity: 1, level: 1, spent: 0, fresh: true },
     ]);
     expect(g.equipped).toEqual({ helmet: 4 });

@@ -52,5 +52,5 @@ export const AFFIX = {
  * Nightmare (and a curse can add one).
  */
 export function affixCount(t: number, difficulty: number, extra = 0): number {
-  return Math.min(3, (t >= 300 ? 1 : 0) + (t >= 480 ? 1 : 0) + (difficulty >= 2 ? 1 : 0) + extra);
+  return Math.min(3, (t >= 300 ? 1 : 0) + (t >= 480 ? 1 : 0) + (difficulty >= 2 ? 1 : 0) + (difficulty >= 5 ? 1 : 0) + extra);
 }

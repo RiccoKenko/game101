@@ -3,20 +3,20 @@ import { audio } from '../audio/audio';
 import { ULTIMATES } from '../config/abilities';
 import { characterDef, otherSkills, PLAYABLE, type CharacterDef, type CharacterId } from '../config/characters';
 import { CURSE, CURSE_IDS, CURSE_UNLOCK_MAPS, HEAT_GOLD, heatOf, type CurseId } from '../config/curses';
-import { DIFFICULTIES, maxDifficulty, type DifficultyDef } from '../config/difficulty';
+import { difficultyDef, maxDifficulty, type DifficultyDef } from '../config/difficulty';
 import { UNLOCKS, unlockKey, type MonsterId } from '../config/collection';
 import { BOSSES } from '../config/enemies';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
 import { BOSS_GOLD, CAMERA_ZOOM, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
-import { GEAR, type GearType } from '../config/gear';
+import { GEAR, LOOT, RARITIES, type GearType } from '../config/gear';
 import { MASTERY } from '../config/mastery';
 import { TALENT, TALENT_LEVELS, talentDef, type TalentId } from '../config/talents';
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
 import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
-import { addItem, gearBonus, runDrops, type GearBonus } from '../core/gear';
+import { addItem, fieldDrop, gearBonus, lootTier, runDrops, type GearBonus, type GearItem } from '../core/gear';
 import { claimUnlocks, lockedKeys, lockedTalents, masteryPerks, masteryState, masteryXp, reachedUnlocks, records } from '../core/collection';
 import { DEBUG } from '../core/debug';
 import {
@@ -73,6 +73,8 @@ export interface RunState {
   evolutions: number;
   /** Kills by kind of monster, and shrine offers accepted. */
   monsters: Partial<Record<MonsterId, number>>;
+  /** Gear picked up on the way (it goes to the bag when the run ends). */
+  gear: Omit<GearItem, 'uid'>[];
   shrines: number;
   gold: number;
   level: number;
@@ -128,6 +130,8 @@ export interface RunSummary {
   difficulty: number;
   /** A relic won by this clear, by name. */
   relic: string | null;
+  /** A new step of the difficulty ladder this clear opened (Hard, Nightmare, Abyss 1...), by name. */
+  opened: string | null;
   /** Heat of the curses played with (0 = none), and whether this clear set a new best for the map. */
   heat: number;
   newBestHeat: boolean;
@@ -230,7 +234,7 @@ export class GameScene extends Phaser.Scene {
     this.world = new World(this, this.map);
     const save = saveStore.data;
     this.difficulty = DEBUG.difficulty >= 0 ? DEBUG.difficulty : Math.min(save.difficulty[this.mapIndex], maxDifficulty(save.clears[this.mapIndex]));
-    this.diff = DIFFICULTIES[this.difficulty];
+    this.diff = difficultyDef(this.difficulty);
     this.relics = new Set((DEBUG.relics.length ? DEBUG.relics : save.equipped) as RelicId[]);
     const picked: string[] = DEBUG.curses.length ? DEBUG.curses : save.unlockedMaps >= CURSE_UNLOCK_MAPS ? save.curses : [];
     this.curses = new Set(CURSE_IDS.filter((id) => picked.includes(id)));
@@ -262,6 +266,7 @@ export class GameScene extends Phaser.Scene {
       if (evo) owned.evolved = evo.id;
     }
     const stats = computeStats(saveStore.data.shop, {}, hero);
+    this.dropped = [];
     this.run = {
       mapIndex: this.mapIndex,
       time: DEBUG.startTime,
@@ -270,6 +275,7 @@ export class GameScene extends Phaser.Scene {
       chests: 0,
       evolutions: 0,
       monsters: {},
+      gear: [],
       shrines: 0,
       gold: 0,
       level: 1,
@@ -335,6 +341,7 @@ export class GameScene extends Phaser.Scene {
         audio.sfx('chest');
       },
       onChest: () => this.openChest(),
+      onGear: (i) => this.pickUpGear(i),
     });
     this.ctx = ctx;
     this.runEvents = new RunEvents({
@@ -632,6 +639,31 @@ export class GameScene extends Phaser.Scene {
     if (this.rng() < chance) this.pickups.drop('coin', e.x + 24, e.y + 10, coinValue);
     if (this.rng() < DROP_CHANCE.meat) this.pickups.drop('meat', e.x - 20, e.y);
     else if (this.rng() < DROP_CHANCE.magnet) this.pickups.drop('magnet', e.x - 20, e.y);
+    if (e.elite && this.rng() < LOOT.elite.chance) this.dropGear(e.x, e.y, 'elite');
+  }
+
+  /** Gear that dropped this run but hasn't been picked up yet (a pickup holds its index here). */
+  private dropped: Omit<GearItem, 'uid'>[] = [];
+
+  /** Rolls a piece of gear for this run's tier and drops it, glowing in its rarity's colour. */
+  private dropGear(x: number, y: number, source: 'elite' | 'leader' | 'boss'): void {
+    const item = fieldDrop(this.rng, lootTier(this.mapIndex, this.difficulty), source);
+    const rar = RARITIES[item.rarity];
+    this.pickups.dropGear(x, y, this.dropped.push(item) - 1, GEAR[item.type].icon, rar.color, source !== 'elite');
+    // Something special: everyone should notice.
+    if (item.rarity >= 3) {
+      this.fx.ring(x, y, 260, rar.color);
+      this.events.emit('toast', `${rar.name} drop!`);
+    }
+  }
+
+  private pickUpGear(i: number): void {
+    const item = this.dropped[i];
+    if (!item) return;
+    this.run.gear.push(item);
+    const rar = RARITIES[item.rarity];
+    this.fx.ring(this.player.x, this.player.y, 140, rar.color);
+    this.notice({ title: `${rar.name} gear!`, line: GEAR[item.type].name, icon: GEAR[item.type].icon });
   }
 
   private onBossDefeated(e: Enemy): void {
@@ -639,6 +671,7 @@ export class GameScene extends Phaser.Scene {
     if (run.boss === e) run.boss = null;
     run.bossesKilled++;
     this.pickups.drop('chest', e.x, e.y);
+    this.dropGear(e.x + 60, e.y + 20, 'boss');
     this.pickups.burstCoins(e.x, e.y, 12, Math.ceil(BOSS_GOLD[this.mapIndex] / 12));
     this.fx.explosion(e.x, e.y, 260);
     this.fx.ring(e.x, e.y, 500, 0xffcc33);
@@ -675,6 +708,7 @@ export class GameScene extends Phaser.Scene {
     if (run.boss === e) run.boss = null;
     run.leadersKilled++;
     this.pickups.drop('chest', e.x, e.y);
+    this.dropGear(e.x + 60, e.y + 20, 'leader');
     this.pickups.burstCoins(e.x, e.y, 8, Math.ceil(BOSS_GOLD[this.mapIndex] / 24));
     this.fx.explosion(e.x, e.y, 180);
     this.fx.ring(e.x, e.y, 360, 0xffcc33);
@@ -1144,8 +1178,16 @@ export class GameScene extends Phaser.Scene {
     let relic: string | null = null;
     const newBestHeat = run.won && this.heat > save.bestHeat[this.mapIndex];
     if (newBestHeat) save.bestHeat[this.mapIndex] = this.heat;
+    let opened: string | null = null;
     if (run.won) {
+      const before = maxDifficulty(save.clears[this.mapIndex]);
       save.clears[this.mapIndex] = Math.max(save.clears[this.mapIndex], this.difficulty + 1);
+      const top = maxDifficulty(save.clears[this.mapIndex]);
+      if (top > before) {
+        opened = difficultyDef(top).name;
+        // On the ladder past Nightmare, the next step is picked for the next run.
+        if (this.difficulty >= 2) save.difficulty[this.mapIndex] = top;
+      }
       const r = relicFor(this.mapIndex, this.difficulty);
       if (r && !save.relics.includes(r.id)) {
         save.relics.push(r.id);
@@ -1166,14 +1208,12 @@ export class GameScene extends Phaser.Scene {
     // Equipment found on the way.
     const loot: RunSummary['loot'] = [];
     let lootGold = 0;
-    const drops = runDrops(this.rng, {
-      map: this.mapIndex,
-      difficulty: this.difficulty,
-      time: run.time,
-      bosses: run.bossesKilled,
-      leaders: run.leadersKilled,
-      won: run.won,
-    });
+    // What was picked up, what still lies on the ground (it's yours all the same), and the end-of-run drops.
+    const drops = [
+      ...run.gear,
+      ...this.pickups.gearOnGround().map((i) => this.dropped[i]),
+      ...runDrops(this.rng, { map: this.mapIndex, difficulty: this.difficulty, time: run.time, won: run.won }),
+    ];
     for (const d of drops) {
       const got = addItem(save.gear, d, save);
       if (typeof got === 'number') lootGold += got;
@@ -1204,6 +1244,7 @@ export class GameScene extends Phaser.Scene {
       victoryBonus,
       difficulty: this.difficulty,
       relic,
+      opened,
       heat: this.heat,
       newBestHeat,
       unlocks,

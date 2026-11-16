@@ -2,7 +2,7 @@ import { CHARACTER_IDS, type CharacterId } from '../config/characters';
 import { BESTIARY, UNLOCK_KEYS, type MonsterId } from '../config/collection';
 import { emptyGear, sanitizeGear, type GearState } from './gear';
 import { CURSE_IDS, MAX_HEAT, type CurseId } from '../config/curses';
-import { maxDifficulty } from '../config/difficulty';
+import { MAX_DIFFICULTY, maxDifficulty } from '../config/difficulty';
 import { MAX_RELICS, RELIC_IDS, type RelicId } from '../config/relics';
 import { MAPS } from '../config/maps';
 import { ACHIEVEMENTS, DAILY_COUNT, QUESTS, type AchievementId, type QuestId } from '../config/quests';
@@ -139,7 +139,7 @@ export function sanitize(raw: unknown): SaveData {
     for (const d of SHOP) out.shop[d.id] = Math.floor(num(shop[d.id], 0, 0, d.maxLevel));
   }
   out.unlockedMaps = Math.floor(num(r.unlockedMaps, 1, 1, MAPS.length));
-  if (Array.isArray(r.clears)) out.clears = MAPS.map((_, i) => Math.floor(num((r.clears as unknown[])[i], 0, 0, 3)));
+  if (Array.isArray(r.clears)) out.clears = MAPS.map((_, i) => Math.floor(num((r.clears as unknown[])[i], 0, 0, MAX_DIFFICULTY + 1)));
   if (Array.isArray(r.difficulty)) {
     out.difficulty = MAPS.map((_, i) => Math.floor(num((r.difficulty as unknown[])[i], 0, 0, maxDifficulty(out.clears[i]))));
   }

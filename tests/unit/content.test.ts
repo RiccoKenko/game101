@@ -162,7 +162,8 @@ describe('depth: difficulty, relics, events', () => {
     const s = sanitize({ clears: [1, 0, 0], difficulty: [2, 1, 0] });
     expect(s.difficulty).toEqual([1, 0, 0]);
     expect(maxDifficulty(0)).toBe(0);
-    expect(maxDifficulty(3)).toBe(DIFFICULTIES.length - 1);
+    // Past Nightmare the ladder goes on (Abyss steps), one step per clear.
+    expect(maxDifficulty(3)).toBe(3);
     for (let i = 1; i < DIFFICULTIES.length; i++) {
       expect(DIFFICULTIES[i].hp).toBeGreaterThan(DIFFICULTIES[i - 1].hp);
       expect(DIFFICULTIES[i].gold).toBeGreaterThan(DIFFICULTIES[i - 1].gold);
