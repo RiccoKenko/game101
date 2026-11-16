@@ -18,13 +18,16 @@ import {
   refineCost,
   salvage,
   sanitizeGear,
+  slotCard,
   tryRefine,
+  unslotCard,
+  wornCards,
   type GearItem,
 } from '../../src/core/gear';
 import { mulberry32 } from '../../src/core/rng';
 import { defaultSave, sanitize } from '../../src/core/save';
 
-const item = (p: Partial<GearItem> = {}): Omit<GearItem, 'uid'> => ({ type: 'hunterGloves', rarity: 0, refine: 0, spent: 0, oreSpent: 0, ...p });
+const item = (p: Partial<GearItem> = {}): Omit<GearItem, 'uid'> => ({ type: 'hunterGloves', rarity: 0, refine: 0, spent: 0, oreSpent: 0, cards: [], ...p });
 
 describe('equipment content', () => {
   it('has two kinds of item for every slot, each with a picture', () => {
@@ -236,12 +239,56 @@ describe('saved gear', () => {
       next: 2,
     });
     expect(g.items).toEqual([
-      { uid: 4, type: 'ironHelm', rarity: TOP_RARITY, refine: REFINE.max, spent: 10, oreSpent: 0, fresh: false },
-      { uid: 6, type: 'windCloak', rarity: 1, refine: 0, spent: 0, oreSpent: 0, fresh: true },
-      { uid: 7, type: 'luckyBoots', rarity: 2, refine: 3, spent: 0, oreSpent: 0, fresh: false },
+      { uid: 4, type: 'ironHelm', rarity: TOP_RARITY, refine: REFINE.max, spent: 10, oreSpent: 0, cards: [], fresh: false },
+      { uid: 6, type: 'windCloak', rarity: 1, refine: 0, spent: 0, oreSpent: 0, cards: [], fresh: true },
+      { uid: 7, type: 'luckyBoots', rarity: 2, refine: 3, spent: 0, oreSpent: 0, cards: [], fresh: false },
     ]);
     expect(g.equipped).toEqual({ helmet: 4 });
     expect(g.next).toBe(8);
     expect(sanitize({ gear: 'nope' }).gear).toEqual(emptyGear());
+  });
+});
+
+describe('monster cards', () => {
+  it('slot into gear by rarity (none below Rare, two from Legendary), and come back out', () => {
+    const save = defaultSave();
+    save.cards = { leech: 2, burn: 1 };
+    const common = addItem(save.gear, item({ rarity: 1 })) as GearItem;
+    expect(slotCard(save, common, 'leech')).toBe(false);
+    const rare = addItem(save.gear, item({ rarity: 2 })) as GearItem;
+    expect(slotCard(save, rare, 'leech')).toBe(true);
+    expect(slotCard(save, rare, 'burn')).toBe(false);
+    const legend = addItem(save.gear, item({ type: 'ironHelm', rarity: 4 })) as GearItem;
+    expect(slotCard(save, legend, 'leech')).toBe(true);
+    expect(slotCard(save, legend, 'burn')).toBe(true);
+    expect(slotCard(save, legend, 'burn')).toBe(false);
+    expect(save.cards).toEqual({ leech: 0, burn: 0 });
+    // Only worn gear counts: two Gummy Cards make level 2.
+    equip(save.gear, rare);
+    equip(save.gear, legend);
+    expect(wornCards(save.gear)).toEqual({ leech: 2, burn: 1 });
+    expect(unslotCard(save, legend, 1)).toBe(true);
+    expect(save.cards.burn).toBe(1);
+  });
+
+  it('salvaging or merging gives the cards back to the album', () => {
+    const save = defaultSave();
+    save.cards = { echo: 1 };
+    const it = addItem(save.gear, item({ rarity: 2 })) as GearItem;
+    slotCard(save, it, 'echo');
+    salvage(save, it);
+    expect(save.cards.echo).toBe(1);
+    const a = addItem(save.gear, item({ rarity: 2 })) as GearItem;
+    const b = addItem(save.gear, item({ rarity: 2 })) as GearItem;
+    addItem(save.gear, item({ rarity: 2 }));
+    slotCard(save, b, 'echo');
+    expect(merge(save.gear, a, save)).toBe(true);
+    expect(save.cards.echo).toBe(1);
+  });
+
+  it('saved cards are cleaned: unknown cards dropped, no more than the slots allow', () => {
+    const g = sanitizeGear({ items: [{ uid: 1, type: 'ironHelm', rarity: 2, refine: 0, cards: ['leech', 'nope', 'burn'] }], equipped: {}, next: 2 });
+    expect(g.items[0].cards).toEqual(['leech']);
+    expect(sanitize({ cards: { leech: 3, nope: 2, burn: -1 } }).cards).toEqual({ leech: 3 });
   });
 });

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { MAX_GEMS, XP_GEM_TIERS } from '../config/game';
 import { type GameCtx } from './context';
 
-export type PickupKind = 'xp' | 'coin' | 'meat' | 'magnet' | 'chest' | 'gear' | 'ore';
+export type PickupKind = 'xp' | 'coin' | 'meat' | 'magnet' | 'chest' | 'gear' | 'ore' | 'card';
 
 export class Pickup {
   active = false;
@@ -40,6 +40,8 @@ export interface PickupHandlers {
   onGear(value: number): void;
   /** Ore for refining, `value` pieces. */
   onOre(value: number): void;
+  /** A monster card: `value` is what the scene gave `dropGear`. */
+  onCard(value: number): void;
 }
 
 function gemTexture(value: number): string {
@@ -134,8 +136,8 @@ export class PickupManager {
    * A piece of gear on the ground: its icon under a pillar of light in the rarity's colour, so a good drop is
    * seen from across the map. `homing` gear (a boss's) flies to the hero after a moment.
    */
-  dropGear(x: number, y: number, value: number, icon: string, color: number, homing: boolean): void {
-    const p = this.obtain('gear', x, y, icon);
+  dropGear(x: number, y: number, value: number, icon: string, color: number, homing: boolean, kind: 'gear' | 'card' = 'gear'): void {
+    const p = this.obtain(kind, x, y, icon);
     p.value = value;
     p.homing = homing;
     p.sprite.setDisplaySize(88, 88).setDepth(6);
@@ -152,9 +154,9 @@ export class PickupManager {
     return this.list.reduce((sum, p) => sum + (p.active && p.kind === 'ore' ? p.value : 0), 0);
   }
 
-  /** What every piece of gear still lying on the ground was dropped with. */
-  gearOnGround(): number[] {
-    return this.list.filter((p) => p.active && p.kind === 'gear').map((p) => p.value);
+  /** What every piece of gear (or card) still lying on the ground was dropped with. */
+  gearOnGround(kind: 'gear' | 'card' = 'gear'): number[] {
+    return this.list.filter((p) => p.active && p.kind === kind).map((p) => p.value);
   }
 
   /** Scatter coins around a point (boss loot). */
@@ -301,6 +303,9 @@ export class PickupManager {
         break;
       case 'ore':
         this.handlers.onOre(p.value);
+        break;
+      case 'card':
+        this.handlers.onCard(p.value);
         break;
     }
   }

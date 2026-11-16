@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_PASSIVES, MAX_WEAPONS } from '../../src/config/game';
+import { MAX_PASSIVES, MAX_RUNES, MAX_WEAPONS } from '../../src/config/game';
 import { PASSIVE_IDS, WEAPON_IDS } from '../../src/config/weapons';
 import {
   applyChoice,
+  heldRunes,
   evolvableWeapons,
   evolve,
   newInventory,
@@ -97,5 +98,21 @@ describe('evolutions', () => {
     expect(evolvableWeapons(inv)).toEqual([]);
     inv.runes.push({ id: 'chain', level: 1 }, { id: 'blast', level: 1 });
     expect(evolvableWeapons(inv)).toEqual(['lightning', 'bomb']);
+  });
+});
+
+describe('cards from gear', () => {
+  it("don't take the run's card places, so three more can still be picked", () => {
+    const inv = newInventory('bow');
+    inv.runes.push({ id: 'leech', level: 1, card: true }, { id: 'burn', level: 2, card: true });
+    expect(heldRunes(inv)).toBe(0);
+    applyChoice(inv, { kind: 'rune', id: 'echo', level: 1 });
+    applyChoice(inv, { kind: 'rune', id: 'chain', level: 1 });
+    applyChoice(inv, { kind: 'rune', id: 'split', level: 1 });
+    expect(heldRunes(inv)).toBe(MAX_RUNES);
+    expect(inv.runes).toHaveLength(5);
+    // A card from gear can still be levelled up by a pick.
+    applyChoice(inv, { kind: 'rune', id: 'leech', level: 2 });
+    expect(inv.runes.find((r) => r.id === 'leech')?.level).toBe(2);
   });
 });

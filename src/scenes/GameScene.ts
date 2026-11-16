@@ -5,7 +5,8 @@ import { characterDef, otherSkills, PLAYABLE, type CharacterDef, type CharacterI
 import { CURSE, CURSE_IDS, CURSE_UNLOCK_MAPS, HEAT_GOLD, heatOf, type CurseId } from '../config/curses';
 import { difficultyDef, maxDifficulty, type DifficultyDef } from '../config/difficulty';
 import { UNLOCKS, unlockKey, type MonsterId } from '../config/collection';
-import { BOSSES } from '../config/enemies';
+import { BOSSES, type EnemyId } from '../config/enemies';
+import { CARD_DROP, CARD_MAX_LEVEL, CARD_OF } from '../config/cards';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
 import { BOSS_GOLD, CAMERA_ZOOM, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
@@ -16,7 +17,7 @@ import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
 import { MAPS, type MapDef } from '../config/maps';
 import { ACHIEVEMENTS, questDef, type AchievementId, type RunReport } from '../config/quests';
 import { EVOLUTIONS, MAX_WEAPON_LEVEL, PASSIVES, RUNE_IDS, RUNES, WEAPONS, type EvolutionId, type RuneId, type WeaponId } from '../config/weapons';
-import { addItem, fieldDrop, gearBonus, lootTier, runDrops, type GearBonus, type GearItem } from '../core/gear';
+import { addItem, fieldDrop, gearBonus, lootTier, runDrops, wornCards, type GearBonus, type GearItem } from '../core/gear';
 import { claimUnlocks, lockedKeys, lockedTalents, masteryPerks, masteryState, masteryXp, reachedUnlocks, records } from '../core/collection';
 import { DEBUG } from '../core/debug';
 import {
@@ -24,6 +25,7 @@ import {
   choiceKey,
   evolvableWeapons,
   evolve,
+  heldRunes,
   MAXED,
   newInventory,
   passiveLevels,
@@ -76,6 +78,8 @@ export interface RunState {
   /** Gear and ore picked up on the way (they go home when the run ends). */
   gear: Omit<GearItem, 'uid'>[];
   ore: number;
+  /** Monster cards picked up on the way. */
+  cards: RuneId[];
   shrines: number;
   gold: number;
   level: number;
@@ -148,6 +152,8 @@ export interface RunSummary {
   lootGold: number;
   /** Ore brought home (for refining). */
   ore: number;
+  /** Monster cards found, by name. */
+  cards: string[];
 }
 
 /** Something to celebrate in the HUD: a daily quest or an achievement tier finished during the run. */
@@ -270,6 +276,7 @@ export class GameScene extends Phaser.Scene {
     }
     const stats = computeStats(saveStore.data.shop, {}, hero);
     this.dropped = [];
+    this.droppedCards = [];
     this.run = {
       mapIndex: this.mapIndex,
       time: DEBUG.startTime,
@@ -280,6 +287,7 @@ export class GameScene extends Phaser.Scene {
       monsters: {},
       gear: [],
       ore: 0,
+      cards: [],
       shrines: 0,
       gold: 0,
       level: 1,
@@ -346,6 +354,7 @@ export class GameScene extends Phaser.Scene {
       },
       onChest: () => this.openChest(),
       onGear: (i) => this.pickUpGear(i),
+      onCard: (i) => this.pickUpCard(i),
       onOre: (n) => {
         this.run.ore += n;
         audio.sfx('coin');
@@ -649,6 +658,30 @@ export class GameScene extends Phaser.Scene {
     else if (this.rng() < DROP_CHANCE.magnet) this.pickups.drop('magnet', e.x - 20, e.y);
     if (e.elite && this.rng() < LOOT.elite.chance) this.dropGear(e.x, e.y, 'elite');
     if (e.elite && this.rng() < ORE.eliteChance) this.dropOre(e.x, e.y, ORE.elite);
+    // Now and then, very rarely, its card.
+    const card = e.def ? CARD_OF[e.def.id as EnemyId] : undefined;
+    if (card) {
+      const chance = (e.elite ? CARD_DROP.elite : CARD_DROP.normal) * (1 + CARD_DROP.tierBonus * lootTier(this.mapIndex, this.difficulty));
+      if (this.rng() < chance) this.dropCard(e.x, e.y, card);
+    }
+  }
+
+  /** Cards that dropped this run, by the index a card pickup holds. */
+  private droppedCards: RuneId[] = [];
+
+  /** A monster card falls: its picture under a golden beam, and everyone hears about it. */
+  private dropCard(x: number, y: number, card: RuneId): void {
+    this.pickups.dropGear(x, y, this.droppedCards.push(card) - 1, RUNES[card].icon, 0xffe08a, true, 'card');
+    this.fx.ring(x, y, 300, 0xffe08a);
+    this.events.emit('toast', `${RUNES[card].name} dropped!`);
+    audio.sfx('levelup');
+  }
+
+  private pickUpCard(i: number): void {
+    const card = this.droppedCards[i];
+    if (!card) return;
+    this.run.cards.push(card);
+    this.notice({ title: 'Card found!', line: `${RUNES[card].name}: slot it into gear`, icon: RUNES[card].icon });
   }
 
   /** Drops `base` ore (more on deeper tiers) in one or a few crystals. */
@@ -1041,7 +1074,13 @@ export class GameScene extends Phaser.Scene {
       const inv = run.inventory;
       inv.weapons[0].level = Math.max(inv.weapons[0].level, 2);
       const free = RUNE_IDS.filter((id) => !inv.runes.some((r) => r.id === id) && !inv.banned.includes(`rune:${id}`));
-      if (free.length && inv.runes.length < 3) inv.runes.push({ id: free[Math.floor(this.rng() * free.length)], level: 1 });
+      if (free.length && heldRunes(inv) < 3) inv.runes.push({ id: free[Math.floor(this.rng() * free.length)], level: 1 });
+    }
+    // Monster cards slotted into worn gear: their powers from the first second, outside the run's card places.
+    for (const [id, n] of Object.entries(wornCards(saveStore.data.gear)) as [RuneId, number][]) {
+      const owned = run.inventory.runes.find((r) => r.id === id);
+      if (owned) owned.level = Math.min(RUNES[id].maxLevel, owned.level + n);
+      else run.inventory.runes.push({ id, level: Math.min(CARD_MAX_LEVEL, RUNES[id].maxLevel, n), card: true });
     }
     // Mastery: the hero's own weapon starts a level higher (on top of the Boar Tusk).
     const own = run.inventory.weapons[0];
@@ -1231,6 +1270,8 @@ export class GameScene extends Phaser.Scene {
     let lootGold = 0;
     const ore = run.ore + this.pickups.oreOnGround();
     save.ore += ore;
+    const cards = [...run.cards, ...this.pickups.gearOnGround('card').map((i) => this.droppedCards[i])];
+    for (const c of cards) save.cards[c] = (save.cards[c] ?? 0) + 1;
     // What was picked up, what still lies on the ground (it's yours all the same), and the end-of-run drops.
     const drops = [
       ...run.gear,
@@ -1274,6 +1315,7 @@ export class GameScene extends Phaser.Scene {
       loot,
       lootGold,
       ore,
+      cards: cards.map((c) => RUNES[c].name),
       mastery: { hero: this.hero.name, xp, from, to: masteryState(save.mastery[this.hero.id]).level },
     };
     audio.stopMusic();

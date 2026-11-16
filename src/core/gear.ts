@@ -16,6 +16,8 @@ import {
   type GearStat,
   type GearType,
 } from '../config/gear';
+import { cardSlots } from '../config/cards';
+import { RUNE_IDS, type RuneId } from '../config/weapons';
 import { type Rng } from './rng';
 import { type SaveData } from './save';
 
@@ -29,6 +31,8 @@ export interface GearItem {
   /** Gold and ore put into refining it (half comes back when it is salvaged). */
   spent: number;
   oreSpent: number;
+  /** Monster cards slotted into it (as many as its rarity has slots). */
+  cards: RuneId[];
   /** Not looked at in the Gear screen yet. */
   fresh?: boolean;
 }
@@ -103,7 +107,7 @@ export function rollRarity(rng: Rng, weights: readonly number[], min = 0): numbe
 
 /** A fresh +0 item of a random kind (uid is given when it goes in the bag). */
 export function rollItem(rng: Rng, weights: readonly number[], min = 0): Omit<GearItem, 'uid'> {
-  return { type: GEAR_TYPES[Math.floor(rng() * GEAR_TYPES.length)], rarity: rollRarity(rng, weights, min), refine: 0, spent: 0, oreSpent: 0 };
+  return { type: GEAR_TYPES[Math.floor(rng() * GEAR_TYPES.length)], rarity: rollRarity(rng, weights, min), refine: 0, spent: 0, oreSpent: 0, cards: [] };
 }
 
 /** Puts an item in the bag, or salvages it if the bag is full. Returns the stored item, or the gold it fetched. */
@@ -185,7 +189,7 @@ export function mergePartners(gear: GearState, item: GearItem): GearItem[] {
 }
 
 /** Three of a rarity in one slot become one of the next rarity (keeping this item's kind and the highest refine). */
-export function merge(gear: GearState, item: GearItem): boolean {
+export function merge(gear: GearState, item: GearItem, save?: SaveData): boolean {
   const partners = mergePartners(gear, item);
   if (partners.length < 2) return false;
   const wasWorn = partners.some((p) => isEquipped(gear, p));
@@ -197,6 +201,8 @@ export function merge(gear: GearState, item: GearItem): boolean {
   item.refine = Math.max(item.refine, ...partners.map((p) => p.refine));
   item.spent += partners.reduce((a, p) => a + p.spent, 0);
   item.oreSpent += partners.reduce((a, p) => a + p.oreSpent, 0);
+  // The partners' cards come back to the album.
+  if (save) for (const p of partners) returnCards(save, p);
   if (wasWorn && gear.equipped[slotOf(item)] === undefined) equip(gear, item);
   return true;
 }
@@ -211,7 +217,41 @@ export function salvage(save: SaveData, item: GearItem): number {
   const v = salvageValue(item);
   save.gold += v.gold;
   save.ore += v.ore;
+  returnCards(save, item);
   return v.gold;
+}
+
+/** Puts an item's cards back in the album. */
+function returnCards(save: SaveData, item: GearItem): void {
+  for (const c of item.cards) save.cards[c] = (save.cards[c] ?? 0) + 1;
+  item.cards = [];
+}
+
+/** Slots one card from the album into the item: false if it has no free slot or the card isn't owned. */
+export function slotCard(save: SaveData, item: GearItem, card: RuneId): boolean {
+  if (item.cards.length >= cardSlots(item.rarity) || (save.cards[card] ?? 0) <= 0) return false;
+  save.cards[card]! -= 1;
+  item.cards.push(card);
+  return true;
+}
+
+/** Takes the card in slot `i` out of the item and back into the album. */
+export function unslotCard(save: SaveData, item: GearItem, i: number): boolean {
+  const card = item.cards[i];
+  if (!card) return false;
+  item.cards.splice(i, 1);
+  save.cards[card] = (save.cards[card] ?? 0) + 1;
+  return true;
+}
+
+/** Every card in the worn gear, with how many of each (a card's level, up to its max). */
+export function wornCards(gear: GearState): Partial<Record<RuneId, number>> {
+  const out: Partial<Record<RuneId, number>> = {};
+  for (const slot of SLOTS) {
+    const item = gear.items.find((i) => i.uid === gear.equipped[slot.id]);
+    for (const c of item?.cards ?? []) out[c] = (out[c] ?? 0) + 1;
+  }
+  return out;
 }
 
 /** The bag in display order: by slot, then rarity (best first), then refine. */
@@ -236,7 +276,8 @@ export function sanitizeGear(raw: unknown): GearState {
       if (out.items.some((o) => o.uid === uid)) continue;
       // Saves from before refining kept a level (1 = +0); it carries over as a refine, capped at +10.
       const refine = typeof it.refine === 'number' ? n(it.refine, 0, REFINE.max) : n(n(it.level, 1, 999) - 1, 0, REFINE.max);
-      out.items.push({ uid, type: it.type as GearType, rarity, refine, spent: n(it.spent, 0, 1e9), oreSpent: n(it.oreSpent, 0, 1e9), fresh: it.fresh === true });
+      const cards = (Array.isArray(it.cards) ? (it.cards as unknown[]) : []).filter((c): c is RuneId => RUNE_IDS.includes(c as RuneId)).slice(0, cardSlots(rarity));
+      out.items.push({ uid, type: it.type as GearType, rarity, refine, spent: n(it.spent, 0, 1e9), oreSpent: n(it.oreSpent, 0, 1e9), cards, fresh: it.fresh === true });
     }
   }
   if (r.equipped && typeof r.equipped === 'object') {

@@ -98,6 +98,13 @@ export class GameOverScene extends Phaser.Scene {
       this.lootNote(news, y + 75);
       y += 150 + gap;
     }
+    if (s.cards.length) {
+      const names = [...new Set(s.cards)].join(', ');
+      const t = text(this, 0, y + 50, `${names}${s.cards.length > 1 ? ` (${s.cards.length})` : ''}!\nSlot cards into gear in the Gear screen`, 40, { color: '#ffe08a', wrap: 860 });
+      news.add(t);
+      this.tweens.add({ targets: t, scale: 1.05, duration: 600, yoyo: true, repeat: -1 });
+      y += 110 + gap;
+    }
     if (s.unlocks.length) {
       this.unlockNote(news, y + 75);
       y += 150 + gap;

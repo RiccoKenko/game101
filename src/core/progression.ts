@@ -30,7 +30,12 @@ export interface OwnedPassive {
 export interface OwnedRune {
   id: RuneId;
   level: number;
+  /** Came from a monster card slotted into gear: it doesn't take one of the run's card places. */
+  card?: boolean;
 }
+
+/** Card places the run has used (cards from gear don't count). */
+export const heldRunes = (inv: Inventory): number => inv.runes.filter((r) => !r.card).length;
 
 export interface Inventory {
   weapons: OwnedWeapon[];
@@ -134,7 +139,7 @@ function upgradePool(inv: Inventory): { item: Choice; weight: number }[] {
   for (const r of inv.runes) {
     if (r.level < RUNES[r.id].maxLevel) pool.push({ item: { kind: 'rune', id: r.id, level: r.level + 1 }, weight: 1 });
   }
-  if (inv.runes.length < MAX_RUNES) {
+  if (heldRunes(inv) < MAX_RUNES) {
     addNew(RUNE_IDS.filter((id) => !inv.runes.some((r) => r.id === id)).map((id) => ({ kind: 'rune', id, level: 1 })), NEW_WEIGHT.rune);
   }
   return pool.filter((p) => allowed(p.item));
@@ -171,7 +176,7 @@ export function applyChoice(inv: Inventory, choice: Choice): void {
   } else if (choice.kind === 'rune') {
     const owned = inv.runes.find((r) => r.id === choice.id);
     if (owned) owned.level = Math.min(RUNES[owned.id].maxLevel, owned.level + 1);
-    else if (inv.runes.length < MAX_RUNES) inv.runes.push({ id: choice.id, level: 1 });
+    else if (heldRunes(inv) < MAX_RUNES) inv.runes.push({ id: choice.id, level: 1 });
   } else if (choice.kind === 'talent') {
     if (!inv.talents.includes(choice.id)) inv.talents.push(choice.id);
   }

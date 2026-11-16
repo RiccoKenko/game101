@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
+import { cardSlots } from '../config/cards';
+import { RUNE_IDS, RUNES, type RuneId } from '../config/weapons';
 import { BAG_SIZE, CHEST, describeStat, GEAR, GEAR_TYPES, RARITIES, REFINE, SLOTS, STAT_NAMES, TOP_RARITY, type GearStat } from '../config/gear';
 import {
   bonusStat,
@@ -14,10 +16,12 @@ import {
   refineLabel,
   salvage,
   salvageValue,
+  slotCard,
   slotOf,
   sortedItems,
   tryRefine,
   unequip,
+  unslotCard,
   type GearItem,
 } from '../core/gear';
 import { saveStore } from '../core/save';
@@ -47,6 +51,7 @@ export class GearScene extends Phaser.Scene {
   create(): void {
     this.content = [];
     this.popup = [];
+    this.overlay = [];
     const save = saveStore.data;
     this.fresh = new Set(save.gear.items.filter((i) => i.fresh).map((i) => i.uid));
     for (const i of save.gear.items) delete i.fresh;
@@ -117,29 +122,42 @@ export class GearScene extends Phaser.Scene {
       }),
     );
 
-    // Gear chest and relics.
+    // Gear chest, monster cards and MVP cards.
     const by = this.top + 640;
     const chest = this.keep(
-      new Button(this, width / 2 - 250, by, {
-        w: 460,
+      new Button(this, width / 2 - 340, by, {
+        w: 320,
         h: 110,
         color: BUTTON.primary,
         icon: 'chest',
-        iconSize: 76,
-        label: `Chest  ${CHEST.price}`,
+        iconSize: 66,
+        label: `${CHEST.price}`,
         fontSize: 40,
         onClick: () => this.buyChest(chest),
       }),
     );
     chest.setEnabled(save.gold >= CHEST.price);
+    const owned = RUNE_IDS.reduce((a, id) => a + (save.cards[id] ?? 0), 0);
     this.keep(
-      new Button(this, width / 2 + 250, by, {
-        w: 460,
+      new Button(this, width / 2, by, {
+        w: 320,
+        h: 110,
+        color: BUTTON.warning,
+        icon: 'icon_rune_leech',
+        iconSize: 66,
+        label: owned ? `Cards ${owned}` : 'Cards',
+        fontSize: 38,
+        onClick: () => this.time.delayedCall(1, () => this.cardList(null)),
+      }),
+    );
+    this.keep(
+      new Button(this, width / 2 + 340, by, {
+        w: 320,
         h: 110,
         color: BUTTON.system,
         icon: save.equipped.length ? `relic_${save.equipped[0]}` : 'relic_slime',
-        iconSize: 76,
-        label: 'MVP Cards',
+        iconSize: 66,
+        label: 'MVP',
         fontSize: 40,
         onClick: () => this.scene.start('Relics', { back: 'Gear' }),
       }),
@@ -259,6 +277,31 @@ export class GearScene extends Phaser.Scene {
     d(text(this, tx, top + 134, `${rar.name} ${slotName}`, 32, { color: CSS.soft, weight: '600', originX: 0, shadow: false }));
     d(text(this, tx, top + 186, `Refine ${refineLabel(item.refine)} / ${refineLabel(REFINE.max)}`, 34, { color: item.refine >= 7 ? CSS.gold : CSS.cream, originX: 0 }));
     if (isEquipped(gear, item)) d(text(this, tx, top + 232, 'Worn', 30, { color: CSS.green, originX: 0 }));
+    // Card slots: tap an empty one to slot a card, a full one to take its card back.
+    const slots = cardSlots(item.rarity);
+    if (slots) {
+      d(text(this, x0 + w - 150 - (slots - 1) * 55, top + 134, 'Cards', 28, { color: CSS.soft, weight: '600', shadow: false }));
+      for (let i = 0; i < slots; i++) {
+        const sx = x0 + w - 150 - (slots - 1) * 110 + i * 110;
+        const sy = top + 220;
+        const card = item.cards[i];
+        d(this.add.image(sx, sy, slotTexture(this, 96, 'weapon', 'back')));
+        if (card) d(this.add.image(sx, sy, RUNES[card].icon).setDisplaySize(84, 84));
+        else d(text(this, sx, sy, '+', 54, { color: CSS.gold }));
+        const z = d(this.add.zone(sx, sy, 100, 100).setInteractive({ useHandCursor: true }));
+        z.on('pointerup', () =>
+          this.time.delayedCall(1, () => {
+            if (card) {
+              unslotCard(save, item, i);
+              saveStore.save();
+              audio.sfx('click');
+              this.draw();
+              this.open(item);
+            } else this.cardList(item);
+          }),
+        );
+      }
+    } else d(text(this, x0 + w - 150, top + 220, 'Rare and up\nhave card slots', 24, { color: CSS.muted, weight: '600', shadow: false }));
 
     const m = mainStat(item);
     const bonus = bonusStat(item);
@@ -356,7 +399,7 @@ export class GearScene extends Phaser.Scene {
         label: 'Merge',
         fontSize: 42,
         onClick: act(() => {
-          const ok = merge(gear, item);
+          const ok = merge(gear, item, save);
           if (ok) {
             audio.sfx('victory');
             this.cameras.main.flash(200, 255, 240, 200);
@@ -410,5 +453,85 @@ export class GearScene extends Phaser.Scene {
       audio.sfx('hurt');
       this.cameras.main.shake(260, 0.008);
     }
+  }
+
+  /**
+   * The card album: every monster card, how many are owned, and what it does. Opened for an item, tapping an
+   * owned card slots it into that item.
+   */
+  private cardList(forItem: GearItem | null): void {
+    this.closeOverlay();
+    const save = saveStore.data;
+    const { width, height } = this.scale;
+    const add = <T extends Phaser.GameObjects.GameObject & { setDepth(v: number): unknown }>(o: T): T => {
+      o.setDepth(101);
+      this.overlay.push(o);
+      return o;
+    };
+    const dim = add(dimmer(this, 0.8));
+    dim.setDepth(100);
+    dim.on('pointerup', () => this.time.delayedCall(1, () => this.closeOverlay()));
+    const w = 1000;
+    const h = 1500;
+    const cy = height / 2;
+    add(panel(this, width / 2, cy, w, h, { gem: true }).setInteractive());
+    const title = forItem ? 'Slot a card' : 'Monster Cards';
+    add(gradientText(text(this, width / 2, cy - h / 2 + 80, title, 64, { strokeColor: '#2a1606' })));
+    add(
+      text(this, width / 2, cy - h / 2 + 150, 'Monsters drop their card very rarely (elites more often). A card in worn gear works from the start of every run.', 26, {
+        color: CSS.soft,
+        weight: '600',
+        wrap: w - 120,
+        shadow: false,
+      }),
+    );
+    const worn = new Map<RuneId, number>();
+    for (const it of save.gear.items) for (const c of it.cards) worn.set(c, (worn.get(c) ?? 0) + 1);
+    const cols = 4;
+    const cellW = (w - 80) / cols;
+    const cellH = 380;
+    RUNE_IDS.forEach((id, i) => {
+      const x = width / 2 - w / 2 + 40 + cellW * ((i % cols) + 0.5);
+      const y = cy - h / 2 + 240 + cellH * Math.floor(i / cols) + 120;
+      const have = save.cards[id] ?? 0;
+      const slotted = worn.get(id) ?? 0;
+      const known = have + slotted > 0;
+      const icon = add(this.add.image(x, y - 40, RUNES[id].icon).setDisplaySize(170, 170));
+      if (!known) icon.setTint(0x30364a);
+      add(text(this, x, y + 70, known ? RUNES[id].name : '???', 24, { color: known ? CSS.cream : CSS.muted, wrap: cellW - 16 }));
+      add(text(this, x, y + 132, known ? RUNES[id].levels[0] : 'Not found yet', 20, { color: CSS.soft, weight: '600', wrap: cellW - 20, shadow: false }));
+      add(text(this, x + 70, y - 110, have ? `x${have}` : '', 34, { color: CSS.gold }));
+      if (slotted) add(text(this, x, y - 145, `${slotted} in gear`, 22, { color: CSS.green, shadow: false }));
+      if (forItem && have > 0) {
+        const z = add(this.add.zone(x, y, cellW - 10, cellH - 20).setInteractive({ useHandCursor: true }));
+        z.on('pointerup', () =>
+          this.time.delayedCall(1, () => {
+            if (!slotCard(save, forItem, id)) return;
+            saveStore.save();
+            audio.sfx('levelup');
+            this.closeOverlay();
+            this.draw();
+            this.open(forItem);
+          }),
+        );
+      } else if (forItem) icon.setAlpha(0.45);
+    });
+    add(
+      new Button(this, width / 2, cy + h / 2 - 90, {
+        w: 420,
+        h: 110,
+        color: BUTTON.secondary,
+        label: 'Close',
+        fontSize: 42,
+        onClick: () => this.time.delayedCall(1, () => this.closeOverlay()),
+      }),
+    );
+  }
+
+  private overlay: Phaser.GameObjects.GameObject[] = [];
+
+  private closeOverlay(): void {
+    this.overlay.forEach((o) => o.destroy());
+    this.overlay = [];
   }
 }

@@ -7,6 +7,7 @@ import { MAX_RELICS, RELIC_IDS, type RelicId } from '../config/relics';
 import { MAPS } from '../config/maps';
 import { ACHIEVEMENTS, DAILY_COUNT, QUESTS, type AchievementId, type QuestId } from '../config/quests';
 import { SHOP, type ShopId } from '../config/shop';
+import { RUNE_IDS, type RuneId } from '../config/weapons';
 
 export interface Settings {
   music: boolean;
@@ -54,6 +55,8 @@ export interface SaveData {
   gold: number;
   /** Ore for refining gear. */
   ore: number;
+  /** Monster cards in the album (not slotted into gear), by card. */
+  cards: Partial<Record<RuneId, number>>;
   shop: Record<ShopId, number>;
   /** Number of maps the player can pick (1..MAPS.length). */
   unlockedMaps: number;
@@ -104,6 +107,7 @@ export function defaultSave(): SaveData {
     version: 1,
     gold: 0,
     ore: 0,
+    cards: {},
     shop,
     unlockedMaps: 1,
     bestTimes: MAPS.map(() => 0),
@@ -138,6 +142,12 @@ export function sanitize(raw: unknown): SaveData {
   const r = raw as Partial<Record<keyof SaveData, unknown>>;
   out.gold = Math.floor(num(r.gold, 0));
   out.ore = Math.floor(num(r.ore, 0));
+  if (r.cards && typeof r.cards === 'object') {
+    for (const id of RUNE_IDS) {
+      const v = Math.floor(num((r.cards as Record<string, unknown>)[id], 0, 0, 999));
+      if (v > 0) out.cards[id] = v;
+    }
+  }
   if (r.shop && typeof r.shop === 'object') {
     const shop = r.shop as Record<string, unknown>;
     for (const d of SHOP) out.shop[d.id] = Math.floor(num(shop[d.id], 0, 0, d.maxLevel));
