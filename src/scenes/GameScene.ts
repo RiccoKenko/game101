@@ -9,7 +9,7 @@ import { BOSSES } from '../config/enemies';
 import { relicDef, relicFor, type RelicId } from '../config/relics';
 import { BOSS_GOLD, CAMERA_ZOOM, COIN_VALUE, DROP_CHANCE, PLAYER_BASE, RUN_BONUS, VICTORY_GOLD } from '../config/game';
 import { FINAL_TIME, GOLDEN_HOUR, GREED_PACT, SHRINE_OFFERS, type ShrineOffer } from '../config/events';
-import { GEAR, LOOT, RARITIES, type GearType } from '../config/gear';
+import { GEAR, LOOT, ORE, RARITIES, type GearType } from '../config/gear';
 import { MASTERY } from '../config/mastery';
 import { TALENT, TALENT_LEVELS, talentDef, type TalentId } from '../config/talents';
 import { BASE_BANISHES, BASE_REROLLS } from '../config/shop';
@@ -73,8 +73,9 @@ export interface RunState {
   evolutions: number;
   /** Kills by kind of monster, and shrine offers accepted. */
   monsters: Partial<Record<MonsterId, number>>;
-  /** Gear picked up on the way (it goes to the bag when the run ends). */
+  /** Gear and ore picked up on the way (they go home when the run ends). */
   gear: Omit<GearItem, 'uid'>[];
+  ore: number;
   shrines: number;
   gold: number;
   level: number;
@@ -145,6 +146,8 @@ export interface RunSummary {
   /** Equipment found (put in the bag), and gold for drops that didn't fit. */
   loot: { name: string; type: GearType; rarity: number }[];
   lootGold: number;
+  /** Ore brought home (for refining). */
+  ore: number;
 }
 
 /** Something to celebrate in the HUD: a daily quest or an achievement tier finished during the run. */
@@ -276,6 +279,7 @@ export class GameScene extends Phaser.Scene {
       evolutions: 0,
       monsters: {},
       gear: [],
+      ore: 0,
       shrines: 0,
       gold: 0,
       level: 1,
@@ -342,6 +346,10 @@ export class GameScene extends Phaser.Scene {
       },
       onChest: () => this.openChest(),
       onGear: (i) => this.pickUpGear(i),
+      onOre: (n) => {
+        this.run.ore += n;
+        audio.sfx('coin');
+      },
     });
     this.ctx = ctx;
     this.runEvents = new RunEvents({
@@ -640,6 +648,17 @@ export class GameScene extends Phaser.Scene {
     if (this.rng() < DROP_CHANCE.meat) this.pickups.drop('meat', e.x - 20, e.y);
     else if (this.rng() < DROP_CHANCE.magnet) this.pickups.drop('magnet', e.x - 20, e.y);
     if (e.elite && this.rng() < LOOT.elite.chance) this.dropGear(e.x, e.y, 'elite');
+    if (e.elite && this.rng() < ORE.eliteChance) this.dropOre(e.x, e.y, ORE.elite);
+  }
+
+  /** Drops `base` ore (more on deeper tiers) in one or a few crystals. */
+  private dropOre(x: number, y: number, base: number): void {
+    const total = Math.max(1, Math.round(base * (1 + ORE.tierBonus * lootTier(this.mapIndex, this.difficulty))));
+    const pieces = Math.min(total, 4);
+    for (let k = 0; k < pieces; k++) {
+      const n = Math.floor(total / pieces) + (k < total % pieces ? 1 : 0);
+      this.pickups.drop('ore', x + (k - (pieces - 1) / 2) * 40, y + 30, n);
+    }
   }
 
   /** Gear that dropped this run but hasn't been picked up yet (a pickup holds its index here). */
@@ -672,6 +691,7 @@ export class GameScene extends Phaser.Scene {
     run.bossesKilled++;
     this.pickups.drop('chest', e.x, e.y);
     if (this.rng() < LOOT.boss.chance) this.dropGear(e.x + 60, e.y + 20, 'boss');
+    this.dropOre(e.x - 40, e.y, ORE.boss);
     this.pickups.burstCoins(e.x, e.y, 12, Math.ceil(BOSS_GOLD[this.mapIndex] / 12));
     this.fx.explosion(e.x, e.y, 260);
     this.fx.ring(e.x, e.y, 500, 0xffcc33);
@@ -709,6 +729,7 @@ export class GameScene extends Phaser.Scene {
     run.leadersKilled++;
     this.pickups.drop('chest', e.x, e.y);
     if (this.rng() < LOOT.leader.chance) this.dropGear(e.x + 60, e.y + 20, 'leader');
+    this.dropOre(e.x - 40, e.y, ORE.leader);
     this.pickups.burstCoins(e.x, e.y, 8, Math.ceil(BOSS_GOLD[this.mapIndex] / 24));
     this.fx.explosion(e.x, e.y, 180);
     this.fx.ring(e.x, e.y, 360, 0xffcc33);
@@ -1208,6 +1229,8 @@ export class GameScene extends Phaser.Scene {
     // Equipment found on the way.
     const loot: RunSummary['loot'] = [];
     let lootGold = 0;
+    const ore = run.ore + this.pickups.oreOnGround();
+    save.ore += ore;
     // What was picked up, what still lies on the ground (it's yours all the same), and the end-of-run drops.
     const drops = [
       ...run.gear,
@@ -1250,6 +1273,7 @@ export class GameScene extends Phaser.Scene {
       unlocks,
       loot,
       lootGold,
+      ore,
       mastery: { hero: this.hero.name, xp, from, to: masteryState(save.mastery[this.hero.id]).level },
     };
     audio.stopMusic();

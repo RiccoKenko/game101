@@ -7,8 +7,10 @@ import {
   GEAR_TYPES,
   LOOT,
   TOP_RARITY,
-  PER_LEVEL,
   RARITIES,
+  REFINE,
+  refineGold,
+  refineOre,
   SLOTS,
   type GearSlot,
   type GearStat,
@@ -22,9 +24,11 @@ export interface GearItem {
   type: GearType;
   /** 0 Common ... 4 Legendary, 5 Mythic. */
   rarity: number;
-  level: number;
-  /** Gold put into levelling it (half comes back when it is salvaged). */
+  /** +0 ... +10. */
+  refine: number;
+  /** Gold and ore put into refining it (half comes back when it is salvaged). */
   spent: number;
+  oreSpent: number;
   /** Not looked at in the Gear screen yet. */
   fresh?: boolean;
 }
@@ -42,7 +46,7 @@ export const slotOf = (item: GearItem): GearSlot => GEAR[item.type].slot;
 
 export function mainStat(item: GearItem): { stat: GearStat; value: number } {
   const slot = SLOTS.find((s) => s.id === slotOf(item))!;
-  return { stat: slot.main, value: slot.base * RARITIES[item.rarity].mult * (1 + PER_LEVEL * (item.level - 1)) };
+  return { stat: slot.main, value: slot.base * RARITIES[item.rarity].mult * REFINE.mult[item.refine] };
 }
 
 /** The second stat (Rare and up), or null. */
@@ -52,18 +56,20 @@ export function bonusStat(item: GearItem): { stat: GearStat; value: number } | n
   return { stat: def.bonus, value: def.bonusValues[item.rarity - BONUS_FROM] };
 }
 
-export const maxLevel = (item: GearItem): number => RARITIES[item.rarity].maxLevel;
+/** "+7". */
+export const refineLabel = (n: number): string => `+${n}`;
 
-/** Levels are shown as refining, the way the classic games count it: level 1 is +0. */
-export const refine = (level: number): string => `+${level - 1}`;
-
-/** Gold to raise the item one level, or null at its highest level. */
-export function upgradeCost(item: GearItem): number | null {
-  if (item.level >= maxLevel(item)) return null;
-  return Math.round((20 + 8 * item.level) * (1 + 0.5 * item.rarity));
+/** What the next refine costs and how likely it is to work, or null at +10. */
+export function refineCost(item: GearItem): { gold: number; ore: number; chance: number } | null {
+  if (item.refine >= REFINE.max) return null;
+  return { gold: refineGold(item.refine, item.rarity), ore: refineOre(item.refine, item.rarity), chance: REFINE.chance[item.refine] };
 }
 
-export const salvageValue = (item: GearItem): number => RARITIES[item.rarity].salvage + Math.floor(item.spent / 2);
+/** Gold and ore salvaging gives back: the rarity's worth and half of what went into refining it. */
+export const salvageValue = (item: GearItem): { gold: number; ore: number } => ({
+  gold: RARITIES[item.rarity].salvage + Math.floor(item.spent / 2),
+  ore: RARITIES[item.rarity].ore + Math.floor(item.oreSpent / 2),
+});
 
 export type GearBonus = Record<GearStat, number>;
 
@@ -95,16 +101,19 @@ export function rollRarity(rng: Rng, weights: readonly number[], min = 0): numbe
   return w.length - 1;
 }
 
-/** A fresh level-1 item of a random kind (uid is given when it goes in the bag). */
+/** A fresh +0 item of a random kind (uid is given when it goes in the bag). */
 export function rollItem(rng: Rng, weights: readonly number[], min = 0): Omit<GearItem, 'uid'> {
-  return { type: GEAR_TYPES[Math.floor(rng() * GEAR_TYPES.length)], rarity: rollRarity(rng, weights, min), level: 1, spent: 0 };
+  return { type: GEAR_TYPES[Math.floor(rng() * GEAR_TYPES.length)], rarity: rollRarity(rng, weights, min), refine: 0, spent: 0, oreSpent: 0 };
 }
 
 /** Puts an item in the bag, or salvages it if the bag is full. Returns the stored item, or the gold it fetched. */
 export function addItem(gear: GearState, item: Omit<GearItem, 'uid'>, save?: SaveData): GearItem | number {
   if (gear.items.length >= BAG_SIZE) {
     const gold = RARITIES[item.rarity].salvage;
-    if (save) save.gold += gold;
+    if (save) {
+      save.gold += gold;
+      save.ore += RARITIES[item.rarity].ore;
+    }
     return gold;
   }
   const stored: GearItem = { ...item, uid: gear.next++, fresh: true };
@@ -144,25 +153,38 @@ export function unequip(gear: GearState, slot: GearSlot): void {
   delete gear.equipped[slot];
 }
 
-export function upgrade(save: SaveData, item: GearItem): boolean {
-  const cost = upgradeCost(item);
-  if (cost === null || save.gold < cost) return false;
-  save.gold -= cost;
-  item.spent += cost;
-  item.level++;
-  return true;
+/**
+ * Tries to refine the item one step: 'ok' (it went up), 'fail' (it didn't, and what was paid is gone), 'down'
+ * (it failed high up and dropped a step), or false when it can't be paid for or is already +10.
+ */
+export function tryRefine(save: SaveData, item: GearItem, rng: Rng): 'ok' | 'fail' | 'down' | false {
+  const cost = refineCost(item);
+  if (!cost || save.gold < cost.gold || save.ore < cost.ore) return false;
+  save.gold -= cost.gold;
+  save.ore -= cost.ore;
+  item.spent += cost.gold;
+  item.oreSpent += cost.ore;
+  if (rng() < cost.chance) {
+    item.refine++;
+    return 'ok';
+  }
+  if (item.refine >= REFINE.dropFrom) {
+    item.refine--;
+    return 'down';
+  }
+  return 'fail';
 }
 
-/** The two items a merge would use up: same slot and rarity, the ones not worn and lowest level first. */
+/** The two items a merge would use up: same slot and rarity, the ones not worn and least refined first. */
 export function mergePartners(gear: GearState, item: GearItem): GearItem[] {
   if (item.rarity >= TOP_RARITY) return [];
   const others = gear.items
     .filter((i) => i !== item && slotOf(i) === slotOf(item) && i.rarity === item.rarity)
-    .sort((a, b) => Number(isEquipped(gear, a)) - Number(isEquipped(gear, b)) || a.level - b.level);
+    .sort((a, b) => Number(isEquipped(gear, a)) - Number(isEquipped(gear, b)) || a.refine - b.refine);
   return others.length >= 2 ? others.slice(0, 2) : [];
 }
 
-/** Three of a rarity in one slot become one of the next rarity (keeping this item's kind and the highest level). */
+/** Three of a rarity in one slot become one of the next rarity (keeping this item's kind and the highest refine). */
 export function merge(gear: GearState, item: GearItem): boolean {
   const partners = mergePartners(gear, item);
   if (partners.length < 2) return false;
@@ -172,27 +194,30 @@ export function merge(gear: GearState, item: GearItem): boolean {
     if (isEquipped(gear, p)) unequip(gear, slotOf(p));
   }
   item.rarity++;
-  item.level = Math.max(item.level, ...partners.map((p) => p.level));
+  item.refine = Math.max(item.refine, ...partners.map((p) => p.refine));
   item.spent += partners.reduce((a, p) => a + p.spent, 0);
+  item.oreSpent += partners.reduce((a, p) => a + p.oreSpent, 0);
   if (wasWorn && gear.equipped[slotOf(item)] === undefined) equip(gear, item);
   return true;
 }
 
+/** Breaks an item down for gold and ore; returns the gold (0 if it isn't in the bag). */
 export function salvage(save: SaveData, item: GearItem): number {
   const gear = save.gear;
   const i = gear.items.indexOf(item);
   if (i < 0) return 0;
   gear.items.splice(i, 1);
   if (isEquipped(gear, item)) unequip(gear, slotOf(item));
-  const gold = salvageValue(item);
-  save.gold += gold;
-  return gold;
+  const v = salvageValue(item);
+  save.gold += v.gold;
+  save.ore += v.ore;
+  return v.gold;
 }
 
-/** The bag in display order: by slot, then rarity (best first), then level. */
+/** The bag in display order: by slot, then rarity (best first), then refine. */
 export function sortedItems(gear: GearState): GearItem[] {
   const slotIndex = (i: GearItem) => SLOTS.findIndex((s) => s.id === slotOf(i));
-  return [...gear.items].sort((a, b) => slotIndex(a) - slotIndex(b) || b.rarity - a.rarity || b.level - a.level || a.uid - b.uid);
+  return [...gear.items].sort((a, b) => slotIndex(a) - slotIndex(b) || b.rarity - a.rarity || b.refine - a.refine || a.uid - b.uid);
 }
 
 /** Cleans saved gear: unknown kinds dropped, numbers clamped, worn uids that no longer exist forgotten. */
@@ -209,7 +234,9 @@ export function sanitizeGear(raw: unknown): GearState {
       const rarity = n(it.rarity, 0, TOP_RARITY);
       const uid = n(it.uid, 1, Number.MAX_SAFE_INTEGER);
       if (out.items.some((o) => o.uid === uid)) continue;
-      out.items.push({ uid, type: it.type as GearType, rarity, level: n(it.level, 1, RARITIES[rarity].maxLevel), spent: n(it.spent, 0, 1e9), fresh: it.fresh === true });
+      // Saves from before refining kept a level (1 = +0); it carries over as a refine, capped at +10.
+      const refine = typeof it.refine === 'number' ? n(it.refine, 0, REFINE.max) : n(n(it.level, 1, 999) - 1, 0, REFINE.max);
+      out.items.push({ uid, type: it.type as GearType, rarity, refine, spent: n(it.spent, 0, 1e9), oreSpent: n(it.oreSpent, 0, 1e9), fresh: it.fresh === true });
     }
   }
   if (r.equipped && typeof r.equipped === 'object') {

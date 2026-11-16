@@ -1,7 +1,7 @@
 /**
  * Equipment: four slots, two kinds of item for each, six rarities. Items drop in the field (elites, leaders and
- * bosses), at the end of a run, or come out of a gear chest; they level up with gold, and three of a rarity in one
- * slot merge into the next rarity.
+ * bosses), at the end of a run, or come out of a gear chest. They are refined +1 to +10 with gold and ore (the
+ * higher steps can fail), and three of a rarity in one slot merge into the next rarity.
  */
 export type GearSlot = 'gloves' | 'helmet' | 'cloak' | 'boots';
 export type GearStat = 'damage' | 'maxHp' | 'haste' | 'speed' | 'crit' | 'area' | 'xp' | 'armor' | 'duration' | 'gold' | 'magnet';
@@ -11,19 +11,19 @@ export interface RarityDef {
   name: string;
   color: number;
   css: string;
-  /** Main stat multiplier, highest level, and gold for salvaging an item that was never levelled. */
+  /** Main stat multiplier, and the gold and ore salvaging an unrefined item gives. */
   mult: number;
-  maxLevel: number;
   salvage: number;
+  ore: number;
 }
 
 export const RARITIES: RarityDef[] = [
-  { name: 'Common', color: 0xb8c2d6, css: '#d6dce8', mult: 1, maxLevel: 10, salvage: 20 },
-  { name: 'Uncommon', color: 0x4fc45a, css: '#86ea6e', mult: 1.6, maxLevel: 20, salvage: 50 },
-  { name: 'Rare', color: 0x3f8fff, css: '#8fd0ff', mult: 2.5, maxLevel: 30, salvage: 120 },
-  { name: 'Epic', color: 0xa86bff, css: '#c9a8ff', mult: 3.8, maxLevel: 40, salvage: 300 },
-  { name: 'Legendary', color: 0xffa51f, css: '#ffd66b', mult: 5.5, maxLevel: 50, salvage: 800 },
-  { name: 'Mythic', color: 0xff3b4e, css: '#ff8a8a', mult: 8, maxLevel: 60, salvage: 2000 },
+  { name: 'Common', color: 0xb8c2d6, css: '#d6dce8', mult: 1, salvage: 20, ore: 1 },
+  { name: 'Uncommon', color: 0x4fc45a, css: '#86ea6e', mult: 1.6, salvage: 50, ore: 2 },
+  { name: 'Rare', color: 0x3f8fff, css: '#8fd0ff', mult: 2.5, salvage: 120, ore: 4 },
+  { name: 'Epic', color: 0xa86bff, css: '#c9a8ff', mult: 3.8, salvage: 300, ore: 8 },
+  { name: 'Legendary', color: 0xffa51f, css: '#ffd66b', mult: 5.5, salvage: 800, ore: 16 },
+  { name: 'Mythic', color: 0xff3b4e, css: '#ff8a8a', mult: 8, salvage: 2000, ore: 30 },
 ];
 /** The rarest rarity: nothing merges past it. */
 export const TOP_RARITY = RARITIES.length - 1;
@@ -67,8 +67,29 @@ export const GEAR: Record<GearType, GearDef> = {
 };
 export const GEAR_TYPES = Object.keys(GEAR) as GearType[];
 
-/** Main stat grows this much (of its level-1 value) per level. */
-export const PER_LEVEL = 0.05;
+/**
+ * Refining, the classic way: +0 to +10 for every rarity, paid in gold and ore. +1 to +4 always work; from there on
+ * a refine can fail, losing what was paid, and from +7 up a failure also knocks the item down one step (it never
+ * breaks). About 70 tries take an item to +10, so a +10 is something to show off.
+ */
+export const REFINE = {
+  max: 10,
+  /** Main stat multiplier at +0 ... +10. */
+  mult: [1, 1.1, 1.2, 1.3, 1.4, 1.55, 1.7, 1.9, 2.15, 2.45, 2.8],
+  /** Chance that refining from +n to +n+1 works. */
+  chance: [1, 1, 1, 1, 0.85, 0.7, 0.55, 0.4, 0.3, 0.2],
+  /** From this refine up, a failure drops the item one step. */
+  dropFrom: 7,
+};
+/** Gold and ore to try refining an item of this rarity from +n. */
+export const refineGold = (n: number, rarity: number): number => Math.round((20 + 12 * n) * (1 + 0.5 * rarity));
+export const refineOre = (n: number, rarity: number): number => (1 + rarity) * (n < 4 ? 1 : n < 7 ? 2 : 3);
+
+/**
+ * Ore (for refining): elites drop a little now and then, leaders and MVP bosses a handful, deeper tiers more
+ * (each tier adds `tierBonus` of the amount). Salvaging gear gives ore too.
+ */
+export const ORE = { eliteChance: 0.1, elite: 1, leader: 3, boss: 6, tierBonus: 0.25 };
 /** Items the bag holds; a drop into a full bag is salvaged for gold. */
 export const BAG_SIZE = 42;
 /** A gear chest in the Gear screen: its price and rarity odds (Common..Mythic). */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BAG_SIZE, CHEST, dropWeights, GEAR, GEAR_TYPES, LOOT, RARITIES, SLOTS, TOP_RARITY } from '../../src/config/gear';
+import { BAG_SIZE, CHEST, dropWeights, GEAR, GEAR_TYPES, LOOT, RARITIES, REFINE, SLOTS, TOP_RARITY } from '../../src/config/gear';
 import { difficultyDef, DIFFICULTIES, maxDifficulty } from '../../src/config/difficulty';
 import {
   addItem,
@@ -15,48 +15,71 @@ import {
   openChest,
   rollRarity,
   runDrops,
+  refineCost,
   salvage,
   sanitizeGear,
-  upgrade,
-  upgradeCost,
+  tryRefine,
   type GearItem,
 } from '../../src/core/gear';
 import { mulberry32 } from '../../src/core/rng';
 import { defaultSave, sanitize } from '../../src/core/save';
 
-const item = (p: Partial<GearItem> = {}): Omit<GearItem, 'uid'> => ({ type: 'hunterGloves', rarity: 0, level: 1, spent: 0, ...p });
+const item = (p: Partial<GearItem> = {}): Omit<GearItem, 'uid'> => ({ type: 'hunterGloves', rarity: 0, refine: 0, spent: 0, oreSpent: 0, ...p });
 
 describe('equipment content', () => {
   it('has two kinds of item for every slot, each with a picture', () => {
     for (const s of SLOTS) expect(GEAR_TYPES.filter((t) => GEAR[t].slot === s.id)).toHaveLength(2);
     for (const t of GEAR_TYPES) expect(GEAR[t].icon).toMatch(/^gear_/);
-    expect(RARITIES.map((r) => r.maxLevel)).toEqual([10, 20, 30, 40, 50, 60]);
+    // Refining: every step is worth more, and gets harder.
+    expect(REFINE.mult).toHaveLength(REFINE.max + 1);
+    expect(REFINE.chance).toHaveLength(REFINE.max);
+    for (let i = 1; i <= REFINE.max; i++) expect(REFINE.mult[i]).toBeGreaterThan(REFINE.mult[i - 1]);
+    for (let i = 1; i < REFINE.max; i++) expect(REFINE.chance[i]).toBeLessThanOrEqual(REFINE.chance[i - 1]);
+    expect(REFINE.chance.slice(0, 4)).toEqual([1, 1, 1, 1]);
   });
 });
 
 describe('equipment stats and costs', () => {
-  it('main stat grows with rarity and level; the second stat comes at Rare', () => {
+  it('main stat grows with rarity and refine; the second stat comes at Rare', () => {
     expect(mainStat({ ...item(), uid: 1 }).value).toBeCloseTo(0.012);
-    expect(mainStat({ ...item({ level: 11 }), uid: 1 }).value).toBeCloseTo(0.012 * 1.5);
+    expect(mainStat({ ...item({ refine: 10 }), uid: 1 }).value).toBeCloseTo(0.012 * REFINE.mult[10]);
     expect(mainStat({ ...item({ rarity: 4 }), uid: 1 }).value).toBeCloseTo(0.012 * 5.5);
     expect(bonusStat({ ...item({ rarity: 1 }), uid: 1 })).toBeNull();
     expect(bonusStat({ ...item({ rarity: 2 }), uid: 1 })).toEqual({ stat: 'crit', value: 0.02 });
   });
 
-  it('levelling costs gold and stops at the rarity cap', () => {
+  it('refining costs gold and ore; +1 to +4 always work, and it stops at +10', () => {
     const save = defaultSave();
-    save.gold = 1000;
-    const it = addItem(save.gear, item()) as GearItem;
-    expect(upgradeCost(it)).toBe(28);
-    expect(upgrade(save, it)).toBe(true);
-    expect(save.gold).toBe(972);
-    expect(it).toMatchObject({ level: 2, spent: 28 });
-    it.level = 10;
-    expect(upgradeCost(it)).toBeNull();
-    expect(upgrade(save, it)).toBe(false);
-    save.gold = 0;
-    it.level = 3;
-    expect(upgrade(save, it)).toBe(false);
+    save.gold = 10000;
+    save.ore = 100;
+    const it = addItem(save.gear, item({ rarity: 2 })) as GearItem;
+    expect(refineCost(it)).toEqual({ gold: 40, ore: 3, chance: 1 });
+    for (let k = 0; k < 4; k++) expect(tryRefine(save, it, () => 0.99)).toBe('ok');
+    expect(it.refine).toBe(4);
+    expect(save.gold).toBe(10000 - it.spent);
+    expect(save.ore).toBe(100 - it.oreSpent);
+    it.refine = 10;
+    expect(refineCost(it)).toBeNull();
+    expect(tryRefine(save, it, () => 0)).toBe(false);
+    // Not enough ore: nothing happens.
+    it.refine = 2;
+    save.ore = 0;
+    expect(tryRefine(save, it, () => 0)).toBe(false);
+    expect(it.refine).toBe(2);
+  });
+
+  it('a failed refine loses the cost, and from +7 up also drops a step (it never breaks)', () => {
+    const save = defaultSave();
+    save.gold = 1e6;
+    save.ore = 1e4;
+    const it = addItem(save.gear, item({ refine: 5 })) as GearItem;
+    expect(tryRefine(save, it, () => 0.999)).toBe('fail');
+    expect(it.refine).toBe(5);
+    it.refine = REFINE.dropFrom;
+    expect(tryRefine(save, it, () => 0.999)).toBe('down');
+    expect(it.refine).toBe(REFINE.dropFrom - 1);
+    expect(save.gear.items).toContain(it);
+    expect(tryRefine(save, it, () => 0)).toBe('ok');
   });
 
   it('only worn items count', () => {
@@ -72,25 +95,26 @@ describe('equipment stats and costs', () => {
 });
 
 describe('the bag', () => {
-  it('a full bag salvages new finds for gold', () => {
+  it('a full bag salvages new finds for gold and ore', () => {
     const save = defaultSave();
     for (let i = 0; i < BAG_SIZE; i++) addItem(save.gear, item());
     expect(addItem(save.gear, item({ rarity: 2 }), save)).toBe(RARITIES[2].salvage);
     expect(save.gear.items).toHaveLength(BAG_SIZE);
     expect(save.gold).toBe(RARITIES[2].salvage);
+    expect(save.ore).toBe(RARITIES[2].ore);
   });
 
   it('three of a rarity in one slot merge into the next rarity', () => {
     const g = emptyGear();
-    const a = addItem(g, item({ type: 'hunterGloves', rarity: 2, level: 3, spent: 40 })) as GearItem;
-    const b = addItem(g, item({ type: 'runeBracers', rarity: 2, level: 9, spent: 100 })) as GearItem;
+    const a = addItem(g, item({ type: 'hunterGloves', rarity: 2, refine: 2, spent: 40, oreSpent: 6 })) as GearItem;
+    const b = addItem(g, item({ type: 'runeBracers', rarity: 2, refine: 8, spent: 100, oreSpent: 30 })) as GearItem;
     addItem(g, item({ type: 'ironHelm', rarity: 2 }));
     expect(mergePartners(g, a)).toEqual([]);
-    const c = addItem(g, item({ type: 'hunterGloves', rarity: 2, level: 1 })) as GearItem;
+    const c = addItem(g, item({ type: 'hunterGloves', rarity: 2 })) as GearItem;
     equip(g, b);
     expect(mergePartners(g, a)).toEqual([c, b]);
     expect(merge(g, a)).toBe(true);
-    expect(a).toMatchObject({ rarity: 3, level: 9, spent: 140, type: 'hunterGloves' });
+    expect(a).toMatchObject({ rarity: 3, refine: 8, spent: 140, oreSpent: 36, type: 'hunterGloves' });
     expect(g.items).not.toContain(b);
     expect(g.items).not.toContain(c);
     // The worn partner was used up, so the merged item is worn in its place.
@@ -99,11 +123,12 @@ describe('the bag', () => {
     expect(mergePartners(g, a)).toEqual([]);
   });
 
-  it('salvaging pays back the base value and half the gold spent, and takes it off', () => {
+  it('salvaging pays back the base value and half the gold and ore spent, and takes it off', () => {
     const save = defaultSave();
-    const it = addItem(save.gear, item({ rarity: 1, spent: 100 })) as GearItem;
+    const it = addItem(save.gear, item({ rarity: 1, spent: 100, oreSpent: 20 })) as GearItem;
     equip(save.gear, it);
     expect(salvage(save, it)).toBe(RARITIES[1].salvage + 50);
+    expect(save.ore).toBe(RARITIES[1].ore + 10);
     expect(save.gear.items).toHaveLength(0);
     expect(save.gear.equipped.gloves).toBeUndefined();
   });
@@ -200,20 +225,23 @@ describe('saved gear', () => {
   it('cleans bad data and keeps good data', () => {
     const g = sanitizeGear({
       items: [
+        // An old save's level 99 becomes +10; level 4 becomes +3.
         { uid: 4, type: 'ironHelm', rarity: 9, level: 99, spent: 10 },
-        { uid: 5, type: 'dragonSword', rarity: 1, level: 1 },
-        { uid: 4, type: 'featherHat', rarity: 0, level: 1 },
+        { uid: 5, type: 'dragonSword', rarity: 1, refine: 1 },
+        { uid: 4, type: 'featherHat', rarity: 0, refine: 1 },
         { uid: 6, type: 'windCloak', rarity: 1, level: 0, fresh: true },
+        { uid: 7, type: 'luckyBoots', rarity: 2, level: 4 },
       ],
       equipped: { helmet: 4, cloak: 4, boots: 99 },
       next: 2,
     });
     expect(g.items).toEqual([
-      { uid: 4, type: 'ironHelm', rarity: TOP_RARITY, level: RARITIES[TOP_RARITY].maxLevel, spent: 10, fresh: false },
-      { uid: 6, type: 'windCloak', rarity: 1, level: 1, spent: 0, fresh: true },
+      { uid: 4, type: 'ironHelm', rarity: TOP_RARITY, refine: REFINE.max, spent: 10, oreSpent: 0, fresh: false },
+      { uid: 6, type: 'windCloak', rarity: 1, refine: 0, spent: 0, oreSpent: 0, fresh: true },
+      { uid: 7, type: 'luckyBoots', rarity: 2, refine: 3, spent: 0, oreSpent: 0, fresh: false },
     ]);
     expect(g.equipped).toEqual({ helmet: 4 });
-    expect(g.next).toBe(7);
+    expect(g.next).toBe(8);
     expect(sanitize({ gear: 'nope' }).gear).toEqual(emptyGear());
   });
 });

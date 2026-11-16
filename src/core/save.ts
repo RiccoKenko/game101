@@ -52,6 +52,8 @@ export interface LifetimeStats {
 export interface SaveData {
   version: 1;
   gold: number;
+  /** Ore for refining gear. */
+  ore: number;
   shop: Record<ShopId, number>;
   /** Number of maps the player can pick (1..MAPS.length). */
   unlockedMaps: number;
@@ -101,6 +103,7 @@ export function defaultSave(): SaveData {
   return {
     version: 1,
     gold: 0,
+    ore: 0,
     shop,
     unlockedMaps: 1,
     bestTimes: MAPS.map(() => 0),
@@ -134,6 +137,7 @@ export function sanitize(raw: unknown): SaveData {
   if (!raw || typeof raw !== 'object') return out;
   const r = raw as Partial<Record<keyof SaveData, unknown>>;
   out.gold = Math.floor(num(r.gold, 0));
+  out.ore = Math.floor(num(r.ore, 0));
   if (r.shop && typeof r.shop === 'object') {
     const shop = r.shop as Record<string, unknown>;
     for (const d of SHOP) out.shop[d.id] = Math.floor(num(shop[d.id], 0, 0, d.maxLevel));

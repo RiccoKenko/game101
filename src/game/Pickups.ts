@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { MAX_GEMS, XP_GEM_TIERS } from '../config/game';
 import { type GameCtx } from './context';
 
-export type PickupKind = 'xp' | 'coin' | 'meat' | 'magnet' | 'chest' | 'gear';
+export type PickupKind = 'xp' | 'coin' | 'meat' | 'magnet' | 'chest' | 'gear' | 'ore';
 
 export class Pickup {
   active = false;
@@ -28,7 +28,7 @@ export class Pickup {
 }
 
 /** Glow colour when each kind is collected. */
-const COLLECT_GLOW: Partial<Record<PickupKind, number>> = { xp: 0x7fd0ff, coin: 0xffd36b, meat: 0x7dff8a, magnet: 0xff7eb6 };
+const COLLECT_GLOW: Partial<Record<PickupKind, number>> = { xp: 0x7fd0ff, coin: 0xffd36b, meat: 0x7dff8a, magnet: 0xff7eb6, ore: 0xbfe0ff };
 
 export interface PickupHandlers {
   onXp(value: number): void;
@@ -38,6 +38,8 @@ export interface PickupHandlers {
   onChest(): void;
   /** A piece of gear was picked up: `value` is what the scene gave `dropGear`. */
   onGear(value: number): void;
+  /** Ore for refining, `value` pieces. */
+  onOre(value: number): void;
 }
 
 function gemTexture(value: number): string {
@@ -143,6 +145,11 @@ export class PickupManager {
     p.base ??= this.ctx.scene.add.image(0, 0, 'glow').setDepth(4);
     p.base.setTint(color).setDisplaySize(150, 64).setAlpha(0.85).setVisible(true).setPosition(x, y);
     this.pop(p, 140, 520);
+  }
+
+  /** Ore still lying on the ground (it is the hero's all the same when the run ends). */
+  oreOnGround(): number {
+    return this.list.reduce((sum, p) => sum + (p.active && p.kind === 'ore' ? p.value : 0), 0);
   }
 
   /** What every piece of gear still lying on the ground was dropped with. */
@@ -291,6 +298,9 @@ export class PickupManager {
         break;
       case 'gear':
         this.handlers.onGear(p.value);
+        break;
+      case 'ore':
+        this.handlers.onOre(p.value);
         break;
     }
   }

@@ -165,13 +165,13 @@ test('the Collection opens from the menu and every tab draws', async ({ page }) 
   expect(errors).toEqual([]);
 });
 
-test('the Gear screen equips and levels an item', async ({ page }) => {
+test('the Gear screen equips and refines an item', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.addInitScript(() => {
     if (localStorage.getItem('ricco-rush-save-v1')) return;
-    const items = [{ uid: 1, type: 'hunterGloves', rarity: 2, level: 1, spent: 0, fresh: true }];
-    localStorage.setItem('ricco-rush-save-v1', JSON.stringify({ version: 1, gold: 500, gear: { items, equipped: {}, next: 2 } }));
+    const items = [{ uid: 1, type: 'hunterGloves', rarity: 2, refine: 0, spent: 0, oreSpent: 0, fresh: true }];
+    localStorage.setItem('ricco-rush-save-v1', JSON.stringify({ version: 1, gold: 500, ore: 20, gear: { items, equipped: {}, next: 2 } }));
   });
   await page.goto('/');
   await expect.poll(() => scenes(page), { timeout: 30_000 }).toContain('Menu');
@@ -205,6 +205,6 @@ test('the Gear screen equips and levels an item', async ({ page }) => {
   await tap(ux, uy);
   await expect
     .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('ricco-rush-save-v1')!).gear), { timeout: 5_000 })
-    .toMatchObject({ equipped: { gloves: 1 }, items: [{ uid: 1, level: 2 }] });
+    .toMatchObject({ equipped: { gloves: 1 }, items: [{ uid: 1, refine: 1 }] });
   expect(errors).toEqual([]);
 });

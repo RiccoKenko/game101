@@ -94,7 +94,7 @@ export class GameOverScene extends Phaser.Scene {
       this.tweens.add({ targets: u, scale: 1.07, duration: 500, yoyo: true, repeat: -1 });
       y += 116 + gap;
     }
-    if (s.loot.length || s.lootGold) {
+    if (s.loot.length || s.lootGold || s.ore) {
       this.lootNote(news, y + 75);
       y += 150 + gap;
     }
@@ -168,16 +168,16 @@ export class GameOverScene extends Phaser.Scene {
     });
     const tx = -w / 2 + 28 + (shown.length ? size + (shown.length - 1) * step : 0) + 24;
     const best = shown[0];
-    const title = s.loot.length ? (s.loot.length === 1 ? 'GEAR FOUND!' : `${s.loot.length} GEAR FOUND!`) : 'BAG FULL';
+    const title = s.loot.length ? (s.loot.length === 1 ? 'GEAR FOUND!' : `${s.loot.length} GEAR FOUND!`) : s.lootGold ? 'BAG FULL' : 'ORE FOUND!';
     c.add([
       text(this, tx, y - 38, title, 42, { color: CSS.gold, originX: 0 }),
-      text(this, tx, y + 8, best ? `Best: ${RARITIES[best.rarity].name} ${best.name}` : `Salvaged for ${s.lootGold} gold`, 30, {
+      text(this, tx, y + 8, best ? `Best: ${RARITIES[best.rarity].name} ${best.name}` : s.lootGold ? `Salvaged for ${s.lootGold} gold` : `${s.ore} ore for refining`, 30, {
         color: best ? RARITIES[best.rarity].css : CSS.cream,
         weight: '600',
         originX: 0,
         shadow: false,
       }),
-      text(this, tx, y + 46, s.lootGold && best ? `Bag full: +${s.lootGold} gold for the rest` : 'Equip it in Gear', 28, {
+      text(this, tx, y + 46, [s.ore ? `+${s.ore} ore` : '', s.lootGold && best ? `bag full: +${s.lootGold} gold` : 'refine in Gear'].filter(Boolean).join('  ·  '), 28, {
         color: CSS.soft,
         weight: '600',
         originX: 0,

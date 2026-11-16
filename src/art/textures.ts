@@ -322,6 +322,28 @@ function effectTextures(scene: Phaser.Scene): void {
       ctx.fill();
     }
   });
+  // Ore for refining: three steel-blue crystals with a dark outline and white glints.
+  canvasTexture(scene, 'ore', 64, 64, (ctx) => {
+    const shard = (pts: [number, number][], light: string, dark: string) => {
+      ctx.beginPath();
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.closePath();
+      const g = ctx.createLinearGradient(pts[0][0] - 10, pts[0][1], pts[0][0] + 14, pts[0][1] + 30);
+      g.addColorStop(0, light);
+      g.addColorStop(1, dark);
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#14233f';
+      ctx.stroke();
+    };
+    shard([[14, 54], [10, 30], [20, 18], [27, 32], [26, 54]], '#d8ecff', '#4f7fb8');
+    shard([[38, 54], [40, 28], [48, 20], [55, 34], [50, 54]], '#cfe6ff', '#3f6fa8');
+    shard([[22, 56], [24, 20], [32, 6], [41, 20], [42, 56]], '#f2f9ff', '#5d93d0');
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillRect(29, 16, 3, 14);
+    ctx.fillRect(14, 30, 2, 9);
+  });
   // A boss's warning on the ground: a see-through disc with a solid rim, so its edge is easy to read.
   canvasTexture(scene, 'tele_disc', 128, 128, (ctx) => {
     ctx.fillStyle = 'rgba(255,255,255,0.4)';

@@ -1,24 +1,23 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/audio';
-import { BAG_SIZE, CHEST, describeStat, GEAR, GEAR_TYPES, RARITIES, TOP_RARITY, SLOTS, STAT_NAMES, type GearStat } from '../config/gear';
+import { BAG_SIZE, CHEST, describeStat, GEAR, GEAR_TYPES, RARITIES, REFINE, SLOTS, STAT_NAMES, TOP_RARITY, type GearStat } from '../config/gear';
 import {
   bonusStat,
   equip,
   gearBonus,
   isEquipped,
   mainStat,
-  maxLevel,
-  refine,
   merge,
   mergePartners,
   openChest,
+  refineCost,
+  refineLabel,
   salvage,
   salvageValue,
   slotOf,
   sortedItems,
+  tryRefine,
   unequip,
-  upgrade,
-  upgradeCost,
   type GearItem,
 } from '../core/gear';
 import { saveStore } from '../core/save';
@@ -30,11 +29,12 @@ import { menuBackground } from './MenuScene';
 
 const COLS = 6;
 
-/** Equipment: what is worn in the four slots, the bag, gear chests, and a pop-up to equip, level, merge or salvage. */
+/** Equipment: what is worn in the four slots, the bag, gear chests, and a pop-up to equip, refine, merge or salvage. */
 export class GearScene extends Phaser.Scene {
   private content: Phaser.GameObjects.GameObject[] = [];
   private popup: Phaser.GameObjects.GameObject[] = [];
   private goldText!: Phaser.GameObjects.Text;
+  private oreText!: Phaser.GameObjects.Text;
   /** Items to tag NEW this visit (found since the last one). */
   private fresh = new Set<number>();
   private top = 0;
@@ -57,9 +57,13 @@ export class GearScene extends Phaser.Scene {
     this.bottom = height - bottom;
     menuBackground(this);
     gradientText(text(this, width / 2, top + 88, 'GEAR', 92, { strokeColor: '#2a1606' }));
-    panel(this, width / 2, top + 184, 280, 76, { radius: 38 });
-    this.add.image(width / 2 - 140 + 44, top + 184, 'icon_coin').setDisplaySize(58, 58);
-    this.goldText = text(this, width / 2 - 140 + 84, top + 186, String(save.gold), 50, { color: CSS.gold, originX: 0 });
+    // Gold and ore, side by side.
+    for (const [cx, icon] of [[width / 2 - 160, 'icon_coin'], [width / 2 + 160, 'ore']] as const) {
+      panel(this, cx, top + 184, 290, 76, { radius: 38 });
+      this.add.image(cx - 145 + 44, top + 184, icon).setDisplaySize(58, 58);
+    }
+    this.goldText = text(this, width / 2 - 160 - 145 + 84, top + 186, String(save.gold), 50, { color: CSS.gold, originX: 0 });
+    this.oreText = text(this, width / 2 + 160 - 145 + 84, top + 186, String(save.ore), 50, { color: '#cfe6ff', originX: 0 });
     new Button(this, width / 2, height - bottom - 120, {
       w: 520,
       h: 130,
@@ -83,6 +87,7 @@ export class GearScene extends Phaser.Scene {
     const gear = save.gear;
     const { width } = this.scale;
     this.goldText.setText(String(save.gold));
+    this.oreText.setText(String(save.ore));
 
     // The four worn slots.
     const sy = this.top + 330;
@@ -91,8 +96,9 @@ export class GearScene extends Phaser.Scene {
       const x = width / 2 + (i - 1.5) * 236;
       const item = gear.items.find((it) => it.uid === gear.equipped[slot.id]);
       const type = item ? item.type : GEAR_TYPES.find((t) => GEAR[t].slot === slot.id)!;
+      if (item) this.refineGlow(x, sy, size, item);
       gearTile(this, x, sy, size, type, item ? item.rarity : -1).forEach((o) => this.keep(o));
-      if (item) this.keep(text(this, x + size / 2 - 12, sy + size / 2 - 22, refine(item.level), 28, { originX: 1 }));
+      if (item) this.keep(this.refineTag(x + size / 2 - 12, sy + size / 2 - 22, item, 28));
       this.keep(text(this, x, sy + size / 2 + 34, slot.name, 32, { color: item ? RARITIES[item.rarity].css : CSS.muted }));
       if (item) {
         const hit = this.keep(this.add.zone(x, sy, size, size).setInteractive({ useHandCursor: true }));
@@ -160,13 +166,26 @@ export class GearScene extends Phaser.Scene {
     if (!items.length) this.keep(text(this, width / 2, gridTop + rowH * 2.5, 'Empty: elites, leaders and bosses drop gear', 32, { color: CSS.soft }));
     items.forEach((item, i) => {
       const [x, y] = at(i);
+      this.refineGlow(x, y, tile, item);
       gearTile(this, x, y, tile, item.type, item.rarity).forEach((o) => this.keep(o));
-      this.keep(text(this, x + tile / 2 - 8, y + tile / 2 - 18, refine(item.level), 26, { originX: 1 }));
+      this.keep(this.refineTag(x + tile / 2 - 8, y + tile / 2 - 18, item, 26));
       if (isEquipped(gear, item)) this.keep(this.add.image(x - tile / 2 + 22, y - tile / 2 + 22, 'icon_check').setDisplaySize(40, 40));
       if (this.fresh.has(item.uid)) this.newTag(x + tile / 2 - 30, y - tile / 2 + 6);
       const hit = this.keep(this.add.zone(x, y, tile, tile).setInteractive({ useHandCursor: true }));
       hit.on('pointerup', () => this.open(item));
     });
+  }
+
+  /** "+7", turning gold from +7 up. */
+  private refineTag(x: number, y: number, item: GearItem, size: number): Phaser.GameObjects.Text {
+    return text(this, x, y, refineLabel(item.refine), size, { originX: 1, color: item.refine >= 7 ? CSS.gold : CSS.cream });
+  }
+
+  /** A +10 item shines: a slow golden glow behind its tile. */
+  private refineGlow(x: number, y: number, size: number, item: GearItem): void {
+    if (item.refine < REFINE.max) return;
+    const g = this.keep(this.add.image(x, y, 'glow').setTint(0xffc94a).setDisplaySize(size * 2, size * 2).setBlendMode(Phaser.BlendModes.ADD));
+    this.tweens.add({ targets: g, alpha: 0.45, scale: g.scale * 0.9, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
   private newTag(x: number, y: number): void {
@@ -221,7 +240,7 @@ export class GearScene extends Phaser.Scene {
     dim.on('pointerup', () => this.closePopup());
     const cy = height / 2 - 40;
     const w = 940;
-    const h = 800;
+    const h = 1000;
     const x0 = width / 2 - w / 2;
     const top = cy - h / 2;
     const def = GEAR[item.type];
@@ -238,7 +257,7 @@ export class GearScene extends Phaser.Scene {
     d(text(this, tx, top + 80, def.name, 48, { color: rar.css, originX: 0 }));
     const slotName = SLOTS.find((s) => s.id === def.slot)!.name;
     d(text(this, tx, top + 134, `${rar.name} ${slotName}`, 32, { color: CSS.soft, weight: '600', originX: 0, shadow: false }));
-    d(text(this, tx, top + 186, `Refine ${refine(item.level)} / ${refine(maxLevel(item))}`, 34, { color: CSS.cream, originX: 0 }));
+    d(text(this, tx, top + 186, `Refine ${refineLabel(item.refine)} / ${refineLabel(REFINE.max)}`, 34, { color: item.refine >= 7 ? CSS.gold : CSS.cream, originX: 0 }));
     if (isEquipped(gear, item)) d(text(this, tx, top + 232, 'Worn', 30, { color: CSS.green, originX: 0 }));
 
     const m = mainStat(item);
@@ -255,11 +274,19 @@ export class GearScene extends Phaser.Scene {
       }),
     );
     y += 56;
-    const cost = upgradeCost(item);
-    if (cost !== null) {
-      const next = mainStat({ ...item, level: item.level + 1 });
-      d(text(this, x0 + 60, y, `Next refine: ${describeStat(next.stat, next.value)}`, 30, { color: CSS.soft, weight: '600', originX: 0, shadow: false }));
-    } else d(text(this, x0 + 60, y, 'Highest refine for this rarity: merge to go further', 30, { color: CSS.soft, weight: '600', originX: 0, shadow: false }));
+    const cost = refineCost(item);
+    const small = (yy: number, msg: string, color: string, size = 30) =>
+      d(text(this, x0 + 60, yy, msg, size, { color, weight: '600', originX: 0, shadow: false, wrap: w - 120, align: 'left' }));
+    if (cost) {
+      const next = mainStat({ ...item, refine: item.refine + 1 });
+      small(y, `Next ${refineLabel(item.refine + 1)}: ${describeStat(next.stat, next.value)}`, CSS.soft);
+      y += 50;
+      const afford = save.gold >= cost.gold && save.ore >= cost.ore;
+      small(y, `${Math.round(cost.chance * 100)}% success  ·  ${cost.gold} gold + ${cost.ore} ore`, afford ? CSS.gold : CSS.muted);
+      y += 50;
+      if (cost.chance < 1)
+        small(y, item.refine >= REFINE.dropFrom ? 'If it fails, it drops one step' : `If it fails, the cost is lost (from ${refineLabel(REFINE.dropFrom)} it also drops a step)`, '#ff9a8a', 26);
+    } else small(y, `${refineLabel(REFINE.max)}: fully refined!`, CSS.gold);
     y += 50;
     const partners = mergePartners(gear, item);
     const same = gear.items.filter((i) => slotOf(i) === slotOf(item) && i.rarity === item.rarity).length;
@@ -268,6 +295,9 @@ export class GearScene extends Phaser.Scene {
         ? `${RARITIES[TOP_RARITY].name} is the rarest`
         : `Merge: 3 ${rar.name} ${slotName} → 1 ${RARITIES[item.rarity + 1].name} (you have ${Math.min(same, 3)}/3)`;
     d(text(this, x0 + 60, y, mergeText, 28, { color: partners.length ? CSS.gold : CSS.muted, weight: '600', originX: 0, shadow: false, wrap: w - 120, align: 'left' }));
+    y += 50;
+    const back = salvageValue(item);
+    small(y, `Salvage gives ${back.gold} gold + ${back.ore} ore`, CSS.soft, 26);
 
     // Buttons, two by two.
     const bw = 400;
@@ -305,18 +335,19 @@ export class GearScene extends Phaser.Scene {
         w: bw,
         h: bh,
         color: BUTTON.warning,
-        icon: 'icon_coin',
-        iconSize: 52,
-        label: cost === null ? 'Max refine' : `Refine  ${cost}`,
-        fontSize: 38,
+        icon: 'ore',
+        iconSize: 60,
+        label: cost ? `Refine ${refineLabel(item.refine + 1)}` : 'Max refine',
+        fontSize: 40,
         onClick: act(() => {
-          const ok = upgrade(save, item);
-          if (ok) audio.sfx('levelup');
-          return ok;
+          const r = tryRefine(save, item, Math.random);
+          if (!r) return false;
+          this.time.delayedCall(2, () => this.refineResult(r, item));
+          return true;
         }),
       }),
     );
-    up.setEnabled(cost !== null && save.gold >= cost);
+    up.setEnabled(!!cost && save.gold >= cost.gold && save.ore >= cost.ore);
     const mg = d(
       new Button(this, bx(0), row2, {
         w: bw,
@@ -342,8 +373,8 @@ export class GearScene extends Phaser.Scene {
         color: BUTTON.danger,
         icon: 'icon_coin',
         iconSize: 52,
-        label: `Salvage  +${salvageValue(item)}`,
-        fontSize: 36,
+        label: 'Salvage',
+        fontSize: 40,
         onClick: act(() => {
           audio.sfx('coin');
           return salvage(save, item);
@@ -361,5 +392,23 @@ export class GearScene extends Phaser.Scene {
         onClick: () => this.time.delayedCall(1, () => this.closePopup()),
       }),
     );
+  }
+
+  /** The moment of truth after a refine: a big word over the item's card, a sound, and a flash or a shake. */
+  private refineResult(r: 'ok' | 'fail' | 'down', item: GearItem): void {
+    const { width, height } = this.scale;
+    const msg = r === 'ok' ? `SUCCESS!  ${refineLabel(item.refine)}` : r === 'down' ? `FAILED...  down to ${refineLabel(item.refine)}` : 'FAILED...';
+    // Over the item's card, but not part of it: the card is redrawn after every refine and would take it along.
+    const t = text(this, width / 2, height / 2 - 40 - 560, msg, r === 'ok' ? 72 : 60, { color: r === 'ok' ? '#9dff7a' : '#ff7a6b' }).setDepth(99);
+    t.setScale(0.5);
+    this.tweens.add({ targets: t, scaleX: 1, scaleY: 1, duration: 260, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: t, alpha: 0, delay: 1300, duration: 450, onComplete: () => t.destroy() });
+    if (r === 'ok') {
+      audio.sfx(item.refine >= REFINE.max ? 'victory' : 'levelup');
+      this.cameras.main.flash(220, 255, 244, 200);
+    } else {
+      audio.sfx('hurt');
+      this.cameras.main.shake(260, 0.008);
+    }
   }
 }
