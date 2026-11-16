@@ -6,7 +6,7 @@
 
 ### สถานะและลิงก์
 - **Repo:** `riccokenko/game101` branch `claude/compassionate-dirac-2wzrb3` (push ครบ, working tree สะอาด)
-- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 34 (ระบบเล่นยาว 6 อย่าง)
+- **ลิงก์ทดสอบ (Artifact):** https://claude.ai/artifact/QxsbsoUHeKfnr19kQw6TBH เวอร์ชัน 35 (ซูม 60% + ระบบเล่นยาว 6 อย่าง)
   - **สร้างใหม่:** `node scripts/build-artifact.mjs <scratchpad>/ricco-rush.html` แล้ว publish ทับลิงก์นี้ด้วย `url`
   - **session ใหม่:** ต้อง `action: read` ลิงก์ก่อน publish
 - **ลิงก์หลัก:** little-archer.vercel.app = **Ricco Rush** (7 พ.ย. 2026)
@@ -171,10 +171,11 @@
 
 ### ซูมออก + บอสมีท่าให้หลบ (16 พ.ย. 2026)
 - **เจ้านายขอ:** "ซูมออกให้เห็นมอนเยอะๆ กรูเข้ามา ตัวเล็กๆก็พอ" และ "บอสมีเมคานิกให้หลบ ท้าทายกว่านี้"
-- **ซูมออก:** `CAMERA_ZOOM = 0.72` ใน `src/config/game.ts`
+- **ซูมออก:** `CAMERA_ZOOM = 0.6` ใน `src/config/game.ts` (เดิม 0.72; เจ้านายขอให้เห็นกว้างขึ้นอีก)
   - พื้นตามกล้องที่กว้างขึ้นใน `World.ts`
   - จุดเกิดมอนอิงขอบจอที่ซูมแล้ว
-- **มอนเยอะขึ้น:** `CROWD = 1.3` คูณอัตราเกิดใน `core/waves.ts` และ `MAX_ENEMIES = 260`
+- **มอนเยอะขึ้น:** `CROWD = 1.5` คูณอัตราเกิดใน `core/waves.ts` และ `MAX_ENEMIES = 300`
+  - บอทที่ซูม 60% (หลบครึ่งความเร็ว): Archer/Mage รอด 9:00 ฆ่าราว 9,500 ตัว
   - เหรียญปรับตามอัตราเกิดเอง
 - **สัญญาณเตือนทั้งหมดอยู่ใน `src/game/Telegraphs.ts`:**
   - `line()` แนวแดงที่ค่อย ๆ เติมจากตัวบอสออกไป แล้วระเบิด ถ้า damage 0 เป็นแค่เส้นเตือน เช่นทางพุ่งชน
