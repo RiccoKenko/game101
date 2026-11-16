@@ -121,10 +121,10 @@ export function fieldDrop(rng: Rng, tier: number, source: 'elite' | 'leader' | '
   return rollItem(rng, dropWeights(tier + o.boost), o.min);
 }
 
-/** What the end of a run adds to the gear found on the way: one item per few minutes survived, a Rare or better for a clear. */
+/** What the end of a run adds to the gear found on the way: one item for lasting a while, a Rare or better for a clear. */
 export function runDrops(rng: Rng, o: { map: number; difficulty: number; time: number; won: boolean }) {
   const tier = lootTier(o.map, o.difficulty);
-  const out = Array.from({ length: Math.floor(o.time / LOOT.surviveSeconds) }, () => rollItem(rng, dropWeights(tier)));
+  const out = o.time >= LOOT.surviveSeconds ? [rollItem(rng, dropWeights(tier))] : [];
   if (o.won) out.push(rollItem(rng, dropWeights(tier + LOOT.clear.boost), Math.max(BONUS_FROM, LOOT.clear.min)));
   return out;
 }

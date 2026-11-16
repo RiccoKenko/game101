@@ -93,14 +93,15 @@ export const DROP_WEIGHTS = [
 export const dropWeights = (tier: number): number[] => DROP_WEIGHTS[Math.max(0, Math.min(DROP_WEIGHTS.length - 1, tier))];
 
 /**
- * Who drops what. Each source rolls on the tier's row plus `boost` rows, never below `min` (the rarity index).
- * Elites drop gear now and then, leaders and MVP bosses always do (an MVP always Rare or better).
+ * Who drops what, kept scarce so every drop matters (about 3-4 pieces in a 9-minute run). Each source rolls on the
+ * tier's row plus `boost` rows, never below `min` (the rarity index), with this `chance`. An MVP always drops, and
+ * always Rare or better.
  */
 export const LOOT = {
-  elite: { chance: 0.02, boost: 1, min: 1 },
-  leader: { boost: 2, min: 1 },
-  boss: { boost: 3, min: 2 },
-  /** At the end of a run: one item per this many seconds survived, and a Rare or better for a clear. */
+  elite: { chance: 0.005, boost: 1, min: 1 },
+  leader: { chance: 0.5, boost: 2, min: 1 },
+  boss: { chance: 1, boost: 3, min: 2 },
+  /** At the end of a run: one item for lasting this long, and a Rare or better for a clear. */
   surviveSeconds: 180,
   clear: { boost: 3, min: 2 },
 };

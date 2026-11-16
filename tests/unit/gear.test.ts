@@ -118,13 +118,20 @@ describe('the bag', () => {
 });
 
 describe('drops', () => {
-  it('the end of a run adds one item per few minutes lasted, and a Rare or better for a clear', () => {
+  it('the end of a run adds one item for lasting a while, and a Rare or better for a clear', () => {
     const rng = mulberry32(7);
     expect(runDrops(rng, { map: 0, difficulty: 0, time: 100, won: false })).toHaveLength(0);
-    expect(runDrops(rng, { map: 0, difficulty: 0, time: 9 * 60, won: false })).toHaveLength(3);
+    expect(runDrops(rng, { map: 0, difficulty: 0, time: 9 * 60, won: false })).toHaveLength(1);
     const clear = runDrops(rng, { map: 0, difficulty: 0, time: 900, won: true });
-    expect(clear).toHaveLength(6);
-    expect(clear[5].rarity).toBeGreaterThanOrEqual(2);
+    expect(clear).toHaveLength(2);
+    expect(clear[1].rarity).toBeGreaterThanOrEqual(2);
+  });
+
+  it('keeps gear scarce: about three or four pieces in a 9-minute run', () => {
+    // A 9-minute run meets one MVP, two leaders and (for the bot) about 250 elites.
+    const expected = 1 + LOOT.boss.chance + 2 * LOOT.leader.chance + 250 * LOOT.elite.chance;
+    expect(expected).toBeGreaterThanOrEqual(3);
+    expect(expected).toBeLessThanOrEqual(5);
   });
 
   it('an MVP always drops Rare or better, and Epic and Legendary can come even on the first map', () => {

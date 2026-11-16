@@ -671,7 +671,7 @@ export class GameScene extends Phaser.Scene {
     if (run.boss === e) run.boss = null;
     run.bossesKilled++;
     this.pickups.drop('chest', e.x, e.y);
-    this.dropGear(e.x + 60, e.y + 20, 'boss');
+    if (this.rng() < LOOT.boss.chance) this.dropGear(e.x + 60, e.y + 20, 'boss');
     this.pickups.burstCoins(e.x, e.y, 12, Math.ceil(BOSS_GOLD[this.mapIndex] / 12));
     this.fx.explosion(e.x, e.y, 260);
     this.fx.ring(e.x, e.y, 500, 0xffcc33);
@@ -708,7 +708,7 @@ export class GameScene extends Phaser.Scene {
     if (run.boss === e) run.boss = null;
     run.leadersKilled++;
     this.pickups.drop('chest', e.x, e.y);
-    this.dropGear(e.x + 60, e.y + 20, 'leader');
+    if (this.rng() < LOOT.leader.chance) this.dropGear(e.x + 60, e.y + 20, 'leader');
     this.pickups.burstCoins(e.x, e.y, 8, Math.ceil(BOSS_GOLD[this.mapIndex] / 24));
     this.fx.explosion(e.x, e.y, 180);
     this.fx.ring(e.x, e.y, 360, 0xffcc33);
