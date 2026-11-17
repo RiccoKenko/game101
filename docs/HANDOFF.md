@@ -10,7 +10,10 @@
   - **สร้างใหม่:** `node scripts/build-artifact.mjs <scratchpad>/ricco-rush.html` แล้ว publish ทับลิงก์นี้ด้วย `url`
   - **session ใหม่:** ต้อง `action: read` ลิงก์ก่อน publish
 - **ลิงก์หลัก:** little-archer.vercel.app = **Ricco Rush** (7 พ.ย. 2026)
-  - เจ้านายสั่ง ("4"): deploy `dpl_AvpPpHZ1iNnPkRWsz6BoWyrbbcyG`, commit eb4f3a0, build ในเครื่องได้ `index-CF3BjWlr.js`
+  - **ล่าสุด (17 พ.ย. 2026):** เจ้านายสั่ง "Push ขึ้น vercel เลย"
+    - deploy `dpl_EsuqcY7DZDmR1o8oLEkFP4wVRJKC`, commit 9f9bc36 (ซูม 60% + ระบบเล่นยาว 6 อย่าง)
+    - หน้าเว็บจริงโหลด `index-CJ4py8o_.js` ตรงกับ build ในเครื่อง
+  - **ครั้งก่อน (ย้อนกลับได้):** `dpl_AvpPpHZ1iNnPkRWsz6BoWyrbbcyG`, commit eb4f3a0, `index-CF3BjWlr.js`
   - **ย้อนกลับเป็น Monster Rush v11:** `dpl_5xYkEZsB43S3HWT7TdsDPGErrows`
   - **วิธี deploy:** Vercel MCP `create_deployment` slug `cat-team5`
     - project `prj_yZBhIj9KcV2i9l1m9Rq39SI0mFtR`, target production
